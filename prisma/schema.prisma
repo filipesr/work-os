@@ -1,0 +1,247 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums (Global Types) ---
+enum UserRole {
+  ADMIN       // Can configure templates and users
+  MANAGER     // Can manage projects and see all reports
+  SUPERVISOR  // Can assign tasks and manage teams
+  MEMBER      // Can execute tasks (Designer, Dev, etc.)
+  CLIENT      // Can view project status (Portal do Cliente)
+}
+
+enum TaskStatus {
+  BACKLOG
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ArtifactType {
+  DOCUMENT // Google Doc, PDF
+  IMAGE    // JPG, PNG
+  VIDEO    // MP4 (link)
+  FIGMA
+  OTHER
+}
+
+// --- 1. Auth & Team Models ---
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+
+  // Our custom fields
+  role   UserRole @default(MEMBER)
+  teamId String?
+  team   Team?    @relation(fields: [teamId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+
+  // Relations
+  assignedTasks Task[]          @relation("Assignee")
+  comments      TaskComment[]
+  artifacts     TaskArtifact[]
+  timeLogs      TimeLog[]
+  stageLogs     TaskStageLog[]
+}
+
+model Team {
+  id            String          @id @default(cuid())
+  name          String          @unique
+  members       User[]
+  defaultStages TemplateStage[] // Stages this team is default for
+}
+
+// --- 2. Client & Project Models ---
+
+model Client {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  projects Project[]
+}
+
+model Project {
+  id       String @id @default(cuid())
+  name     String
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tasks    Task[]
+}
+
+// --- 3. Workflow Template Engine Models (The "Script") ---
+// This is the core of the dynamic configuration
+
+model WorkflowTemplate {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  description String?
+  stages      TemplateStage[]
+}
+
+model TemplateStage {
+  id       String @id @default(cuid())
+  name     String
+  order    Int    // The sequence (1, 2, 3...)
+  templateId String
+  template   WorkflowTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  defaultTeamId String? // The team auto-assigned (e.g., "QC")
+  defaultTeam   Team?   @relation(fields: [defaultTeamId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+
+  // Relations
+  dependencies      StageDependency[] @relation("DependsOn")
+  dependents        StageDependency[] @relation("Stage")
+  tasksAtThisStage  Task[]            @relation("CurrentStage")
+  stageLogs         TaskStageLog[]
+  timeLogs          TimeLog[]
+}
+
+// This table defines the dependencies: "Stage A must be complete before Stage B"
+model StageDependency {
+  id               String        @id @default(cuid())
+  stageId          String        // The stage that has a prerequisite
+  stage            TemplateStage @relation("Stage", fields: [stageId], references: [id], onDelete: Cascade)
+  dependsOnStageId String        // The prerequisite stage
+  dependsOn        TemplateStage @relation("DependsOn", fields: [dependsOnStageId], references: [id], onDelete: Cascade)
+
+  @@unique([stageId, dependsOnStageId])
+}
+
+// --- 4. Core Task & Collaboration Models ---
+// This is the "Single Task"
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?      @db.Text
+  status      TaskStatus   @default(BACKLOG)
+  priority    TaskPriority @default(MEDIUM)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  dueDate     DateTime?
+
+  // Relations
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  currentStageId String?
+  currentStage   TemplateStage? @relation("CurrentStage", fields: [currentStageId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+
+  assigneeId String?
+  assignee   User?   @relation("Assignee", fields: [assigneeId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+
+  // Task History (all in separate tables)
+  comments  TaskComment[]
+  artifacts TaskArtifact[]
+  stageLogs TaskStageLog[]
+  timeLogs  TimeLog[]
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TaskArtifact {
+  id        String       @id @default(cuid())
+  title     String
+  url       String       // The URL from Cloudinary or Google Drive
+  type      ArtifactType @default(OTHER)
+  createdAt DateTime     @default(now())
+  taskId    String
+  task      Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- 5. Reporting & Analytics Log Models (Append-Only) ---
+
+// Log for "Time Spent" (Productivity Reports)
+model TimeLog {
+  id          String   @id @default(cuid())
+  hoursSpent  Float
+  logDate     DateTime
+  description String?
+
+  taskId  String
+  task    Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  stageId String? // Which stage was this time spent on?
+  stage   TemplateStage? @relation(fields: [stageId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Log for "Stage Transitions" (Bottleneck Reports)
+model TaskStageLog {
+  id        String    @id @default(cuid())
+  enteredAt DateTime  @default(now())
+  exitedAt  DateTime?
+
+  taskId  String
+  task    Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  stageId String
+  stage   TemplateStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  userId  String // The user who moved the task into this stage
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
