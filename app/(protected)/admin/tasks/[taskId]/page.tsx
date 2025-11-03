@@ -1,13 +1,23 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getTaskById } from "@/lib/actions/task";
+import {
+  getTaskById,
+  getAvailableNextStages,
+  getPreviousStages,
+} from "@/lib/actions/task";
+import { AdvanceStageButton } from "@/components/tasks/AdvanceStageButton";
+import { RevertStageButton } from "@/components/tasks/RevertStageButton";
 
 export default async function TaskDetailPage({
   params,
 }: {
   params: { taskId: string };
 }) {
-  const task = await getTaskById(params.taskId);
+  const [task, availableNextStages, previousStages] = await Promise.all([
+    getTaskById(params.taskId),
+    getAvailableNextStages(params.taskId),
+    getPreviousStages(params.taskId),
+  ]);
 
   if (!task) {
     notFound();
@@ -100,9 +110,22 @@ export default async function TaskDetailPage({
         </div>
       </div>
 
-      {/* Current Stage */}
+      {/* Current Stage & Actions */}
       <div className="bg-white shadow rounded-lg p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Current Stage</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Current Stage</h2>
+          <div className="flex gap-2">
+            <AdvanceStageButton
+              taskId={task.id}
+              availableStages={availableNextStages}
+            />
+            <RevertStageButton
+              taskId={task.id}
+              previousStages={previousStages}
+            />
+          </div>
+        </div>
+
         {task.currentStage ? (
           <div className="border border-blue-200 bg-blue-50 rounded-lg p-4">
             <div className="flex items-center gap-3">
@@ -130,7 +153,7 @@ export default async function TaskDetailPage({
       </div>
 
       {/* Stage History */}
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-white shadow rounded-lg p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Stage History</h2>
         {task.stageLogs.length === 0 ? (
           <p className="text-gray-500">No stage history yet</p>
@@ -157,6 +180,37 @@ export default async function TaskDetailPage({
           </div>
         )}
       </div>
+
+      {/* Comments */}
+      {task.comments.length > 0 && (
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Comments</h2>
+          <div className="space-y-4">
+            {task.comments.map((comment: any) => (
+              <div
+                key={comment.id}
+                className={`border-l-4 pl-4 py-2 ${
+                  comment.content.startsWith("**REVERTED")
+                    ? "border-orange-500 bg-orange-50"
+                    : "border-gray-300"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                      {comment.content}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      By {comment.user.name || comment.user.email} •{" "}
+                      {new Date(comment.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

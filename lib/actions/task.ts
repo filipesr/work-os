@@ -271,3 +271,314 @@ export async function getTasks() {
     orderBy: { createdAt: "desc" },
   });
 }
+
+// ========== State Machine: Stage Transitions ==========
+
+/**
+ * Get available next stages for a task (where dependencies are met).
+ * This helps the UI show which stages the task can advance to.
+ */
+export async function getAvailableNextStages(taskId: string) {
+  await getCurrentUser();
+
+  try {
+    // Get the task with its current stage and template
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        currentStage: {
+          include: {
+            template: {
+              include: {
+                stages: {
+                  orderBy: { order: "asc" },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!task || !task.currentStage) {
+      return [];
+    }
+
+    const allTemplateStages = task.currentStage.template.stages;
+
+    // Get all stages in the template that are after the current stage
+    const potentialNextStages = allTemplateStages.filter(
+      (stage: any) => stage.order > task.currentStage!.order
+    );
+
+    // For each potential stage, check if dependencies are met
+    const availableStages: any[] = [];
+
+    for (const stage of potentialNextStages) {
+      // Get dependencies for this stage
+      const dependencies = await prisma.stageDependency.findMany({
+        where: { stageId: stage.id },
+        select: { dependsOnStageId: true },
+      });
+
+      // If no dependencies, it's available
+      if (dependencies.length === 0) {
+        availableStages.push(stage);
+        continue;
+      }
+
+      // Check if all dependencies have been completed for this task
+      const dependsOnStageIds = dependencies.map((d: any) => d.dependsOnStageId);
+      const completedStageLogs = await prisma.taskStageLog.findMany({
+        where: {
+          taskId: taskId,
+          stageId: { in: dependsOnStageIds },
+          exitedAt: { not: null },
+        },
+        select: { stageId: true },
+      });
+
+      const completedStageIds = completedStageLogs.map((log: any) => log.stageId);
+      const allDependenciesMet = dependsOnStageIds.every((depId: any) =>
+        completedStageIds.includes(depId)
+      );
+
+      if (allDependenciesMet) {
+        availableStages.push(stage);
+      }
+    }
+
+    return availableStages;
+  } catch (error) {
+    console.error("Error getting available next stages:", error);
+    return [];
+  }
+}
+
+/**
+ * Get all previous stages for a task (for reversion).
+ * Returns stages that this task has already been through.
+ */
+export async function getPreviousStages(taskId: string) {
+  await getCurrentUser();
+
+  try {
+    // Get all unique stages this task has been through
+    const stageLogs = await prisma.taskStageLog.findMany({
+      where: {
+        taskId: taskId,
+        exitedAt: { not: null }, // Only completed stages
+      },
+      include: {
+        stage: true,
+      },
+      orderBy: { exitedAt: "desc" },
+    });
+
+    // Get unique stages (in case task went through same stage multiple times)
+    const uniqueStages = Array.from(
+      new Map(stageLogs.map((log: any) => [log.stage.id, log.stage])).values()
+    );
+
+    return uniqueStages as any[];
+  } catch (error) {
+    console.error("Error getting previous stages:", error);
+    return [];
+  }
+}
+
+
+/**
+ * Advances a task to the next stage (forward movement).
+ * Validates that all dependencies are met before allowing the transition.
+ * This is the core of the workflow engine.
+ */
+export async function advanceTaskStage(
+  taskId: string,
+  nextStageId: string
+) {
+  const user = await getCurrentUser();
+  const currentUserId = user.id as string;
+
+  try {
+    // 1. Get all dependencies for the target stage
+    const dependencies = await prisma.stageDependency.findMany({
+      where: { stageId: nextStageId },
+      select: { dependsOnStageId: true },
+    });
+
+    // 2. Check if all dependencies are met
+    if (dependencies.length > 0) {
+      const dependsOnStageIds = dependencies.map((d: any) => d.dependsOnStageId);
+
+      // Find all stage logs for this task where the dependency stages have been completed
+      const completedStageLogs = await prisma.taskStageLog.findMany({
+        where: {
+          taskId: taskId,
+          stageId: { in: dependsOnStageIds },
+          exitedAt: { not: null }, // exitedAt being set means the stage is complete
+        },
+        select: { stageId: true },
+      });
+
+      // Check if all required dependency stages have been completed
+      const completedStageIds = completedStageLogs.map((log: any) => log.stageId);
+      const allDependenciesMet = dependsOnStageIds.every((depId: any) =>
+        completedStageIds.includes(depId)
+      );
+
+      if (!allDependenciesMet) {
+        return {
+          error:
+            "Cannot advance: Not all dependency stages have been completed yet.",
+        };
+      }
+    }
+
+    // 3. Run the atomic transition within a transaction
+    await prisma.$transaction(async (tx: any) => {
+      // Get the current task
+      const task = await tx.task.findUnique({
+        where: { id: taskId },
+        select: { id: true, currentStageId: true },
+      });
+
+      if (!task || !task.currentStageId) {
+        throw new Error("Task not found or has no current stage.");
+      }
+
+      // 4. Find and "close" the current stage log
+      const currentLog = await tx.taskStageLog.findFirst({
+        where: {
+          taskId: taskId,
+          stageId: task.currentStageId,
+          exitedAt: null,
+        },
+        orderBy: { enteredAt: "desc" },
+      });
+
+      if (currentLog) {
+        await tx.taskStageLog.update({
+          where: { id: currentLog.id },
+          data: { exitedAt: new Date() },
+        });
+      }
+
+      // 5. Create the new stage log
+      await tx.taskStageLog.create({
+        data: {
+          taskId: taskId,
+          stageId: nextStageId,
+          enteredAt: new Date(),
+          exitedAt: null,
+          userId: currentUserId,
+        },
+      });
+
+      // 6. Update the task's current stage pointer
+      await tx.task.update({
+        where: { id: taskId },
+        data: {
+          currentStageId: nextStageId,
+          status: "IN_PROGRESS",
+        },
+      });
+    });
+
+    // Revalidate paths
+    revalidatePath(`/admin/tasks/${taskId}`);
+    revalidatePath(`/admin/tasks`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error advancing task stage:", error);
+    return {
+      error: error instanceof Error ? error.message : "Failed to advance task",
+    };
+  }
+}
+
+/**
+ * Reverts a task to a previous stage (backward movement / rejection loop).
+ * This does NOT check dependencies - it's for when QC/Review rejects work.
+ */
+export async function revertTaskStage(
+  taskId: string,
+  revertToStageId: string,
+  comment: string
+) {
+  const user = await getCurrentUser();
+  const currentUserId = user.id as string;
+
+  if (!comment || comment.trim().length === 0) {
+    return { error: "A comment explaining the reversion is required." };
+  }
+
+  try {
+    await prisma.$transaction(async (tx: any) => {
+      // Get the current task
+      const task = await tx.task.findUnique({
+        where: { id: taskId },
+        select: { id: true, currentStageId: true },
+      });
+
+      if (!task || !task.currentStageId) {
+        throw new Error("Task not found or has no current stage.");
+      }
+
+      // 1. Find and "close" the current log
+      const currentLog = await tx.taskStageLog.findFirst({
+        where: {
+          taskId: taskId,
+          stageId: task.currentStageId,
+          exitedAt: null,
+        },
+        orderBy: { enteredAt: "desc" },
+      });
+
+      if (currentLog) {
+        await tx.taskStageLog.update({
+          where: { id: currentLog.id },
+          data: { exitedAt: new Date() },
+        });
+      }
+
+      // 2. Create the new log for the reverted stage
+      await tx.taskStageLog.create({
+        data: {
+          taskId: taskId,
+          stageId: revertToStageId,
+          enteredAt: new Date(),
+          exitedAt: null,
+          userId: currentUserId,
+        },
+      });
+
+      // 3. Update the task's current stage pointer
+      await tx.task.update({
+        where: { id: taskId },
+        data: { currentStageId: revertToStageId },
+      });
+
+      // 4. Add the rejection comment
+      await tx.taskComment.create({
+        data: {
+          content: `**REVERTED TO PREVIOUS STAGE:** ${comment}`,
+          taskId: taskId,
+          userId: currentUserId,
+        },
+      });
+    });
+
+    // Revalidate paths
+    revalidatePath(`/admin/tasks/${taskId}`);
+    revalidatePath(`/admin/tasks`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error reverting task stage:", error);
+    return {
+      error: error instanceof Error ? error.message : "Failed to revert task",
+    };
+  }
+}
