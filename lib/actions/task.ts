@@ -485,9 +485,19 @@ export async function advanceTaskStage(
       });
     });
 
+    // Get task to find projectId for revalidation
+    const updatedTask = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: { projectId: true },
+    });
+
     // Revalidate paths
     revalidatePath(`/admin/tasks/${taskId}`);
     revalidatePath(`/admin/tasks`);
+    revalidatePath(`/tasks/${taskId}`);
+    if (updatedTask) {
+      revalidatePath(`/projects/${updatedTask.projectId}`);
+    }
 
     return { success: true };
   } catch (error) {
@@ -570,9 +580,19 @@ export async function revertTaskStage(
       });
     });
 
+    // Get task to find projectId for revalidation
+    const updatedTask = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: { projectId: true },
+    });
+
     // Revalidate paths
     revalidatePath(`/admin/tasks/${taskId}`);
     revalidatePath(`/admin/tasks`);
+    revalidatePath(`/tasks/${taskId}`);
+    if (updatedTask) {
+      revalidatePath(`/projects/${updatedTask.projectId}`);
+    }
 
     return { success: true };
   } catch (error) {
@@ -581,4 +601,118 @@ export async function revertTaskStage(
       error: error instanceof Error ? error.message : "Failed to revert task",
     };
   }
+}
+
+// ========== Collaboration Actions (Comments & Artifacts) ==========
+
+/**
+ * Add a comment to a task
+ */
+export async function addComment(taskId: string, content: string) {
+  const user = await getCurrentUser();
+  const userId = user.id as string;
+
+  if (!content || content.trim().length === 0) {
+    return { error: "Comment content is required" };
+  }
+
+  try {
+    const comment = await prisma.taskComment.create({
+      data: {
+        taskId,
+        userId,
+        content: content.trim(),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+      },
+    });
+
+    // Revalidate the task detail pages
+    revalidatePath(`/tasks/${taskId}`);
+    revalidatePath(`/admin/tasks/${taskId}`);
+
+    return { success: true, comment };
+  } catch (error) {
+    console.error("Error adding comment:", error);
+    return {
+      error: error instanceof Error ? error.message : "Failed to add comment",
+    };
+  }
+}
+
+/**
+ * Add a link artifact to a task (Google Drive, Figma, etc.)
+ */
+export async function addLinkArtifact(
+  taskId: string,
+  title: string,
+  url: string,
+  type: "DOCUMENT" | "IMAGE" | "VIDEO" | "FIGMA" | "OTHER"
+) {
+  const user = await getCurrentUser();
+  const userId = user.id as string;
+
+  if (!title || title.trim().length === 0) {
+    return { error: "Artifact title is required" };
+  }
+
+  if (!url || url.trim().length === 0) {
+    return { error: "Artifact URL is required" };
+  }
+
+  try {
+    const artifact = await prisma.taskArtifact.create({
+      data: {
+        taskId,
+        userId,
+        title: title.trim(),
+        url: url.trim(),
+        type,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+      },
+    });
+
+    // Revalidate the task detail pages
+    revalidatePath(`/tasks/${taskId}`);
+    revalidatePath(`/admin/tasks/${taskId}`);
+
+    return { success: true, artifact };
+  } catch (error) {
+    console.error("Error adding artifact:", error);
+    return {
+      error: error instanceof Error ? error.message : "Failed to add artifact",
+    };
+  }
+}
+
+/**
+ * Add a file artifact to a task (from Cloudinary upload).
+ * This is called AFTER the client has already uploaded the file to Cloudinary.
+ */
+export async function addFileArtifact(
+  taskId: string,
+  title: string,
+  url: string,
+  type: "DOCUMENT" | "IMAGE" | "VIDEO" | "FIGMA" | "OTHER"
+) {
+  // This function is identical to addLinkArtifact
+  // The difference is semantic: it's called after a Cloudinary upload
+  return addLinkArtifact(taskId, title, url, type);
 }
