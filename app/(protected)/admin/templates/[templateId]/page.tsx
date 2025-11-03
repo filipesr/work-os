@@ -1,0 +1,73 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import {
+  getWorkflowTemplate,
+  updateWorkflowTemplate,
+  deleteWorkflowTemplate,
+} from "@/lib/actions/template";
+import { getTeamsForSelect } from "@/lib/actions/stage";
+import { StagesList } from "@/components/admin/StagesList";
+import { CreateStageForm } from "@/components/admin/CreateStageForm";
+import { TemplateHeader } from "@/components/admin/TemplateHeader";
+
+export default async function TemplateEditorPage({
+  params,
+}: {
+  params: { templateId: string };
+}) {
+  const template = await getWorkflowTemplate(params.templateId);
+  const teams = await getTeamsForSelect();
+
+  if (!template) {
+    notFound();
+  }
+
+  return (
+    <div className="container mx-auto p-8">
+      {/* Back link */}
+      <Link
+        href="/admin/templates"
+        className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6"
+      >
+        <svg
+          className="w-5 h-5 mr-2"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Templates
+      </Link>
+
+      {/* Template Header - Name, Description, Delete */}
+      <TemplateHeader template={template} />
+
+      {/* Stages Section */}
+      <div className="mt-8 bg-white shadow rounded-lg p-6">
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold mb-2">Workflow Stages</h2>
+          <p className="text-gray-600">
+            Define the stages (steps) of this workflow. Tasks will flow through these
+            stages in order, respecting any dependencies you configure.
+          </p>
+        </div>
+
+        {/* Create New Stage Form */}
+        <CreateStageForm templateId={template.id} teams={teams} />
+
+        {/* Stages List */}
+        <div className="mt-8">
+          <StagesList
+            stages={template.stages}
+            templateId={template.id}
+            teams={teams}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
