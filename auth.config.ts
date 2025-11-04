@@ -24,6 +24,14 @@ export const authConfig = {
       }
       return session
     },
+    async redirect({ url, baseUrl }) {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url
+      // Default redirect to home page after sign in
+      return baseUrl
+    },
   },
   pages: {
     signIn: "/auth/signin",
