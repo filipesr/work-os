@@ -18,10 +18,10 @@ export async function Navbar() {
         <div className="flex justify-between h-16">
           <div className="flex space-x-8">
             <Link
-              href="/"
+              href="/dashboard"
               className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
             >
-              Home
+              Dashboard
             </Link>
 
             {/* Admin Section - Manager or Admin */}
