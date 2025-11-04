@@ -86,9 +86,12 @@ export async function Navbar() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <span className="text-sm font-medium text-muted-foreground">
+            <Link
+              href="/account"
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
               {session.user.name} ({userRole})
-            </span>
+            </Link>
             <form action={signOutAction}>
               <button
                 type="submit"
