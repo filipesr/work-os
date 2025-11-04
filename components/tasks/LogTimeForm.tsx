@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { logTime } from "@/lib/actions/task";
 import { Clock, Loader2, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 
 interface LogTimeFormProps {
   taskId: string;
@@ -21,7 +21,6 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
   );
   const [description, setDescription] = useState("");
   const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,20 +28,12 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
     const hours = parseFloat(hoursSpent);
 
     if (!hours || hours <= 0) {
-      toast({
-        title: "Erro",
-        description: "Por favor, insira um valor válido para as horas gastas",
-        variant: "destructive",
-      });
+      toast.error("Por favor, insira um valor válido para as horas gastas");
       return;
     }
 
     if (!logDate) {
-      toast({
-        title: "Erro",
-        description: "Por favor, selecione uma data",
-        variant: "destructive",
-      });
+      toast.error("Por favor, selecione uma data");
       return;
     }
 
@@ -55,16 +46,9 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
       );
 
       if (result.error) {
-        toast({
-          title: "Erro ao registrar tempo",
-          description: result.error,
-          variant: "destructive",
-        });
+        toast.error(result.error);
       } else {
-        toast({
-          title: "Tempo registrado",
-          description: `${hours} hora(s) registrada(s) com sucesso`,
-        });
+        toast.success(`${hours} hora(s) registrada(s) com sucesso`);
         // Clear the form
         setHoursSpent("");
         setLogDate(new Date().toISOString().split("T")[0]);

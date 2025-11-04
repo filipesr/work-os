@@ -4,16 +4,10 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 import { addLinkArtifact } from "@/lib/actions/task";
 import { Link2, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 import { ArtifactType } from "@prisma/client";
 
 interface AddArtifactFormProps {
@@ -34,17 +28,12 @@ export function AddArtifactForm({ taskId, userId }: AddArtifactFormProps) {
   const [url, setUrl] = useState("");
   const [type, setType] = useState<ArtifactType>("OTHER");
   const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title.trim() || !url.trim()) {
-      toast({
-        title: "Erro",
-        description: "Título e URL são obrigatórios",
-        variant: "destructive",
-      });
+      toast.error("Título e URL são obrigatórios");
       return;
     }
 
@@ -52,11 +41,7 @@ export function AddArtifactForm({ taskId, userId }: AddArtifactFormProps) {
     try {
       new URL(url);
     } catch {
-      toast({
-        title: "Erro",
-        description: "URL inválida",
-        variant: "destructive",
-      });
+      toast.error("URL inválida");
       return;
     }
 
@@ -64,16 +49,9 @@ export function AddArtifactForm({ taskId, userId }: AddArtifactFormProps) {
       const result = await addLinkArtifact(taskId, title, url, type);
 
       if (result.error) {
-        toast({
-          title: "Erro ao adicionar artefato",
-          description: result.error,
-          variant: "destructive",
-        });
+        toast.error(result.error);
       } else {
-        toast({
-          title: "Artefato adicionado",
-          description: "O link foi adicionado com sucesso",
-        });
+        toast.success("O link foi adicionado com sucesso");
         // Clear the form
         setTitle("");
         setUrl("");
@@ -108,20 +86,16 @@ export function AddArtifactForm({ taskId, userId }: AddArtifactFormProps) {
             Tipo
           </Label>
           <Select
+            id="artifact-type"
             value={type}
-            onValueChange={(value) => setType(value as ArtifactType)}
+            onChange={(e) => setType(e.target.value as ArtifactType)}
             disabled={isPending}
           >
-            <SelectTrigger id="artifact-type">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {artifactTypeOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
+            {artifactTypeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </Select>
         </div>
       </div>

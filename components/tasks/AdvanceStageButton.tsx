@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { advanceTaskStage } from "@/lib/actions/task";
+import { Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface Stage {
   id: string;
@@ -19,35 +21,33 @@ export function AdvanceStageButton({
   availableStages,
 }: AdvanceStageButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   if (availableStages.length === 0) {
     return null;
   }
 
   const handleAdvance = async (stageId: string) => {
-    setIsSubmitting(true);
-    setError(null);
+    startTransition(async () => {
+      const result = await advanceTaskStage(taskId, stageId);
 
-    const result = await advanceTaskStage(taskId, stageId);
-
-    if (result?.error) {
-      setError(result.error);
-      setIsSubmitting(false);
-    } else {
-      // Success - page will be revalidated
-      setIsOpen(false);
-      setIsSubmitting(false);
-    }
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Tarefa avançada para a próxima etapa");
+        setIsOpen(false);
+      }
+    });
   };
 
   return (
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+        disabled={isPending}
+        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       >
+        {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
         Advance Stage →
       </button>
 
@@ -62,18 +62,12 @@ export function AdvanceStageButton({
               dependencies are shown.
             </p>
 
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm">
-                {error}
-              </div>
-            )}
-
             <div className="space-y-2 mb-6">
               {availableStages.map((stage) => (
                 <button
                   key={stage.id}
                   onClick={() => handleAdvance(stage.id)}
-                  disabled={isSubmitting}
+                  disabled={isPending}
                   className="w-full text-left p-3 border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <div className="flex items-center gap-3">
@@ -81,6 +75,7 @@ export function AdvanceStageButton({
                       {stage.order}
                     </span>
                     <span className="font-medium">{stage.name}</span>
+                    {isPending && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
                   </div>
                 </button>
               ))}
@@ -89,7 +84,7 @@ export function AdvanceStageButton({
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setIsOpen(false)}
-                disabled={isSubmitting}
+                disabled={isPending}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
               >
                 Cancel

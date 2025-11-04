@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { addComment } from "@/lib/actions/task";
 import { MessageSquare, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 
 interface AddCommentFormProps {
   taskId: string;
@@ -15,17 +15,12 @@ interface AddCommentFormProps {
 export function AddCommentForm({ taskId, userId }: AddCommentFormProps) {
   const [content, setContent] = useState("");
   const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!content.trim()) {
-      toast({
-        title: "Erro",
-        description: "O comentário não pode estar vazio",
-        variant: "destructive",
-      });
+      toast.error("O comentário não pode estar vazio");
       return;
     }
 
@@ -33,16 +28,9 @@ export function AddCommentForm({ taskId, userId }: AddCommentFormProps) {
       const result = await addComment(taskId, content);
 
       if (result.error) {
-        toast({
-          title: "Erro ao adicionar comentário",
-          description: result.error,
-          variant: "destructive",
-        });
+        toast.error(result.error);
       } else {
-        toast({
-          title: "Comentário adicionado",
-          description: "Seu comentário foi adicionado com sucesso",
-        });
+        toast.success("Comentário adicionado com sucesso");
         setContent(""); // Clear the form
       }
     });
