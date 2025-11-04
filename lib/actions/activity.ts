@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
+import { requireMemberOrHigher, requireManagerOrAdmin } from "@/lib/permissions";
 
 // Helper to get current user
 async function getCurrentUser() {
@@ -21,7 +22,7 @@ export async function startWorkOnTask(
   taskId: string,
   currentStageId: string
 ) {
-  const user = await getCurrentUser();
+  const user = await requireMemberOrHigher();
   const userId = user.id as string;
 
   if (!taskId || !currentStageId) {
@@ -87,7 +88,7 @@ export async function startWorkOnTask(
  * This is called when the user manually stops the task they are working on.
  */
 export async function stopWorkOnTask(activeLogId: string, taskId: string) {
-  const user = await getCurrentUser();
+  const user = await requireMemberOrHigher();
 
   if (!activeLogId) {
     return { error: "Missing active log ID" };
@@ -134,6 +135,7 @@ export async function stopWorkOnTask(activeLogId: string, taskId: string) {
  * This is called from the dashboard every 10 seconds.
  */
 export async function getActiveWorkLogs() {
+  await requireManagerOrAdmin();
   try {
     const activeLogs = await prisma.activityLog.findMany({
       where: { endedAt: null },

@@ -1,7 +1,9 @@
 import { revalidatePath } from "next/cache"
 import prisma from "@/lib/prisma"
+import { requireManagerOrAdmin } from "@/lib/permissions"
 
 async function getClients() {
+  await requireManagerOrAdmin()
   return await prisma.client.findMany({
     include: {
       _count: {
@@ -14,6 +16,7 @@ async function getClients() {
 
 async function createClient(formData: FormData) {
   "use server"
+  await requireManagerOrAdmin()
   const name = formData.get("name") as string
   if (!name) return
 
@@ -26,6 +29,7 @@ async function createClient(formData: FormData) {
 
 async function updateClient(formData: FormData) {
   "use server"
+  await requireManagerOrAdmin()
   const id = formData.get("id") as string
   const name = formData.get("name") as string
   if (!id || !name) return
@@ -40,6 +44,7 @@ async function updateClient(formData: FormData) {
 
 async function deleteClient(formData: FormData) {
   "use server"
+  await requireManagerOrAdmin()
   const id = formData.get("id") as string
   if (!id) return
 

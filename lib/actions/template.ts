@@ -3,16 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { auth } from "@/auth";
-
-// Helper to check if user is admin
-async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
-    throw new Error("Unauthorized: Admin access required");
-  }
-  return session.user;
-}
+import { requireAdmin } from "@/lib/permissions";
 
 // ========== WorkflowTemplate Actions ==========
 

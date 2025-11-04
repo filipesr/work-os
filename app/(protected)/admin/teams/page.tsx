@@ -1,7 +1,9 @@
 import { revalidatePath } from "next/cache"
 import prisma from "@/lib/prisma"
+import { requireAdmin } from "@/lib/permissions"
 
 async function getTeams() {
+  await requireAdmin()
   return await prisma.team.findMany({
     include: {
       _count: {
@@ -14,6 +16,7 @@ async function getTeams() {
 
 async function createTeam(formData: FormData) {
   "use server"
+  await requireAdmin()
   const name = formData.get("name") as string
   if (!name) return
 
@@ -26,6 +29,7 @@ async function createTeam(formData: FormData) {
 
 async function updateTeam(formData: FormData) {
   "use server"
+  await requireAdmin()
   const id = formData.get("id") as string
   const name = formData.get("name") as string
   if (!id || !name) return
@@ -40,6 +44,7 @@ async function updateTeam(formData: FormData) {
 
 async function deleteTeam(formData: FormData) {
   "use server"
+  await requireAdmin()
   const id = formData.get("id") as string
   if (!id) return
 
