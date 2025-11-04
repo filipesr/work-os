@@ -14,6 +14,7 @@ import { AdvanceStageButton } from "./AdvanceStageButton";
 import { RevertStageButton } from "./RevertStageButton";
 import { LogTimeButton } from "./LogTimeButton";
 import { ActivityButton } from "./ActivityButton";
+import { StageWorkflowVisualization } from "./StageWorkflowVisualization";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -44,6 +45,7 @@ interface TaskDetailViewProps {
   previousStages: TemplateStage[];
   currentUserId: string;
   activeLog: ActiveLog | null;
+  allTemplateStages: (TemplateStage & { defaultTeam: { id: string; name: string } | null })[];
 }
 
 const priorityConfig = {
@@ -67,6 +69,7 @@ export function TaskDetailView({
   previousStages,
   currentUserId,
   activeLog,
+  allTemplateStages,
 }: TaskDetailViewProps) {
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
 
@@ -285,31 +288,13 @@ export function TaskDetailView({
           </CardContent>
         </Card>
 
-        {/* Stage History */}
-        {task.stageLogs.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Histórico de Etapas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {task.stageLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="text-sm border-l-2 border-primary pl-3 py-1"
-                  >
-                    <p className="font-medium">{log.stage.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {log.user.name || log.user.email}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(log.enteredAt), "dd/MM/yyyy HH:mm")}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        {/* Workflow Visualization */}
+        {allTemplateStages.length > 0 && (
+          <StageWorkflowVisualization
+            currentStageId={task.currentStageId}
+            allStages={allTemplateStages}
+            stageLogs={task.stageLogs}
+          />
         )}
       </div>
     </div>

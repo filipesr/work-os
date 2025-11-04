@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 
 export default async function AccountPage() {
   const session = await auth();
@@ -55,7 +56,7 @@ export default async function AccountPage() {
           <div className="flex justify-center">
             {user.image ? (
               <Image
-                src={user.image}
+                src={getProxiedImageUrl(user.image) || "/default-avatar.png"}
                 alt={user.name || "User avatar"}
                 width={120}
                 height={120}

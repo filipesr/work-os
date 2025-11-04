@@ -61,67 +61,113 @@ export function RevertStageButton({
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-semibold mb-2 text-orange-900">
-              Revert Task to Previous Stage
-            </h3>
-            <p className="text-gray-600 mb-6 text-sm">
-              Send this task back to a previous stage (e.g., for QC rejection).
-              A comment is required to explain why.
-            </p>
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 border border-gray-200">
+            {/* Header */}
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                Reverter para Etapa Anterior
+              </h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Envie esta tarefa de volta para uma etapa anterior (ex: rejeição do QC).
+                Um comentário explicativo é obrigatório.
+              </p>
+            </div>
+
+            {/* Info Badge */}
+            <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <p className="text-xs text-orange-800">
+                <strong>⚠️ Atenção:</strong> Esta ação marcará a etapa atual como revertida e criará um novo log de entrada na etapa anterior.
+              </p>
+            </div>
 
             {/* Stage Selection */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Revert to stage:
+              <label className="block text-sm font-semibold text-gray-900 mb-3">
+                Reverter para a etapa:
               </label>
-              <div className="space-y-2">
-                {previousStages.map((stage) => (
-                  <label
+              <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                {previousStages.map((stage, index) => (
+                  <button
                     key={stage.id}
-                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                    type="button"
+                    onClick={() => setSelectedStageId(stage.id)}
+                    disabled={isPending}
+                    className={`w-full text-left p-4 border-2 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group shadow-sm hover:shadow-md ${
                       selectedStageId === stage.id
-                        ? "bg-orange-50 border-orange-300"
-                        : "border-gray-300 hover:bg-gray-50"
-                    } ${isPending ? "opacity-50 cursor-not-allowed" : ""}`}
+                        ? "border-orange-400 bg-gradient-to-r from-orange-50 to-red-50"
+                        : "border-gray-200 hover:border-orange-300 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50"
+                    }`}
                   >
-                    <input
-                      type="radio"
-                      name="revertStage"
-                      value={stage.id}
-                      checked={selectedStageId === stage.id}
-                      onChange={() => setSelectedStageId(stage.id)}
-                      disabled={isPending}
-                      className="w-4 h-4 text-orange-600"
-                    />
-                    <div className="ml-3 flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 font-semibold text-xs">
-                        {stage.order}
-                      </span>
-                      <span className="font-medium">{stage.name}</span>
+                    <div className="flex items-start gap-3">
+                      {/* Order Badge */}
+                      <div className="flex-shrink-0">
+                        <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-600 text-white font-bold text-sm shadow-md">
+                          {stage.order}
+                        </span>
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-gray-900 group-hover:text-orange-700 transition-colors">
+                            {stage.name}
+                          </span>
+                          {index === 0 && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                              Mais recente
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {index === 0
+                            ? "Etapa anterior mais recente"
+                            : "Etapa anterior no histórico"}
+                        </p>
+                      </div>
+
+                      {/* Selected indicator */}
+                      {selectedStageId === stage.id && (
+                        <div className="flex-shrink-0">
+                          <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </label>
+                  </button>
                 ))}
               </div>
             </div>
 
             {/* Comment */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reason for reversion: *
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Motivo da reversão: *
               </label>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                rows={3}
+                rows={4}
                 disabled={isPending}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
-                placeholder="Explain why this task is being reverted..."
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 disabled:opacity-50 transition-all"
+                placeholder="Explique o motivo da reversão... (ex: 'Encontrados erros de qualidade que precisam ser corrigidos')"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Este comentário será registrado no histórico da tarefa
+              </p>
             </div>
 
-            <div className="flex gap-2 justify-end">
+            {/* Footer */}
+            <div className="flex gap-3 justify-between items-center pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500">
+                {previousStages.length === 1
+                  ? "1 etapa anterior disponível"
+                  : `${previousStages.length} etapas anteriores disponíveis`}
+              </p>
+              <div className="flex gap-2">
               <button
                 onClick={() => {
                   setIsOpen(false);
@@ -141,6 +187,7 @@ export function RevertStageButton({
                 {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isPending ? "Reverting..." : "Revert Task"}
               </button>
+              </div>
             </div>
           </div>
         </div>

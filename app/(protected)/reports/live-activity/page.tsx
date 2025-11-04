@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Activity, Clock, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 
 // Define a type for the data
 type ActiveLogData = Awaited<ReturnType<typeof getActiveWorkLogs>>;
@@ -124,7 +125,7 @@ export default function LiveActivityPage() {
                     <div className="flex items-center gap-4">
                       {/* User Avatar */}
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={log.user.image || undefined} />
+                        <AvatarImage src={getProxiedImageUrl(log.user.image) || undefined} />
                         <AvatarFallback>
                           {log.user.name?.charAt(0).toUpperCase() || "?"}
                         </AvatarFallback>

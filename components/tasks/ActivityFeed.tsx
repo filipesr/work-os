@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Image, Video, Figma, File, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 
 type CommentWithUser = TaskComment & {
   user: Pick<User, "id" | "name" | "email" | "image">;
@@ -92,7 +93,7 @@ function CommentItem({ comment }: { comment: CommentWithUser }) {
       }`}
     >
       <Avatar className="h-8 w-8">
-        <AvatarImage src={comment.user.image || undefined} />
+        <AvatarImage src={getProxiedImageUrl(comment.user.image) || undefined} />
         <AvatarFallback>
           {comment.user.name?.charAt(0).toUpperCase() || "?"}
         </AvatarFallback>
@@ -129,7 +130,7 @@ function ArtifactItem({ artifact }: { artifact: ArtifactWithUser }) {
   return (
     <div className="flex gap-3 p-3 rounded-lg bg-muted/50">
       <Avatar className="h-8 w-8">
-        <AvatarImage src={artifact.user.image || undefined} />
+        <AvatarImage src={getProxiedImageUrl(artifact.user.image) || undefined} />
         <AvatarFallback>
           {artifact.user.name?.charAt(0).toUpperCase() || "?"}
         </AvatarFallback>

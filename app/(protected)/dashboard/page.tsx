@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { TaskStatus, TaskPriority } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ClaimTaskButton } from "@/components/tasks/ClaimTaskButton";
 
 // Types for our task data
 type TaskWithDetails = {
@@ -18,6 +19,14 @@ type TaskWithDetails = {
   currentStage: {
     name: string;
   } | null;
+};
+
+// User statistics type
+type UserStats = {
+  activeTasks: number;
+  completedThisWeek: number;
+  hoursLoggedToday: number;
+  upcomingDeadlines: number;
 };
 
 // Priority badge component
@@ -87,19 +96,59 @@ function formatDate(date: Date | null): string {
   });
 }
 
-// Task row component
-function TaskRow({ task }: { task: TaskWithDetails }) {
+// Stats Card Component
+function StatsCard({ stats }: { stats: UserStats }) {
+  return (
+    <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="bg-card p-4 rounded-lg border shadow-sm">
+        <p className="text-sm text-muted-foreground mb-1">Tarefas Ativas</p>
+        <p className="text-3xl font-bold text-foreground">{stats.activeTasks}</p>
+      </div>
+      <div className="bg-card p-4 rounded-lg border shadow-sm">
+        <p className="text-sm text-muted-foreground mb-1">Concluídas (Semana)</p>
+        <p className="text-3xl font-bold text-green-600">{stats.completedThisWeek}</p>
+      </div>
+      <div className="bg-card p-4 rounded-lg border shadow-sm">
+        <p className="text-sm text-muted-foreground mb-1">Horas (Hoje)</p>
+        <p className="text-3xl font-bold text-blue-600">{stats.hoursLoggedToday.toFixed(1)}h</p>
+      </div>
+      <div className="bg-card p-4 rounded-lg border shadow-sm">
+        <p className="text-sm text-muted-foreground mb-1">Prazos Próximos</p>
+        <p className="text-3xl font-bold text-orange-600">{stats.upcomingDeadlines}</p>
+      </div>
+    </div>
+  );
+}
+
+// Task row component with visual urgency indicators
+function TaskRow({ task, showClaimButton = false }: { task: TaskWithDetails; showClaimButton?: boolean }) {
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
+  const isDueSoon = task.dueDate && !isOverdue &&
+    new Date(task.dueDate).getTime() - Date.now() < 2 * 24 * 60 * 60 * 1000; // 2 days
+  const isNew = Date.now() - new Date(task.createdAt).getTime() < 24 * 60 * 60 * 1000; // 24 hours
 
   return (
-    <tr className="hover:bg-muted/50 transition-colors border-b border-border">
+    <tr className={`
+      hover:bg-muted/50 transition-colors border-b border-border
+      ${isOverdue ? 'bg-red-50 dark:bg-red-950/20' : ''}
+      ${isDueSoon && !isOverdue ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''}
+    `}>
       <td className="px-4 py-3">
-        <Link
-          href={`/tasks/${task.id}`}
-          className="text-sm font-medium text-primary hover:underline"
-        >
-          {task.title}
-        </Link>
+        <div className="flex items-center gap-2">
+          {isOverdue && <span title="Tarefa atrasada" className="text-base">🔥</span>}
+          {isDueSoon && !isOverdue && <span title="Prazo próximo" className="text-base">⚠️</span>}
+          <Link
+            href={`/tasks/${task.id}`}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            {task.title}
+          </Link>
+          {isNew && (
+            <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded dark:bg-blue-900 dark:text-blue-200">
+              NOVO
+            </span>
+          )}
+        </div>
       </td>
       <td className="px-4 py-3">
         <span className="text-sm text-muted-foreground">{task.project.name}</span>
@@ -120,6 +169,11 @@ function TaskRow({ task }: { task: TaskWithDetails }) {
           {formatDate(task.dueDate)}
         </span>
       </td>
+      {showClaimButton && (
+        <td className="px-4 py-3">
+          <ClaimTaskButton taskId={task.id} />
+        </td>
+      )}
     </tr>
   );
 }
@@ -134,7 +188,7 @@ function EmptyState({ message }: { message: string }) {
 }
 
 // TaskList component
-function TaskList({ tasks, title }: { tasks: TaskWithDetails[]; title: string }) {
+function TaskList({ tasks, title, showClaimButton = false }: { tasks: TaskWithDetails[]; title: string; showClaimButton?: boolean }) {
   return (
     <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
       {/* Header */}
@@ -177,11 +231,16 @@ function TaskList({ tasks, title }: { tasks: TaskWithDetails[]; title: string })
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Data de Entrega
                 </th>
+                {showClaimButton && (
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Ação
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
               {tasks.map((task) => (
-                <TaskRow key={task.id} task={task} />
+                <TaskRow key={task.id} task={task} showClaimButton={showClaimButton} />
               ))}
             </tbody>
           </table>
@@ -202,11 +261,45 @@ export default async function DashboardPage() {
 
   // @ts-ignore - Custom session fields
   const userId = session.user.id;
-  // @ts-ignore - Custom session fields
-  const teamId = session.user.teamId;
 
-  // Parallel data fetching for both widgets
-  const [myActiveTasks, teamBacklogTasks] = await Promise.all([
+  // 🔥 FIX CRÍTICO: Buscar teamId atual do banco de dados
+  // Resolve problema de sessão desatualizada quando admin adiciona usuário ao time
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { teamId: true }
+  });
+  const teamId = currentUser?.teamId;
+
+  // Validação: usuário sem time atribuído
+  if (!teamId) {
+    return (
+      <div className="container mx-auto py-6 px-4">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground">
+            Olá, {session.user.name?.split(" ")[0] || "Usuário"}!
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Você ainda não foi atribuído a um time.
+          </p>
+        </div>
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded dark:bg-yellow-950/20">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <span className="text-xl">⚠️</span>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700 dark:text-yellow-200">
+                <strong>Aguardando configuração:</strong> Entre em contato com o administrador para ter acesso às tarefas da sua equipe.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Parallel data fetching for widgets and statistics
+  const [myActiveTasks, teamBacklogTasks, stats] = await Promise.all([
     // Query 1: "Minhas Tarefas Ativas"
     // Fetches tasks *assigned to me* that are not completed.
     prisma.task.findMany({
@@ -237,12 +330,60 @@ export default async function DashboardPage() {
       },
       orderBy: { createdAt: "asc" }, // Oldest first
     }),
+
+    // Query 3: User Statistics
+    prisma.$transaction(async (tx) => {
+      const now = new Date();
+      const startOfToday = new Date(now.setHours(0, 0, 0, 0));
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
+      const [activeTasks, completedThisWeek, hoursResult, upcomingDeadlines] = await Promise.all([
+        tx.task.count({
+          where: {
+            assigneeId: userId,
+            status: { in: [TaskStatus.BACKLOG, TaskStatus.IN_PROGRESS, TaskStatus.PAUSED] }
+          }
+        }),
+        tx.task.count({
+          where: {
+            assigneeId: userId,
+            status: TaskStatus.COMPLETED,
+            completedAt: { gte: weekAgo }
+          }
+        }),
+        tx.timeLog.aggregate({
+          where: {
+            userId,
+            logDate: { gte: startOfToday }
+          },
+          _sum: { hoursSpent: true }
+        }),
+        tx.task.count({
+          where: {
+            assigneeId: userId,
+            status: { not: TaskStatus.COMPLETED },
+            dueDate: {
+              lte: threeDaysFromNow,
+              gte: now
+            }
+          }
+        })
+      ]);
+
+      return {
+        activeTasks,
+        completedThisWeek,
+        hoursLoggedToday: hoursResult._sum.hoursSpent || 0,
+        upcomingDeadlines
+      };
+    })
   ]);
 
   return (
     <div className="container mx-auto py-6 px-4">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground">
           Olá, {session.user.name?.split(" ")[0] || "Usuário"}!
         </h1>
@@ -251,13 +392,16 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {/* Statistics Cards */}
+      <StatsCard stats={stats} />
+
       {/* Dashboard Widgets */}
       <div className="space-y-8">
         {/* Widget 1: My Active Tasks */}
         <TaskList tasks={myActiveTasks} title="Minhas Tarefas Ativas" />
 
-        {/* Widget 2: Team Backlog */}
-        <TaskList tasks={teamBacklogTasks} title="Backlog da Equipe (Não Atribuído)" />
+        {/* Widget 2: Team Backlog - Com botão "Pegar Tarefa" */}
+        <TaskList tasks={teamBacklogTasks} title="Backlog da Equipe (Não Atribuído)" showClaimButton={true} />
       </div>
     </div>
   );

@@ -96,6 +96,17 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
     notFound();
   }
 
+  // Get all stages from the template for workflow visualization
+  const allTemplateStages = task.currentStage
+    ? await prisma.templateStage.findMany({
+        where: { templateId: task.currentStage.template.id },
+        include: {
+          defaultTeam: true,
+        },
+        orderBy: { order: "asc" },
+      })
+    : [];
+
   // Get available next and previous stages for State Machine controls
   // Also get the user's current active log (for activity tracking)
   const [availableNextStages, previousStages, activeLog] = await Promise.all([
@@ -112,6 +123,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
         previousStages={previousStages}
         currentUserId={session.user.id!}
         activeLog={activeLog}
+        allTemplateStages={allTemplateStages}
       />
     </div>
   );

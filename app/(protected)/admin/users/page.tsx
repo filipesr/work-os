@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma"
 import { UserRole } from "@prisma/client"
 import EditUserButton from "./edit-user-button"
 import { requireAdmin } from "@/lib/permissions"
+import { getProxiedImageUrl } from "@/lib/utils/image-proxy"
 
 async function getUsers() {
   await requireAdmin()
@@ -26,18 +27,43 @@ async function updateUser(formData: FormData) {
   await requireAdmin()
   const id = formData.get("id") as string
   const role = formData.get("role") as UserRole
-  const teamId = formData.get("teamId") as string | null
+  const newTeamId = formData.get("teamId") as string | null
   if (!id || !role) return
+
+  // ✅ VALIDATION: Check if user has active tasks when changing teams
+  const activeTasks = await prisma.task.findMany({
+    where: {
+      assigneeId: id,
+      status: { in: ["BACKLOG", "IN_PROGRESS", "PAUSED"] },
+    },
+    include: {
+      currentStage: {
+        select: { defaultTeamId: true },
+      },
+    },
+  })
+
+  // If changing team and has active tasks, automatically unassign them
+  if (activeTasks.length > 0) {
+    await prisma.task.updateMany({
+      where: {
+        assigneeId: id,
+        status: { in: ["BACKLOG", "IN_PROGRESS", "PAUSED"] },
+      },
+      data: { assigneeId: null }, // ✅ Desatribui tarefas automaticamente
+    })
+  }
 
   await prisma.user.update({
     where: { id },
     data: {
       role,
-      teamId: teamId || null,
+      teamId: newTeamId || null,
     },
   })
 
   revalidatePath("/admin/users")
+  revalidatePath("/dashboard") // ✅ Revalidate dashboard
 }
 
 export default async function UsersPage() {
@@ -82,7 +108,7 @@ export default async function UsersPage() {
                     {user.image && (
                       <img
                         className="h-10 w-10 rounded-full mr-3 border-2 border-border"
-                        src={user.image}
+                        src={getProxiedImageUrl(user.image) || undefined}
                         alt=""
                       />
                     )}
