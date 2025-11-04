@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { revertTaskStage } from "@/lib/actions/task";
+import { Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface Stage {
   id: string;
@@ -21,8 +23,7 @@ export function RevertStageButton({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   if (previousStages.length === 0) {
     return null;
@@ -30,33 +31,32 @@ export function RevertStageButton({
 
   const handleRevert = async () => {
     if (!selectedStageId || !comment.trim()) {
-      setError("Please select a stage and provide a comment.");
+      toast.error("Por favor, selecione uma etapa e forneça um comentário.");
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
+    startTransition(async () => {
+      const result = await revertTaskStage(taskId, selectedStageId, comment);
 
-    const result = await revertTaskStage(taskId, selectedStageId, comment);
-
-    if (result?.error) {
-      setError(result.error);
-      setIsSubmitting(false);
-    } else {
-      // Success - page will be revalidated
-      setIsOpen(false);
-      setIsSubmitting(false);
-      setComment("");
-      setSelectedStageId(null);
-    }
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Tarefa revertida para a etapa anterior");
+        setIsOpen(false);
+        setComment("");
+        setSelectedStageId(null);
+      }
+    });
   };
 
   return (
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+        disabled={isPending}
+        className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       >
+        {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
         ← Revert Stage
       </button>
 
@@ -71,12 +71,6 @@ export function RevertStageButton({
               A comment is required to explain why.
             </p>
 
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm">
-                {error}
-              </div>
-            )}
-
             {/* Stage Selection */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -90,7 +84,7 @@ export function RevertStageButton({
                       selectedStageId === stage.id
                         ? "bg-orange-50 border-orange-300"
                         : "border-gray-300 hover:bg-gray-50"
-                    }`}
+                    } ${isPending ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <input
                       type="radio"
@@ -98,6 +92,7 @@ export function RevertStageButton({
                       value={stage.id}
                       checked={selectedStageId === stage.id}
                       onChange={() => setSelectedStageId(stage.id)}
+                      disabled={isPending}
                       className="w-4 h-4 text-orange-600"
                     />
                     <div className="ml-3 flex items-center gap-2">
@@ -120,7 +115,8 @@ export function RevertStageButton({
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                disabled={isPending}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
                 placeholder="Explain why this task is being reverted..."
               />
             </div>
@@ -129,21 +125,21 @@ export function RevertStageButton({
               <button
                 onClick={() => {
                   setIsOpen(false);
-                  setError(null);
                   setComment("");
                   setSelectedStageId(null);
                 }}
-                disabled={isSubmitting}
+                disabled={isPending}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRevert}
-                disabled={isSubmitting || !selectedStageId || !comment.trim()}
-                className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isPending || !selectedStageId || !comment.trim()}
+                className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {isSubmitting ? "Reverting..." : "Revert Task"}
+                {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isPending ? "Reverting..." : "Revert Task"}
               </button>
             </div>
           </div>

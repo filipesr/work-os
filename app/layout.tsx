@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ToastProvider } from "@/components/toast-provider";
 
 export const metadata: Metadata = {
   title: "Work OS - Sistema de Gestão de Operações",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        {children}
+        <ToastProvider />
+      </body>
     </html>
   );
 }

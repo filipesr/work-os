@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { startWorkOnTask, stopWorkOnTask } from "@/lib/actions/activity";
 import { Play, Square, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 
 interface ActiveLog {
   id: string;
@@ -29,7 +29,6 @@ export function ActivityButton({
   activeLog,
 }: ActivityButtonProps) {
   const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
 
   // Check if this specific task is active
   const isThisTaskActive = activeLog?.taskId === taskId;
@@ -39,11 +38,7 @@ export function ActivityButton({
 
   const handleStart = () => {
     if (!currentStageId) {
-      toast({
-        title: "Erro",
-        description: "Esta tarefa não tem uma etapa atual definida",
-        variant: "destructive",
-      });
+      toast.error("Esta tarefa não tem uma etapa atual definida");
       return;
     }
 
@@ -51,21 +46,11 @@ export function ActivityButton({
       const result = await startWorkOnTask(taskId, currentStageId);
 
       if (result.error) {
-        toast({
-          title: "Erro ao iniciar trabalho",
-          description: result.error,
-          variant: "destructive",
-        });
+        toast.error(result.error);
       } else if (result.status === "already_active") {
-        toast({
-          title: "Já está trabalhando",
-          description: "Você já está trabalhando nesta tarefa",
-        });
+        toast.info("Você já está trabalhando nesta tarefa");
       } else {
-        toast({
-          title: "Trabalho iniciado",
-          description: `Você começou a trabalhar em "${taskTitle}"`,
-        });
+        toast.success(`Você começou a trabalhar em "${taskTitle}"`);
       }
     });
   };
@@ -77,16 +62,9 @@ export function ActivityButton({
       const result = await stopWorkOnTask(activeLog.id, taskId);
 
       if (result.error) {
-        toast({
-          title: "Erro ao parar trabalho",
-          description: result.error,
-          variant: "destructive",
-        });
+        toast.error(result.error);
       } else {
-        toast({
-          title: "Trabalho parado",
-          description: `Você parou de trabalhar em "${taskTitle}"`,
-        });
+        toast.success(`Você parou de trabalhar em "${taskTitle}"`);
       }
     });
   };
