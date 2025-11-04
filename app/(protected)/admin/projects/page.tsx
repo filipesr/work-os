@@ -1,7 +1,9 @@
 import { revalidatePath } from "next/cache"
 import prisma from "@/lib/prisma"
+import { requireManagerOrAdmin } from "@/lib/permissions"
 
 async function getProjects() {
+  await requireManagerOrAdmin()
   return await prisma.project.findMany({
     include: {
       client: true,
@@ -14,6 +16,7 @@ async function getProjects() {
 }
 
 async function getClients() {
+  await requireManagerOrAdmin()
   return await prisma.client.findMany({
     orderBy: { name: "asc" },
   })
@@ -21,6 +24,7 @@ async function getClients() {
 
 async function createProject(formData: FormData) {
   "use server"
+  await requireManagerOrAdmin()
   const name = formData.get("name") as string
   const clientId = formData.get("clientId") as string
   if (!name || !clientId) return
@@ -34,6 +38,7 @@ async function createProject(formData: FormData) {
 
 async function updateProject(formData: FormData) {
   "use server"
+  await requireManagerOrAdmin()
   const id = formData.get("id") as string
   const name = formData.get("name") as string
   const clientId = formData.get("clientId") as string
@@ -49,6 +54,7 @@ async function updateProject(formData: FormData) {
 
 async function deleteProject(formData: FormData) {
   "use server"
+  await requireManagerOrAdmin()
   const id = formData.get("id") as string
   if (!id) return
 

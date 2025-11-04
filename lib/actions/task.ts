@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
+import { requireMemberOrHigher, getSessionUser } from "@/lib/permissions";
 
 // Helper to get current user
 async function getCurrentUser() {
@@ -34,7 +35,7 @@ interface CreateTaskData {
  * This initializes the task at the first stage of the template.
  */
 export async function createTask(formData: FormData) {
-  const user = await getCurrentUser();
+  const user = await requireMemberOrHigher();
   const userId = user.id as string;
 
   // Extract form data
@@ -397,7 +398,7 @@ export async function advanceTaskStage(
   taskId: string,
   nextStageId: string
 ) {
-  const user = await getCurrentUser();
+  const user = await requireMemberOrHigher();
   const currentUserId = user.id as string;
 
   try {
@@ -541,7 +542,7 @@ export async function revertTaskStage(
   revertToStageId: string,
   comment: string
 ) {
-  const user = await getCurrentUser();
+  const user = await requireMemberOrHigher();
   const currentUserId = user.id as string;
 
   if (!comment || comment.trim().length === 0) {
@@ -641,7 +642,7 @@ export async function revertTaskStage(
  * Add a comment to a task
  */
 export async function addComment(taskId: string, content: string) {
-  const user = await getCurrentUser();
+  const user = await requireMemberOrHigher();
   const userId = user.id as string;
 
   if (!content || content.trim().length === 0) {
@@ -689,7 +690,7 @@ export async function addLinkArtifact(
   url: string,
   type: "DOCUMENT" | "IMAGE" | "VIDEO" | "FIGMA" | "OTHER"
 ) {
-  const user = await getCurrentUser();
+  const user = await requireMemberOrHigher();
   const userId = user.id as string;
 
   if (!title || title.trim().length === 0) {
@@ -761,7 +762,7 @@ export async function logTime(
   logDate: Date,
   description?: string
 ) {
-  const user = await getCurrentUser();
+  const user = await requireMemberOrHigher();
   const userId = user.id as string;
 
   // Validation

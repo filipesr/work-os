@@ -2,8 +2,10 @@ import { revalidatePath } from "next/cache"
 import prisma from "@/lib/prisma"
 import { UserRole } from "@prisma/client"
 import EditUserButton from "./edit-user-button"
+import { requireAdmin } from "@/lib/permissions"
 
 async function getUsers() {
+  await requireAdmin()
   return await prisma.user.findMany({
     include: {
       team: true,
@@ -13,6 +15,7 @@ async function getUsers() {
 }
 
 async function getTeams() {
+  await requireAdmin()
   return await prisma.team.findMany({
     orderBy: { name: "asc" },
   })
@@ -20,6 +23,7 @@ async function getTeams() {
 
 async function updateUser(formData: FormData) {
   "use server"
+  await requireAdmin()
   const id = formData.get("id") as string
   const role = formData.get("role") as UserRole
   const teamId = formData.get("teamId") as string | null

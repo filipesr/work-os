@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { requireManagerOrAdmin } from "@/lib/permissions"
 
-export default async function AdminLayout({
+export default async function ReportsLayout({
   children,
 }: {
   children: React.ReactNode
@@ -19,28 +19,30 @@ export default async function AdminLayout({
           <div className="flex justify-between h-16">
             <div className="flex space-x-8">
               <a
-                href="/admin/teams"
+                href="/reports/productivity"
                 className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
               >
-                Teams
+                Produtividade
               </a>
               <a
-                href="/admin/clients"
+                href="/reports/performance"
                 className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
               >
-                Clients
+                Gargalos
               </a>
               <a
-                href="/admin/projects"
+                href="/reports/live-activity"
                 className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
               >
-                Projects
+                Atividade ao Vivo
               </a>
+            </div>
+            <div className="flex items-center">
               <a
-                href="/admin/users"
-                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
+                href="/dashboard"
+                className="text-sm font-medium text-gray-700 hover:text-gray-900"
               >
-                Users
+                ← Voltar ao Dashboard
               </a>
             </div>
           </div>
