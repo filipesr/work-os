@@ -6,9 +6,9 @@ import { getAvailableNextStages, getPreviousStages } from "@/lib/actions/task";
 import { getCurrentActiveLog } from "@/lib/actions/activity";
 
 interface TaskDetailPageProps {
-  params: {
+  params: Promise<{
     taskId: string;
-  };
+  }>;
 }
 
 export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
@@ -17,9 +17,11 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
     return null;
   }
 
+  const { taskId } = await params;
+
   // Fetch comprehensive task data
   const task = await prisma.task.findUnique({
-    where: { id: params.taskId },
+    where: { id: taskId },
     include: {
       project: {
         include: {
@@ -97,8 +99,8 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
   // Get available next and previous stages for State Machine controls
   // Also get the user's current active log (for activity tracking)
   const [availableNextStages, previousStages, activeLog] = await Promise.all([
-    getAvailableNextStages(params.taskId),
-    getPreviousStages(params.taskId),
+    getAvailableNextStages(taskId),
+    getPreviousStages(taskId),
     getCurrentActiveLog(session.user.id!),
   ]);
 

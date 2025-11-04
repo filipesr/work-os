@@ -4,9 +4,9 @@ import { KanbanBoard } from "@/components/projects/KanbanBoard";
 import { auth } from "@/lib/auth";
 
 interface ProjectPageProps {
-  params: {
+  params: Promise<{
     projectId: string;
-  };
+  }>;
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
@@ -15,9 +15,11 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     return null;
   }
 
+  const { projectId } = await params;
+
   // Fetch project with all related data
   const project = await prisma.project.findUnique({
-    where: { id: params.projectId },
+    where: { id: projectId },
     include: {
       client: true,
       tasks: {

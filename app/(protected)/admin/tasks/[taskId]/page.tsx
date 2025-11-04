@@ -11,12 +11,13 @@ import { RevertStageButton } from "@/components/tasks/RevertStageButton";
 export default async function TaskDetailPage({
   params,
 }: {
-  params: { taskId: string };
+  params: Promise<{ taskId: string }>;
 }) {
+  const { taskId } = await params;
   const [task, availableNextStages, previousStages] = await Promise.all([
-    getTaskById(params.taskId),
-    getAvailableNextStages(params.taskId),
-    getPreviousStages(params.taskId),
+    getTaskById(taskId),
+    getAvailableNextStages(taskId),
+    getPreviousStages(taskId),
   ]);
 
   if (!task) {
@@ -54,12 +55,14 @@ export default async function TaskDetailPage({
           <div className="ml-4">
             <span
               className={`px-3 py-1 text-sm font-bold rounded-full ${
-                task.status === "DONE"
+                task.status === "COMPLETED"
                   ? "bg-green-100 text-green-800 border border-green-200"
                   : task.status === "IN_PROGRESS"
                   ? "bg-primary/10 text-primary border border-primary/20"
-                  : task.status === "BLOCKED"
+                  : task.status === "CANCELLED"
                   ? "bg-destructive/10 text-destructive border border-destructive/20"
+                  : task.status === "PAUSED"
+                  ? "bg-orange-100 text-orange-800 border border-orange-200"
                   : "bg-muted text-muted-foreground border border-border"
               }`}
             >

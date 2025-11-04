@@ -5,6 +5,7 @@ import { createTask } from "@/lib/actions/task";
 interface Project {
   id: string;
   name: string;
+  clientId: string;
   client: {
     name: string;
   };

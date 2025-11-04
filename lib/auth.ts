@@ -1,11 +1,16 @@
-import { auth, signIn, signOut } from "@/auth"
+import { auth as nextAuth, signIn, signOut } from "@/auth"
 import { UserRole } from "@prisma/client"
 
 /**
  * Get the current server-side session
  * Use this in Server Components, Server Actions, and Route Handlers
  */
-export const getServerSession = auth
+export const getServerSession = nextAuth
+
+/**
+ * Export auth directly for common usage
+ */
+export const auth = nextAuth
 
 /**
  * Sign in a user

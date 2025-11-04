@@ -20,7 +20,7 @@ import {
 export default async function PerformanceReportPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   // Check authorization
   try {
@@ -29,9 +29,11 @@ export default async function PerformanceReportPage({
     redirect("/auth/signin");
   }
 
+  const params = await searchParams;
+
   // Parse filter parameters
-  const startDateStr = searchParams.startDate as string | undefined;
-  const endDateStr = searchParams.endDate as string | undefined;
+  const startDateStr = params.startDate as string | undefined;
+  const endDateStr = params.endDate as string | undefined;
 
   const filters = {
     startDate: startDateStr ? new Date(startDateStr) : undefined,

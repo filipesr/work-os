@@ -13,9 +13,10 @@ import { TemplateHeader } from "@/components/admin/TemplateHeader";
 export default async function TemplateEditorPage({
   params,
 }: {
-  params: { templateId: string };
+  params: Promise<{ templateId: string }>;
 }) {
-  const template = await getWorkflowTemplate(params.templateId);
+  const { templateId } = await params;
+  const template = await getWorkflowTemplate(templateId);
   const teams = await getTeamsForSelect();
 
   if (!template) {

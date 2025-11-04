@@ -47,8 +47,8 @@ export function ActivityButton({
 
       if (result.error) {
         toast.error(result.error);
-      } else if (result.status === "already_active") {
-        toast.info("Você já está trabalhando nesta tarefa");
+      } else if ("status" in result && result.status === "already_active") {
+        toast("Você já está trabalhando nesta tarefa");
       } else {
         toast.success(`Você começou a trabalhar em "${taskTitle}"`);
       }

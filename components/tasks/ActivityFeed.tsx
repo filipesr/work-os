@@ -22,8 +22,8 @@ interface ActivityFeedProps {
 }
 
 type ActivityItem =
-  | ({ type: "comment" } & CommentWithUser)
-  | ({ type: "artifact" } & ArtifactWithUser);
+  | { kind: "comment"; data: CommentWithUser }
+  | { kind: "artifact"; data: ArtifactWithUser };
 
 const artifactIcons = {
   DOCUMENT: FileText,
@@ -45,12 +45,12 @@ export function ActivityFeed({ comments, artifacts }: ActivityFeedProps) {
   // Combine and sort comments and artifacts by creation date
   const activities = useMemo(() => {
     const combined: ActivityItem[] = [
-      ...comments.map((c) => ({ ...c, type: "comment" as const })),
-      ...artifacts.map((a) => ({ ...a, type: "artifact" as const })),
+      ...comments.map((c) => ({ kind: "comment" as const, data: c })),
+      ...artifacts.map((a) => ({ kind: "artifact" as const, data: a })),
     ];
 
     return combined.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) => new Date(b.data.createdAt).getTime() - new Date(a.data.createdAt).getTime()
     );
   }, [comments, artifacts]);
 
@@ -71,10 +71,10 @@ export function ActivityFeed({ comments, artifacts }: ActivityFeedProps) {
 
       <div className="space-y-4">
         {activities.map((activity) => {
-          if (activity.type === "comment") {
-            return <CommentItem key={`comment-${activity.id}`} comment={activity} />;
+          if (activity.kind === "comment") {
+            return <CommentItem key={`comment-${activity.data.id}`} comment={activity.data} />;
           } else {
-            return <ArtifactItem key={`artifact-${activity.id}`} artifact={activity} />;
+            return <ArtifactItem key={`artifact-${activity.data.id}`} artifact={activity.data} />;
           }
         })}
       </div>

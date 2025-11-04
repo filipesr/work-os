@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { addLinkArtifact } from "@/lib/actions/task";
 import { Link2, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -85,18 +84,19 @@ export function AddArtifactForm({ taskId, userId }: AddArtifactFormProps) {
           <Label htmlFor="artifact-type" className="text-sm">
             Tipo
           </Label>
-          <Select
+          <select
             id="artifact-type"
             value={type}
             onChange={(e) => setType(e.target.value as ArtifactType)}
             disabled={isPending}
+            className="flex h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
           >
             {artifactTypeOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </Select>
+          </select>
         </div>
       </div>
 

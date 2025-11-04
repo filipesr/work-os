@@ -14,23 +14,18 @@ export async function createWorkflowTemplate(formData: FormData) {
   const description = formData.get("description") as string;
 
   if (!name) {
-    return { error: "Template name is required" };
+    throw new Error("Template name is required");
   }
 
-  try {
-    const template = await prisma.workflowTemplate.create({
-      data: {
-        name,
-        description: description || "",
-      },
-    });
+  const template = await prisma.workflowTemplate.create({
+    data: {
+      name,
+      description: description || "",
+    },
+  });
 
-    revalidatePath("/admin/templates");
-    redirect(`/admin/templates/${template.id}`);
-  } catch (error) {
-    console.error("Error creating template:", error);
-    return { error: "Failed to create template" };
-  }
+  revalidatePath("/admin/templates");
+  redirect(`/admin/templates/${template.id}`);
 }
 
 export async function updateWorkflowTemplate(
@@ -67,18 +62,13 @@ export async function updateWorkflowTemplate(
 export async function deleteWorkflowTemplate(templateId: string) {
   await requireAdmin();
 
-  try {
-    // Delete all related data (cascading should handle this, but let's be explicit)
-    await prisma.workflowTemplate.delete({
-      where: { id: templateId },
-    });
+  // Delete all related data (cascading should handle this, but let's be explicit)
+  await prisma.workflowTemplate.delete({
+    where: { id: templateId },
+  });
 
-    revalidatePath("/admin/templates");
-    redirect("/admin/templates");
-  } catch (error) {
-    console.error("Error deleting template:", error);
-    return { error: "Failed to delete template" };
-  }
+  revalidatePath("/admin/templates");
+  redirect("/admin/templates");
 }
 
 export async function getWorkflowTemplates() {
