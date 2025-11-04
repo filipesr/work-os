@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { TaskDetailView } from "@/components/tasks/TaskDetailView";
 import { getAvailableNextStages, getPreviousStages } from "@/lib/actions/task";
+import { getCurrentActiveLog } from "@/lib/actions/activity";
 
 interface TaskDetailPageProps {
   params: {
@@ -94,9 +95,11 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
   }
 
   // Get available next and previous stages for State Machine controls
-  const [availableNextStages, previousStages] = await Promise.all([
+  // Also get the user's current active log (for activity tracking)
+  const [availableNextStages, previousStages, activeLog] = await Promise.all([
     getAvailableNextStages(params.taskId),
     getPreviousStages(params.taskId),
+    getCurrentActiveLog(session.user.id!),
   ]);
 
   return (
@@ -106,6 +109,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
         availableNextStages={availableNextStages}
         previousStages={previousStages}
         currentUserId={session.user.id!}
+        activeLog={activeLog}
       />
     </div>
   );

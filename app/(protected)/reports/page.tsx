@@ -3,7 +3,7 @@ import { requireAnyRole } from "@/lib/auth";
 import { UserRole } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, TrendingDown, Clock, ArrowRight } from "lucide-react";
+import { BarChart3, TrendingDown, Clock, ArrowRight, Activity } from "lucide-react";
 
 export default async function ReportsIndexPage() {
   // Check authorization
@@ -25,7 +25,7 @@ export default async function ReportsIndexPage() {
       </div>
 
       {/* Report Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Productivity Report */}
         <Link href="/reports/productivity">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
@@ -98,6 +98,42 @@ export default async function ReportsIndexPage() {
             </CardContent>
           </Card>
         </Link>
+
+        {/* Live Activity Report */}
+        <Link href="/reports/live-activity">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+            <CardHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-3 bg-green-500/10 rounded-lg">
+                  <Activity className="h-6 w-6 text-green-500" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle>Atividade em Tempo Real</CardTitle>
+                </div>
+                <ArrowRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <CardDescription>
+                Visualize quem está trabalhando em quais tarefas neste momento
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-500">•</span>
+                  <span>Colaboradores ativos no momento</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-500">•</span>
+                  <span>Tempo de trabalho em cada tarefa</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-500">•</span>
+                  <span>Atualização automática a cada 10 segundos</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Info Card */}
@@ -123,6 +159,13 @@ export default async function ReportsIndexPage() {
               Este relatório identifica onde o trabalho está "travando". Etapas com
               alto tempo médio são gargalos. Alta taxa de retrabalho indica problemas
               de qualidade ou comunicação.
+            </p>
+          </div>
+          <div>
+            <p className="font-semibold mb-1">🟢 Atividade em Tempo Real</p>
+            <p className="text-muted-foreground">
+              Acompanhe em tempo real quem está trabalhando em quê. Perfeito para
+              gestores que precisam ter visibilidade imediata da alocação da equipe.
             </p>
           </div>
           <div>

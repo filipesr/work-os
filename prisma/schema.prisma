@@ -105,6 +105,7 @@ model User {
   artifacts     TaskArtifact[]
   timeLogs      TimeLog[]
   stageLogs     TaskStageLog[]
+  activityLogs  ActivityLog[]
 }
 
 model Team {
@@ -156,6 +157,7 @@ model TemplateStage {
   tasksAtThisStage  Task[]            @relation("CurrentStage")
   stageLogs         TaskStageLog[]
   timeLogs          TimeLog[]
+  activityLogs      ActivityLog[]
 }
 
 // This table defines the dependencies: "Stage A must be complete before Stage B"
@@ -194,10 +196,11 @@ model Task {
   assignee   User?   @relation("Assignee", fields: [assigneeId], references: [id], onUpdate: NoAction, onDelete: SetNull)
 
   // Task History (all in separate tables)
-  comments  TaskComment[]
-  artifacts TaskArtifact[]
-  stageLogs TaskStageLog[]
-  timeLogs  TimeLog[]
+  comments     TaskComment[]
+  artifacts    TaskArtifact[]
+  stageLogs    TaskStageLog[]
+  timeLogs     TimeLog[]
+  activityLogs ActivityLog[]
 }
 
 model TaskComment {
@@ -252,4 +255,24 @@ model TaskStageLog {
   stage   TemplateStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
   userId  String // The user who moved the task into this stage
   user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- 6. Real-time Activity Tracking Model ---
+// This table tracks "work periods" - when a user starts/stops working on a task
+// An entry with endedAt: null signifies the user's current active task
+model ActivityLog {
+  id        String    @id @default(cuid())
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  stageId String
+  stage   TemplateStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@index([userId, endedAt]) // Index for quickly finding active tasks
 }

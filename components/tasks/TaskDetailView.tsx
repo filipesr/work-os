@@ -13,6 +13,7 @@ import { AddArtifactForm } from "./AddArtifactForm";
 import { AdvanceStageButton } from "./AdvanceStageButton";
 import { RevertStageButton } from "./RevertStageButton";
 import { LogTimeButton } from "./LogTimeButton";
+import { ActivityButton } from "./ActivityButton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -28,11 +29,21 @@ type TaskWithRelations = Task & {
   })[];
 };
 
+interface ActiveLog {
+  id: string;
+  taskId: string;
+  task: {
+    id: string;
+    title: string;
+  };
+}
+
 interface TaskDetailViewProps {
   task: TaskWithRelations;
   availableNextStages: TemplateStage[];
   previousStages: TemplateStage[];
   currentUserId: string;
+  activeLog: ActiveLog | null;
 }
 
 const priorityConfig = {
@@ -55,6 +66,7 @@ export function TaskDetailView({
   availableNextStages,
   previousStages,
   currentUserId,
+  activeLog,
 }: TaskDetailViewProps) {
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
 
@@ -156,6 +168,18 @@ export function TaskDetailView({
                   <RevertStageButton
                     taskId={task.id}
                     previousStages={previousStages}
+                  />
+                </div>
+
+                <Separator />
+
+                {/* Activity Tracking (Start/Stop Task) */}
+                <div>
+                  <ActivityButton
+                    taskId={task.id}
+                    taskTitle={task.title}
+                    currentStageId={task.currentStageId}
+                    activeLog={activeLog}
                   />
                 </div>
 
