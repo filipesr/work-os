@@ -42,16 +42,16 @@ export default function EditUserButton({
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="text-blue-600 hover:text-blue-900"
+        className="text-primary hover:text-primary/80 font-semibold transition-colors"
       >
         Edit
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-6 border-2 border-border w-96 shadow-lg rounded-xl bg-card">
             <div className="mt-3">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+              <h3 className="text-lg leading-6 font-bold text-foreground mb-4">
                 Edit User: {user.name || user.email}
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -61,7 +61,7 @@ export default function EditUserButton({
                 <div>
                   <label
                     htmlFor="role"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-semibold text-foreground mb-2"
                   >
                     Role
                   </label>
@@ -71,7 +71,7 @@ export default function EditUserButton({
                     value={role}
                     onChange={(e) => setRole(e.target.value as UserRole)}
                     required
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 border"
+                    className="w-full rounded-lg border-2 border-input-border bg-input text-foreground shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 px-3 py-2 transition-colors"
                   >
                     <option value={UserRole.ADMIN}>Admin</option>
                     <option value={UserRole.MANAGER}>Manager</option>
@@ -85,7 +85,7 @@ export default function EditUserButton({
                 <div>
                   <label
                     htmlFor="teamId"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-semibold text-foreground mb-2"
                   >
                     Team
                   </label>
@@ -94,7 +94,7 @@ export default function EditUserButton({
                     name="teamId"
                     value={teamId}
                     onChange={(e) => setTeamId(e.target.value)}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 border"
+                    className="w-full rounded-lg border-2 border-input-border bg-input text-foreground shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 px-3 py-2 transition-colors"
                   >
                     <option value="">No Team</option>
                     {teams.map((team) => (
@@ -110,13 +110,13 @@ export default function EditUserButton({
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                    className="px-4 py-2 bg-muted text-muted-foreground font-semibold rounded-lg hover:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="px-4 py-2 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors shadow-md"
                   >
                     Save Changes
                   </button>
