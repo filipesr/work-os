@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache"
 import prisma from "@/lib/prisma"
 import { requireManagerOrAdmin } from "@/lib/permissions"
+import { DeleteProjectButton } from "./delete-project-button"
 
 async function getProjects() {
   await requireManagerOrAdmin()
@@ -149,24 +150,7 @@ export default async function ProjectsPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <form action={deleteProject} className="inline">
-                    <input type="hidden" name="id" value={project.id} />
-                    <button
-                      type="submit"
-                      className="text-red-600 hover:text-red-900"
-                      onClick={(e) => {
-                        if (
-                          !confirm(
-                            "Are you sure you want to delete this project?"
-                          )
-                        ) {
-                          e.preventDefault()
-                        }
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </form>
+                  <DeleteProjectButton projectId={project.id} deleteAction={deleteProject} />
                 </td>
               </tr>
             ))}

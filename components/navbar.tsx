@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { UserRole } from "@prisma/client"
 import Link from "next/link"
-import { signOut } from "@/lib/auth"
+import { signOutAction } from "@/lib/actions/auth"
 
 export async function Navbar() {
   const session = await auth()
@@ -89,7 +89,7 @@ export async function Navbar() {
             <span className="text-sm text-gray-700">
               {session.user.name} ({userRole})
             </span>
-            <form action={signOut}>
+            <form action={signOutAction}>
               <button
                 type="submit"
                 className="text-sm font-medium text-gray-700 hover:text-gray-900"

@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache"
 import prisma from "@/lib/prisma"
 import { requireManagerOrAdmin } from "@/lib/permissions"
+import { DeleteClientButton } from "./delete-client-button"
 
 async function getClients() {
   await requireManagerOrAdmin()
@@ -117,20 +118,7 @@ export default async function ClientsPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <form action={deleteClient} className="inline">
-                    <input type="hidden" name="id" value={client.id} />
-                    <button
-                      type="submit"
-                      className="text-red-600 hover:text-red-900"
-                      onClick={(e) => {
-                        if (!confirm("Are you sure you want to delete this client?")) {
-                          e.preventDefault()
-                        }
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </form>
+                  <DeleteClientButton clientId={client.id} deleteAction={deleteClient} />
                 </td>
               </tr>
             ))}

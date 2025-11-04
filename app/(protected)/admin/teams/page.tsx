@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/permissions"
+import { DeleteTeamButton } from "./delete-team-button"
 
 async function getTeams() {
   await requireAdmin()
@@ -117,20 +118,7 @@ export default async function TeamsPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <form action={deleteTeam} className="inline">
-                    <input type="hidden" name="id" value={team.id} />
-                    <button
-                      type="submit"
-                      className="text-red-600 hover:text-red-900"
-                      onClick={(e) => {
-                        if (!confirm("Are you sure you want to delete this team?")) {
-                          e.preventDefault()
-                        }
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </form>
+                  <DeleteTeamButton teamId={team.id} deleteAction={deleteTeam} />
                 </td>
               </tr>
             ))}
