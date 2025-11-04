@@ -19,6 +19,12 @@ export default async function AdminLayout({
           <div className="flex justify-between h-16">
             <div className="flex space-x-8">
               <a
+                href="/admin"
+                className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
+              >
+                Dashboard
+              </a>
+              <a
                 href="/admin/teams"
                 className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
               >
