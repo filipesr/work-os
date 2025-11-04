@@ -12,6 +12,7 @@ import { AddCommentForm } from "./AddCommentForm";
 import { AddArtifactForm } from "./AddArtifactForm";
 import { AdvanceStageButton } from "./AdvanceStageButton";
 import { RevertStageButton } from "./RevertStageButton";
+import { LogTimeButton } from "./LogTimeButton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -156,6 +157,13 @@ export function TaskDetailView({
                     taskId={task.id}
                     previousStages={previousStages}
                   />
+                </div>
+
+                <Separator />
+
+                {/* Time Logging */}
+                <div>
+                  <LogTimeButton taskId={task.id} />
                 </div>
               </>
             ) : (

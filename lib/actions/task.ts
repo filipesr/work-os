@@ -460,7 +460,10 @@ export async function advanceTaskStage(
       if (currentLog) {
         await tx.taskStageLog.update({
           where: { id: currentLog.id },
-          data: { exitedAt: new Date() },
+          data: {
+            exitedAt: new Date(),
+            status: "COMPLETED", // Mark as completed (not reverted)
+          },
         });
       }
 
@@ -475,12 +478,33 @@ export async function advanceTaskStage(
         },
       });
 
-      // 6. Update the task's current stage pointer
+      // 6. Check if this is the last stage in the workflow template
+      const nextStage = await tx.templateStage.findUnique({
+        where: { id: nextStageId },
+        include: {
+          template: {
+            include: {
+              stages: {
+                orderBy: { order: "desc" },
+                take: 1,
+              },
+            },
+          },
+        },
+      });
+
+      const isLastStage =
+        nextStage &&
+        nextStage.template.stages[0] &&
+        nextStage.id === nextStage.template.stages[0].id;
+
+      // 7. Update the task's current stage pointer
       await tx.task.update({
         where: { id: taskId },
         data: {
           currentStageId: nextStageId,
-          status: "IN_PROGRESS",
+          status: isLastStage ? "COMPLETED" : "IN_PROGRESS",
+          completedAt: isLastStage ? new Date() : null, // Set completedAt if final stage
         },
       });
     });
@@ -536,7 +560,7 @@ export async function revertTaskStage(
         throw new Error("Task not found or has no current stage.");
       }
 
-      // 1. Find and "close" the current log
+      // 1. Find and "close" the current log (mark as REVERTED)
       const currentLog = await tx.taskStageLog.findFirst({
         where: {
           taskId: taskId,
@@ -549,7 +573,10 @@ export async function revertTaskStage(
       if (currentLog) {
         await tx.taskStageLog.update({
           where: { id: currentLog.id },
-          data: { exitedAt: new Date() },
+          data: {
+            exitedAt: new Date(),
+            status: "REVERTED", // Mark as reverted (rejected)
+          },
         });
       }
 
@@ -565,9 +592,14 @@ export async function revertTaskStage(
       });
 
       // 3. Update the task's current stage pointer
+      // Also clear completedAt if task was completed and is being reverted
       await tx.task.update({
         where: { id: taskId },
-        data: { currentStageId: revertToStageId },
+        data: {
+          currentStageId: revertToStageId,
+          status: "IN_PROGRESS",
+          completedAt: null, // Clear completion date on revert
+        },
       });
 
       // 4. Add the rejection comment
@@ -715,4 +747,89 @@ export async function addFileArtifact(
   // This function is identical to addLinkArtifact
   // The difference is semantic: it's called after a Cloudinary upload
   return addLinkArtifact(taskId, title, url, type);
+}
+
+// ========== Time Logging (for BI/Reporting) ==========
+
+/**
+ * Log time spent on a task.
+ * This creates a TimeLog entry for productivity reporting.
+ */
+export async function logTime(
+  taskId: string,
+  hoursSpent: number,
+  logDate: Date,
+  description?: string
+) {
+  const user = await getCurrentUser();
+  const userId = user.id as string;
+
+  // Validation
+  if (!taskId) {
+    return { error: "Task ID is required" };
+  }
+
+  if (!hoursSpent || hoursSpent <= 0) {
+    return { error: "Hours spent must be greater than 0" };
+  }
+
+  if (!logDate) {
+    return { error: "Log date is required" };
+  }
+
+  try {
+    // Get the task to find its current stage
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: {
+        id: true,
+        currentStageId: true,
+        projectId: true,
+      },
+    });
+
+    if (!task) {
+      return { error: "Task not found" };
+    }
+
+    // Create the time log entry
+    const timeLog = await prisma.timeLog.create({
+      data: {
+        taskId,
+        userId,
+        hoursSpent,
+        logDate,
+        description: description || null,
+        stageId: task.currentStageId, // Associate with current stage
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+        stage: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Revalidate relevant pages
+    revalidatePath(`/tasks/${taskId}`);
+    revalidatePath(`/admin/tasks/${taskId}`);
+    revalidatePath(`/reports/productivity`);
+
+    return { success: true, timeLog };
+  } catch (error) {
+    console.error("Error logging time:", error);
+    return {
+      error: error instanceof Error ? error.message : "Failed to log time",
+    };
+  }
 }

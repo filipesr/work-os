@@ -43,6 +43,11 @@ enum ArtifactType {
   OTHER
 }
 
+enum StageLogStatus {
+  COMPLETED // Normal stage completion (advanced to next)
+  REVERTED  // Stage was rejected/reverted
+}
+
 // --- 1. Auth & Team Models ---
 
 model Account {
@@ -176,6 +181,7 @@ model Task {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   dueDate     DateTime?
+  completedAt DateTime?    // Set when final stage is completed (for lead time calculation)
 
   // Relations
   projectId String
@@ -235,9 +241,10 @@ model TimeLog {
 
 // Log for "Stage Transitions" (Bottleneck Reports)
 model TaskStageLog {
-  id        String    @id @default(cuid())
-  enteredAt DateTime  @default(now())
+  id        String          @id @default(cuid())
+  enteredAt DateTime        @default(now())
   exitedAt  DateTime?
+  status    StageLogStatus? // COMPLETED or REVERTED (null while in progress)
 
   taskId  String
   task    Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
