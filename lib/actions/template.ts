@@ -85,7 +85,7 @@ export async function getWorkflowTemplates() {
   await requireAdmin();
 
   return prisma.workflowTemplate.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: { name: "asc" },
     include: {
       _count: {
         select: { stages: true },
@@ -106,10 +106,10 @@ export async function getWorkflowTemplate(templateId: string) {
           defaultTeam: true,
           dependencies: {
             include: {
-              dependsOnStage: true,
+              dependsOn: true,
             },
           },
-          dependentStages: {
+          dependents: {
             include: {
               stage: true,
             },

@@ -13,13 +13,13 @@ export async function Navbar() {
   const userRole = (session.user as any).role as UserRole
 
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className="bg-card shadow-lg border-b-2 border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex space-x-8">
             <Link
               href="/"
-              className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
+              className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
             >
               Home
             </Link>
@@ -29,13 +29,13 @@ export async function Navbar() {
               <div className="flex space-x-8">
                 <Link
                   href="/admin/clients"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
+                  className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
                 >
                   Admin
                 </Link>
                 <Link
                   href="/admin/projects"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
+                  className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
                 >
                   Projetos
                 </Link>
@@ -47,19 +47,19 @@ export async function Navbar() {
               <div className="flex space-x-8">
                 <Link
                   href="/admin/teams"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
+                  className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
                 >
                   Times
                 </Link>
                 <Link
                   href="/admin/users"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
+                  className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
                 >
                   Usuários
                 </Link>
                 <Link
                   href="/admin/templates"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
+                  className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
                 >
                   Templates
                 </Link>
@@ -70,7 +70,7 @@ export async function Navbar() {
             {(userRole === UserRole.ADMIN || userRole === UserRole.MANAGER) && (
               <Link
                 href="/reports"
-                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
+                className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
               >
                 Relatórios
               </Link>
@@ -79,20 +79,20 @@ export async function Navbar() {
             {/* Tasks - Everyone */}
             <Link
               href="/admin/tasks"
-              className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
+              className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
             >
               Tarefas
             </Link>
           </div>
 
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-700">
+            <span className="text-sm font-medium text-muted-foreground">
               {session.user.name} ({userRole})
             </span>
             <form action={signOutAction}>
               <button
                 type="submit"
-                className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                className="text-sm font-semibold text-foreground hover:text-destructive transition-colors"
               >
                 Sair
               </button>

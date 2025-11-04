@@ -27,7 +27,7 @@ export default async function TemplateEditorPage({
       {/* Back link */}
       <Link
         href="/admin/templates"
-        className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6"
+        className="inline-flex items-center text-primary hover:text-primary/80 mb-6 font-medium transition-colors"
       >
         <svg
           className="w-5 h-5 mr-2"
@@ -47,10 +47,10 @@ export default async function TemplateEditorPage({
       <TemplateHeader template={template} />
 
       {/* Stages Section */}
-      <div className="mt-8 bg-white shadow rounded-lg p-6">
+      <div className="mt-8 bg-card border border-border shadow-sm rounded-lg p-6">
         <div className="mb-6">
-          <h2 className="text-2xl font-semibold mb-2">Workflow Stages</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold text-foreground mb-3">Workflow Stages</h2>
+          <p className="text-muted-foreground">
             Define the stages (steps) of this workflow. Tasks will flow through these
             stages in order, respecting any dependencies you configure.
           </p>

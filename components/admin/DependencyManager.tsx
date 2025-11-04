@@ -53,44 +53,44 @@ export function DependencyManager({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-        <h3 className="text-xl font-semibold mb-2">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-card border-2 border-border rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto shadow-lg">
+        <h3 className="text-xl font-bold text-foreground mb-3">
           Manage Dependencies: {stageName}
         </h3>
-        <p className="text-gray-600 mb-6 text-sm">
+        <p className="text-muted-foreground mb-6 text-base">
           Select which stages must be completed before "{stageName}" can start. These
           are the prerequisites for this stage.
         </p>
 
         {availableStages.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
+          <div className="text-center text-muted-foreground py-8">
             No other stages available to set as dependencies.
           </div>
         ) : (
-          <div className="space-y-2 mb-6">
+          <div className="space-y-3 mb-6">
             {availableStages.map((stage) => {
               const isSelected = selectedDeps.has(stage.id);
               return (
                 <label
                   key={stage.id}
-                  className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                  className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
                     isSelected
-                      ? "bg-purple-50 border-purple-300"
-                      : "bg-white border-gray-300 hover:bg-gray-50"
+                      ? "bg-accent/20 border-accent"
+                      : "bg-card border-border hover:bg-muted/30"
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => handleToggle(stage.id)}
-                    className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                    className="w-5 h-5 text-accent rounded focus:ring-2 focus:ring-accent/30"
                   />
                   <div className="ml-3 flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 font-semibold text-xs">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary font-bold text-sm">
                       {stage.order}
                     </span>
-                    <span className="font-medium">{stage.name}</span>
+                    <span className="font-semibold text-foreground">{stage.name}</span>
                   </div>
                 </label>
               );
@@ -98,27 +98,27 @@ export function DependencyManager({
           </div>
         )}
 
-        <div className="flex gap-2 justify-end">
+        <div className="flex gap-3 justify-end">
           <button
             onClick={onClose}
             disabled={isSaving}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 bg-accent text-accent-foreground font-semibold rounded-lg hover:bg-accent/80 transition-all disabled:opacity-50 shadow-sm"
           >
             {isSaving ? "Saving..." : "Save Dependencies"}
           </button>
         </div>
 
         {selectedDeps.size > 0 && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-sm text-blue-800">
-              <span className="font-medium">Note:</span> "{stageName}" will only become
+          <div className="mt-4 p-4 bg-primary/5 border-2 border-primary/20 rounded-lg">
+            <p className="text-sm text-foreground">
+              <span className="font-bold">Note:</span> "{stageName}" will only become
               available after{" "}
               {selectedDeps.size === 1
                 ? "1 stage is"

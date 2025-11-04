@@ -9,26 +9,26 @@ export default async function TasksPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tasks</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground">Tasks</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             Manage and track all tasks across projects
           </p>
         </div>
         <Link
           href="/admin/tasks/new"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          className="px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 shadow-sm hover:shadow-md transition-all duration-200"
         >
           + Create Task
         </Link>
       </div>
 
       {/* Tasks List */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
         {tasks.length === 0 ? (
-          <div className="p-8 text-center">
-            <div className="text-gray-400 mb-4">
+          <div className="p-12 text-center">
+            <div className="text-muted-foreground mb-6">
               <svg
-                className="mx-auto h-12 w-12"
+                className="mx-auto h-16 w-16"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -41,95 +41,95 @@ export default async function TasksPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No tasks yet</h3>
-            <p className="text-gray-500 mb-4">
+            <h3 className="text-xl font-bold text-foreground mb-3">No tasks yet</h3>
+            <p className="text-muted-foreground mb-6">
               Get started by creating your first task from a workflow template.
             </p>
             <Link
               href="/admin/tasks/new"
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 shadow-sm hover:shadow-md transition-all duration-200"
             >
               Create your first task
             </Link>
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
                   Task
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
                   Project
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
                   Current Stage
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
                   Priority
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
                   Assignee
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
                   Due Date
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-border">
               {tasks.map((task: any) => (
-                <tr key={task.id} className="hover:bg-gray-50">
+                <tr key={task.id} className="hover:bg-accent transition-colors">
                   <td className="px-6 py-4">
                     <Link
                       href={`/admin/tasks/${task.id}`}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
+                      className="text-primary hover:text-primary/80 font-semibold transition-colors"
                     >
                       {task.title}
                     </Link>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {task.project.client.name} - {task.project.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      className={`px-3 py-1 text-xs font-bold rounded-full ${
                         task.status === "DONE"
-                          ? "bg-green-100 text-green-800"
+                          ? "bg-green-100 text-green-800 border border-green-200"
                           : task.status === "IN_PROGRESS"
-                          ? "bg-blue-100 text-blue-800"
+                          ? "bg-primary/10 text-primary border border-primary/20"
                           : task.status === "BLOCKED"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-800"
+                          ? "bg-destructive/10 text-destructive border border-destructive/20"
+                          : "bg-muted text-muted-foreground border border-border"
                       }`}
                     >
                       {task.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {task.currentStage?.name || "No stage"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      className={`px-3 py-1 text-xs font-bold rounded-full ${
                         task.priority === "URGENT"
-                          ? "bg-red-100 text-red-800"
+                          ? "bg-red-100 text-red-800 border border-red-200"
                           : task.priority === "HIGH"
-                          ? "bg-orange-100 text-orange-800"
+                          ? "bg-orange-100 text-orange-800 border border-orange-200"
                           : task.priority === "MEDIUM"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-gray-100 text-gray-800"
+                          ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                          : "bg-muted text-muted-foreground border border-border"
                       }`}
                     >
                       {task.priority}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {task.assignee?.name || "Unassigned"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {task.dueDate
                       ? new Date(task.dueDate).toLocaleDateString()
                       : "No due date"}

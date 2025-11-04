@@ -13,26 +13,26 @@ export default async function ReportsLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-background">
+      <nav className="bg-card shadow-lg border-b-2 border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex space-x-8">
               <a
                 href="/reports/productivity"
-                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
+                className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
               >
                 Produtividade
               </a>
               <a
                 href="/reports/performance"
-                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
+                className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
               >
                 Gargalos
               </a>
               <a
                 href="/reports/live-activity"
-                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-gray-700"
+                className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
               >
                 Atividade ao Vivo
               </a>
@@ -40,7 +40,7 @@ export default async function ReportsLayout({
             <div className="flex items-center">
               <a
                 href="/dashboard"
-                className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
               >
                 ← Voltar ao Dashboard
               </a>

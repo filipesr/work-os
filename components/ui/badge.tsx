@@ -1,20 +1,21 @@
 import * as React from "react";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "secondary" | "destructive" | "outline";
+  variant?: "default" | "secondary" | "destructive" | "outline" | "success";
 }
 
 function Badge({ className = "", variant = "default", ...props }: BadgeProps) {
   const variants = {
-    default: "bg-blue-600 text-white",
-    secondary: "bg-gray-200 text-gray-900",
-    destructive: "bg-red-600 text-white",
-    outline: "border border-gray-300 text-gray-900",
+    default: "bg-primary text-primary-foreground shadow-sm",
+    secondary: "bg-secondary text-secondary-foreground shadow-sm",
+    destructive: "bg-destructive text-destructive-foreground shadow-sm",
+    outline: "border-2 border-border bg-card text-foreground",
+    success: "bg-green-600 text-white shadow-sm",
   };
 
   return (
     <div
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors ${variants[variant]} ${className}`}
+      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold transition-all ${variants[variant]} ${className}`}
       {...props}
     />
   );

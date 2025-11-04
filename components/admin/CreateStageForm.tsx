@@ -15,7 +15,7 @@ export function CreateStageForm({ templateId, teams }: CreateStageFormProps) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+        className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
       >
         + Add New Stage
       </button>
@@ -23,8 +23,8 @@ export function CreateStageForm({ templateId, teams }: CreateStageFormProps) {
   }
 
   return (
-    <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
-      <h3 className="font-semibold mb-4">Add New Stage</h3>
+    <div className="border-2 border-border rounded-lg p-6 bg-muted/30">
+      <h3 className="font-bold text-foreground text-lg mb-4">Add New Stage</h3>
       <form
         action={async (formData: FormData) => {
           const result = await createTemplateStage(templateId, formData);
@@ -36,7 +36,7 @@ export function CreateStageForm({ templateId, teams }: CreateStageFormProps) {
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="name" className="block text-sm font-semibold text-foreground mb-2">
               Stage Name *
             </label>
             <input
@@ -44,12 +44,12 @@ export function CreateStageForm({ templateId, teams }: CreateStageFormProps) {
               id="name"
               name="name"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
               placeholder="e.g., Script Writing"
             />
           </div>
           <div>
-            <label htmlFor="order" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="order" className="block text-sm font-semibold text-foreground mb-2">
               Order *
             </label>
             <input
@@ -59,20 +59,20 @@ export function CreateStageForm({ templateId, teams }: CreateStageFormProps) {
               required
               min="0"
               defaultValue="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
             />
           </div>
           <div>
             <label
               htmlFor="defaultTeamId"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-semibold text-foreground mb-2"
             >
               Default Team
             </label>
             <select
               id="defaultTeamId"
               name="defaultTeamId"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
             >
               <option value="">No default team</option>
               {teams.map((team) => (
@@ -83,17 +83,17 @@ export function CreateStageForm({ templateId, teams }: CreateStageFormProps) {
             </select>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <button
             type="submit"
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
           >
             Create Stage
           </button>
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+            className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all"
           >
             Cancel
           </button>

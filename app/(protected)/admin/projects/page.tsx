@@ -72,15 +72,15 @@ export default async function ProjectsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground">Projects</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
           Manage projects and their clients
         </p>
       </div>
 
       {/* Create Form */}
-      <div className="bg-white shadow rounded-lg p-6 mb-8">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">
+      <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-8">
+        <h2 className="text-lg font-semibold text-foreground mb-4">
           Create Project
         </h2>
         <form action={createProject} className="flex gap-4">
@@ -89,12 +89,12 @@ export default async function ProjectsPage() {
             name="name"
             placeholder="Project name"
             required
-            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 border"
+            className="flex-1 h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
           />
           <select
             name="clientId"
             required
-            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 border"
+            className="h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
           >
             <option value="">Select Client</option>
             {clients.map((client) => (
@@ -105,7 +105,7 @@ export default async function ProjectsPage() {
           </select>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-4 focus:ring-primary/10 shadow-sm hover:shadow-md transition-all duration-200"
           >
             Create
           </button>
@@ -113,39 +113,39 @@ export default async function ProjectsPage() {
       </div>
 
       {/* Projects List */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-muted">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
                 Client
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
                 Tasks
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-right text-xs font-bold text-foreground uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-card divide-y divide-border">
             {projects.map((project) => (
-              <tr key={project.id}>
+              <tr key={project.id} className="hover:bg-accent transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-semibold text-foreground">
                     {project.name}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     {project.client.name}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     {project._count.tasks} tasks
                   </div>
                 </td>
@@ -158,7 +158,7 @@ export default async function ProjectsPage() {
               <tr>
                 <td
                   colSpan={4}
-                  className="px-6 py-4 text-center text-sm text-gray-500"
+                  className="px-6 py-8 text-center text-sm text-muted-foreground"
                 >
                   No projects found. Create one to get started.
                 </td>
