@@ -44,7 +44,7 @@ export async function Navbar() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <UserMenu userName={session.user.name} userRole={userRole} />
+            <UserMenu userName={session.user.name ?? null} userRole={userRole} />
           </div>
         </div>
       </div>
