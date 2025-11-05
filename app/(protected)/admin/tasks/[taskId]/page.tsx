@@ -4,9 +4,11 @@ import {
   getTaskById,
   getAvailableNextStages,
   getPreviousStages,
+  getStageAvailabilityDiagnostic,
 } from "@/lib/actions/task";
 import { AdvanceStageButton } from "@/components/tasks/AdvanceStageButton";
 import { RevertStageButton } from "@/components/tasks/RevertStageButton";
+import { UnassignTaskButton } from "@/components/tasks/UnassignTaskButton";
 
 export default async function TaskDetailPage({
   params,
@@ -14,10 +16,11 @@ export default async function TaskDetailPage({
   params: Promise<{ taskId: string }>;
 }) {
   const { taskId } = await params;
-  const [task, availableNextStages, previousStages] = await Promise.all([
+  const [task, availableNextStages, previousStages, diagnostic] = await Promise.all([
     getTaskById(taskId),
     getAvailableNextStages(taskId),
     getPreviousStages(taskId),
+    getStageAvailabilityDiagnostic(taskId),
   ]);
 
   if (!task) {
@@ -117,14 +120,19 @@ export default async function TaskDetailPage({
       <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-foreground">Current Stage</h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <AdvanceStageButton
               taskId={task.id}
               availableStages={availableNextStages}
+              diagnostic={diagnostic}
             />
             <RevertStageButton
               taskId={task.id}
               previousStages={previousStages}
+            />
+            <UnassignTaskButton
+              taskId={task.id}
+              currentAssignee={task.assignee?.name || task.assignee?.email || null}
             />
           </div>
         </div>

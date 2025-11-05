@@ -9,6 +9,7 @@ import { getTeamsForSelect } from "@/lib/actions/stage";
 import { StagesList } from "@/components/admin/StagesList";
 import { CreateStageForm } from "@/components/admin/CreateStageForm";
 import { TemplateHeader } from "@/components/admin/TemplateHeader";
+import { WorkflowVisualization } from "@/components/admin/WorkflowVisualization";
 
 export default async function TemplateEditorPage({
   params,
@@ -58,7 +59,11 @@ export default async function TemplateEditorPage({
         </div>
 
         {/* Create New Stage Form */}
-        <CreateStageForm templateId={template.id} teams={teams} />
+        <CreateStageForm
+          templateId={template.id}
+          teams={teams}
+          existingStages={template.stages.map(s => ({ id: s.id, name: s.name, order: s.order }))}
+        />
 
         {/* Stages List */}
         <div className="mt-8">
@@ -69,6 +74,13 @@ export default async function TemplateEditorPage({
           />
         </div>
       </div>
+
+      {/* Workflow Visualization */}
+      {template.stages.length > 0 && (
+        <div className="mt-8">
+          <WorkflowVisualization stages={template.stages} />
+        </div>
+      )}
     </div>
   );
 }

@@ -2,14 +2,35 @@
 
 import { useState } from "react";
 import { createTemplateStage } from "@/lib/actions/stage";
+import { DependencySelector } from "./DependencySelector";
+import toast from "react-hot-toast";
+
+interface Stage {
+  id: string;
+  name: string;
+  order: number;
+}
 
 interface CreateStageFormProps {
   templateId: string;
   teams: Array<{ id: string; name: string }>;
+  existingStages: Stage[];
 }
 
-export function CreateStageForm({ templateId, teams }: CreateStageFormProps) {
+export function CreateStageForm({ templateId, teams, existingStages }: CreateStageFormProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedDeps, setSelectedDeps] = useState<Set<string>>(new Set());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleToggleDep = (stageId: string) => {
+    const newSelected = new Set(selectedDeps);
+    if (newSelected.has(stageId)) {
+      newSelected.delete(stageId);
+    } else {
+      newSelected.add(stageId);
+    }
+    setSelectedDeps(newSelected);
+  };
 
   if (!isOpen) {
     return (
@@ -26,10 +47,34 @@ export function CreateStageForm({ templateId, teams }: CreateStageFormProps) {
     <div className="border-2 border-border rounded-lg p-6 bg-muted/30">
       <h3 className="font-bold text-foreground text-lg mb-4">Add New Stage</h3>
       <form
-        action={async (formData: FormData) => {
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setIsSubmitting(true);
+
+          const formData = new FormData(e.currentTarget);
+
+          // Add selected dependencies to form data
+          selectedDeps.forEach(depId => {
+            formData.append('dependencies[]', depId);
+          });
+
+          console.log('[FRONTEND CREATE] Form data being sent:');
+          console.log('  - name:', formData.get('name'));
+          console.log('  - order:', formData.get('order'));
+          console.log('  - defaultTeamId:', formData.get('defaultTeamId'));
+          console.log('  - dependencies[]:', formData.getAll('dependencies[]'));
+          console.log('  - selectedDeps (state):', Array.from(selectedDeps));
+
           const result = await createTemplateStage(templateId, formData);
+
+          setIsSubmitting(false);
+
           if (result?.success) {
+            toast.success('Etapa criada com sucesso!');
             setIsOpen(false);
+            setSelectedDeps(new Set());
+          } else {
+            toast.error(result?.error || 'Erro ao criar etapa');
           }
         }}
         className="space-y-4"
@@ -83,19 +128,32 @@ export function CreateStageForm({ templateId, teams }: CreateStageFormProps) {
             </select>
           </div>
         </div>
-        <div className="flex gap-3">
+
+        {/* Dependencies Section */}
+        <DependencySelector
+          stages={existingStages}
+          selectedDeps={selectedDeps}
+          onToggle={handleToggleDep}
+        />
+
+        <div className="flex gap-3 pt-4 border-t border-border">
           <button
             type="submit"
-            className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
+            disabled={isSubmitting}
+            className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create Stage
+            {isSubmitting ? 'Criando...' : 'Criar Etapa'}
           </button>
           <button
             type="button"
-            onClick={() => setIsOpen(false)}
-            className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all"
+            onClick={() => {
+              setIsOpen(false);
+              setSelectedDeps(new Set());
+            }}
+            disabled={isSubmitting}
+            className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all disabled:opacity-50"
           >
-            Cancel
+            Cancelar
           </button>
         </div>
       </form>

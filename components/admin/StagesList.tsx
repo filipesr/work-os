@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { updateTemplateStage, deleteTemplateStage } from "@/lib/actions/stage";
-import { DependencyManager } from "./DependencyManager";
+import { DependencySelector } from "./DependencySelector";
+import toast from "react-hot-toast";
 
 interface Stage {
   id: string;
@@ -11,6 +12,16 @@ interface Stage {
   defaultTeamId: string | null;
   defaultTeam: { id: string; name: string } | null;
   dependencies: Array<{
+    id: string;
+    stageId: string;
+    stage: { id: string; name: string; order: number };
+    dependsOnStageId: string;
+    dependsOn: { id: string; name: string; order: number };
+  }>;
+  dependents: Array<{
+    id: string;
+    stageId: string;
+    stage: { id: string; name: string; order: number };
     dependsOnStageId: string;
     dependsOn: { id: string; name: string; order: number };
   }>;
@@ -24,8 +35,41 @@ interface StagesListProps {
 
 export function StagesList({ stages, templateId, teams }: StagesListProps) {
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
-  const [managingDepsStageId, setManagingDepsStageId] = useState<string | null>(null);
   const [deletingStageId, setDeletingStageId] = useState<string | null>(null);
+  const [editingDeps, setEditingDeps] = useState<Set<string>>(new Set());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleToggleDep = (stageId: string) => {
+    const newSelected = new Set(editingDeps);
+    const action = newSelected.has(stageId) ? 'remove' : 'add';
+
+    if (newSelected.has(stageId)) {
+      newSelected.delete(stageId);
+    } else {
+      newSelected.add(stageId);
+    }
+
+    console.log(`[TOGGLE DEP] ${action} stage ${stageId}, new deps:`, Array.from(newSelected));
+    setEditingDeps(newSelected);
+  };
+
+  // Effect to initialize editing dependencies when entering edit mode
+  useEffect(() => {
+    if (editingStageId) {
+      const stage = stages.find(s => s.id === editingStageId);
+      if (stage) {
+        const deps = stage.dependents.map(d => d.dependsOnStageId);
+        console.log('[EDIT MODE] Loading dependencies for stage:', stage.name);
+        console.log('[EDIT MODE] Current dependencies:', stage.dependents.map(d => d.dependsOn.name).join(', '));
+        console.log('[EDIT MODE] Dependency IDs:', deps);
+        setEditingDeps(new Set(deps));
+      }
+    } else {
+      // Clear deps when not editing
+      console.log('[EDIT MODE] Clearing dependencies');
+      setEditingDeps(new Set());
+    }
+  }, [editingStageId, stages]);
 
   if (stages.length === 0) {
     return (
@@ -39,21 +83,39 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
     <div className="space-y-4">
       {stages.map((stage) => {
         const isEditing = editingStageId === stage.id;
-        const isManagingDeps = managingDepsStageId === stage.id;
 
         return (
           <div key={stage.id} className="border-2 border-border rounded-lg p-4 bg-card shadow-sm">
             {isEditing ? (
               // Edit Form
               <form
-                action={async (formData: FormData) => {
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setIsSubmitting(true);
+
+                  const formData = new FormData(e.currentTarget);
+
+                  // Add selected dependencies to form data
+                  editingDeps.forEach(depId => {
+                    formData.append('dependencies[]', depId);
+                  });
+
+                  console.log('Updating stage', stage.id, 'with dependencies:', Array.from(editingDeps));
+
                   const result = await updateTemplateStage(
                     stage.id,
                     templateId,
                     formData
                   );
+
+                  setIsSubmitting(false);
+
                   if (result?.success) {
+                    toast.success('Etapa atualizada com sucesso!');
                     setEditingStageId(null);
+                    setEditingDeps(new Set());
+                  } else {
+                    toast.error(result?.error || 'Erro ao atualizar etapa');
                   }
                 }}
                 className="space-y-4"
@@ -114,19 +176,33 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                     </select>
                   </div>
                 </div>
-                <div className="flex gap-3">
+
+                {/* Dependencies Section in Edit Form */}
+                <DependencySelector
+                  stages={stages}
+                  selectedDeps={editingDeps}
+                  onToggle={handleToggleDep}
+                  currentStageId={stage.id}
+                />
+
+                <div className="flex gap-3 pt-4 border-t border-border">
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save
+                    {isSubmitting ? 'Salvando...' : 'Salvar'}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setEditingStageId(null)}
-                    className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all"
+                    onClick={() => {
+                      setEditingStageId(null);
+                      setEditingDeps(new Set());
+                    }}
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all disabled:opacity-50"
                   >
-                    Cancel
+                    Cancelar
                   </button>
                 </div>
               </form>
@@ -141,15 +217,15 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                       </span>
                       <h3 className="text-lg font-bold text-foreground">{stage.name}</h3>
                     </div>
-                    <div className="ml-11 space-y-1 text-sm text-muted-foreground">
-                      <p>
-                        <span className="font-medium">Default Team:</span>{" "}
-                        {stage.defaultTeam?.name || "None"}
+                    <div className="ml-11 space-y-1">
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">Time:</span>{" "}
+                        {stage.defaultTeam?.name || "Sem time atribuído"}
                       </p>
-                      {stage.dependencies.length > 0 && (
-                        <p>
-                          <span className="font-medium">Dependencies:</span>{" "}
-                          {stage.dependencies
+                      {stage.dependents.length > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          <span className="font-semibold text-foreground">Depende de:</span>{" "}
+                          {stage.dependents
                             .map((dep) => dep.dependsOn.name)
                             .join(", ")}
                         </p>
@@ -158,39 +234,19 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                   </div>
                   <div className="ml-4 flex gap-2">
                     <button
-                      onClick={() => setManagingDepsStageId(stage.id)}
-                      className="px-4 py-2 text-sm font-semibold bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-all shadow-sm"
-                    >
-                      Dependencies
-                    </button>
-                    <button
                       onClick={() => setEditingStageId(stage.id)}
                       className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all shadow-sm"
                     >
-                      Edit
+                      Editar
                     </button>
                     <button
                       onClick={() => setDeletingStageId(stage.id)}
                       className="px-4 py-2 text-sm font-semibold bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-all shadow-sm"
                     >
-                      Delete
+                      Excluir
                     </button>
                   </div>
                 </div>
-
-                {/* Dependency Manager Modal */}
-                {isManagingDeps && (
-                  <DependencyManager
-                    stageId={stage.id}
-                    stageName={stage.name}
-                    templateId={templateId}
-                    allStages={stages}
-                    currentDependencies={stage.dependencies.map(
-                      (d) => d.dependsOnStageId
-                    )}
-                    onClose={() => setManagingDepsStageId(null)}
-                  />
-                )}
               </>
             )}
 

@@ -15,6 +15,15 @@ export async function createTemplateStage(
   const name = formData.get("name") as string;
   const order = parseInt(formData.get("order") as string);
   const defaultTeamId = formData.get("defaultTeamId") as string;
+  const dependencies = formData.getAll("dependencies[]") as string[];
+
+  console.log('[CREATE STAGE] Received data:', {
+    name,
+    order,
+    defaultTeamId,
+    dependencies,
+    templateId
+  });
 
   if (!name) {
     return { error: "Stage name is required" };
@@ -25,7 +34,8 @@ export async function createTemplateStage(
   }
 
   try {
-    await prisma.templateStage.create({
+    // Create the stage first
+    const newStage = await prisma.templateStage.create({
       data: {
         name,
         order,
@@ -34,10 +44,30 @@ export async function createTemplateStage(
       },
     });
 
+    console.log('[CREATE STAGE] Stage created:', newStage.id);
+
+    // Create dependencies if any were selected
+    if (dependencies && dependencies.length > 0) {
+      const dependencyData = dependencies.map(depId => ({
+        stageId: newStage.id,
+        dependsOnStageId: depId,
+      }));
+
+      console.log('[CREATE STAGE] Creating dependencies:', dependencyData);
+
+      await prisma.stageDependency.createMany({
+        data: dependencyData,
+      });
+
+      console.log('[CREATE STAGE] Dependencies created successfully');
+    } else {
+      console.log('[CREATE STAGE] No dependencies to create');
+    }
+
     revalidatePath(`/admin/templates/${templateId}`);
     return { success: true };
   } catch (error) {
-    console.error("Error creating stage:", error);
+    console.error("[CREATE STAGE] Error:", error);
     return { error: "Failed to create stage" };
   }
 }
@@ -52,6 +82,16 @@ export async function updateTemplateStage(
   const name = formData.get("name") as string;
   const order = parseInt(formData.get("order") as string);
   const defaultTeamId = formData.get("defaultTeamId") as string;
+  const dependencies = formData.getAll("dependencies[]") as string[];
+
+  console.log('[UPDATE STAGE] Received data:', {
+    stageId,
+    name,
+    order,
+    defaultTeamId,
+    dependencies,
+    templateId
+  });
 
   if (!name) {
     return { error: "Stage name is required" };
@@ -62,6 +102,7 @@ export async function updateTemplateStage(
   }
 
   try {
+    // Update the stage
     await prisma.templateStage.update({
       where: { id: stageId },
       data: {
@@ -71,10 +112,36 @@ export async function updateTemplateStage(
       },
     });
 
+    console.log('[UPDATE STAGE] Stage updated');
+
+    // Update dependencies: delete old ones and create new ones
+    const deletedCount = await prisma.stageDependency.deleteMany({
+      where: { stageId: stageId },
+    });
+
+    console.log('[UPDATE STAGE] Deleted old dependencies:', deletedCount.count);
+
+    if (dependencies && dependencies.length > 0) {
+      const dependencyData = dependencies.map(depId => ({
+        stageId: stageId,
+        dependsOnStageId: depId,
+      }));
+
+      console.log('[UPDATE STAGE] Creating new dependencies:', dependencyData);
+
+      await prisma.stageDependency.createMany({
+        data: dependencyData,
+      });
+
+      console.log('[UPDATE STAGE] Dependencies created successfully');
+    } else {
+      console.log('[UPDATE STAGE] No dependencies to create');
+    }
+
     revalidatePath(`/admin/templates/${templateId}`);
     return { success: true };
   } catch (error) {
-    console.error("Error updating stage:", error);
+    console.error("[UPDATE STAGE] Error:", error);
     return { error: "Failed to update stage" };
   }
 }

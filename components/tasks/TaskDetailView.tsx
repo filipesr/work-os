@@ -12,6 +12,7 @@ import { AddCommentForm } from "./AddCommentForm";
 import { AddArtifactForm } from "./AddArtifactForm";
 import { AdvanceStageButton } from "./AdvanceStageButton";
 import { RevertStageButton } from "./RevertStageButton";
+import { UnassignTaskButton } from "./UnassignTaskButton";
 import { LogTimeButton } from "./LogTimeButton";
 import { ActivityButton } from "./ActivityButton";
 import { StageWorkflowVisualization } from "./StageWorkflowVisualization";
@@ -171,6 +172,10 @@ export function TaskDetailView({
                   <RevertStageButton
                     taskId={task.id}
                     previousStages={previousStages}
+                  />
+                  <UnassignTaskButton
+                    taskId={task.id}
+                    currentAssignee={task.assignee?.name || task.assignee?.email || null}
                   />
                 </div>
 

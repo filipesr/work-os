@@ -96,12 +96,14 @@ export async function getWorkflowTemplate(templateId: string) {
           defaultTeam: true,
           dependencies: {
             include: {
+              stage: true,
               dependsOn: true,
             },
           },
           dependents: {
             include: {
               stage: true,
+              dependsOn: true,
             },
           },
         },

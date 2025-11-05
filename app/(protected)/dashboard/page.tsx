@@ -4,6 +4,7 @@ import { TaskStatus, TaskPriority } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ClaimTaskButton } from "@/components/tasks/ClaimTaskButton";
+import { UnassignTaskButton } from "@/components/tasks/UnassignTaskButton";
 
 // Types for our task data
 type TaskWithDetails = {
@@ -13,6 +14,10 @@ type TaskWithDetails = {
   status: TaskStatus;
   dueDate: Date | null;
   createdAt: Date;
+  assignee?: {
+    name: string | null;
+    email: string | null;
+  } | null;
   project: {
     name: string;
   };
@@ -121,7 +126,15 @@ function StatsCard({ stats }: { stats: UserStats }) {
 }
 
 // Task row component with visual urgency indicators
-function TaskRow({ task, showClaimButton = false }: { task: TaskWithDetails; showClaimButton?: boolean }) {
+function TaskRow({
+  task,
+  showClaimButton = false,
+  showUnassignButton = false
+}: {
+  task: TaskWithDetails;
+  showClaimButton?: boolean;
+  showUnassignButton?: boolean;
+}) {
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
   const isDueSoon = task.dueDate && !isOverdue &&
     new Date(task.dueDate).getTime() - Date.now() < 2 * 24 * 60 * 60 * 1000; // 2 days
@@ -174,6 +187,14 @@ function TaskRow({ task, showClaimButton = false }: { task: TaskWithDetails; sho
           <ClaimTaskButton taskId={task.id} />
         </td>
       )}
+      {showUnassignButton && (
+        <td className="px-4 py-3">
+          <UnassignTaskButton
+            taskId={task.id}
+            currentAssignee={task.assignee?.name || task.assignee?.email || null}
+          />
+        </td>
+      )}
     </tr>
   );
 }
@@ -188,7 +209,17 @@ function EmptyState({ message }: { message: string }) {
 }
 
 // TaskList component
-function TaskList({ tasks, title, showClaimButton = false }: { tasks: TaskWithDetails[]; title: string; showClaimButton?: boolean }) {
+function TaskList({
+  tasks,
+  title,
+  showClaimButton = false,
+  showUnassignButton = false
+}: {
+  tasks: TaskWithDetails[];
+  title: string;
+  showClaimButton?: boolean;
+  showUnassignButton?: boolean;
+}) {
   return (
     <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
       {/* Header */}
@@ -231,7 +262,7 @@ function TaskList({ tasks, title, showClaimButton = false }: { tasks: TaskWithDe
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Data de Entrega
                 </th>
-                {showClaimButton && (
+                {(showClaimButton || showUnassignButton) && (
                   <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Ação
                   </th>
@@ -240,7 +271,12 @@ function TaskList({ tasks, title, showClaimButton = false }: { tasks: TaskWithDe
             </thead>
             <tbody>
               {tasks.map((task) => (
-                <TaskRow key={task.id} task={task} showClaimButton={showClaimButton} />
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  showClaimButton={showClaimButton}
+                  showUnassignButton={showUnassignButton}
+                />
               ))}
             </tbody>
           </table>
@@ -310,6 +346,7 @@ export default async function DashboardPage() {
       include: {
         project: { select: { name: true } },
         currentStage: { select: { name: true } },
+        assignee: { select: { name: true, email: true } },
       },
       orderBy: { dueDate: "asc" }, // Prioritizes by due date
     }),
@@ -397,8 +434,8 @@ export default async function DashboardPage() {
 
       {/* Dashboard Widgets */}
       <div className="space-y-8">
-        {/* Widget 1: My Active Tasks */}
-        <TaskList tasks={myActiveTasks} title="Minhas Tarefas Ativas" />
+        {/* Widget 1: My Active Tasks - Com botão "Liberar Tarefa" */}
+        <TaskList tasks={myActiveTasks} title="Minhas Tarefas Ativas" showUnassignButton={true} />
 
         {/* Widget 2: Team Backlog - Com botão "Pegar Tarefa" */}
         <TaskList tasks={teamBacklogTasks} title="Backlog da Equipe (Não Atribuído)" showClaimButton={true} />
