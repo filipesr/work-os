@@ -1,6 +1,6 @@
 import * as React from "react";
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: "default" | "secondary" | "destructive" | "outline" | "success";
 }
 
@@ -14,7 +14,7 @@ function Badge({ className = "", variant = "default", ...props }: BadgeProps) {
   };
 
   return (
-    <div
+    <span
       className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold transition-all ${variants[variant]} ${className}`}
       {...props}
     />

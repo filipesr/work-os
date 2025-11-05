@@ -14,7 +14,9 @@
       "WebFetch(domain:www.prisma.io)",
       "Bash(find:*)",
       "Bash(awk:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(ls:*)",
+      "Bash(pnpm run build:*)"
     ],
     "deny": [],
     "ask": []

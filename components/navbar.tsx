@@ -41,6 +41,14 @@ export async function Navbar() {
                 Relatórios
               </Link>
             )}
+
+            {/* Task Flow Presentation - Everyone */}
+            <Link
+              href="/task-flow"
+              className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
+            >
+              Fluxo de Tarefas
+            </Link>
           </div>
 
           <div className="flex items-center space-x-4">

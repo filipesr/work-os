@@ -23,12 +23,20 @@ export default async function Home() {
 
           <div className="space-y-6">
             <p className="text-lg text-muted-foreground">Faça login para começar</p>
-            <Link
-              href="/auth/signin"
-              className="inline-block px-8 py-3.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-200"
-            >
-              Entrar
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/auth/signin"
+                className="inline-block px-8 py-3.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-200"
+              >
+                Entrar
+              </Link>
+              <Link
+                href="/task-flow"
+                className="inline-block px-8 py-3.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/90 shadow-md hover:shadow-lg transition-all duration-200"
+              >
+                Ver Apresentação do Fluxo
+              </Link>
+            </div>
           </div>
         </div>
       </div>
