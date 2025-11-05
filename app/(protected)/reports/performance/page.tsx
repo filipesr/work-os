@@ -131,17 +131,17 @@ export default async function PerformanceReportPage({
 
       {/* Lead Time Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-500/10 rounded-full">
-                <Timer className="h-6 w-6 text-blue-500" />
+              <div className="p-3 bg-blue-500/20 rounded-full">
+                <Timer className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
                   Lead Time Médio
                 </p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
                   {leadTimeMetrics.averageLeadTimeDays.toFixed(1)} dias
                 </p>
               </div>
@@ -149,17 +149,17 @@ export default async function PerformanceReportPage({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-500/10 rounded-full">
-                <Activity className="h-6 w-6 text-green-500" />
+              <div className="p-3 bg-emerald-500/20 rounded-full">
+                <Activity className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-emerald-700 dark:text-emerald-300">
                   Lead Time Mediano
                 </p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
                   {leadTimeMetrics.medianLeadTimeDays.toFixed(1)} dias
                 </p>
               </div>
@@ -167,17 +167,17 @@ export default async function PerformanceReportPage({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-violet-50 to-violet-100 dark:from-violet-950 dark:to-violet-900">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-500/10 rounded-full">
-                <TrendingDown className="h-6 w-6 text-purple-500" />
+              <div className="p-3 bg-violet-500/20 rounded-full">
+                <TrendingDown className="h-6 w-6 text-violet-600 dark:text-violet-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-violet-700 dark:text-violet-300">
                   Tarefas Analisadas
                 </p>
-                <p className="text-2xl font-bold">{leadTimeMetrics.count}</p>
+                <p className="text-2xl font-bold text-violet-900 dark:text-violet-100">{leadTimeMetrics.count}</p>
               </div>
             </div>
           </CardContent>
@@ -186,17 +186,17 @@ export default async function PerformanceReportPage({
 
       {/* Alert for Bottlenecks */}
       {bottlenecks.length > 0 && (
-        <Card className="border-orange-500">
+        <Card className="border-2 border-amber-400 dark:border-amber-500 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-              <CardTitle className="text-orange-500">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <CardTitle className="text-amber-700 dark:text-amber-300">
                 Gargalos Identificados
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-amber-700 dark:text-amber-300 mb-4">
               As seguintes etapas estão consumindo mais tempo e podem estar causando
               atrasos no fluxo:
             </p>
@@ -204,19 +204,19 @@ export default async function PerformanceReportPage({
               {bottlenecks.map((stage) => (
                 <div
                   key={stage.stageId}
-                  className="flex justify-between items-center p-3 bg-orange-50 rounded-lg"
+                  className="flex justify-between items-center p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg border border-amber-200 dark:border-amber-700"
                 >
                   <div>
-                    <div className="font-medium">{stage.stageName}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="font-medium text-amber-900 dark:text-amber-100">{stage.stageName}</div>
+                    <div className="text-xs text-amber-700 dark:text-amber-300">
                       {stage.templateName} • {stage.count} ocorrências
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold text-orange-500">
+                    <div className="text-lg font-bold text-amber-700 dark:text-amber-300">
                       {stage.averageDurationDays.toFixed(1)} dias
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs text-amber-600 dark:text-amber-400">
                       {stage.averageDurationHours.toFixed(1)} horas
                     </div>
                   </div>
@@ -301,7 +301,7 @@ export default async function PerformanceReportPage({
                     <div
                       key={stage.stageId}
                       className={`grid grid-cols-4 gap-2 text-sm p-2 rounded ${
-                        isHighRework ? "bg-red-50" : ""
+                        isHighRework ? "bg-rose-100 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-700" : ""
                       }`}
                     >
                       <div className="col-span-2">
@@ -313,13 +313,13 @@ export default async function PerformanceReportPage({
                         </div>
                       </div>
                       <div className="text-center text-xs">
-                        <div className="text-green-600">{stage.completed}</div>
-                        <div className="text-red-600">{stage.reverted}</div>
+                        <div className="text-emerald-600 dark:text-emerald-400 font-medium">{stage.completed}</div>
+                        <div className="text-rose-600 dark:text-rose-400 font-medium">{stage.reverted}</div>
                       </div>
                       <div className="text-right">
                         <div
                           className={`font-bold ${
-                            isHighRework ? "text-red-600" : "text-foreground"
+                            isHighRework ? "text-rose-700 dark:text-rose-300" : "text-foreground"
                           }`}
                         >
                           {reworkPercentage}%
@@ -336,17 +336,17 @@ export default async function PerformanceReportPage({
 
       {/* Quality Issues Alert */}
       {qualityIssues.length > 0 && (
-        <Card className="border-red-500">
+        <Card className="border-2 border-rose-400 dark:border-rose-500 bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              <CardTitle className="text-red-500">
+              <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              <CardTitle className="text-rose-700 dark:text-rose-300">
                 Atenção: Alta Taxa de Retrabalho
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-rose-700 dark:text-rose-300 mb-4">
               As seguintes etapas apresentam taxa de retrabalho superior a 10%,
               indicando possíveis problemas de qualidade ou comunicação:
             </p>
@@ -354,20 +354,20 @@ export default async function PerformanceReportPage({
               {qualityIssues.map((stage) => (
                 <div
                   key={stage.stageId}
-                  className="flex justify-between items-center p-3 bg-red-50 rounded-lg"
+                  className="flex justify-between items-center p-3 bg-rose-100 dark:bg-rose-900/30 rounded-lg border border-rose-200 dark:border-rose-700"
                 >
                   <div>
-                    <div className="font-medium">{stage.stageName}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="font-medium text-rose-900 dark:text-rose-100">{stage.stageName}</div>
+                    <div className="text-xs text-rose-700 dark:text-rose-300">
                       {stage.templateName} • {stage.completed} completo,{" "}
                       {stage.reverted} revertido
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-red-500">
+                    <div className="text-2xl font-bold text-rose-700 dark:text-rose-300">
                       {(stage.reworkRate * 100).toFixed(0)}%
                     </div>
-                    <div className="text-xs text-muted-foreground">retrabalho</div>
+                    <div className="text-xs text-rose-600 dark:text-rose-400">retrabalho</div>
                   </div>
                 </div>
               ))}

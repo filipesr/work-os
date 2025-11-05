@@ -117,15 +117,15 @@ export default async function ProductivityReportPage({
       </Card>
 
       {/* Summary Card */}
-      <Card>
+      <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950 dark:to-blue-950">
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-primary/10 rounded-full">
-              <Clock className="h-6 w-6 text-primary" />
+            <div className="p-3 bg-indigo-500/20 rounded-full">
+              <Clock className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total de Horas</p>
-              <p className="text-3xl font-bold">{totalHours.toFixed(1)}h</p>
+              <p className="text-sm text-indigo-700 dark:text-indigo-300">Total de Horas</p>
+              <p className="text-3xl font-bold text-indigo-900 dark:text-indigo-100">{totalHours.toFixed(1)}h</p>
             </div>
           </div>
         </CardContent>
@@ -133,11 +133,11 @@ export default async function ProductivityReportPage({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Hours by User */}
-        <Card>
-          <CardHeader>
+        <Card className="border-l-4 border-l-sky-500 dark:border-l-sky-400">
+          <CardHeader className="bg-gradient-to-r from-sky-50 to-transparent dark:from-sky-950 dark:to-transparent">
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              <CardTitle>Horas por Usuário</CardTitle>
+              <Users className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+              <CardTitle className="text-sky-900 dark:text-sky-100">Horas por Usuário</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -167,11 +167,11 @@ export default async function ProductivityReportPage({
         </Card>
 
         {/* Hours by Project */}
-        <Card>
-          <CardHeader>
+        <Card className="border-l-4 border-l-teal-500 dark:border-l-teal-400">
+          <CardHeader className="bg-gradient-to-r from-teal-50 to-transparent dark:from-teal-950 dark:to-transparent">
             <div className="flex items-center gap-2">
-              <Briefcase className="h-5 w-5" />
-              <CardTitle>Horas por Projeto</CardTitle>
+              <Briefcase className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+              <CardTitle className="text-teal-900 dark:text-teal-100">Horas por Projeto</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -204,11 +204,11 @@ export default async function ProductivityReportPage({
         </Card>
 
         {/* Hours by Client */}
-        <Card>
-          <CardHeader>
+        <Card className="border-l-4 border-l-purple-500 dark:border-l-purple-400">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-transparent dark:from-purple-950 dark:to-transparent">
             <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              <CardTitle>Horas por Cliente</CardTitle>
+              <Building2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <CardTitle className="text-purple-900 dark:text-purple-100">Horas por Cliente</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -236,11 +236,11 @@ export default async function ProductivityReportPage({
         </Card>
 
         {/* Hours by Stage */}
-        <Card>
-          <CardHeader>
+        <Card className="border-l-4 border-l-fuchsia-500 dark:border-l-fuchsia-400">
+          <CardHeader className="bg-gradient-to-r from-fuchsia-50 to-transparent dark:from-fuchsia-950 dark:to-transparent">
             <div className="flex items-center gap-2">
-              <Workflow className="h-5 w-5" />
-              <CardTitle>Horas por Etapa</CardTitle>
+              <Workflow className="h-5 w-5 text-fuchsia-600 dark:text-fuchsia-400" />
+              <CardTitle className="text-fuchsia-900 dark:text-fuchsia-100">Horas por Etapa</CardTitle>
             </div>
           </CardHeader>
           <CardContent>

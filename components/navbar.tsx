@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { UserRole } from "@prisma/client"
 import Link from "next/link"
-import { signOutAction } from "@/lib/actions/auth"
+import { UserMenu } from "@/components/user-menu"
 
 export async function Navbar() {
   const session = await auth()
@@ -24,47 +24,13 @@ export async function Navbar() {
               Dashboard
             </Link>
 
-            {/* Admin Section - Manager or Admin */}
-            {(userRole === UserRole.ADMIN || userRole === UserRole.MANAGER) && (
-              <div className="flex space-x-8">
-                <Link
-                  href="/admin/clients"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
-                >
-                  Admin
-                </Link>
-                <Link
-                  href="/admin/projects"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
-                >
-                  Projetos
-                </Link>
-              </div>
-            )}
-
-            {/* Admin Only Links */}
-            {userRole === UserRole.ADMIN && (
-              <div className="flex space-x-8">
-                <Link
-                  href="/admin/teams"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
-                >
-                  Times
-                </Link>
-                <Link
-                  href="/admin/users"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
-                >
-                  Usuários
-                </Link>
-                <Link
-                  href="/admin/templates"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
-                >
-                  Templates
-                </Link>
-              </div>
-            )}
+            {/* Tasks - Everyone */}
+            <Link
+              href="/admin/tasks"
+              className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
+            >
+              Tarefas
+            </Link>
 
             {/* Reports Section - Manager or Admin */}
             {(userRole === UserRole.ADMIN || userRole === UserRole.MANAGER) && (
@@ -75,31 +41,10 @@ export async function Navbar() {
                 Relatórios
               </Link>
             )}
-
-            {/* Tasks - Everyone */}
-            <Link
-              href="/admin/tasks"
-              className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
-            >
-              Tarefas
-            </Link>
           </div>
 
           <div className="flex items-center space-x-4">
-            <Link
-              href="/account"
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              {session.user.name} ({userRole})
-            </Link>
-            <form action={signOutAction}>
-              <button
-                type="submit"
-                className="text-sm font-semibold text-foreground hover:text-destructive transition-colors"
-              >
-                Sair
-              </button>
-            </form>
+            <UserMenu userName={session.user.name} userRole={userRole} />
           </div>
         </div>
       </div>
