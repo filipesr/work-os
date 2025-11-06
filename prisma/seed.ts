@@ -10,7 +10,7 @@ async function main() {
   const teams = [
     'Designers', 'Video-makers', 'Social Media', 'Traffic Manager',
     'Software Engineer', 'Call Center', 'Quality Control',
-    'Supervisor', 'Manager', 'SEO', 'HR', 'Copywriting', 'Dev'
+    'Supervisor', 'Manager', 'SEO', 'HR', 'Copywriting'
   ];
 
   for (const name of teams) {
@@ -30,17 +30,17 @@ async function main() {
 
   // 2. Pre-register the Admin User (Idempotent)
   // This user will get Admin rights upon first login with Google
-  const adminEmail = 'movimento.jant@gmail.com';
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: { role: UserRole.ADMIN },
-    create: {
-      email: adminEmail,
-      name: 'Admin (Pre-seeded)', // This name will be updated by Google on first login
-      role: UserRole.ADMIN,
-    },
-  });
-  console.log(`Pre-registered ADMIN user: ${adminEmail}`);
+  // const adminEmail = 'movimento.jant@gmail.com';
+  // await prisma.user.upsert({
+  //   where: { email: adminEmail },
+  //   update: { role: UserRole.ADMIN },
+  //   create: {
+  //     email: adminEmail,
+  //     name: 'Admin (Pre-seeded)', // This name will be updated by Google on first login
+  //     role: UserRole.ADMIN,
+  //   },
+  // });
+  // console.log(`Pre-registered ADMIN user: ${adminEmail}`);
 
   // 3. Create Workflow Templates
 
@@ -84,7 +84,7 @@ async function main() {
         create: [
           { name: 'Briefing & Copy', order: 1, defaultTeamId: teamMap.get('Copywriting') },
           { name: 'Design', order: 2, defaultTeamId: teamMap.get('Designers') },
-          { name: 'Dev', order: 3, defaultTeamId: teamMap.get('Dev') },
+          { name: 'Development', order: 3, defaultTeamId: teamMap.get('Software Engineer') },
           { name: 'Revisão QC', order: 4, defaultTeamId: teamMap.get('Quality Control') },
           { name: 'SEO', order: 5, defaultTeamId: teamMap.get('SEO') },
         ],
