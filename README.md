@@ -2,6 +2,35 @@
 
 Sistema de gestão de operações para agências baseado em Next.js, Prisma, e NextAuth.
 
+## 🚀 Sistema de Workflow Paralelo (Fork/Join) - v2.0
+
+O Work OS implementa um sistema avançado de **workflow paralelo** que permite:
+
+- ✅ **Fork (Divisão):** Múltiplas etapas executam simultaneamente após conclusão de uma etapa
+- ✅ **Join (Sincronização):** Etapas aguardam TODAS as dependências antes de ativar
+- ✅ **Atribuição por Etapa:** Cada etapa ativa pode ter seu próprio responsável
+- ✅ **Dashboard por Etapa:** Uma entrada no dashboard para cada etapa ativa (não por tarefa)
+- ✅ **Bloqueio Inteligente:** Etapas aguardando dependências ficam visíveis como BLOCKED
+
+📖 **[Documentação Completa do Sistema Paralelo](./PARALLEL_WORKFLOW.md)**
+
+### Exemplo Prático
+
+**Workflow: Landing Page**
+```
+Design → Fork(Front-end, Back-end) → Join(Testes) → Deploy
+```
+
+**Execução:**
+1. Designer completa "Design" → Front-end e Back-end ativam **simultaneamente**
+2. Dev 1 completa "Front-end" → Testes fica **bloqueado** (aguardando Back-end)
+3. Dev 2 completa "Back-end" → Testes **ativa automaticamente** (join completo!)
+4. QA completa "Testes" → Deploy ativa
+
+**Benefícios:** Economiza dias de projeto eliminando esperas desnecessárias.
+
+---
+
 ## ✅ Parte 1.1 Completa: Fundação e Schema do Banco de Dados
 
 ### O que foi implementado:
@@ -20,6 +49,7 @@ O schema define toda a arquitetura do sistema com:
 - `TaskStatus`: BACKLOG, IN_PROGRESS, PAUSED, COMPLETED, CANCELLED
 - `TaskPriority`: LOW, MEDIUM, HIGH, URGENT
 - `ArtifactType`: DOCUMENT, IMAGE, VIDEO, FIGMA, OTHER
+- `ActiveStageStatus`: ACTIVE, BLOCKED, COMPLETED (novo - sistema paralelo)
 
 **Modelos Principais:**
 
@@ -38,7 +68,8 @@ O schema define toda a arquitetura do sistema com:
 - `StageDependency` - Dependências entre estágios
 
 **Task & Colaboração:**
-- `Task` - Tarefa única que transita entre estágios
+- `Task` - Tarefa única que pode ter múltiplas etapas ativas simultaneamente
+- `TaskActiveStage` - Relação many-to-many entre Task e TemplateStage (sistema paralelo)
 - `TaskComment` - Comentários na tarefa
 - `TaskArtifact` - Arquivos/links anexados
 
@@ -126,27 +157,44 @@ work-os/
 └── package.json
 ```
 
-### Arquitetura: "Single Task with Dynamic Stages"
+### Arquitetura: "Parallel Workflow with Fork/Join Pattern"
 
-A arquitetura implementada usa um modelo onde:
-- Uma **Task** não tem sub-tasks
-- Uma Task transita através de **TemplateStage** configuráveis
+A arquitetura implementada usa um modelo avançado onde:
+- Uma **Task** não tem sub-tasks, mas pode ter **múltiplas etapas ativas simultaneamente**
+- Modelo **many-to-many** (Task ↔ TemplateStage) através de `TaskActiveStage`
+- **Fork:** Uma etapa completada pode ativar múltiplas etapas dependentes automaticamente
+- **Join:** Uma etapa só ativa quando TODAS suas dependências forem completadas
 - Os **logs** (TimeLog, TaskStageLog) são append-only para performance
-- Os **Templates** definem workflows reutilizáveis
-- As **dependências** entre stages são configuráveis
+- Os **Templates** definem workflows reutilizáveis com dependências complexas
+- **Atribuição por etapa:** Cada etapa ativa pode ter seu próprio responsável
 
 Este design permite:
-- ✅ Workflows flexíveis e configuráveis
+- ✅ Workflows paralelos que economizam dias de projeto
+- ✅ Sincronização automática de dependências (Join pattern)
+- ✅ Visibilidade granular: uma entrada no dashboard por etapa ativa
 - ✅ Análise de gargalos (tempo em cada stage)
-- ✅ Relatórios de produtividade
-- ✅ RBAC granular (por role e por team)
+- ✅ Relatórios de produtividade detalhados
+- ✅ RBAC granular (por role, por team, e por etapa)
+- ✅ Eliminação de esperas desnecessárias entre equipes
 
-### Próximas Partes do Projeto
+### Status do Projeto
 
-- **Parte 2:** Motor de Templates e Máquina de Estados
-- **Parte 3:** UI Colaborativa (Kanban, Comentários)
-- **Parte 4:** Motor de Relatórios (Timesheet, Gargalos)
-- **Parte 5:** RBAC e Deploy Final
+- ✅ **Parte 1:** Fundação e Schema do Banco de Dados
+- ✅ **Parte 2:** Motor de Templates e Máquina de Estados (Fork/Join implementado)
+- ✅ **Parte 3:** UI Colaborativa (Kanban, Comentários, Artefatos)
+- 🔄 **Parte 4:** Motor de Relatórios (Timesheet implementado, Gargalos em progresso)
+- 🔄 **Parte 5:** RBAC e Deploy Final (RBAC implementado, Deploy pendente)
+
+**Features Principais Implementadas:**
+- ✅ Sistema de Workflow Paralelo (Fork/Join)
+- ✅ Dashboard por Etapa com filtros avançados
+- ✅ Atribuição e liberação por etapa
+- ✅ Activity Tracking (Start/Stop)
+- ✅ Time Logging manual
+- ✅ Comentários e Artefatos
+- ✅ Visualização de workflow
+- ✅ Stage dependencies com bloqueio inteligente
+- ✅ Validação de contribuições antes de avançar
 
 ---
 

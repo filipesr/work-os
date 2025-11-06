@@ -59,12 +59,22 @@
 * **Ponto Chave:** "O Dev não corre o risco de programar em cima de uma versão antiga. Ele tem a fonte única da verdade."
 * **Finalização:** O Dev clica em "Iniciar Tarefa", constrói a página, e anexa o `Artefato (Link)` final: "Link de Staging (Vercel)". Ele clica em **"Avançar Etapa"**.
 
-#### 6. Etapa 4 & 5: QC e SEO (Trabalho Paralelo)
+#### 6. Etapa 4 & 5: QC e SEO (Trabalho Paralelo - FORK)
 
 * **O que acontece:** O "Dev" (Etapa 3) era a dependência para *duas* etapas: "QC" e "SEO".
-* **A "Mágica" do Sistema:** O sistema avança a tarefa e ela aparece *simultaneamente* na fila da equipe de `Quality Control` **E** na fila da equipe de `SEO`.
+* **A "Mágica" do Sistema (FORK):** O sistema executa um **Fork** - ele ativa a tarefa *simultaneamente* nas duas etapas:
+  - QC aparece no dashboard da equipe de `Quality Control` como **ACTIVE**
+  - SEO aparece no dashboard da equipe de `SEO` como **ACTIVE**
+  - Ambas as equipes podem trabalhar **ao mesmo tempo** sem esperar uma pela outra
 * **Ponto Chave:** "Não precisamos esperar o QC testar os links para o SEO otimizar as meta tags. As duas equipes trabalham em paralelo, economizando dias de projeto."
-* **Finalização:** A equipe de `QC` testa tudo e clica em "Concluir Etapa". A equipe de `SEO` otimiza tudo e clica em "Concluir Etapa".
+* **Visibilidade no Dashboard:**
+  - A tarefa "LP Lançamento Produto X" agora aparece **duas vezes** nos dashboards:
+    - Uma entrada para QC (atribuída ao time de Quality Control)
+    - Uma entrada para SEO (atribuída ao time de SEO)
+* **Finalização:**
+  - A equipe de `QC` testa tudo e clica em "Concluir Etapa"
+  - A equipe de `SEO` otimiza tudo e clica em "Concluir Etapa"
+  - Ambos trabalham independentemente, sem bloqueios
 
 #### 7. Conclusão
 
@@ -76,3 +86,108 @@
     3.  O **Relatório de Gargalos** mostra exatamente quantos dias ela ficou parada em cada etapa (especialmente na revisão de design).
 
 **Resumo da Apresentação:** "Em 5 minutos, a tarefa navegou por 5 equipes diferentes, teve uma revisão (rejeição) e duas equipes trabalharam em paralelo, sem que *ninguém* precisasse enviar um e-mail, uma mensagem no WhatsApp ou 'cutucar' o colega perguntando 'E aí, já terminou?'"
+
+---
+
+### Entendendo Fork e Join: Exemplo Avançado
+
+#### Cenário: Desenvolvimento de Aplicativo Mobile
+
+**Workflow Template:**
+```
+1. Design de UI/UX
+2. Design de Ícones (depende de: Design de UI/UX)
+3. Desenvolvimento iOS (depende de: Design de UI/UX)
+4. Desenvolvimento Android (depende de: Design de UI/UX)
+5. Testes Multi-Plataforma (depende de: Dev iOS, Dev Android, Design de Ícones)
+6. Deploy nas Stores (depende de: Testes Multi-Plataforma)
+```
+
+#### Fluxo de Execução com Fork e Join:
+
+**Etapa 1: Design de UI/UX completo**
+- Designer clica em "Concluir Etapa"
+- **FORK acontece:**
+  - Design de Ícones → ACTIVE
+  - Desenvolvimento iOS → ACTIVE
+  - Desenvolvimento Android → ACTIVE
+  - Testes Multi-Plataforma → BLOCKED (aguardando 3 dependências)
+
+**Dashboard mostra:**
+- 1 card de "Design de Ícones" no time de Design
+- 1 card de "Dev iOS" no time de iOS
+- 1 card de "Dev Android" no time de Android
+- 1 card de "Testes" (BLOCKED) no time de QA com indicador: "Aguardando: Dev iOS, Dev Android, Design de Ícones"
+
+**Etapa 2: Designer de Ícones completa primeiro**
+- Designer clica em "Concluir Etapa" em "Design de Ícones"
+- Design de Ícones → COMPLETED
+- Sistema verifica "Testes Multi-Plataforma"
+- Testes ainda BLOCKED (faltam Dev iOS e Dev Android)
+- Dashboard de QA atualiza: "Aguardando: Dev iOS, Dev Android" (Design de Ícones sai da lista)
+
+**Etapa 3: Dev iOS completa segundo**
+- Developer iOS clica em "Concluir Etapa"
+- Dev iOS → COMPLETED
+- Sistema verifica "Testes Multi-Plataforma"
+- Testes ainda BLOCKED (falta Dev Android)
+- Dashboard de QA atualiza: "Aguardando: Dev Android"
+
+**Etapa 4: Dev Android completa por último**
+- Developer Android clica em "Concluir Etapa"
+- Dev Android → COMPLETED
+- Sistema verifica "Testes Multi-Plataforma"
+- **JOIN acontece:** Todas as 3 dependências agora estão COMPLETED!
+- Testes Multi-Plataforma → muda de BLOCKED para ACTIVE automaticamente
+- Card de Testes aparece como ATIVO no dashboard de QA
+- QA recebe notificação que pode começar a trabalhar
+
+**Etapa 5: Testes completados**
+- QA clica em "Concluir Etapa"
+- Testes → COMPLETED
+- Deploy nas Stores → ACTIVE (única dependência satisfeita)
+
+#### Vantagens Visuais:
+
+**Economia de Tempo:**
+- **Sem Fork/Join (Linear):**
+  - Design UI/UX: 3 dias
+  - Design de Ícones: 2 dias (espera Design UI/UX)
+  - Dev iOS: 5 dias (espera Ícones)
+  - Dev Android: 5 dias (espera Dev iOS)
+  - **Total: 15 dias**
+
+- **Com Fork/Join (Paralelo):**
+  - Design UI/UX: 3 dias
+  - Design de Ícones + Dev iOS + Dev Android: 5 dias (trabalho simultâneo)
+  - **Total: 8 dias - Economia de 47%!**
+
+**Visibilidade:**
+- Gestores veem em tempo real quais etapas estão bloqueadas
+- Times sabem exatamente o que estão aguardando
+- Não há dúvida sobre quem está segurando o processo
+
+**Exemplo Real no Dashboard:**
+
+```
+📊 Dashboard do Time de QA
+
+🔵 BACKLOG DO TIME (Etapas Disponíveis)
+(vazio - nada disponível no momento)
+
+⏸️ ETAPAS BLOQUEADAS
+┌─────────────────────────────────────────────┐
+│ App Mobile - Testes Multi-Plataforma        │
+│ ⏸️ BLOQUEADO                                 │
+│                                             │
+│ Aguardando:                                 │
+│ ⏳ Dev iOS (em progresso - João)            │
+│ ⏳ Dev Android (em progresso - Maria)       │
+│ ✅ Design de Ícones (completo)              │
+│                                             │
+│ Progresso: 1/3 dependências completas       │
+└─────────────────────────────────────────────┘
+
+[Quando todas as 3 forem completadas, este card
+ mudará automaticamente para "BACKLOG DO TIME"]
+```
