@@ -67,13 +67,6 @@ export function ArtifactsList({ artifacts }: ArtifactsListProps) {
                 </a>
               </div>
 
-              {/* Description */}
-              {artifact.description && (
-                <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                  {artifact.description}
-                </p>
-              )}
-
               {/* Metadata */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {/* User */}

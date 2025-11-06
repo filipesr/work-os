@@ -8,13 +8,25 @@ import toast from "react-hot-toast";
 interface UnassignTaskButtonProps {
   taskId: string;
   currentAssignee: string | null;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function UnassignTaskButton({
   taskId,
   currentAssignee,
+  open: controlledOpen,
+  onOpenChange,
 }: UnassignTaskButtonProps) {
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const showConfirm = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setShowConfirm = (value: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(value);
+    } else {
+      setInternalOpen(value);
+    }
+  };
   const [isPending, startTransition] = useTransition();
 
   const handleUnassign = async () => {

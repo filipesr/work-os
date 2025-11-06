@@ -86,8 +86,9 @@ export async function startWorkOnTask(
 /**
  * Stop working on a task.
  * This is called when the user manually stops the task they are working on.
+ * Automatically creates a TimeLog entry with the calculated hours worked.
  */
-export async function stopWorkOnTask(activeLogId: string, taskId: string) {
+export async function stopWorkOnTask(activeLogId: string, taskId: string, description?: string) {
   const user = await requireMemberOrHigher();
 
   if (!activeLogId) {
@@ -95,10 +96,15 @@ export async function stopWorkOnTask(activeLogId: string, taskId: string) {
   }
 
   try {
-    // Verify that this log belongs to the current user (security check)
+    // Verify that this log belongs to the current user and get start time
     const log = await prisma.activityLog.findUnique({
       where: { id: activeLogId },
-      select: { userId: true },
+      select: {
+        userId: true,
+        startedAt: true,
+        taskId: true,
+        stageId: true,
+      },
     });
 
     if (!log) {
@@ -109,16 +115,40 @@ export async function stopWorkOnTask(activeLogId: string, taskId: string) {
       return { error: "Unauthorized: This activity log does not belong to you" };
     }
 
-    // Stop the activity log
-    await prisma.activityLog.update({
-      where: { id: activeLogId },
-      data: { endedAt: new Date() },
+    const endedAt = new Date();
+
+    // Stop the activity log and create TimeLog entry in a transaction
+    await prisma.$transaction(async (tx: any) => {
+      // 1. Stop the activity log
+      await tx.activityLog.update({
+        where: { id: activeLogId },
+        data: { endedAt },
+      });
+
+      // 2. Calculate hours worked
+      const durationMs = endedAt.getTime() - new Date(log.startedAt).getTime();
+      const hoursSpent = durationMs / (1000 * 60 * 60); // Convert to hours
+
+      // 3. Create TimeLog entry (only if duration > 0)
+      if (hoursSpent > 0) {
+        await tx.timeLog.create({
+          data: {
+            userId: log.userId,
+            taskId: log.taskId,
+            stageId: log.stageId,
+            hoursSpent: Math.round(hoursSpent * 100) / 100, // Round to 2 decimals
+            logDate: endedAt,
+            description: description?.trim() || null,
+          },
+        });
+      }
     });
 
     // Revalidate paths
     revalidatePath(`/tasks/${taskId}`);
     revalidatePath(`/admin/tasks/${taskId}`);
     revalidatePath(`/reports/live-activity`);
+    revalidatePath(`/dashboard`);
 
     return { success: true };
   } catch (error) {

@@ -1,19 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Task, User, Project, Client, TemplateStage, Team, TaskComment, TaskArtifact, TaskStageLog } from "@prisma/client";
+import { Task, User, Project, Client, TemplateStage, Team, TaskComment, TaskArtifact, TaskStageLog, TimeLog, UserRole } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Calendar, User as UserIcon, AlertCircle, MessageSquare, Paperclip } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Calendar, User as UserIcon, AlertCircle, MessageSquare, Paperclip, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { CommentsList } from "./CommentsList";
 import { ArtifactsList } from "./ArtifactsList";
 import { AddCommentForm } from "./AddCommentForm";
 import { AddArtifactForm } from "./AddArtifactForm";
 import { TaskActionsMenu } from "./TaskActionsMenu";
 import { ActivityButton } from "./ActivityButton";
-import { StageWorkflowVisualization } from "./StageWorkflowVisualization";
+import { WorkflowHistoryModal } from "./WorkflowHistoryModal";
+import { TimeLogsList } from "./TimeLogsList";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -27,6 +30,10 @@ type TaskWithRelations = Task & {
   stageLogs: (TaskStageLog & {
     stage: TemplateStage;
     user: Pick<User, "id" | "name" | "email" | "image">;
+  })[];
+  timeLogs: (TimeLog & {
+    user: Pick<User, "id" | "name" | "email" | "image">;
+    stage: Pick<TemplateStage, "id" | "name" | "order"> | null;
   })[];
 };
 
@@ -44,6 +51,7 @@ interface TaskDetailViewProps {
   availableNextStages: TemplateStage[];
   previousStages: TemplateStage[];
   currentUserId: string;
+  currentUserRole: UserRole;
   activeLog: ActiveLog | null;
   allTemplateStages: (TemplateStage & { defaultTeam: { id: string; name: string } | null })[];
 }
@@ -68,45 +76,141 @@ export function TaskDetailView({
   availableNextStages,
   previousStages,
   currentUserId,
+  currentUserRole,
   activeLog,
   allTemplateStages,
 }: TaskDetailViewProps) {
+  const [showArtifactForm, setShowArtifactForm] = useState(false);
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
+  const canViewTimeLogs = currentUserRole === UserRole.ADMIN || currentUserRole === UserRole.MANAGER;
+  const totalHours = task.timeLogs.reduce((sum, log) => sum + log.hoursSpent, 0);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Main Content - Left Side */}
       <div className="lg:col-span-2 space-y-6">
-        {/* Back Button */}
-        <Link
-          href={`/projects/${task.projectId}`}
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar ao projeto
-        </Link>
+        {/* Main Task Card - Title + Details + Current Stage */}
+        <Card>
+          <CardHeader>
+            {/* Back Button + Title Row */}
+            <div className="flex items-start gap-4 mb-4">
+              <Link
+                href={`/projects/${task.projectId}`}
+                className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground shrink-0 mt-1"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
+              </Link>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold leading-tight mb-2">{task.title}</h1>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>{task.project.client.name}</span>
+                  <span>•</span>
+                  <span>{task.project.name}</span>
+                </div>
+              </div>
+              {/* Top Right Corner: Current Stage Tag + History Button */}
+              <div className="flex items-center gap-2 shrink-0">
+                {task.currentStage && (
+                  <Badge variant="default" className="gap-1.5">
+                    <span className="font-bold">{task.currentStage.order}</span>
+                    <span>•</span>
+                    <span>{task.currentStage.name}</span>
+                  </Badge>
+                )}
+                <WorkflowHistoryModal
+                  allStages={allTemplateStages}
+                  stageLogs={task.stageLogs}
+                  comments={task.comments}
+                  artifacts={task.artifacts}
+                  currentUserId={currentUserId}
+                  currentStageId={task.currentStageId}
+                />
+              </div>
+            </div>
+          </CardHeader>
 
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold mb-2">{task.title}</h1>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>{task.project.client.name}</span>
-            <span>•</span>
-            <span>{task.project.name}</span>
-          </div>
-        </div>
+          <CardContent className="space-y-4">
+            {/* Details Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Status
+                </p>
+                <Badge variant={statusConfig[task.status].variant}>
+                  {statusConfig[task.status].label}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Prioridade
+                </p>
+                <Badge variant={priorityConfig[task.priority].variant}>
+                  {priorityConfig[task.priority].label}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Responsável
+                </p>
+                {task.assignee ? (
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={task.assignee.image || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {task.assignee.name?.charAt(0).toUpperCase() || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm truncate">
+                      {task.assignee.name || task.assignee.email}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <UserIcon className="h-4 w-4" />
+                    <span className="text-sm">Não atribuído</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Data de Entrega
+                </p>
+                {task.dueDate ? (
+                  <div className={`flex items-center gap-2 text-sm ${isOverdue ? "text-destructive" : ""}`}>
+                    {isOverdue ? (
+                      <AlertCircle className="h-4 w-4" />
+                    ) : (
+                      <Calendar className="h-4 w-4" />
+                    )}
+                    <span>
+                      {format(new Date(task.dueDate), "dd/MM/yyyy", {
+                        locale: ptBR,
+                      })}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Sem prazo</span>
+                )}
+              </div>
+            </div>
 
-        {/* Description */}
-        {task.description && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Descrição</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm whitespace-pre-wrap">{task.description}</p>
-            </CardContent>
-          </Card>
-        )}
+            {/* Description */}
+            {task.description && (
+              <>
+                <Separator />
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    Descrição
+                  </p>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                    {task.description}
+                  </p>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Comments Section */}
         <Card>
@@ -120,7 +224,6 @@ export function TaskDetailView({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Comments List */}
             <CommentsList
               comments={task.comments}
               currentUserId={currentUserId}
@@ -128,184 +231,101 @@ export function TaskDetailView({
 
             <Separator />
 
-            {/* Add Comment Form at bottom */}
+            {/* Add Comment Form */}
             <AddCommentForm taskId={task.id} userId={currentUserId} />
-          </CardContent>
-        </Card>
-
-        {/* Artifacts Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Paperclip className="h-5 w-5" />
-              Artefatos
-              <Badge variant="secondary" className="ml-auto">
-                {task.artifacts.length}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Artifacts List */}
-            <ArtifactsList artifacts={task.artifacts} />
-
-            <Separator />
-
-            {/* Add Artifact Form at bottom */}
-            <AddArtifactForm taskId={task.id} userId={currentUserId} />
           </CardContent>
         </Card>
       </div>
 
       {/* Sidebar - Right Side */}
       <div className="space-y-6">
-        {/* Current Stage & Controls */}
+        {/* Actions Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Etapa Atual</CardTitle>
+            <CardTitle className="text-sm">Ações</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {task.currentStage ? (
+            {/* Activity Tracking */}
+            <ActivityButton
+              taskId={task.id}
+              taskTitle={task.title}
+              currentStageId={task.currentStageId}
+              activeLog={activeLog}
+            />
+
+            <Separator />
+
+            {/* Actions Menu */}
+            <TaskActionsMenu
+              taskId={task.id}
+              currentStageId={task.currentStageId}
+              taskStatus={task.status}
+              currentAssignee={task.assignee?.name || task.assignee?.email || null}
+              previousStages={previousStages}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Artifacts Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Paperclip className="h-4 w-4" />
+              Artefatos
+              <Badge variant="secondary" className="ml-auto text-xs">
+                {task.artifacts.length}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ArtifactsList artifacts={task.artifacts} />
+
+            {/* Toggle button for form */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowArtifactForm(!showArtifactForm)}
+              className="w-full"
+            >
+              {showArtifactForm ? (
+                <>
+                  <ChevronUp className="h-4 w-4 mr-2" />
+                  Ocultar Formulário
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-2" />
+                  Adicionar Link/Artefato
+                </>
+              )}
+            </Button>
+
+            {/* Collapsible Add Artifact Form */}
+            {showArtifactForm && (
               <>
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-semibold">
-                      {task.currentStage.order}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium">{task.currentStage.name}</h3>
-                      <p className="text-xs text-muted-foreground">
-                        {task.currentStage.template.name}
-                      </p>
-                    </div>
-                  </div>
-                  {task.currentStage.defaultTeam && (
-                    <p className="text-xs text-muted-foreground">
-                      Time: {task.currentStage.defaultTeam.name}
-                    </p>
-                  )}
-                </div>
-
-                {/* Activity Tracking (Start/Stop Task) */}
-                <ActivityButton
-                  taskId={task.id}
-                  taskTitle={task.title}
-                  currentStageId={task.currentStageId}
-                  activeLog={activeLog}
-                />
-
                 <Separator />
-
-                {/* Compact Actions Menu */}
-                <TaskActionsMenu
-                  taskId={task.id}
-                  currentStageId={task.currentStageId}
-                  taskStatus={task.status}
-                  currentAssignee={task.assignee?.name || task.assignee?.email || null}
-                  previousStages={previousStages}
-                />
+                <AddArtifactForm taskId={task.id} userId={currentUserId} />
               </>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Nenhuma etapa atribuída
-              </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Task Metadata */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Detalhes</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Status */}
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">
-                Status
-              </p>
-              <Badge variant={statusConfig[task.status].variant}>
-                {statusConfig[task.status].label}
-              </Badge>
-            </div>
-
-            <Separator />
-
-            {/* Priority */}
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">
-                Prioridade
-              </p>
-              <Badge variant={priorityConfig[task.priority].variant}>
-                {priorityConfig[task.priority].label}
-              </Badge>
-            </div>
-
-            <Separator />
-
-            {/* Assignee */}
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">
-                Responsável
-              </p>
-              {task.assignee ? (
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={task.assignee.image || undefined} />
-                    <AvatarFallback>
-                      {task.assignee.name?.charAt(0).toUpperCase() || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {task.assignee.name || task.assignee.email}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <UserIcon className="h-4 w-4" />
-                  <span className="text-sm">Não atribuído</span>
-                </div>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Due Date */}
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">
-                Data de Entrega
-              </p>
-              {task.dueDate ? (
-                <div className={`flex items-center gap-2 ${isOverdue ? "text-destructive" : ""}`}>
-                  {isOverdue ? (
-                    <AlertCircle className="h-4 w-4" />
-                  ) : (
-                    <Calendar className="h-4 w-4" />
-                  )}
-                  <span className="text-sm">
-                    {format(new Date(task.dueDate), "dd 'de' MMMM, yyyy", {
-                      locale: ptBR,
-                    })}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span className="text-sm">Sem prazo definido</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Workflow Visualization */}
-        {allTemplateStages.length > 0 && (
-          <StageWorkflowVisualization
-            currentStageId={task.currentStageId}
-            allStages={allTemplateStages}
-            stageLogs={task.stageLogs}
-          />
+        {/* Time Logs Section (Only for ADMIN/MANAGER) */}
+        {canViewTimeLogs && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Tempo Registrado
+                <Badge variant="secondary" className="ml-auto text-xs">
+                  {totalHours.toFixed(1)}h total
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TimeLogsList timeLogs={task.timeLogs} />
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

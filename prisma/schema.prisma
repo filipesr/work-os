@@ -125,17 +125,21 @@ model Team {
 // --- 2. Client & Project Models ---
 
 model Client {
-  id       String    @id @default(cuid())
-  name     String    @unique
-  projects Project[]
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  email       String?
+  phone       String?
+  projects    Project[]
 }
 
 model Project {
-  id       String @id @default(cuid())
-  name     String
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  tasks    Task[]
+  id          String @id @default(cuid())
+  name        String
+  description String?
+  clientId    String
+  client      Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tasks       Task[]
 }
 
 // --- 3. Workflow Template Engine Models (The "Script") ---

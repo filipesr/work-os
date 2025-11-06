@@ -135,7 +135,7 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
             <span>No projects available.</span>
             <QuickCreateProject
               clients={clients}
-              variant="link"
+              variant="ghost"
               size="sm"
               className="h-auto p-0"
               onProjectCreated={handleProjectCreated}

@@ -20,7 +20,7 @@ import toast from "react-hot-toast";
 import { createClient } from "@/lib/actions/client";
 
 interface QuickCreateClientProps {
-  variant?: "default" | "outline" | "ghost" | "link";
+  variant?: "default" | "outline" | "ghost" | "secondary" | "destructive";
   size?: "default" | "sm" | "lg";
   className?: string;
   onClientCreated?: (clientId: string) => void;

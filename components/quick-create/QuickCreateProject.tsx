@@ -34,7 +34,7 @@ interface Client {
 
 interface QuickCreateProjectProps {
   clients: Client[];
-  variant?: "default" | "outline" | "ghost" | "link";
+  variant?: "default" | "outline" | "ghost" | "secondary" | "destructive";
   size?: "default" | "sm" | "lg";
   className?: string;
   onProjectCreated?: (projectId: string) => void;

@@ -99,6 +99,28 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
           enteredAt: "desc",
         },
       },
+      timeLogs: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+          stage: {
+            select: {
+              id: true,
+              name: true,
+              order: true,
+            },
+          },
+        },
+        orderBy: {
+          logDate: "desc",
+        },
+      },
     },
   });
 
@@ -140,6 +162,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
         availableNextStages={availableNextStages}
         previousStages={previousStages}
         currentUserId={session.user.id!}
+        currentUserRole={session.user.role!}
         activeLog={activeLog}
         allTemplateStages={allTemplateStages}
       />

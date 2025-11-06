@@ -1143,6 +1143,11 @@ export async function advanceTaskStage(
 /**
  * Reverts a task to a previous stage (backward movement / rejection loop).
  * This does NOT check dependencies - it's for when QC/Review rejects work.
+ *
+ * In the fork/join system, this:
+ * 1. Marks all current active stages as COMPLETED
+ * 2. Creates a new ACTIVE stage for the reverted-to stage
+ * 3. Logs the reversion with a comment
  */
 export async function revertTaskStage(
   taskId: string,
@@ -1154,12 +1159,160 @@ export async function revertTaskStage(
   const userRole = (user as any).role as string;
 
   if (!comment || comment.trim().length === 0) {
-    return { error: "A comment explaining the reversion is required." };
+    return { error: "Um comentário explicando a reversão é obrigatório." };
   }
 
   try {
-    // DEPRECATED: This function uses the old stage system
-    return { error: "Função de reversão antiga depreciada. O novo sistema não suporta reversão simples." };
+    // 1. Get the target stage to revert to
+    const targetStage = await prisma.templateStage.findUnique({
+      where: { id: revertToStageId },
+      include: {
+        template: true,
+        defaultTeam: true,
+      },
+    });
+
+    if (!targetStage) {
+      return { error: "Etapa de destino não encontrada" };
+    }
+
+    // 2. Get all current active stages
+    const currentActiveStages = await prisma.taskActiveStage.findMany({
+      where: {
+        taskId,
+        status: { in: ["ACTIVE", "BLOCKED"] },
+      },
+      include: {
+        stage: true,
+      },
+    });
+
+    if (currentActiveStages.length === 0) {
+      return { error: "Não há etapas ativas para reverter" };
+    }
+
+    // 3. Check permissions - must be admin, manager, or assignee of at least one active stage
+    const userWithRole = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { role: true, name: true },
+    });
+
+    const isAdmin = userWithRole?.role === "ADMIN";
+    const isManager = userWithRole?.role === "MANAGER";
+    const isAssignee = currentActiveStages.some(as => as.assigneeId === currentUserId);
+
+    if (!isAdmin && !isManager && !isAssignee) {
+      return { error: "Você não tem permissão para reverter esta tarefa" };
+    }
+
+    // 4. Execute reversion in a transaction
+    await prisma.$transaction(async (tx: any) => {
+      // 4a. Mark all current active/blocked stages as COMPLETED
+      for (const activeStage of currentActiveStages) {
+        await tx.taskActiveStage.update({
+          where: { id: activeStage.id },
+          data: {
+            status: "COMPLETED",
+            completedAt: new Date(),
+          },
+        });
+
+        // Close the stage log
+        const openLog = await tx.taskStageLog.findFirst({
+          where: {
+            taskId,
+            stageId: activeStage.stageId,
+            exitedAt: null,
+          },
+        });
+
+        if (openLog) {
+          await tx.taskStageLog.update({
+            where: { id: openLog.id },
+            data: {
+              exitedAt: new Date(),
+              status: "REVERTED",
+            },
+          });
+        }
+      }
+
+      // 4b. Check if target stage already has an active entry (shouldn't happen, but check)
+      const existingTargetStage = await tx.taskActiveStage.findUnique({
+        where: {
+          taskId_stageId: {
+            taskId,
+            stageId: revertToStageId,
+          },
+        },
+      });
+
+      if (existingTargetStage) {
+        // Reactivate existing entry
+        await tx.taskActiveStage.update({
+          where: { id: existingTargetStage.id },
+          data: {
+            status: "ACTIVE",
+            assigneeId: null, // Return to backlog
+            completedAt: null,
+          },
+        });
+      } else {
+        // Create new active stage entry
+        await tx.taskActiveStage.create({
+          data: {
+            taskId,
+            stageId: revertToStageId,
+            status: "ACTIVE",
+            assigneeId: null, // Return to backlog
+          },
+        });
+      }
+
+      // 4c. Create new stage log entry for re-entering this stage
+      await tx.taskStageLog.create({
+        data: {
+          taskId,
+          stageId: revertToStageId,
+          userId: currentUserId,
+          enteredAt: new Date(),
+          exitedAt: null,
+          status: "REVERTED_TO",
+        },
+      });
+
+      // 4d. Add comment explaining the reversion
+      const userName = userWithRole?.name || user.email;
+      const stageNames = currentActiveStages.map(as => as.stage.name).join(", ");
+
+      await tx.taskComment.create({
+        data: {
+          taskId,
+          userId: currentUserId,
+          content: `**TAREFA REVERTIDA** por ${userName}\n\nDe: ${stageNames}\nPara: ${targetStage.name}\n\n**Motivo:** ${comment.trim()}\n\nData: ${new Date().toLocaleString('pt-BR')}`,
+        },
+      });
+
+      // 4e. Update task status to BACKLOG (since returned to backlog)
+      await tx.task.update({
+        where: { id: taskId },
+        data: {
+          status: "BACKLOG",
+          assigneeId: null,
+        },
+      });
+    });
+
+    // 5. Revalidate paths
+    revalidatePath(`/admin/tasks/${taskId}`);
+    revalidatePath("/admin/tasks");
+    revalidatePath("/dashboard");
+    revalidatePath(`/tasks/${taskId}`);
+
+    return {
+      success: true,
+      message: `Tarefa revertida para a etapa "${targetStage.name}"`,
+    };
   } catch (error) {
     console.error("Error reverting task stage:", error);
     return { error: "Erro ao reverter tarefa" };
