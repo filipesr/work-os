@@ -6,15 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Calendar, User as UserIcon, AlertCircle } from "lucide-react";
-import { ActivityFeed } from "./ActivityFeed";
+import { ArrowLeft, Calendar, User as UserIcon, AlertCircle, MessageSquare, Paperclip } from "lucide-react";
+import { CommentsList } from "./CommentsList";
+import { ArtifactsList } from "./ArtifactsList";
 import { AddCommentForm } from "./AddCommentForm";
 import { AddArtifactForm } from "./AddArtifactForm";
-import { AdvanceStageButton } from "./AdvanceStageButton";
-import { RevertStageButton } from "./RevertStageButton";
-import { UnassignTaskButton } from "./UnassignTaskButton";
-import { CompleteTaskButton } from "./CompleteTaskButton";
-import { LogTimeButton } from "./LogTimeButton";
+import { TaskActionsMenu } from "./TaskActionsMenu";
 import { ActivityButton } from "./ActivityButton";
 import { StageWorkflowVisualization } from "./StageWorkflowVisualization";
 import { format } from "date-fns";
@@ -111,27 +108,50 @@ export function TaskDetailView({
           </Card>
         )}
 
-        {/* Activity Feed */}
+        {/* Comments Section */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Atividades</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Comentários
+              <Badge variant="secondary" className="ml-auto">
+                {task.comments.length}
+              </Badge>
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Add Comment Form */}
-            <AddCommentForm taskId={task.id} userId={currentUserId} />
-
-            <Separator />
-
-            {/* Add Artifact Form */}
-            <AddArtifactForm taskId={task.id} userId={currentUserId} />
-
-            <Separator />
-
-            {/* Unified Activity Feed */}
-            <ActivityFeed
+          <CardContent className="space-y-4">
+            {/* Comments List */}
+            <CommentsList
               comments={task.comments}
-              artifacts={task.artifacts}
+              currentUserId={currentUserId}
             />
+
+            <Separator />
+
+            {/* Add Comment Form at bottom */}
+            <AddCommentForm taskId={task.id} userId={currentUserId} />
+          </CardContent>
+        </Card>
+
+        {/* Artifacts Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Paperclip className="h-5 w-5" />
+              Artefatos
+              <Badge variant="secondary" className="ml-auto">
+                {task.artifacts.length}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Artifacts List */}
+            <ArtifactsList artifacts={task.artifacts} />
+
+            <Separator />
+
+            {/* Add Artifact Form at bottom */}
+            <AddArtifactForm taskId={task.id} userId={currentUserId} />
           </CardContent>
         </Card>
       </div>
@@ -165,44 +185,24 @@ export function TaskDetailView({
                   )}
                 </div>
 
-                {/* State Machine Controls */}
-                <div className="flex flex-col gap-2">
-                  <AdvanceStageButton
-                    taskId={task.id}
-                    currentStageId={task.currentStageId}
-                  />
-                  <RevertStageButton
-                    taskId={task.id}
-                    previousStages={previousStages}
-                  />
-                  <CompleteTaskButton
-                    taskId={task.id}
-                    taskStatus={task.status}
-                  />
-                  <UnassignTaskButton
-                    taskId={task.id}
-                    currentAssignee={task.assignee?.name || task.assignee?.email || null}
-                  />
-                </div>
-
-                <Separator />
-
                 {/* Activity Tracking (Start/Stop Task) */}
-                <div>
-                  <ActivityButton
-                    taskId={task.id}
-                    taskTitle={task.title}
-                    currentStageId={task.currentStageId}
-                    activeLog={activeLog}
-                  />
-                </div>
+                <ActivityButton
+                  taskId={task.id}
+                  taskTitle={task.title}
+                  currentStageId={task.currentStageId}
+                  activeLog={activeLog}
+                />
 
                 <Separator />
 
-                {/* Time Logging */}
-                <div>
-                  <LogTimeButton taskId={task.id} />
-                </div>
+                {/* Compact Actions Menu */}
+                <TaskActionsMenu
+                  taskId={task.id}
+                  currentStageId={task.currentStageId}
+                  taskStatus={task.status}
+                  currentAssignee={task.assignee?.name || task.assignee?.email || null}
+                  previousStages={previousStages}
+                />
               </>
             ) : (
               <p className="text-sm text-muted-foreground">

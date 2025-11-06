@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createTask } from "@/lib/actions/task";
 import { getTemplateStagePreview } from "@/app/actions/templateActions";
+import { getClients } from "@/lib/actions/client";
+import { QuickCreateProject } from "@/components/quick-create/QuickCreateProject";
 
 interface Project {
   id: string;
@@ -30,9 +33,31 @@ interface CreateTaskFormProps {
 // Define types for stage preview
 type StagePreviewItem = Awaited<ReturnType<typeof getTemplateStagePreview>>[0];
 
-export function CreateTaskForm({ projects, templates }: CreateTaskFormProps) {
+export function CreateTaskForm({ projects: initialProjects, templates }: CreateTaskFormProps) {
+  const router = useRouter();
+  const [projects, setProjects] = useState(initialProjects);
+  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
   const [stagePreview, setStagePreview] = useState<StagePreviewItem[]>([]);
   const [isPreviewLoading, startPreviewTransition] = useTransition();
+
+  // Load clients for QuickCreateProject
+  useEffect(() => {
+    const loadClients = async () => {
+      const clientsList = await getClients();
+      setClients(clientsList);
+    };
+    loadClients();
+  }, []);
+
+  // Update projects list when initialProjects changes
+  useEffect(() => {
+    setProjects(initialProjects);
+  }, [initialProjects]);
+
+  // Handler for when a project is created
+  const handleProjectCreated = (projectId: string) => {
+    router.refresh();
+  };
 
   // Handler for when the user selects a template
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -81,9 +106,17 @@ export function CreateTaskForm({ projects, templates }: CreateTaskFormProps) {
 
       {/* Project Selection */}
       <div>
-        <label htmlFor="projectId" className="block text-sm font-semibold text-foreground mb-2">
-          Project *
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label htmlFor="projectId" className="block text-sm font-semibold text-foreground">
+            Project *
+          </label>
+          <QuickCreateProject
+            clients={clients}
+            variant="ghost"
+            size="sm"
+            onProjectCreated={handleProjectCreated}
+          />
+        </div>
         <select
           id="projectId"
           name="projectId"
@@ -98,8 +131,15 @@ export function CreateTaskForm({ projects, templates }: CreateTaskFormProps) {
           ))}
         </select>
         {projects.length === 0 && (
-          <p className="mt-2 text-sm text-destructive font-medium">
-            No projects available. Please create a project first.
+          <p className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
+            <span>No projects available.</span>
+            <QuickCreateProject
+              clients={clients}
+              variant="link"
+              size="sm"
+              className="h-auto p-0"
+              onProjectCreated={handleProjectCreated}
+            />
           </p>
         )}
       </div>
