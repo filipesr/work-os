@@ -213,6 +213,103 @@ export async function getActiveWorkLogs() {
 }
 
 /**
+ * Get all online users (last seen today).
+ * Includes both users actively working and users just browsing.
+ * A user is considered online if they have a lastSeenAt timestamp from today (same calendar day).
+ */
+export async function getOnlineUsers() {
+  await requireManagerOrAdmin();
+
+  try {
+    // Get start of today (00:00:00)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    // Get ALL users who are online (lastSeenAt is today or later)
+    const onlineUsers = await prisma.user.findMany({
+      where: {
+        lastSeenAt: {
+          gte: startOfToday,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true,
+        team: {
+          select: {
+            name: true,
+          },
+        },
+        lastSeenAt: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    return onlineUsers;
+  } catch (error) {
+    console.error("Error fetching online users:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get all offline users (lastSeenAt is NULL or before today).
+ * A user is considered offline if:
+ * - They have never logged in (lastSeenAt is NULL), OR
+ * - They explicitly logged out (lastSeenAt is NULL), OR
+ * - Their last activity was before today (previous day or earlier)
+ */
+export async function getOfflineUsers() {
+  await requireManagerOrAdmin();
+
+  try {
+    // Get start of today (00:00:00)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    // Get users who are offline (lastSeenAt is null or before today)
+    const offlineUsers = await prisma.user.findMany({
+      where: {
+        OR: [
+          { lastSeenAt: null },
+          {
+            lastSeenAt: {
+              lt: startOfToday,
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true,
+        team: {
+          select: {
+            name: true,
+          },
+        },
+        lastSeenAt: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    return offlineUsers;
+  } catch (error) {
+    console.error("Error fetching offline users:", error);
+    throw error;
+  }
+}
+
+/**
  * Get the current user's active task (if any).
  * This is used to determine whether to show "Start" or "Stop" button.
  */

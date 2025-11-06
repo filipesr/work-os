@@ -101,9 +101,10 @@ model User {
   sessions      Session[]
 
   // Our custom fields
-  role   UserRole @default(MEMBER)
-  teamId String?
-  team   Team?    @relation(fields: [teamId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+  role       UserRole  @default(MEMBER)
+  teamId     String?
+  team       Team?     @relation(fields: [teamId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+  lastSeenAt DateTime? // Track last activity for online presence
 
   // Relations
   assignedTasks   Task[]            @relation("Assignee")
