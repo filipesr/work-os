@@ -30,28 +30,52 @@ async function updateUser(formData: FormData) {
   const newTeamId = formData.get("teamId") as string | null
   if (!id || !role) return
 
-  // ✅ VALIDATION: Check if user has active tasks when changing teams
-  const activeTasks = await prisma.task.findMany({
+  // ✅ VALIDATION: Check if user has active stages when changing teams
+  const activeStages = await prisma.taskActiveStage.findMany({
     where: {
       assigneeId: id,
-      status: { in: ["BACKLOG", "IN_PROGRESS", "PAUSED"] },
+      status: "ACTIVE",
     },
-    include: {
-      currentStage: {
-        select: { defaultTeamId: true },
-      },
-    },
+    select: { id: true },
   })
 
-  // If changing team and has active tasks, automatically unassign them
-  if (activeTasks.length > 0) {
-    await prisma.task.updateMany({
+  // If changing team and has active stages, automatically unassign them
+  if (activeStages.length > 0) {
+    await prisma.taskActiveStage.updateMany({
       where: {
         assigneeId: id,
-        status: { in: ["BACKLOG", "IN_PROGRESS", "PAUSED"] },
+        status: "ACTIVE",
       },
-      data: { assigneeId: null }, // ✅ Desatribui tarefas automaticamente
+      data: { assigneeId: null }, // ✅ Desatribui etapas ativas automaticamente
     })
+
+    // Also update task status if needed
+    const affectedTasks = await prisma.taskActiveStage.findMany({
+      where: {
+        assigneeId: null,
+        status: "ACTIVE",
+      },
+      select: { taskId: true },
+      distinct: ["taskId"],
+    })
+
+    // Set tasks back to BACKLOG if they have no more assigned stages
+    for (const stage of affectedTasks) {
+      const remainingAssigned = await prisma.taskActiveStage.count({
+        where: {
+          taskId: stage.taskId,
+          assigneeId: { not: null },
+          status: "ACTIVE",
+        },
+      })
+
+      if (remainingAssigned === 0) {
+        await prisma.task.update({
+          where: { id: stage.taskId },
+          data: { status: "BACKLOG" },
+        })
+      }
+    }
   }
 
   await prisma.user.update({

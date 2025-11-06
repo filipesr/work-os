@@ -13,6 +13,7 @@ import { AddArtifactForm } from "./AddArtifactForm";
 import { AdvanceStageButton } from "./AdvanceStageButton";
 import { RevertStageButton } from "./RevertStageButton";
 import { UnassignTaskButton } from "./UnassignTaskButton";
+import { CompleteTaskButton } from "./CompleteTaskButton";
 import { LogTimeButton } from "./LogTimeButton";
 import { ActivityButton } from "./ActivityButton";
 import { StageWorkflowVisualization } from "./StageWorkflowVisualization";
@@ -23,6 +24,7 @@ type TaskWithRelations = Task & {
   project: Project & { client: Client };
   assignee: Pick<User, "id" | "name" | "email" | "image" | "teamId"> | null;
   currentStage: (TemplateStage & { defaultTeam: Team | null; template: { id: string; name: string } }) | null;
+  currentStageId: string | null;
   comments: (TaskComment & { user: Pick<User, "id" | "name" | "email" | "image"> })[];
   artifacts: (TaskArtifact & { user: Pick<User, "id" | "name" | "email" | "image"> })[];
   stageLogs: (TaskStageLog & {
@@ -167,11 +169,15 @@ export function TaskDetailView({
                 <div className="flex flex-col gap-2">
                   <AdvanceStageButton
                     taskId={task.id}
-                    availableStages={availableNextStages}
+                    currentStageId={task.currentStageId}
                   />
                   <RevertStageButton
                     taskId={task.id}
                     previousStages={previousStages}
+                  />
+                  <CompleteTaskButton
+                    taskId={task.id}
+                    taskStatus={task.status}
                   />
                   <UnassignTaskButton
                     taskId={task.id}

@@ -7,7 +7,8 @@ import { KanbanFilters, FilterState } from "./KanbanFilters";
 
 type TaskWithRelations = Task & {
   assignee: Pick<User, "id" | "name" | "email" | "image" | "teamId"> | null;
-  currentStage: (TemplateStage & { defaultTeam: Team | null }) | null;
+  currentStage: (TemplateStage & { defaultTeam: Team | null; template: { id: string; name: string } }) | null;
+  currentStageId: string | null;
   project: Project & { client: Client };
 };
 

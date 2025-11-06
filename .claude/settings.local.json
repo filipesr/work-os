@@ -16,7 +16,11 @@
       "Bash(awk:*)",
       "Bash(npm run build:*)",
       "Bash(ls:*)",
-      "Bash(pnpm run build:*)"
+      "Bash(pnpm run build:*)",
+      "Bash(npx prisma:*)",
+      "Bash(set PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=sim)",
+      "Bash(cmd /c \"set PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=sim&& npx prisma migrate reset --force\")",
+      "Bash(powershell -Command \"$env:PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=''sim''; npx prisma migrate reset --force\")"
     ],
     "deny": [],
     "ask": []

@@ -20,7 +20,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
   const { taskId } = await params;
 
   // Fetch comprehensive task data
-  const task = await prisma.task.findUnique({
+  const taskData = await prisma.task.findUnique({
     where: { id: taskId },
     include: {
       project: {
@@ -37,10 +37,20 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
           teamId: true,
         },
       },
-      currentStage: {
+      activeStages: {
+        where: {
+          status: { in: ["ACTIVE", "BLOCKED"] },
+        },
         include: {
-          defaultTeam: true,
-          template: true,
+          stage: {
+            include: {
+              defaultTeam: true,
+              template: true,
+            },
+          },
+        },
+        orderBy: {
+          stage: { order: "asc" },
         },
       },
       comments: {
@@ -92,9 +102,17 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
     },
   });
 
-  if (!task) {
+  if (!taskData) {
     notFound();
   }
+
+  // Add computed properties for backward compatibility
+  const currentActiveStage = taskData.activeStages.find(as => as.status === "ACTIVE");
+  const task = {
+    ...taskData,
+    currentStage: currentActiveStage ? currentActiveStage.stage : null,
+    currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
+  };
 
   // Get all stages from the template for workflow visualization
   const allTemplateStages = task.currentStage

@@ -18,7 +18,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const { projectId } = await params;
 
   // Fetch project with all related data
-  const project = await prisma.project.findUnique({
+  const projectData = await prisma.project.findUnique({
     where: { id: projectId },
     include: {
       client: true,
@@ -33,10 +33,20 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               teamId: true,
             },
           },
-          currentStage: {
+          activeStages: {
+            where: {
+              status: { in: ["ACTIVE", "BLOCKED"] },
+            },
             include: {
-              defaultTeam: true,
-              template: true,
+              stage: {
+                include: {
+                  defaultTeam: true,
+                  template: true,
+                },
+              },
+            },
+            orderBy: {
+              stage: { order: "asc" },
             },
           },
           project: {
@@ -52,9 +62,22 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     },
   });
 
-  if (!project) {
+  if (!projectData) {
     notFound();
   }
+
+  // Add computed properties for backward compatibility
+  const project = {
+    ...projectData,
+    tasks: projectData.tasks.map((task) => {
+      const currentActiveStage = task.activeStages.find(as => as.status === "ACTIVE");
+      return {
+        ...task,
+        currentStage: currentActiveStage ? currentActiveStage.stage : null,
+        currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
+      };
+    }),
+  };
 
   // Collect all unique stages from the tasks
   // This gives us the columns for the Kanban board

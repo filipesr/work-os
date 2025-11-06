@@ -84,12 +84,21 @@ export async function createTask(formData: FormData) {
         dueDate,
         status: "BACKLOG", // Initial status
         projectId,
-        assigneeId: null, // ✅ Deixa sem assignee para aparecer no backlog da equipe
-        currentStageId: firstStage.id, // Set to the first stage
+        assigneeId: null, // Not assigned initially
       },
     });
 
-    // 3. Create the first log entry in the task's history
+    // 3. Create the first active stage (fork/join system)
+    await tx.taskActiveStage.create({
+      data: {
+        taskId: newTask.id,
+        stageId: firstStage.id,
+        status: "ACTIVE",
+        assigneeId: null, // Not assigned - goes to team backlog
+      },
+    });
+
+    // 4. Create the first log entry in the task's history
     await tx.taskStageLog.create({
       data: {
         taskId: newTask.id,
@@ -166,7 +175,7 @@ export async function getTemplatesForSelect() {
 export async function getTaskById(taskId: string) {
   await getCurrentUser();
 
-  return prisma.task.findUnique({
+  const task = await prisma.task.findUnique({
     where: { id: taskId },
     include: {
       project: {
@@ -181,10 +190,20 @@ export async function getTaskById(taskId: string) {
           email: true,
         },
       },
-      currentStage: {
+      activeStages: {
+        where: {
+          status: { in: ["ACTIVE", "BLOCKED"] },
+        },
         include: {
-          template: true,
-          defaultTeam: true,
+          stage: {
+            include: {
+              template: true,
+              defaultTeam: true,
+            },
+          },
+        },
+        orderBy: {
+          stage: { order: "asc" },
         },
       },
       stageLogs: {
@@ -214,6 +233,17 @@ export async function getTaskById(taskId: string) {
       },
     },
   });
+
+  if (!task) return null;
+
+  // Add computed properties for backward compatibility
+  const currentActiveStage = task.activeStages.find(as => as.status === "ACTIVE");
+
+  return {
+    ...task,
+    currentStage: currentActiveStage ? currentActiveStage.stage : null,
+    currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
+  };
 }
 
 /**
@@ -222,7 +252,7 @@ export async function getTaskById(taskId: string) {
 export async function getTasks() {
   await getCurrentUser();
 
-  return prisma.task.findMany({
+  const tasks = await prisma.task.findMany({
     include: {
       project: {
         include: {
@@ -236,197 +266,52 @@ export async function getTasks() {
           email: true,
         },
       },
-      currentStage: {
+      activeStages: {
+        where: {
+          status: { in: ["ACTIVE", "BLOCKED"] },
+        },
         include: {
-          template: true,
+          stage: {
+            include: {
+              template: true,
+              defaultTeam: true,
+            },
+          },
+        },
+        orderBy: {
+          stage: { order: "asc" },
         },
       },
     },
     orderBy: { createdAt: "desc" },
+  });
+
+  // Add computed properties for backward compatibility
+  return tasks.map((task) => {
+    const currentActiveStage = task.activeStages.find(as => as.status === "ACTIVE");
+    return {
+      ...task,
+      currentStage: currentActiveStage ? currentActiveStage.stage : null,
+      currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
+    };
   });
 }
 
 // ========== State Machine: Stage Transitions ==========
 
 /**
- * Get available next stages for a task (where dependencies are met).
- * This helps the UI show which stages the task can advance to.
+ * DEPRECATED: Get available next stages for a task.
  *
- * ✅ NEW LOGIC: Considers current stage as "completable" if user has contributed
- * (added at least 1 artifact or comment)
+ * This function is no longer used in the fork/join system, as next stages
+ * are automatically determined by completeStageAndAdvance().
+ *
+ * Kept for backward compatibility with older UI components.
  */
 export async function getAvailableNextStages(taskId: string) {
-  const currentUser = await getCurrentUser();
-  const currentUserId = currentUser.id as string;
+  await getCurrentUser();
 
-  try {
-    // Check if user is admin or manager (they can bypass contribution validation)
-    const userWithRole = await prisma.user.findUnique({
-      where: { id: currentUserId },
-      select: { role: true },
-    });
-
-    const isAdminOrManager = userWithRole?.role === "ADMIN" || userWithRole?.role === "MANAGER";
-
-    // Get the task with its current stage and template
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        currentStage: {
-          include: {
-            template: {
-              include: {
-                stages: {
-                  include: {
-                    defaultTeam: true, // ✅ Include team info
-                    dependents: {
-                      include: {
-                        dependsOn: true,
-                      },
-                    },
-                  },
-                  orderBy: { order: "asc" },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!task || !task.currentStage) {
-      return [];
-    }
-
-    const allTemplateStages = task.currentStage.template.stages;
-
-    // ✅ Get all completed stages for this task to exclude them
-    const completedStages = await prisma.taskStageLog.findMany({
-      where: {
-        taskId: taskId,
-        exitedAt: { not: null },
-      },
-      select: { stageId: true },
-    });
-    const completedStageIds = completedStages.map(log => log.stageId);
-
-    // Get all stages in the template that:
-    // - Are not the current stage
-    // - Have not been completed yet
-    // ✅ IMPORTANT: We DON'T filter by user's team - users can advance to ANY valid next stage
-    const potentialNextStages = allTemplateStages.filter(
-      (stage: any) =>
-        stage.id !== task.currentStageId &&
-        !completedStageIds.includes(stage.id)
-    );
-
-    // For each potential stage, check if dependencies are met
-    const availableStages: any[] = [];
-
-    for (const stage of potentialNextStages) {
-      // Get dependencies for this stage
-      const dependencies = await prisma.stageDependency.findMany({
-        where: { stageId: stage.id },
-        select: { dependsOnStageId: true },
-      });
-
-      // If no dependencies, it's available
-      if (dependencies.length === 0) {
-        availableStages.push(stage);
-        continue;
-      }
-
-      // Check if all dependencies have been completed for this task
-      const dependsOnStageIds = dependencies.map((d: any) => d.dependsOnStageId);
-
-      // ✅ CRITICAL FIX: Check if current stage is in dependencies
-      const currentStageIsADependency = dependsOnStageIds.includes(task.currentStageId);
-
-      if (currentStageIsADependency) {
-        // ✅ Admin/Manager can bypass contribution validation
-        if (!isAdminOrManager) {
-          // ✅ Validate user contribution: must have at least 1 artifact OR comment
-          const userContributions = await prisma.$transaction([
-            prisma.taskArtifact.count({
-              where: {
-                taskId: taskId,
-                userId: currentUserId,
-              },
-            }),
-            prisma.taskComment.count({
-              where: {
-                taskId: taskId,
-                userId: currentUserId,
-              },
-            }),
-          ]);
-
-          const [artifactCount, commentCount] = userContributions;
-          const hasContributed = artifactCount > 0 || commentCount > 0;
-
-          if (!hasContributed) {
-            // User hasn't contributed, can't advance
-            continue;
-          }
-        }
-        
-        // User has contributed, consider current stage as "met"
-        // Check other dependencies (excluding current stage)
-        const otherDependencies = dependsOnStageIds.filter(
-          (depId: any) => depId !== task.currentStageId
-        );
-        
-        if (otherDependencies.length === 0) {
-          // Only dependency was current stage, and user has contributed
-          availableStages.push(stage);
-          continue;
-        }
-        
-        // Check if other dependencies are met
-        const completedStageLogs = await prisma.taskStageLog.findMany({
-          where: {
-            taskId: taskId,
-            stageId: { in: otherDependencies },
-            exitedAt: { not: null },
-          },
-          select: { stageId: true },
-        });
-
-        const completedStageIds = completedStageLogs.map((log: any) => log.stageId);
-        const allOtherDependenciesMet = otherDependencies.every((depId: any) =>
-          completedStageIds.includes(depId)
-        );
-
-        if (allOtherDependenciesMet) {
-          availableStages.push(stage);
-        }
-      } else {
-        // Current stage is NOT a dependency, use original logic
-        const completedStageLogs = await prisma.taskStageLog.findMany({
-          where: {
-            taskId: taskId,
-            stageId: { in: dependsOnStageIds },
-            exitedAt: { not: null },
-          },
-          select: { stageId: true },
-        });
-
-        const completedStageIds = completedStageLogs.map((log: any) => log.stageId);
-        const allDependenciesMet = dependsOnStageIds.every((depId: any) =>
-          completedStageIds.includes(depId)
-        );
-
-        if (allDependenciesMet) {
-          availableStages.push(stage);
-        }
-      }
-    }
-
-    return availableStages;
-  } catch (error) {
-    console.error("Error getting available next stages:", error);
-    return [];
-  }
+  // Return empty array - fork/join system automatically determines next stages
+  return [];
 }
 
 /**
@@ -501,31 +386,239 @@ export async function unassignTask(taskId: string) {
 }
 
 /**
- * Get diagnostic information about why stages are not available
+ * Complete a task - Mark task as COMPLETED
+ * Can be used by task assignee, admin, or manager
  */
-export async function getStageAvailabilityDiagnostic(taskId: string) {
+export async function completeTask(taskId: string) {
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser.id as string;
 
   try {
+    // Get task with assignee info
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: {
-        currentStage: {
+        assignee: true,
+      },
+    });
+
+    if (!task) {
+      return { error: "Tarefa não encontrada" };
+    }
+
+    // Check permissions: must be admin, manager, or the assignee
+    const userWithRole = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { role: true },
+    });
+
+    const isAdmin = userWithRole?.role === "ADMIN";
+    const isManager = userWithRole?.role === "MANAGER";
+    const isAssignee = task.assigneeId === currentUserId;
+
+    if (!isAdmin && !isManager && !isAssignee) {
+      return { error: "Apenas administradores, gerentes ou o responsável atual podem concluir tarefas" };
+    }
+
+    // Check if task is already completed
+    if (task.status === "COMPLETED") {
+      return { error: "Esta tarefa já está concluída" };
+    }
+
+    // Mark task as completed
+    await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        status: "COMPLETED",
+        completedAt: new Date(),
+      },
+    });
+
+    // Add comment about completion
+    const userName = currentUser.name || currentUser.email;
+    await prisma.taskComment.create({
+      data: {
+        taskId: taskId,
+        userId: currentUserId,
+        content: `**TAREFA CONCLUÍDA** por ${userName}\nData: ${new Date().toLocaleString('pt-BR')}`,
+      },
+    });
+
+    revalidatePath(`/admin/tasks/${taskId}`);
+    revalidatePath("/admin/tasks");
+    revalidatePath("/dashboard");
+    revalidatePath(`/tasks/${taskId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error completing task:", error);
+    return { error: "Erro ao concluir tarefa" };
+  }
+}
+
+/**
+ * Activate next stages after completing current stage (Fork/Join logic)
+ * This implements parallel workflow: when a stage completes, it can activate multiple next stages
+ */
+export async function activateNextStages(taskId: string, completedStageId: string) {
+  try {
+    // 1. Mark current active stage as COMPLETED
+    await prisma.taskActiveStage.updateMany({
+      where: {
+        taskId,
+        stageId: completedStageId,
+        status: "ACTIVE",
+      },
+      data: {
+        status: "COMPLETED",
+        completedAt: new Date(),
+      },
+    });
+
+    // 2. Find all stages that depend on this completed stage
+    const dependentStages = await prisma.stageDependency.findMany({
+      where: {
+        dependsOnStageId: completedStageId,
+      },
+      include: {
+        stage: {
           include: {
-            template: {
+            dependencies: {
               include: {
-                stages: {
-                  include: {
-                    defaultTeam: true,
-                    dependents: {
-                      include: {
-                        dependsOn: true,
-                      },
-                    },
-                  },
-                  orderBy: { order: "asc" },
-                },
+                dependsOn: true,
+              },
+            },
+            defaultTeam: true,
+          },
+        },
+      },
+    });
+
+    const activated: any[] = [];
+    const blocked: any[] = [];
+
+    // 3. For each dependent stage, check if ALL its dependencies are complete
+    for (const dep of dependentStages) {
+      const stage = dep.stage;
+
+      // Check if this stage is already active or completed
+      const existing = await prisma.taskActiveStage.findUnique({
+        where: {
+          taskId_stageId: {
+            taskId,
+            stageId: stage.id,
+          },
+        },
+      });
+
+      if (existing) {
+        // Stage already exists - check if it was blocked and can now be unblocked
+        if (existing.status === "BLOCKED") {
+          // Check all dependencies
+          const allDepsComplete = await checkAllDependenciesComplete(taskId, stage.id);
+          if (allDepsComplete) {
+            // Unblock it
+            await prisma.taskActiveStage.update({
+              where: { id: existing.id },
+              data: { status: "ACTIVE" },
+            });
+            activated.push(stage);
+          }
+        }
+        continue;
+      }
+
+      // Check if ALL dependencies are complete
+      const allDepsComplete = await checkAllDependenciesComplete(taskId, stage.id);
+
+      if (allDepsComplete) {
+        // Create as ACTIVE
+        await prisma.taskActiveStage.create({
+          data: {
+            taskId,
+            stageId: stage.id,
+            status: "ACTIVE",
+          },
+        });
+        activated.push(stage);
+      } else {
+        // Create as BLOCKED
+        await prisma.taskActiveStage.create({
+          data: {
+            taskId,
+            stageId: stage.id,
+            status: "BLOCKED",
+          },
+        });
+        blocked.push(stage);
+      }
+    }
+
+    return { activated, blocked };
+  } catch (error) {
+    console.error("Error activating next stages:", error);
+    throw error;
+  }
+}
+
+/**
+ * Helper: Check if all dependencies of a stage are completed
+ */
+async function checkAllDependenciesComplete(taskId: string, stageId: string): Promise<boolean> {
+  const dependencies = await prisma.stageDependency.findMany({
+    where: { stageId },
+    include: { dependsOn: true },
+  });
+
+  if (dependencies.length === 0) {
+    return true; // No dependencies = can activate
+  }
+
+  // Check if all dependency stages have been completed
+  for (const dep of dependencies) {
+    const completedStage = await prisma.taskActiveStage.findFirst({
+      where: {
+        taskId,
+        stageId: dep.dependsOnStageId,
+        status: "COMPLETED",
+      },
+    });
+
+    if (!completedStage) {
+      return false; // At least one dependency not complete
+    }
+  }
+
+  return true; // All dependencies complete
+}
+
+/**
+ * Complete current stage and activate next stages (replaces advanceTaskStage)
+ */
+export async function completeStageAndAdvance(taskId: string, stageId: string) {
+  const currentUser = await getCurrentUser();
+  const currentUserId = currentUser.id as string;
+
+  try {
+    // 1. Get current active stage
+    const activeStage = await prisma.taskActiveStage.findUnique({
+      where: {
+        taskId_stageId: {
+          taskId,
+          stageId,
+        },
+      },
+      include: {
+        stage: {
+          include: {
+            template: true,
+            defaultTeam: true,
+          },
+        },
+        task: {
+          include: {
+            project: {
+              include: {
+                client: true,
               },
             },
           },
@@ -533,139 +626,426 @@ export async function getStageAvailabilityDiagnostic(taskId: string) {
       },
     });
 
-    if (!task || !task.currentStage) {
-      return {
-        hasContribution: false,
-        isLastStage: true,
-        blockedStages: [],
-        reasons: ["Tarefa não possui etapa atual"],
-      };
+    if (!activeStage) {
+      return { error: "Etapa ativa não encontrada" };
     }
 
-    const allTemplateStages = task.currentStage.template.stages;
+    if (activeStage.status !== "ACTIVE") {
+      return { error: "Esta etapa não está ativa" };
+    }
 
-    // Check if user has contributed
-    const userContributions = await prisma.$transaction([
-      prisma.taskArtifact.count({
-        where: { taskId: taskId, userId: currentUserId },
-      }),
-      prisma.taskComment.count({
-        where: { taskId: taskId, userId: currentUserId },
-      }),
-    ]);
-
-    const [artifactCount, commentCount] = userContributions;
-    const hasContribution = artifactCount > 0 || commentCount > 0;
-
-    // Get completed stages
-    const completedStages = await prisma.taskStageLog.findMany({
-      where: {
-        taskId: taskId,
-        exitedAt: { not: null },
-      },
-      select: { stageId: true },
+    // 2. Check permissions
+    const userWithRole = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { role: true, teamId: true },
     });
-    const completedStageIds = completedStages.map(log => log.stageId);
 
-    // Get potential next stages (not current, not completed)
-    const potentialNextStages = allTemplateStages.filter(
-      (stage: any) =>
-        stage.id !== task.currentStageId &&
-        !completedStageIds.includes(stage.id)
-    );
+    const isAdmin = userWithRole?.role === "ADMIN";
+    const isManager = userWithRole?.role === "MANAGER";
+    const isAssignee = activeStage.assigneeId === currentUserId;
 
-    // If no potential stages, it's the last stage
-    const isLastStage = potentialNextStages.length === 0;
+    if (!isAdmin && !isManager && !isAssignee) {
+      return { error: "Você não tem permissão para completar esta etapa" };
+    }
 
-    // Check each potential stage and reason why it's blocked
-    const blockedStages: Array<{
-      name: string;
-      reasons: string[];
-    }> = [];
+    // 3. Validate contribution (if not admin/manager)
+    if (!isAdmin && !isManager) {
+      const contributions = await prisma.$transaction([
+        prisma.taskArtifact.count({
+          where: { taskId, userId: currentUserId },
+        }),
+        prisma.taskComment.count({
+          where: { taskId, userId: currentUserId },
+        }),
+      ]);
 
-    for (const stage of potentialNextStages) {
-      const dependencies = await prisma.stageDependency.findMany({
-        where: { stageId: stage.id },
-        include: {
-          dependsOn: true,
+      const [artifactCount, commentCount] = contributions;
+      if (artifactCount === 0 && commentCount === 0) {
+        return {
+          error: "Você precisa adicionar pelo menos 1 artefato ou comentário antes de completar esta etapa.",
+        };
+      }
+    }
+
+    // 4. Close current stage log
+    const currentLog = await prisma.taskStageLog.findFirst({
+      where: {
+        taskId,
+        stageId,
+        exitedAt: null,
+      },
+    });
+
+    if (currentLog) {
+      await prisma.taskStageLog.update({
+        where: { id: currentLog.id },
+        data: {
+          exitedAt: new Date(),
+          status: "COMPLETED",
+        },
+      });
+    }
+
+    // 5. Activate next stages (fork/join logic)
+    const { activated, blocked } = await activateNextStages(taskId, stageId);
+
+    // 6. Add comment if admin/manager moved without being assignee
+    if ((isAdmin || isManager) && !isAssignee) {
+      const userName = currentUser.name || currentUser.email;
+      const userRole = userWithRole?.role;
+      await prisma.taskComment.create({
+        data: {
+          taskId,
+          userId: currentUserId,
+          content: `**ETAPA CONCLUÍDA POR ${userRole}** ${userName}\nEtapa: ${activeStage.stage.name}\nData: ${new Date().toLocaleString('pt-BR')}\n\n⚠️ Esta etapa foi concluída manualmente por um ${userRole === 'ADMIN' ? 'administrador' : 'gerente'}.`,
+        },
+      });
+    }
+
+    // 7. Update task status if needed
+    const remainingActive = await prisma.taskActiveStage.count({
+      where: {
+        taskId,
+        status: "ACTIVE",
+      },
+    });
+
+    if (remainingActive > 0) {
+      await prisma.task.update({
+        where: { id: taskId },
+        data: { status: "IN_PROGRESS" },
+      });
+    }
+
+    revalidatePath(`/admin/tasks/${taskId}`);
+    revalidatePath("/admin/tasks");
+    revalidatePath("/dashboard");
+    revalidatePath(`/tasks/${taskId}`);
+
+    return {
+      success: true,
+      completed: activeStage.stage,
+      activated,
+      blocked,
+    };
+  } catch (error) {
+    console.error("Error completing stage:", error);
+    return { error: "Erro ao completar etapa" };
+  }
+}
+
+/**
+ * Get blocked dependencies for a stage (shows what's preventing activation)
+ */
+export async function getBlockedDependencies(taskId: string, stageId: string) {
+  try {
+    const dependencies = await prisma.stageDependency.findMany({
+      where: { stageId },
+      include: {
+        dependsOn: true,
+      },
+    });
+
+    const waitingFor = [];
+
+    for (const dep of dependencies) {
+      const activeStage = await prisma.taskActiveStage.findFirst({
+        where: {
+          taskId,
+          stageId: dep.dependsOnStageId,
         },
       });
 
-      const stageReasons: string[] = [];
-
-      if (dependencies.length > 0) {
-        const dependsOnStageIds = dependencies.map((d: any) => d.dependsOnStageId);
-        const currentStageIsADependency = dependsOnStageIds.includes(task.currentStageId);
-
-        if (currentStageIsADependency && !hasContribution) {
-          stageReasons.push("Você precisa adicionar pelo menos 1 artefato ou comentário na etapa atual");
-        }
-
-        // Check other dependencies
-        const otherDependencies = dependencies.filter(
-          (dep: any) => dep.dependsOnStageId !== task.currentStageId
-        );
-
-        if (otherDependencies.length > 0) {
-          const completedStageLogs = await prisma.taskStageLog.findMany({
-            where: {
-              taskId: taskId,
-              stageId: { in: otherDependencies.map((d: any) => d.dependsOnStageId) },
-              exitedAt: { not: null },
-            },
-            select: { stageId: true },
-          });
-
-          const completedDepIds = completedStageLogs.map((log: any) => log.stageId);
-          const unmetDeps = otherDependencies.filter(
-            (dep: any) => !completedDepIds.includes(dep.dependsOnStageId)
-          );
-
-          if (unmetDeps.length > 0) {
-            const depNames = unmetDeps.map((dep: any) => dep.dependsOn.name).join(", ");
-            stageReasons.push(`Dependências não concluídas: ${depNames}`);
-          }
-        }
-      }
-
-      if (stageReasons.length > 0) {
-        blockedStages.push({
-          name: stage.name,
-          reasons: stageReasons,
-        });
-      }
+      waitingFor.push({
+        stage: dep.dependsOn,
+        status: activeStage?.status || "NOT_STARTED",
+        isComplete: activeStage?.status === "COMPLETED",
+      });
     }
 
-    // Generate summary reasons
-    const reasons: string[] = [];
-
-    if (!hasContribution) {
-      reasons.push("Você ainda não contribuiu com artefatos ou comentários nesta etapa");
-    }
-
-    if (isLastStage) {
-      reasons.push("Esta é a última etapa do template");
-    }
-
-    if (blockedStages.length > 0 && hasContribution) {
-      reasons.push("As próximas etapas possuem dependências não cumpridas");
-    }
-
-    return {
-      hasContribution,
-      isLastStage,
-      blockedStages,
-      reasons,
-    };
+    return { waitingFor };
   } catch (error) {
-    console.error("Error getting stage availability diagnostic:", error);
-    return {
-      hasContribution: false,
-      isLastStage: false,
-      blockedStages: [],
-      reasons: ["Erro ao verificar disponibilidade de etapas"],
-    };
+    console.error("Error getting blocked dependencies:", error);
+    return { waitingFor: [] };
   }
+}
+
+/**
+ * Get active stages assigned to current user
+ */
+export async function getMyActiveStages() {
+  const currentUser = await getCurrentUser();
+  const currentUserId = currentUser.id as string;
+
+  return await prisma.taskActiveStage.findMany({
+    where: {
+      assigneeId: currentUserId,
+      status: "ACTIVE",
+    },
+    include: {
+      task: {
+        include: {
+          project: {
+            include: {
+              client: true,
+            },
+          },
+        },
+      },
+      stage: {
+        include: {
+          template: true,
+          defaultTeam: true,
+        },
+      },
+    },
+    orderBy: {
+      task: {
+        dueDate: "asc",
+      },
+    },
+  });
+}
+
+/**
+ * Get team backlog (active stages not assigned)
+ */
+export async function getTeamBacklog(teamId: string) {
+  return await prisma.taskActiveStage.findMany({
+    where: {
+      assigneeId: null,
+      status: "ACTIVE",
+      stage: {
+        defaultTeamId: teamId,
+      },
+    },
+    include: {
+      task: {
+        include: {
+          project: {
+            include: {
+              client: true,
+            },
+          },
+        },
+      },
+      stage: {
+        include: {
+          template: true,
+          defaultTeam: true,
+        },
+      },
+    },
+    orderBy: {
+      task: {
+        createdAt: "asc",
+      },
+    },
+  });
+}
+
+/**
+ * Get blocked stages visible to team
+ */
+export async function getTeamBlockedStages(teamId: string) {
+  return await prisma.taskActiveStage.findMany({
+    where: {
+      status: "BLOCKED",
+      stage: {
+        defaultTeamId: teamId,
+      },
+    },
+    include: {
+      task: {
+        include: {
+          project: {
+            include: {
+              client: true,
+            },
+          },
+        },
+      },
+      stage: {
+        include: {
+          template: true,
+          defaultTeam: true,
+        },
+      },
+    },
+  });
+}
+
+/**
+ * Claim an active stage (assign to current user)
+ */
+export async function claimActiveStage(taskId: string, stageId: string) {
+  const currentUser = await getCurrentUser();
+  const currentUserId = currentUser.id as string;
+
+  try {
+    const activeStage = await prisma.taskActiveStage.findUnique({
+      where: {
+        taskId_stageId: {
+          taskId,
+          stageId,
+        },
+      },
+      include: {
+        stage: true,
+      },
+    });
+
+    if (!activeStage) {
+      return { error: "Etapa ativa não encontrada" };
+    }
+
+    if (activeStage.status !== "ACTIVE") {
+      return { error: "Esta etapa não está disponível para reivindicação" };
+    }
+
+    if (activeStage.assigneeId) {
+      return { error: "Esta etapa já está atribuída" };
+    }
+
+    await prisma.taskActiveStage.update({
+      where: { id: activeStage.id },
+      data: { assigneeId: currentUserId },
+    });
+
+    // Update Task status to IN_PROGRESS
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { status: "IN_PROGRESS" },
+    });
+
+    // Add comment
+    const userName = currentUser.name || currentUser.email;
+    await prisma.taskComment.create({
+      data: {
+        taskId,
+        userId: currentUserId,
+        content: `**ETAPA REIVINDICADA** por ${userName}\nEtapa: ${activeStage.stage.name}\nData: ${new Date().toLocaleString('pt-BR')}`,
+      },
+    });
+
+    // Create stage log
+    await prisma.taskStageLog.create({
+      data: {
+        taskId,
+        stageId,
+        userId: currentUserId,
+        enteredAt: new Date(),
+      },
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/tasks/${taskId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error claiming active stage:", error);
+    return { error: "Erro ao reivindicar etapa" };
+  }
+}
+
+/**
+ * Unassign an active stage
+ */
+export async function unassignActiveStage(taskId: string, stageId: string) {
+  const currentUser = await getCurrentUser();
+  const currentUserId = currentUser.id as string;
+
+  try {
+    const activeStage = await prisma.taskActiveStage.findUnique({
+      where: {
+        taskId_stageId: {
+          taskId,
+          stageId,
+        },
+      },
+      include: {
+        stage: true,
+        assignee: true,
+      },
+    });
+
+    if (!activeStage) {
+      return { error: "Etapa ativa não encontrada" };
+    }
+
+    // Check permissions
+    const userWithRole = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { role: true },
+    });
+
+    const isAdmin = userWithRole?.role === "ADMIN";
+    const isManager = userWithRole?.role === "MANAGER";
+    const isAssignee = activeStage.assigneeId === currentUserId;
+
+    if (!isAdmin && !isManager && !isAssignee) {
+      return { error: "Apenas administradores, gerentes ou o responsável atual podem desatribuir etapas" };
+    }
+
+    await prisma.taskActiveStage.update({
+      where: { id: activeStage.id },
+      data: { assigneeId: null },
+    });
+
+    // Update Task status if no more active assigned stages
+    const remainingAssigned = await prisma.taskActiveStage.count({
+      where: {
+        taskId,
+        assigneeId: { not: null },
+        status: "ACTIVE",
+      },
+    });
+
+    if (remainingAssigned === 0) {
+      await prisma.task.update({
+        where: { id: taskId },
+        data: { status: "BACKLOG" },
+      });
+    }
+
+    // Add comment
+    const userName = currentUser.name || currentUser.email;
+    const previousAssignee = activeStage.assignee?.name || activeStage.assignee?.email || "Não atribuído";
+
+    await prisma.taskComment.create({
+      data: {
+        taskId,
+        userId: currentUserId,
+        content: `**ETAPA DESATRIBUÍDA** por ${userName}\nEtapa: ${activeStage.stage.name}\nAnterior: ${previousAssignee}\nData: ${new Date().toLocaleString('pt-BR')}`,
+      },
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/tasks/${taskId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error unassigning active stage:", error);
+    return { error: "Erro ao desatribuir etapa" };
+  }
+}
+
+/**
+ * DEPRECATED: Get diagnostic information about why stages are not available.
+ *
+ * This function is no longer used in the fork/join system.
+ * Kept for backward compatibility.
+ */
+export async function getStageAvailabilityDiagnostic(taskId: string) {
+  await getCurrentUser();
+
+  // Return default values for fork/join system
+  return {
+    hasContribution: true,
+    isLastStage: false,
+    blockedStages: [],
+    reasons: [],
+  };
 }
 
 /**
@@ -752,242 +1132,11 @@ export async function advanceTaskStage(
       };
     }
 
-    // 2. Get current task to check current stage AND assignee
-    const currentTask = await prisma.task.findUnique({
-      where: { id: taskId },
-      select: { currentStageId: true, assigneeId: true },
-    });
-
-    if (!currentTask || !currentTask.currentStageId) {
-      return { error: "Tarefa não encontrada ou sem etapa atual." };
-    }
-
-    // ✅ OWNERSHIP VALIDATION: Only task owner, MANAGER, or ADMIN can advance
-    const isOwner = currentTask.assigneeId === currentUserId;
-
-    if (!isOwner && !isAdminOrManager) {
-      if (currentTask.assigneeId === null) {
-        return {
-          error: "Esta tarefa ainda não foi atribuída a ninguém. Reivindique-a primeiro para poder avançá-la.",
-        };
-      } else {
-        return {
-          error: "Apenas o responsável pela tarefa, managers ou admins podem avançá-la para a próxima etapa.",
-        };
-      }
-    }
-
-    // 3. Get all dependencies for the target stage
-    const dependencies = await prisma.stageDependency.findMany({
-      where: { stageId: nextStageId },
-      select: { dependsOnStageId: true },
-    });
-
-    // 3. Check if all dependencies are met (with special logic for current stage)
-    if (dependencies.length > 0) {
-      const dependsOnStageIds = dependencies.map((d: any) => d.dependsOnStageId);
-
-      // ✅ CRITICAL FIX: Check if current stage is in dependencies
-      const currentStageIsADependency = dependsOnStageIds.includes(currentTask.currentStageId);
-
-      if (currentStageIsADependency) {
-        // ✅ Admin/Manager can bypass contribution validation
-        if (!isAdminOrManager) {
-          // ✅ Validate user contribution: must have at least 1 artifact OR comment
-          const userContributions = await prisma.$transaction([
-            prisma.taskArtifact.count({
-              where: {
-                taskId: taskId,
-                userId: currentUserId,
-              },
-            }),
-            prisma.taskComment.count({
-              where: {
-                taskId: taskId,
-                userId: currentUserId,
-              },
-            }),
-          ]);
-
-          const [artifactCount, commentCount] = userContributions;
-          const hasContributed = artifactCount > 0 || commentCount > 0;
-
-          if (!hasContributed) {
-            return {
-              error:
-                "Você precisa adicionar pelo menos 1 artefato ou comentário antes de avançar esta etapa.",
-            };
-          }
-        }
-
-        // User has contributed, check other dependencies (excluding current stage)
-        const otherDependencies = dependsOnStageIds.filter(
-          (depId: any) => depId !== currentTask.currentStageId
-        );
-
-        if (otherDependencies.length > 0) {
-          // Check if other dependencies are completed
-          const completedStageLogs = await prisma.taskStageLog.findMany({
-            where: {
-              taskId: taskId,
-              stageId: { in: otherDependencies },
-              exitedAt: { not: null },
-            },
-            select: { stageId: true },
-          });
-
-          const completedStageIds = completedStageLogs.map((log: any) => log.stageId);
-          const allOtherDependenciesMet = otherDependencies.every((depId: any) =>
-            completedStageIds.includes(depId)
-          );
-
-          if (!allOtherDependenciesMet) {
-            return {
-              error:
-                "Não é possível avançar: Nem todas as etapas de dependência foram concluídas.",
-            };
-          }
-        }
-      } else {
-        // Current stage is NOT a dependency, use original logic
-        const completedStageLogs = await prisma.taskStageLog.findMany({
-          where: {
-            taskId: taskId,
-            stageId: { in: dependsOnStageIds },
-            exitedAt: { not: null },
-          },
-          select: { stageId: true },
-        });
-
-        const completedStageIds = completedStageLogs.map((log: any) => log.stageId);
-        const allDependenciesMet = dependsOnStageIds.every((depId: any) =>
-          completedStageIds.includes(depId)
-        );
-
-        if (!allDependenciesMet) {
-          return {
-            error:
-              "Não é possível avançar: Nem todas as etapas de dependência foram concluídas.",
-          };
-        }
-      }
-    }
-
-    // Store stage names for comment
-    const currentStage = await prisma.templateStage.findUnique({
-      where: { id: currentTask.currentStageId },
-      select: { name: true },
-    });
-
-    // 3. Run the atomic transition within a transaction
-    await prisma.$transaction(async (tx: any) => {
-      // Get the current task
-      const task = await tx.task.findUnique({
-        where: { id: taskId },
-        select: { id: true, currentStageId: true },
-      });
-
-      if (!task || !task.currentStageId) {
-        throw new Error("Task not found or has no current stage.");
-      }
-
-      // 4. Find and "close" the current stage log
-      const currentLog = await tx.taskStageLog.findFirst({
-        where: {
-          taskId: taskId,
-          stageId: task.currentStageId,
-          exitedAt: null,
-        },
-        orderBy: { enteredAt: "desc" },
-      });
-
-      if (currentLog) {
-        await tx.taskStageLog.update({
-          where: { id: currentLog.id },
-          data: {
-            exitedAt: new Date(),
-            status: "COMPLETED", // Mark as completed (not reverted)
-          },
-        });
-      }
-
-      // 5. Create the new stage log
-      await tx.taskStageLog.create({
-        data: {
-          taskId: taskId,
-          stageId: nextStageId,
-          enteredAt: new Date(),
-          exitedAt: null,
-          userId: currentUserId,
-        },
-      });
-
-      // 6. Check if this is the last stage in the workflow template
-      const nextStage = await tx.templateStage.findUnique({
-        where: { id: nextStageId },
-        include: {
-          template: {
-            include: {
-              stages: {
-                orderBy: { order: "desc" },
-                take: 1,
-              },
-            },
-          },
-        },
-      });
-
-      const isLastStage =
-        nextStage &&
-        nextStage.template.stages[0] &&
-        nextStage.id === nextStage.template.stages[0].id;
-
-      // 7. Update the task's current stage pointer
-      // ✅ Reset assigneeId when advancing to next stage (task goes to new team's backlog)
-      await tx.task.update({
-        where: { id: taskId },
-        data: {
-          currentStageId: nextStageId,
-          assigneeId: null, // ✅ Reset assignee (task goes to backlog of next team)
-          status: isLastStage ? "COMPLETED" : "BACKLOG", // ✅ Back to BACKLOG for next team
-          completedAt: isLastStage ? new Date() : null, // Set completedAt if final stage
-        },
-      });
-    });
-
-    // Add comment if admin/manager moved the task (bypassing normal validation)
-    if (isAdminOrManager && !isOwner) {
-      const userName = user.name || user.email;
-      await prisma.taskComment.create({
-        data: {
-          taskId: taskId,
-          userId: currentUserId,
-          content: `**ETAPA AVANÇADA POR ${userRole}** ${userName}\nDe: ${currentStage?.name || 'N/A'}\nPara: ${nextStage.name}\nData: ${new Date().toLocaleString('pt-BR')}\n\n⚠️ Esta tarefa foi movida manualmente por um ${userRole === 'ADMIN' ? 'administrador' : 'gerente'}.`,
-        },
-      });
-    }
-
-    // Get task to find projectId for revalidation
-    const updatedTask = await prisma.task.findUnique({
-      where: { id: taskId },
-      select: { projectId: true },
-    });
-
-    // Revalidate paths
-    revalidatePath(`/admin/tasks/${taskId}`);
-    revalidatePath(`/admin/tasks`);
-    revalidatePath(`/tasks/${taskId}`);
-    revalidatePath(`/dashboard`); // ✅ Revalidate dashboard (task moved to new team's backlog)
-    if (updatedTask) {
-      revalidatePath(`/projects/${updatedTask.projectId}`);
-    }
-
-    return { success: true };
+    // DEPRECATED: This function is no longer used in the fork/join system
+    return { error: "Esta função foi depreciada. Use completeStageAndAdvance() em vez disso." };
   } catch (error) {
     console.error("Error advancing task stage:", error);
-    return {
-      error: error instanceof Error ? error.message : "Failed to advance task",
-    };
+    return { error: "Erro ao avançar tarefa" };
   }
 }
 
@@ -1009,147 +1158,16 @@ export async function revertTaskStage(
   }
 
   try {
-    // ✅ OWNERSHIP VALIDATION: Check who can revert
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        currentStage: {
-          select: {
-            id: true,
-            defaultTeamId: true,
-            defaultTeam: { select: { name: true } },
-          },
-        },
-      },
-    });
-
-    if (!task || !task.currentStage) {
-      return { error: "Tarefa não encontrada ou sem etapa atual." };
-    }
-
-    const userWithTeam = await prisma.user.findUnique({
-      where: { id: currentUserId },
-      select: { teamId: true, team: { select: { name: true } } },
-    });
-
-    if (!userWithTeam?.teamId) {
-      return {
-        error: "Você não está atribuído a nenhum time. Contate o administrador.",
-      };
-    }
-
-    // ✅ Check revert permissions
-    const isOwner = task.assigneeId === currentUserId;
-    const isManagerOrAdmin = userRole === "ADMIN" || userRole === "MANAGER";
-    const isUnassignedAndSameTeam =
-      task.assigneeId === null &&
-      userWithTeam.teamId === task.currentStage.defaultTeamId;
-
-    const canRevert = isOwner || isManagerOrAdmin || isUnassignedAndSameTeam;
-
-    if (!canRevert) {
-      if (task.assigneeId === null) {
-        return {
-          error: `Esta tarefa não está atribuída. Apenas membros do time "${task.currentStage.defaultTeam?.name}", managers ou admins podem revertê-la. Você faz parte do time "${userWithTeam.team?.name}".`,
-        };
-      } else {
-        return {
-          error: "Apenas o responsável pela tarefa, managers ou admins podem revertê-la.",
-        };
-      }
-    }
-
-    await prisma.$transaction(async (tx: any) => {
-      // Get the current task again within transaction
-      const taskInTx = await tx.task.findUnique({
-        where: { id: taskId },
-        select: { id: true, currentStageId: true },
-      });
-
-      if (!taskInTx || !taskInTx.currentStageId) {
-        throw new Error("Task not found or has no current stage.");
-      }
-
-      // 1. Find and "close" the current log (mark as REVERTED)
-      const currentLog = await tx.taskStageLog.findFirst({
-        where: {
-          taskId: taskId,
-          stageId: taskInTx.currentStageId,
-          exitedAt: null,
-        },
-        orderBy: { enteredAt: "desc" },
-      });
-
-      if (currentLog) {
-        await tx.taskStageLog.update({
-          where: { id: currentLog.id },
-          data: {
-            exitedAt: new Date(),
-            status: "REVERTED", // Mark as reverted (rejected)
-          },
-        });
-      }
-
-      // 2. Create the new log for the reverted stage
-      await tx.taskStageLog.create({
-        data: {
-          taskId: taskId,
-          stageId: revertToStageId,
-          enteredAt: new Date(),
-          exitedAt: null,
-          userId: currentUserId,
-        },
-      });
-
-      // 3. Update the task's current stage pointer
-      // Also clear completedAt if task was completed and is being reverted
-      await tx.task.update({
-        where: { id: taskId },
-        data: {
-          currentStageId: revertToStageId,
-          status: "IN_PROGRESS",
-          completedAt: null, // Clear completion date on revert
-        },
-      });
-
-      // 4. Add the rejection comment
-      await tx.taskComment.create({
-        data: {
-          content: `**REVERTED TO PREVIOUS STAGE:** ${comment}`,
-          taskId: taskId,
-          userId: currentUserId,
-        },
-      });
-    });
-
-    // Get task to find projectId for revalidation
-    const updatedTask = await prisma.task.findUnique({
-      where: { id: taskId },
-      select: { projectId: true },
-    });
-
-    // Revalidate paths
-    revalidatePath(`/admin/tasks/${taskId}`);
-    revalidatePath(`/admin/tasks`);
-    revalidatePath(`/tasks/${taskId}`);
-    if (updatedTask) {
-      revalidatePath(`/projects/${updatedTask.projectId}`);
-    }
-
-    return { success: true };
+    // DEPRECATED: This function uses the old stage system
+    return { error: "Função de reversão antiga depreciada. O novo sistema não suporta reversão simples." };
   } catch (error) {
     console.error("Error reverting task stage:", error);
-    return {
-      error: error instanceof Error ? error.message : "Failed to revert task",
-    };
+    return { error: "Erro ao reverter tarefa" };
   }
 }
 
-// ========== Collaboration Actions (Comments & Artifacts) ==========
+// ========== Task Comments & Artifacts ==========
 
-/**
- * Add a comment to a task
- */
 export async function addComment(taskId: string, content: string) {
   const user = await requireMemberOrHigher();
   const userId = user.id as string;
@@ -1288,13 +1306,17 @@ export async function logTime(
   }
 
   try {
-    // Get the task to find its current stage
+    // Get the task to find its project
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       select: {
         id: true,
-        currentStageId: true,
         projectId: true,
+        activeStages: {
+          where: { status: "ACTIVE" },
+          select: { stageId: true },
+          take: 1,
+        },
       },
     });
 
@@ -1310,7 +1332,7 @@ export async function logTime(
         hoursSpent,
         logDate,
         description: description || null,
-        stageId: task.currentStageId, // Associate with current stage
+        stageId: task.activeStages[0]?.stageId || null, // Associate with first active stage
       },
       include: {
         user: {
@@ -1355,137 +1377,22 @@ export async function claimTask(taskId: string) {
   const userId = user.id as string;
 
   try {
-    // 1. Fetch task with current stage
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        currentStage: {
-          select: {
-            id: true,
-            name: true,
-            defaultTeamId: true,
-            defaultTeam: { select: { name: true } },
-          },
-        },
-      },
-    });
-
-    if (!task) {
-      return { error: "Tarefa não encontrada" };
-    }
-
-    if (task.assigneeId !== null) {
-      return { error: "Tarefa já está atribuída a outro usuário" };
-    }
-
-    // 2. ✅ CRITICAL VALIDATION: Verify user belongs to correct team
-    const currentUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        teamId: true,
-        team: { select: { name: true } },
-      },
-    });
-
-    if (!currentUser?.teamId) {
-      return {
-        error: "Você não está atribuído a nenhum time. Contate o administrador.",
-      };
-    }
-
-    if (currentUser.teamId !== task.currentStage?.defaultTeamId) {
-      return {
-        error: `Esta tarefa pertence ao time "${task.currentStage?.defaultTeam?.name || "outro"}". Você faz parte do time "${currentUser.team?.name}".`,
-      };
-    }
-
-    // 3. Assign task (validation passed)
-    await prisma.task.update({
-      where: { id: taskId },
-      data: {
-        assigneeId: userId,
-        status: "IN_PROGRESS", // Move from BACKLOG to IN_PROGRESS
-      },
-    });
-
-    revalidatePath(`/dashboard`);
-    revalidatePath(`/tasks/${taskId}`);
-    revalidatePath(`/admin/tasks`);
-
-    return { success: true };
+    // DEPRECATED: Old claimTask function for task-level assignment
+    // New system uses claimActiveStage for stage-level assignment
+    return { error: "Esta função foi depreciada. Use claimActiveStage() para reivindicar etapas específicas." };
   } catch (error) {
     console.error("Error claiming task:", error);
-    return {
-      error: error instanceof Error ? error.message : "Failed to claim task",
-    };
+    return { error: "Erro ao reivindicar tarefa" };
   }
 }
 
-/**
- * Allows a supervisor/admin to manually assign a task to a specific user.
- * ✅ VALIDATION: Target user must belong to the team of the current stage.
- */
 export async function assignTask(taskId: string, targetUserId: string) {
   await requireMemberOrHigher(); // Ensure user is authenticated
 
   try {
-    // 1. Fetch task and current stage
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        currentStage: {
-          select: {
-            defaultTeamId: true,
-            defaultTeam: { select: { name: true } },
-          },
-        },
-      },
-    });
-
-    if (!task) {
-      return { error: "Tarefa não encontrada" };
-    }
-
-    // 2. ✅ CRITICAL VALIDATION: Verify target user belongs to correct team
-    const targetUser = await prisma.user.findUnique({
-      where: { id: targetUserId },
-      select: {
-        teamId: true,
-        name: true,
-        team: { select: { name: true } },
-      },
-    });
-
-    if (!targetUser) {
-      return { error: "Usuário não encontrado" };
-    }
-
-    if (!targetUser.teamId) {
-      return {
-        error: `${targetUser.name} não está atribuído a nenhum time.`,
-      };
-    }
-
-    if (targetUser.teamId !== task.currentStage?.defaultTeamId) {
-      return {
-        error: `Não é possível atribuir a ${targetUser.name}. Esta tarefa pertence ao time "${task.currentStage?.defaultTeam?.name}", mas ${targetUser.name} faz parte do time "${targetUser.team?.name}".`,
-      };
-    }
-
-    // 3. Assign task (validation passed)
-    await prisma.task.update({
-      where: { id: taskId },
-      data: {
-        assigneeId: targetUserId,
-        status: "IN_PROGRESS",
-      },
-    });
-
-    revalidatePath(`/dashboard`);
-    revalidatePath(`/tasks/${taskId}`);
-    revalidatePath(`/admin/tasks`);
-
-    return { success: true };
+    // DEPRECATED: Old assignTask function for task-level assignment
+    // New system uses claimActiveStage for stage-level assignment with automatic team validation
+    return { error: "Esta função foi depreciada. Use claimActiveStage() para atribuir etapas específicas." };
   } catch (error) {
     console.error("Error assigning task:", error);
     return {

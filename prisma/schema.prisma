@@ -48,6 +48,12 @@ enum StageLogStatus {
   REVERTED  // Stage was rejected/reverted
 }
 
+enum ActiveStageStatus {
+  ACTIVE    // Ready to work - all dependencies met
+  BLOCKED   // Created but waiting for dependencies to complete
+  COMPLETED // Work finished on this stage
+}
+
 // --- 1. Auth & Team Models ---
 
 model Account {
@@ -100,12 +106,13 @@ model User {
   team   Team?    @relation(fields: [teamId], references: [id], onUpdate: NoAction, onDelete: SetNull)
 
   // Relations
-  assignedTasks Task[]          @relation("Assignee")
-  comments      TaskComment[]
-  artifacts     TaskArtifact[]
-  timeLogs      TimeLog[]
-  stageLogs     TaskStageLog[]
-  activityLogs  ActivityLog[]
+  assignedTasks   Task[]            @relation("Assignee")
+  activeStages    TaskActiveStage[] @relation("StageAssignee")
+  comments        TaskComment[]
+  artifacts       TaskArtifact[]
+  timeLogs        TimeLog[]
+  stageLogs       TaskStageLog[]
+  activityLogs    ActivityLog[]
 }
 
 model Team {
@@ -152,12 +159,12 @@ model TemplateStage {
   defaultTeam   Team?   @relation(fields: [defaultTeamId], references: [id], onUpdate: NoAction, onDelete: SetNull)
 
   // Relations
-  dependencies      StageDependency[] @relation("DependsOn")
-  dependents        StageDependency[] @relation("Stage")
-  tasksAtThisStage  Task[]            @relation("CurrentStage")
-  stageLogs         TaskStageLog[]
-  timeLogs          TimeLog[]
-  activityLogs      ActivityLog[]
+  dependencies StageDependency[] @relation("DependsOn")
+  dependents   StageDependency[] @relation("Stage")
+  activeTasks  TaskActiveStage[] @relation("ActiveTasks")
+  stageLogs    TaskStageLog[]
+  timeLogs     TimeLog[]
+  activityLogs ActivityLog[]
 }
 
 // This table defines the dependencies: "Stage A must be complete before Stage B"
@@ -189,18 +196,46 @@ model Task {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  currentStageId String?
-  currentStage   TemplateStage? @relation("CurrentStage", fields: [currentStageId], references: [id], onUpdate: NoAction, onDelete: SetNull)
-
   assigneeId String?
   assignee   User?   @relation("Assignee", fields: [assigneeId], references: [id], onUpdate: NoAction, onDelete: SetNull)
 
   // Task History (all in separate tables)
+  activeStages TaskActiveStage[]
   comments     TaskComment[]
   artifacts    TaskArtifact[]
   stageLogs    TaskStageLog[]
   timeLogs     TimeLog[]
   activityLogs ActivityLog[]
+}
+
+// TaskActiveStage: Represents active/blocked/completed stages for a task
+// Enables parallel workflow (fork/join) - multiple stages can be active simultaneously
+model TaskActiveStage {
+  id     String            @id @default(cuid())
+  status ActiveStageStatus @default(ACTIVE)
+
+  // The task this active stage belongs to
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  // The stage that is active/blocked/completed
+  stageId String
+  stage   TemplateStage @relation("ActiveTasks", fields: [stageId], references: [id], onDelete: Cascade)
+
+  // Assignment (per stage, not per task)
+  assigneeId String?
+  assignee   User?   @relation("StageAssignee", fields: [assigneeId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+
+  // Timestamps
+  activatedAt DateTime  @default(now())
+  completedAt DateTime?
+
+  // Unique constraint: A task cannot have the same stage active twice
+  @@unique([taskId, stageId])
+  @@index([taskId])
+  @@index([stageId])
+  @@index([assigneeId])
+  @@index([status])
 }
 
 model TaskComment {

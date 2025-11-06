@@ -1,28 +1,48 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { TaskStatus, TaskPriority } from "@prisma/client";
+import { TaskStatus, TaskPriority, ActiveStageStatus } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ClaimTaskButton } from "@/components/tasks/ClaimTaskButton";
-import { UnassignTaskButton } from "@/components/tasks/UnassignTaskButton";
+import { ClaimActiveStageButton } from "@/components/tasks/ClaimActiveStageButton";
+import { UnassignActiveStageButton } from "@/components/tasks/UnassignActiveStageButton";
+import { getMyActiveStages, getTeamBacklog } from "@/lib/actions/task";
 
-// Types for our task data
-type TaskWithDetails = {
+// Types for our task active stage data
+type ActiveStageWithDetails = {
   id: string;
-  title: string;
-  priority: TaskPriority;
-  status: TaskStatus;
-  dueDate: Date | null;
-  createdAt: Date;
+  status: ActiveStageStatus;
+  taskId: string;
+  stageId: string;
+  assigneeId: string | null;
+  activatedAt: Date;
+  completedAt: Date | null;
+  task: {
+    id: string;
+    title: string;
+    priority: TaskPriority;
+    status: TaskStatus;
+    dueDate: Date | null;
+    createdAt: Date;
+    project: {
+      name: string;
+    };
+  };
+  stage: {
+    id: string;
+    name: string;
+    order: number;
+    defaultTeam: {
+      id: string;
+      name: string;
+    } | null;
+    template: {
+      id: string;
+      name: string;
+    };
+  };
   assignee?: {
     name: string | null;
     email: string | null;
-  } | null;
-  project: {
-    name: string;
-  };
-  currentStage: {
-    name: string;
   } | null;
 };
 
@@ -125,31 +145,36 @@ function StatsCard({ stats }: { stats: UserStats }) {
   );
 }
 
-// Task row component with visual urgency indicators
-function TaskRow({
-  task,
+// Active stage row component with visual urgency indicators
+function ActiveStageRow({
+  activeStage,
   showClaimButton = false,
   showUnassignButton = false
 }: {
-  task: TaskWithDetails;
+  activeStage: ActiveStageWithDetails;
   showClaimButton?: boolean;
   showUnassignButton?: boolean;
 }) {
+  const task = activeStage.task;
+  const stage = activeStage.stage;
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
   const isDueSoon = task.dueDate && !isOverdue &&
     new Date(task.dueDate).getTime() - Date.now() < 2 * 24 * 60 * 60 * 1000; // 2 days
   const isNew = Date.now() - new Date(task.createdAt).getTime() < 24 * 60 * 60 * 1000; // 24 hours
+  const isBlocked = activeStage.status === "BLOCKED";
 
   return (
     <tr className={`
       hover:bg-muted/50 transition-colors border-b border-border
       ${isOverdue ? 'bg-red-50 dark:bg-red-950/20' : ''}
       ${isDueSoon && !isOverdue ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''}
+      ${isBlocked ? 'bg-gray-50 dark:bg-gray-950/20' : ''}
     `}>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
           {isOverdue && <span title="Tarefa atrasada" className="text-base">🔥</span>}
           {isDueSoon && !isOverdue && <span title="Prazo próximo" className="text-base">⚠️</span>}
+          {isBlocked && <span title="Etapa bloqueada" className="text-base">🔒</span>}
           <Link
             href={`/tasks/${task.id}`}
             className="text-sm font-medium text-primary hover:underline"
@@ -167,15 +192,26 @@ function TaskRow({
         <span className="text-sm text-muted-foreground">{task.project.name}</span>
       </td>
       <td className="px-4 py-3">
-        <span className="text-sm text-muted-foreground">
-          {task.currentStage?.name || "Sem etapa"}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+            {stage.order}
+          </span>
+          <span className="text-sm text-muted-foreground">
+            {stage.name}
+          </span>
+        </div>
       </td>
       <td className="px-4 py-3">
         <PriorityBadge priority={task.priority} />
       </td>
       <td className="px-4 py-3">
-        <StatusBadge status={task.status} />
+        {isBlocked ? (
+          <span className="px-2 py-1 text-xs font-medium rounded-md border bg-gray-100 text-gray-800 border-gray-300">
+            Bloqueado
+          </span>
+        ) : (
+          <StatusBadge status={task.status} />
+        )}
       </td>
       <td className="px-4 py-3">
         <span className={`text-sm ${isOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
@@ -184,14 +220,19 @@ function TaskRow({
       </td>
       {showClaimButton && (
         <td className="px-4 py-3">
-          <ClaimTaskButton taskId={task.id} />
+          <ClaimActiveStageButton
+            taskId={task.id}
+            stageId={stage.id}
+            isBlocked={isBlocked}
+          />
         </td>
       )}
       {showUnassignButton && (
         <td className="px-4 py-3">
-          <UnassignTaskButton
+          <UnassignActiveStageButton
             taskId={task.id}
-            currentAssignee={task.assignee?.name || task.assignee?.email || null}
+            stageId={stage.id}
+            currentAssignee={activeStage.assignee?.name || activeStage.assignee?.email || null}
           />
         </td>
       )}
@@ -208,14 +249,14 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-// TaskList component
-function TaskList({
-  tasks,
+// ActiveStageList component
+function ActiveStageList({
+  activeStages,
   title,
   showClaimButton = false,
   showUnassignButton = false
 }: {
-  tasks: TaskWithDetails[];
+  activeStages: ActiveStageWithDetails[];
   title: string;
   showClaimButton?: boolean;
   showUnassignButton?: boolean;
@@ -226,16 +267,16 @@ function TaskList({
       <div className="bg-primary/5 px-6 py-4 border-b-2 border-border">
         <h2 className="text-xl font-bold text-foreground">{title}</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          {tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"}
+          {activeStages.length} {activeStages.length === 1 ? "etapa ativa" : "etapas ativas"}
         </p>
       </div>
 
       {/* Table or Empty State */}
-      {tasks.length === 0 ? (
+      {activeStages.length === 0 ? (
         <EmptyState
           message={
             title.includes("Ativas")
-              ? "Você não tem tarefas ativas. Bom trabalho!"
+              ? "Você não tem etapas ativas. Bom trabalho!"
               : "O backlog da sua equipe está limpo."
           }
         />
@@ -270,10 +311,10 @@ function TaskList({
               </tr>
             </thead>
             <tbody>
-              {tasks.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
+              {activeStages.map((activeStage) => (
+                <ActiveStageRow
+                  key={activeStage.id}
+                  activeStage={activeStage}
                   showClaimButton={showClaimButton}
                   showUnassignButton={showUnassignButton}
                 />
@@ -335,40 +376,16 @@ export default async function DashboardPage() {
   }
 
   // Parallel data fetching for widgets and statistics
-  const [myActiveTasks, teamBacklogTasks, stats] = await Promise.all([
-    // Query 1: "Minhas Tarefas Ativas"
-    // Fetches tasks *assigned to me* that are not completed.
-    prisma.task.findMany({
-      where: {
-        assigneeId: userId,
-        status: { in: [TaskStatus.BACKLOG, TaskStatus.IN_PROGRESS, TaskStatus.PAUSED] },
-      },
-      include: {
-        project: { select: { name: true } },
-        currentStage: { select: { name: true } },
-        assignee: { select: { name: true, email: true } },
-      },
-      orderBy: { dueDate: "asc" }, // Prioritizes by due date
-    }),
+  const [myActiveStages, teamBacklogStages, stats] = await Promise.all([
+    // Query 1: "Minhas Etapas Ativas"
+    // Fetches active stages *assigned to me*
+    getMyActiveStages(),
 
     // Query 2: "Backlog da Minha Equipe"
-    // Fetches tasks assigned to *my team's current stage* but *unassigned* to anyone.
-    prisma.task.findMany({
-      where: {
-        assigneeId: null, // Unassigned
-        status: TaskStatus.BACKLOG,
-        currentStage: {
-          defaultTeamId: teamId, // In my team's queue
-        },
-      },
-      include: {
-        project: { select: { name: true } },
-        currentStage: { select: { name: true } },
-      },
-      orderBy: { createdAt: "asc" }, // Oldest first
-    }),
+    // Fetches active stages for *my team* that are *unassigned*
+    getTeamBacklog(teamId),
 
-    // Query 3: User Statistics
+    // Query 3: User Statistics (updated for TaskActiveStage)
     prisma.$transaction(async (tx) => {
       const now = new Date();
       const startOfToday = new Date(now.setHours(0, 0, 0, 0));
@@ -376,19 +393,22 @@ export default async function DashboardPage() {
       const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
 
       const [activeTasks, completedThisWeek, hoursResult, upcomingDeadlines] = await Promise.all([
-        tx.task.count({
+        // Count my active stages
+        tx.taskActiveStage.count({
           where: {
             assigneeId: userId,
-            status: { in: [TaskStatus.BACKLOG, TaskStatus.IN_PROGRESS, TaskStatus.PAUSED] }
+            status: "ACTIVE"
           }
         }),
-        tx.task.count({
+        // Count stages I completed this week
+        tx.taskActiveStage.count({
           where: {
             assigneeId: userId,
-            status: TaskStatus.COMPLETED,
+            status: "COMPLETED",
             completedAt: { gte: weekAgo }
           }
         }),
+        // Hours logged today (unchanged)
         tx.timeLog.aggregate({
           where: {
             userId,
@@ -396,13 +416,16 @@ export default async function DashboardPage() {
           },
           _sum: { hoursSpent: true }
         }),
-        tx.task.count({
+        // Upcoming deadlines - count tasks with my active stages that have deadlines
+        tx.taskActiveStage.count({
           where: {
             assigneeId: userId,
-            status: { not: TaskStatus.COMPLETED },
-            dueDate: {
-              lte: threeDaysFromNow,
-              gte: now
+            status: "ACTIVE",
+            task: {
+              dueDate: {
+                lte: threeDaysFromNow,
+                gte: now
+              }
             }
           }
         })
@@ -434,11 +457,11 @@ export default async function DashboardPage() {
 
       {/* Dashboard Widgets */}
       <div className="space-y-8">
-        {/* Widget 1: My Active Tasks - Com botão "Liberar Tarefa" */}
-        <TaskList tasks={myActiveTasks} title="Minhas Tarefas Ativas" showUnassignButton={true} />
+        {/* Widget 1: My Active Stages - Com botão "Liberar Etapa" */}
+        <ActiveStageList activeStages={myActiveStages} title="Minhas Etapas Ativas" showUnassignButton={true} />
 
-        {/* Widget 2: Team Backlog - Com botão "Pegar Tarefa" */}
-        <TaskList tasks={teamBacklogTasks} title="Backlog da Equipe (Não Atribuído)" showClaimButton={true} />
+        {/* Widget 2: Team Backlog - Com botão "Pegar Etapa" */}
+        <ActiveStageList activeStages={teamBacklogStages} title="Backlog da Equipe (Não Atribuído)" showClaimButton={true} />
       </div>
     </div>
   );
