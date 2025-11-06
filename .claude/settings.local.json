@@ -20,7 +20,9 @@
       "Bash(npx prisma:*)",
       "Bash(set PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=sim)",
       "Bash(cmd /c \"set PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=sim&& npx prisma migrate reset --force\")",
-      "Bash(powershell -Command \"$env:PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=''sim''; npx prisma migrate reset --force\")"
+      "Bash(powershell -Command \"$env:PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=''sim''; npx prisma migrate reset --force\")",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\ndocs: Adiciona documentação completa do Sistema de Workflow Paralelo v2.0\n\nNovos documentos:\n- PARALLEL_WORKFLOW.md: Documentação técnica completa do sistema fork/join\n- QUICK_START_PARALLEL.md: Guia de início rápido com testes práticos\n- API_REFERENCE.md: Referência completa de APIs, funções e componentes\n- CHANGELOG.md: Histórico de mudanças da versão 2.0\n- DOCUMENTATION_INDEX.md: Índice central de toda documentação\n\nAtualizações:\n- README.md: Adiciona destaque do sistema paralelo e exemplo prático\n- task-flow.md: Adiciona exemplos detalhados de Fork/Join com economia de tempo\n\nFeatures documentadas:\n✅ Sistema TaskActiveStage (many-to-many Task ↔ Stage)\n✅ Fork Pattern (múltiplas etapas ativas simultaneamente)\n✅ Join Pattern (sincronização de dependências)\n✅ Atribuição por etapa (assigneeId por TaskActiveStage)\n✅ Dashboard por etapa (uma entrada por etapa ativa)\n✅ Bloqueio inteligente (status BLOCKED para dependências pendentes)\n✅ APIs: completeStageAndAdvance, activateNextStages, claimActiveStage\n✅ Componentes: AdvanceStageButton, ClaimActiveStageButton, etc.\n✅ Funções depreciadas e migração\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
