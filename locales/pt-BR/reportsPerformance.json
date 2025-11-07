@@ -1,0 +1,44 @@
+{
+  "title": "Relatório de Desempenho e Gargalos",
+  "subtitle": "Análise de fluxo de trabalho, identificação de gargalos e taxa de retrabalho",
+  "filters": {
+    "title": "Filtros",
+    "startDate": "Data Início",
+    "endDate": "Data Fim",
+    "filter": "Filtrar",
+    "clear": "Limpar"
+  },
+  "leadTimeMetrics": {
+    "average": "Lead Time Médio",
+    "median": "Lead Time Mediano",
+    "count": "Tarefas Analisadas",
+    "days": "dias"
+  },
+  "bottlenecks": {
+    "title": "Gargalos Identificados",
+    "description": "As seguintes etapas estão consumindo mais tempo e podem estar causando atrasos no fluxo:",
+    "occurrences": "ocorrências",
+    "days": "dias",
+    "hours": "horas"
+  },
+  "avgTimePerStage": {
+    "title": "Tempo Médio por Etapa",
+    "noData": "Nenhum dado de etapa encontrado",
+    "stageHeader": "Etapa",
+    "timeHeader": "Tempo Médio"
+  },
+  "reworkRate": {
+    "title": "Taxa de Retrabalho por Etapa",
+    "noData": "Nenhum dado de retrabalho encontrado",
+    "stageHeader": "Etapa",
+    "completedRevertedHeader": "Completo/Revertido",
+    "rateHeader": "Taxa"
+  },
+  "qualityIssues": {
+    "title": "Atenção: Alta Taxa de Retrabalho",
+    "description": "As seguintes etapas apresentam taxa de retrabalho superior a 10%, indicando possíveis problemas de qualidade ou comunicação:",
+    "completed": "completo",
+    "reverted": "revertido",
+    "rework": "retrabalho"
+  }
+}

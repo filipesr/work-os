@@ -1,0 +1,37 @@
+{
+  "title": "Relatório de Produtividade",
+  "subtitle": "Análise de tempo gasto por usuário, projeto, cliente e etapa do fluxo",
+  "filters": {
+    "title": "Filtros",
+    "startDate": "Data Início",
+    "endDate": "Data Fim",
+    "filter": "Filtrar",
+    "clear": "Limpar"
+  },
+  "totalHours": "Total de Horas",
+  "hoursByUser": {
+    "title": "Horas por Usuário",
+    "noData": "Nenhum registro de tempo encontrado",
+    "userHeader": "Usuário",
+    "hoursHeader": "Horas",
+    "noName": "Sem nome"
+  },
+  "hoursByProject": {
+    "title": "Horas por Projeto",
+    "noData": "Nenhum registro de tempo encontrado",
+    "projectHeader": "Projeto",
+    "hoursHeader": "Horas"
+  },
+  "hoursByClient": {
+    "title": "Horas por Cliente",
+    "noData": "Nenhum registro de tempo encontrado",
+    "clientHeader": "Cliente",
+    "hoursHeader": "Horas"
+  },
+  "hoursByStage": {
+    "title": "Horas por Etapa",
+    "noData": "Nenhum registro de tempo encontrado",
+    "stageHeader": "Etapa",
+    "hoursHeader": "Horas"
+  }
+}

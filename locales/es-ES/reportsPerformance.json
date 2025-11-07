@@ -1,0 +1,44 @@
+{
+  "title": "Informe de Rendimiento y Cuellos de Botella",
+  "subtitle": "Análisis de flujo de trabajo, identificación de cuellos de botella y tasa de retrabajo",
+  "filters": {
+    "title": "Filtros",
+    "startDate": "Fecha Inicio",
+    "endDate": "Fecha Fin",
+    "filter": "Filtrar",
+    "clear": "Limpiar"
+  },
+  "leadTimeMetrics": {
+    "average": "Lead Time Promedio",
+    "median": "Lead Time Mediano",
+    "count": "Tareas Analizadas",
+    "days": "días"
+  },
+  "bottlenecks": {
+    "title": "Cuellos de Botella Identificados",
+    "description": "Las siguientes etapas están consumiendo más tiempo y pueden estar causando retrasos en el flujo:",
+    "occurrences": "ocurrencias",
+    "days": "días",
+    "hours": "horas"
+  },
+  "avgTimePerStage": {
+    "title": "Tiempo Promedio por Etapa",
+    "noData": "No se encontraron datos de etapa",
+    "stageHeader": "Etapa",
+    "timeHeader": "Tiempo Promedio"
+  },
+  "reworkRate": {
+    "title": "Tasa de Retrabajo por Etapa",
+    "noData": "No se encontraron datos de retrabajo",
+    "stageHeader": "Etapa",
+    "completedRevertedHeader": "Completo/Revertido",
+    "rateHeader": "Tasa"
+  },
+  "qualityIssues": {
+    "title": "Atención: Alta Tasa de Retrabajo",
+    "description": "Las siguientes etapas presentan una tasa de retrabajo superior al 10%, indicando posibles problemas de calidad o comunicación:",
+    "completed": "completo",
+    "reverted": "revertido",
+    "rework": "retrabajo"
+  }
+}

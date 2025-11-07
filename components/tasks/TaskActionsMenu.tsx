@@ -16,6 +16,7 @@ import { RevertStageButton } from "./RevertStageButton";
 import { CompleteTaskButton } from "./CompleteTaskButton";
 import { UnassignTaskButton } from "./UnassignTaskButton";
 import { LogTimeButton } from "./LogTimeButton";
+import { useTranslations } from "next-intl";
 
 interface TaskActionsMenuProps {
   taskId: string;
@@ -37,6 +38,7 @@ export function TaskActionsMenu({
   const [showComplete, setShowComplete] = useState(false);
   const [showUnassign, setShowUnassign] = useState(false);
   const [showLogTime, setShowLogTime] = useState(false);
+  const t = useTranslations("tasks.actions");
 
   return (
     <>
@@ -44,7 +46,7 @@ export function TaskActionsMenu({
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="w-full">
             <MoreVertical className="h-4 w-4 mr-2" />
-            Ações
+            {t("menu")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 bg-background">
@@ -52,12 +54,12 @@ export function TaskActionsMenu({
             <>
               <DropdownMenuItem onClick={() => setShowAdvance(true)}>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Concluir Etapa
+                {t("completeStage")}
               </DropdownMenuItem>
               {previousStages.length > 0 && (
                 <DropdownMenuItem onClick={() => setShowRevert(true)}>
                   <Undo2 className="h-4 w-4 mr-2" />
-                  Reverter Etapa
+                  {t("revertStage")}
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
@@ -65,18 +67,18 @@ export function TaskActionsMenu({
           )}
           <DropdownMenuItem onClick={() => setShowComplete(true)}>
             <XCircle className="h-4 w-4 mr-2" />
-            {taskStatus === "COMPLETED" ? "Reabrir Tarefa" : "Concluir Tarefa"}
+            {taskStatus === "COMPLETED" ? t("reopenTask") : t("completeTask")}
           </DropdownMenuItem>
           {currentAssignee && (
             <DropdownMenuItem onClick={() => setShowUnassign(true)}>
               <UserMinus className="h-4 w-4 mr-2" />
-              Liberar Tarefa
+              {t("unassignTask")}
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setShowLogTime(true)}>
             <Clock className="h-4 w-4 mr-2" />
-            Registrar Tempo
+            {t("logTime")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

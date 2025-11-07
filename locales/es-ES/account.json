@@ -1,0 +1,25 @@
+{
+  "userNotFound": "Usuario no encontrado.",
+  "title": "Mi Cuenta",
+  "subtitle": "Visualiza tu información de perfil",
+  "fields": {
+    "name": "Nombre",
+    "email": "Correo Electrónico",
+    "role": "Rol",
+    "team": "Equipo",
+    "language": "Idioma"
+  },
+  "noInfo": "No informado",
+  "noTeam": "Ningún equipo asignado",
+  "roles": {
+    "ADMIN": "Administrador",
+    "MANAGER": "Gerente",
+    "SUPERVISOR": "Supervisor",
+    "MEMBER": "Miembro",
+    "CLIENT": "Cliente"
+  },
+  "googleSyncNote": {
+    "label": "ℹ️ Nota:",
+    "message": "Tu nombre y foto se sincronizan con tu Cuenta de Google. Tu rol y equipo son asignados por un administrador."
+  }
+}

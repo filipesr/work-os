@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface Stage {
   id: string;
@@ -22,6 +23,8 @@ export function DependencySelector({
   onToggle,
   currentStageId,
 }: DependencySelectorProps) {
+  const t = useTranslations("template.dependencies");
+
   // Filter out current stage if provided
   const availableStages = currentStageId
     ? stages.filter(s => s.id !== currentStageId)
@@ -39,8 +42,8 @@ export function DependencySelector({
   if (availableStages.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-8 border-2 border-dashed border-border rounded-lg">
-        <p className="text-sm">Nenhuma etapa disponível para dependência</p>
-        <p className="text-xs mt-1">Crie outras etapas primeiro</p>
+        <p className="text-sm">{t("noStagesAvailable")}</p>
+        <p className="text-xs mt-1">{t("createStagesFirst")}</p>
       </div>
     );
   }
@@ -50,15 +53,18 @@ export function DependencySelector({
       <div className="flex items-center justify-between mb-3">
         <div>
           <label className="block text-sm font-semibold text-foreground">
-            Depende das Etapas (opcional)
+            {t("title")}
           </label>
           <p className="text-xs text-muted-foreground mt-1">
-            Selecione as etapas que devem ser concluídas antes desta poder iniciar
+            {t("subtitle")}
           </p>
         </div>
         {selectedDeps.size > 0 && (
           <Badge variant="default" className="ml-2">
-            {selectedDeps.size} selecionada{selectedDeps.size > 1 ? 's' : ''}
+            {selectedDeps.size === 1
+              ? t("selectedCount", { count: selectedDeps.size })
+              : t("selectedCountPlural", { count: selectedDeps.size })
+            }
           </Badge>
         )}
       </div>
@@ -107,7 +113,7 @@ export function DependencySelector({
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {isSelected ? "Esta etapa será um pré-requisito" : "Clique para adicionar como dependência"}
+                    {isSelected ? t("prerequisiteLabel") : t("clickToAdd")}
                   </p>
                 </div>
               </div>
@@ -127,9 +133,8 @@ export function DependencySelector({
       {selectedDeps.size > 0 && (
         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
           <p className="text-xs text-blue-700 dark:text-blue-300">
-            <strong>💡 Importante:</strong> Esta etapa só ficará disponível após{" "}
-            {selectedDeps.size === 1 ? "a etapa selecionada ser" : "todas as etapas selecionadas serem"}{" "}
-            concluída{selectedDeps.size > 1 ? "s" : ""}.
+            <strong>{t("importantTitle")}</strong>{" "}
+            {selectedDeps.size === 1 ? t("importantSingle") : t("importantMultiple")}
           </p>
         </div>
       )}
@@ -137,7 +142,7 @@ export function DependencySelector({
       {selectedDeps.size === 0 && (
         <div className="mt-4 p-3 bg-muted/50 border border-border rounded-lg">
           <p className="text-xs text-muted-foreground">
-            <strong>ℹ️ Sem dependências:</strong> Esta etapa poderá ser iniciada imediatamente após a criação da tarefa.
+            <strong>{t("noDepsTitle")}</strong> {t("noDepsMessage")}
           </p>
         </div>
       )}

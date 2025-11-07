@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, FolderKanban } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -47,6 +48,7 @@ export function QuickCreateProject({
   className,
   onProjectCreated,
 }: QuickCreateProjectProps) {
+  const t = useTranslations("quickCreate.project");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -73,12 +75,12 @@ export function QuickCreateProject({
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error("Nome do projeto é obrigatório");
+      toast.error(t("errorNameRequired"));
       return;
     }
 
     if (!formData.clientId) {
-      toast.error("Selecione um cliente");
+      toast.error(t("errorClientRequired"));
       return;
     }
 
@@ -88,7 +90,7 @@ export function QuickCreateProject({
       if (result.error) {
         toast.error(result.error);
       } else if (result.project) {
-        toast.success(`Projeto "${result.project.name}" criado com sucesso!`);
+        toast.success(t("successMessage", { name: result.project.name }));
         setOpen(false);
         setFormData({ name: "", description: "", clientId: "" });
 
@@ -106,7 +108,7 @@ export function QuickCreateProject({
       <DialogTrigger asChild>
         <Button variant={variant} size={size} className={className}>
           <Plus className="h-4 w-4 mr-2" />
-          Novo Projeto
+          {t("buttonLabel")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
@@ -114,10 +116,10 @@ export function QuickCreateProject({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FolderKanban className="h-5 w-5" />
-              Criar Novo Projeto
+              {t("title")}
             </DialogTitle>
             <DialogDescription>
-              Adicione um novo projeto rapidamente. Você poderá editar mais detalhes depois.
+              {t("description")}
             </DialogDescription>
           </DialogHeader>
 
@@ -125,7 +127,7 @@ export function QuickCreateProject({
             {/* Client Selection */}
             <div className="grid gap-2">
               <Label htmlFor="client">
-                Cliente <span className="text-destructive">*</span>
+                {t("clientLabel")} <span className="text-destructive">*</span>
               </Label>
               <div className="flex gap-2">
                 <Select
@@ -136,12 +138,12 @@ export function QuickCreateProject({
                   disabled={isPending}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Selecione um cliente" />
+                    <SelectValue placeholder={t("clientPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {clients.length === 0 ? (
                       <div className="text-sm text-muted-foreground p-2 text-center">
-                        Nenhum cliente cadastrado
+                        {t("noClients")}
                       </div>
                     ) : (
                       clients.map((client) => (
@@ -163,11 +165,11 @@ export function QuickCreateProject({
             {/* Name */}
             <div className="grid gap-2">
               <Label htmlFor="name">
-                Nome do Projeto <span className="text-destructive">*</span>
+                {t("nameLabel")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
-                placeholder="Ex: Website Institucional"
+                placeholder={t("namePlaceholder")}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 disabled={isPending}
@@ -177,10 +179,10 @@ export function QuickCreateProject({
 
             {/* Description */}
             <div className="grid gap-2">
-              <Label htmlFor="description">Descrição</Label>
+              <Label htmlFor="description">{t("descriptionLabel")}</Label>
               <Textarea
                 id="description"
-                placeholder="Informações adicionais sobre o projeto..."
+                placeholder={t("descriptionPlaceholder")}
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -198,10 +200,10 @@ export function QuickCreateProject({
               onClick={() => setOpen(false)}
               disabled={isPending}
             >
-              Cancelar
+              {t("cancel")}
             </Button>
             <Button type="submit" disabled={isPending || !formData.clientId}>
-              {isPending ? "Criando..." : "Criar Projeto"}
+              {isPending ? t("creating") : t("create")}
             </Button>
           </DialogFooter>
         </form>

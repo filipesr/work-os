@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { updateWorkflowTemplate, deleteWorkflowTemplate } from "@/lib/actions/template";
+import { useTranslations } from "next-intl";
 
 interface TemplateHeaderProps {
   template: {
@@ -12,13 +13,14 @@ interface TemplateHeaderProps {
 }
 
 export function TemplateHeader({ template }: TemplateHeaderProps) {
+  const t = useTranslations("template.header");
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   if (isEditing) {
     return (
       <div className="bg-card border border-border shadow-sm rounded-lg p-6">
-        <h2 className="text-xl font-bold text-foreground mb-4">Edit Template</h2>
+        <h2 className="text-xl font-bold text-foreground mb-4">{t("edit")}</h2>
         <form
           action={async (formData: FormData) => {
             const result = await updateWorkflowTemplate(template.id, formData);
@@ -30,7 +32,7 @@ export function TemplateHeader({ template }: TemplateHeaderProps) {
         >
           <div>
             <label htmlFor="name" className="block text-sm font-semibold text-foreground mb-2">
-              Template Name *
+              {t("nameLabel")}
             </label>
             <input
               type="text"
@@ -46,7 +48,7 @@ export function TemplateHeader({ template }: TemplateHeaderProps) {
               htmlFor="description"
               className="block text-sm font-semibold text-foreground mb-2"
             >
-              Description
+              {t("descriptionLabel")}
             </label>
             <textarea
               id="description"
@@ -61,14 +63,14 @@ export function TemplateHeader({ template }: TemplateHeaderProps) {
               type="submit"
               className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
             >
-              Save Changes
+              {t("saveChanges")}
             </button>
             <button
               type="button"
               onClick={() => setIsEditing(false)}
               className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all"
             >
-              Cancel
+              {t("cancel")}
             </button>
           </div>
         </form>
@@ -82,7 +84,7 @@ export function TemplateHeader({ template }: TemplateHeaderProps) {
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-foreground mb-3">{template.name}</h1>
           <p className="text-muted-foreground text-base">
-            {template.description || "No description"}
+            {template.description || t("noDescription")}
           </p>
         </div>
         <div className="ml-4 flex gap-3">
@@ -90,13 +92,13 @@ export function TemplateHeader({ template }: TemplateHeaderProps) {
             onClick={() => setIsEditing(true)}
             className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
           >
-            Edit
+            {t("editButton")}
           </button>
           <button
             onClick={() => setIsDeleting(true)}
             className="px-5 py-2.5 bg-destructive text-destructive-foreground font-semibold rounded-lg hover:bg-destructive/90 transition-all shadow-sm"
           >
-            Delete
+            {t("deleteButton")}
           </button>
         </div>
       </div>
@@ -105,24 +107,23 @@ export function TemplateHeader({ template }: TemplateHeaderProps) {
       {isDeleting && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-card border-2 border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-            <h3 className="text-xl font-bold text-foreground mb-4">Delete Template?</h3>
+            <h3 className="text-xl font-bold text-foreground mb-4">{t("deleteConfirmTitle")}</h3>
             <p className="text-muted-foreground mb-6">
-              Are you sure you want to delete this template? This will also delete all
-              stages and dependencies. This action cannot be undone.
+              {t("deleteConfirmMessage")}
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setIsDeleting(false)}
                 className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all"
               >
-                Cancel
+                {t("cancel")}
               </button>
               <form action={deleteWorkflowTemplate.bind(null, template.id)}>
                 <button
                   type="submit"
                   className="px-5 py-2.5 bg-destructive text-destructive-foreground font-semibold rounded-lg hover:bg-destructive/90 transition-all shadow-sm"
                 >
-                  Delete Template
+                  {t("deleteConfirmButton")}
                 </button>
               </form>
             </div>

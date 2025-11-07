@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export type FilterState = {
   myTasks: boolean;
@@ -26,19 +27,20 @@ interface KanbanFiltersProps {
   hasTeam: boolean;
 }
 
-const priorityOptions = [
-  { value: "LOW", label: "Baixa" },
-  { value: "MEDIUM", label: "Média" },
-  { value: "HIGH", label: "Alta" },
-  { value: "URGENT", label: "Urgente" },
-];
-
 export function KanbanFilters({
   filters,
   onFiltersChange,
   assignees,
   hasTeam,
 }: KanbanFiltersProps) {
+  const t = useTranslations("projects");
+
+  const priorityOptions = [
+    { value: "LOW", label: t("priority.LOW") },
+    { value: "MEDIUM", label: t("priority.MEDIUM") },
+    { value: "HIGH", label: t("priority.HIGH") },
+    { value: "URGENT", label: t("priority.URGENT") },
+  ];
   const activeFilterCount =
     (filters.myTasks ? 1 : 0) +
     (filters.byTeam ? 1 : 0) +
@@ -57,7 +59,7 @@ export function KanbanFilters({
   return (
     <div className="flex flex-wrap items-center gap-3 p-4 bg-card rounded-lg border">
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium">Filtros:</span>
+        <span className="text-sm font-medium">{t("filters.title")}</span>
         {activeFilterCount > 0 && (
           <Badge variant="secondary">{activeFilterCount}</Badge>
         )}
@@ -71,7 +73,7 @@ export function KanbanFilters({
           onFiltersChange({ ...filters, myTasks: !filters.myTasks })
         }
       >
-        Minhas Tarefas
+        {t("filters.myTasks")}
       </Button>
 
       {/* By Team Toggle (only if user has a team) */}
@@ -83,7 +85,7 @@ export function KanbanFilters({
             onFiltersChange({ ...filters, byTeam: !filters.byTeam })
           }
         >
-          Meu Time
+          {t("filters.myTeam")}
         </Button>
       )}
 
@@ -98,10 +100,10 @@ export function KanbanFilters({
         }
       >
         <SelectTrigger className="w-[200px]">
-          <SelectValue placeholder="Por responsável" />
+          <SelectValue placeholder={t("filters.byAssignee")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Todos os responsáveis</SelectItem>
+          <SelectItem value="all">{t("filters.allAssignees")}</SelectItem>
           {assignees.map((assignee) => (
             <SelectItem key={assignee.id} value={assignee.id}>
               {assignee.name || assignee.email}
@@ -121,10 +123,10 @@ export function KanbanFilters({
         }
       >
         <SelectTrigger className="w-[150px]">
-          <SelectValue placeholder="Por prioridade" />
+          <SelectValue placeholder={t("filters.byPriority")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Todas as prioridades</SelectItem>
+          <SelectItem value="all">{t("filters.allPriorities")}</SelectItem>
           {priorityOptions.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {option.label}
@@ -142,7 +144,7 @@ export function KanbanFilters({
           className="ml-auto"
         >
           <X className="h-4 w-4 mr-1" />
-          Limpar filtros
+          {t("filters.clearFilters")}
         </Button>
       )}
     </div>

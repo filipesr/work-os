@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, User, LogOut, Settings } from "lucide-react";
 import { signOutAction } from "@/lib/actions/auth";
+import { useTranslations } from "next-intl";
 
 interface UserMenuProps {
   userName: string | null;
@@ -19,6 +20,9 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
   const handleSignOut = async () => {
     await signOutAction();
   };
+
+  const t = useTranslations("common");
+  const tAdmin = useTranslations("admin");
 
   return (
     <DropdownMenu
@@ -31,29 +35,29 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
         </div>
       }
     >
-      <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+      <DropdownMenuLabel>{t("nav.myAccount")}</DropdownMenuLabel>
       <DropdownMenuItem href="/account">
         <div className="flex items-center gap-2">
           <Settings className="h-4 w-4" />
-          <span>Configurações</span>
+          <span>{t("nav.settings")}</span>
         </div>
       </DropdownMenuItem>
 
       {(userRole === UserRole.ADMIN || userRole === UserRole.MANAGER) && (
         <>
           <DropdownMenuSeparator />
-          <DropdownMenuLabel>Administração</DropdownMenuLabel>
-          <DropdownMenuItem href="/admin">Admin Dashboard</DropdownMenuItem>
-          <DropdownMenuItem href="/admin/clients">Clientes</DropdownMenuItem>
-          <DropdownMenuItem href="/admin/projects">Projetos</DropdownMenuItem>
+          <DropdownMenuLabel>{tAdmin("nav.overview")}</DropdownMenuLabel>
+          <DropdownMenuItem href="/admin">{t("nav.adminDashboard")}</DropdownMenuItem>
+          <DropdownMenuItem href="/admin/clients">{tAdmin("nav.clients")}</DropdownMenuItem>
+          <DropdownMenuItem href="/admin/projects">{tAdmin("nav.projects")}</DropdownMenuItem>
         </>
       )}
 
       {userRole === UserRole.ADMIN && (
         <>
-          <DropdownMenuItem href="/admin/teams">Times</DropdownMenuItem>
-          <DropdownMenuItem href="/admin/users">Usuários</DropdownMenuItem>
-          <DropdownMenuItem href="/admin/templates">Templates</DropdownMenuItem>
+          <DropdownMenuItem href="/admin/teams">{tAdmin("nav.teams")}</DropdownMenuItem>
+          <DropdownMenuItem href="/admin/users">{tAdmin("nav.users")}</DropdownMenuItem>
+          <DropdownMenuItem href="/admin/templates">{tAdmin("nav.workflows")}</DropdownMenuItem>
         </>
       )}
 
@@ -64,7 +68,7 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
           className="flex items-center gap-2 w-full px-4 py-2 text-sm text-destructive hover:bg-muted transition-colors text-left"
         >
           <LogOut className="h-4 w-4" />
-          <span>Sair</span>
+          <span>{t("nav.signOut")}</span>
         </button>
       </form>
     </DropdownMenu>

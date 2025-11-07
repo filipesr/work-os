@@ -1,0 +1,44 @@
+{
+  "task": {
+    "created": "Tarea creada con éxito",
+    "updated": "Tarea actualizada con éxito",
+    "deleted": "Tarea eliminada con éxito",
+    "workStarted": "Trabajo iniciado",
+    "workStopped": "Trabajo detenido. {{hours}} horas registradas.",
+    "stageClaimed": "Etapa reclamada con éxito",
+    "stageUnclaimed": "Etapa liberada con éxito",
+    "stageCompleted": "Etapa completada con éxito"
+  },
+  "comment": {
+    "added": "Comentario agregado",
+    "deleted": "Comentario eliminado"
+  },
+  "artifact": {
+    "added": "Artefacto agregado",
+    "deleted": "Artefacto eliminado"
+  },
+  "user": {
+    "created": "Usuario creado con éxito",
+    "updated": "Usuario actualizado con éxito",
+    "deleted": "Usuario eliminado con éxito"
+  },
+  "team": {
+    "created": "Equipo creado con éxito",
+    "updated": "Equipo actualizado con éxito",
+    "deleted": "Equipo eliminado con éxito"
+  },
+  "client": {
+    "created": "Cliente creado con éxito",
+    "updated": "Cliente actualizado con éxito",
+    "deleted": "Cliente eliminado con éxito"
+  },
+  "project": {
+    "created": "Proyecto creado con éxito",
+    "updated": "Proyecto actualizado con éxito",
+    "deleted": "Proyecto eliminado con éxito"
+  },
+  "general": {
+    "saved": "Guardado con éxito",
+    "copied": "Copiado al portapapeles"
+  }
+}

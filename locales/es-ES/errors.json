@@ -1,0 +1,39 @@
+{
+  "auth": {
+    "unauthorized": "No autorizado. Por favor, inicia sesión.",
+    "forbidden": "No tienes permiso para acceder a este recurso.",
+    "sessionExpired": "Tu sesión ha expirado. Por favor, inicia sesión nuevamente."
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "invalidEmail": "Correo electrónico inválido",
+    "invalidUrl": "URL inválida",
+    "minLength": "Debe tener al menos {{min}} caracteres",
+    "maxLength": "Debe tener como máximo {{max}} caracteres"
+  },
+  "api": {
+    "genericError": "Ocurrió un error. Por favor, inténtalo de nuevo.",
+    "notFound": "Recurso no encontrado",
+    "serverError": "Error en el servidor. Por favor, inténtalo de nuevo más tarde.",
+    "networkError": "Error de conexión. Verifica tu internet."
+  },
+  "task": {
+    "notFound": "Tarea no encontrada",
+    "createFailed": "Error al crear tarea",
+    "updateFailed": "Error al actualizar tarea",
+    "deleteFailed": "Error al eliminar tarea",
+    "alreadyActive": "Ya estás trabajando en esta tarea",
+    "startFailed": "Error al iniciar trabajo",
+    "stopFailed": "Error al detener trabajo"
+  },
+  "user": {
+    "notFound": "Usuario no encontrado",
+    "createFailed": "Error al crear usuario",
+    "updateFailed": "Error al actualizar usuario",
+    "deleteFailed": "Error al eliminar usuario"
+  },
+  "general": {
+    "somethingWentWrong": "Algo salió mal",
+    "tryAgain": "Inténtalo de nuevo"
+  }
+}

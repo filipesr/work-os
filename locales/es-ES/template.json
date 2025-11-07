@@ -1,0 +1,82 @@
+{
+  "header": {
+    "edit": "Editar Plantilla",
+    "nameLabel": "Nombre de la Plantilla *",
+    "descriptionLabel": "Descripción",
+    "saveChanges": "Guardar Cambios",
+    "cancel": "Cancelar",
+    "noDescription": "Sin descripción",
+    "editButton": "Editar",
+    "deleteButton": "Eliminar",
+    "deleteConfirmTitle": "¿Eliminar Plantilla?",
+    "deleteConfirmMessage": "¿Está seguro de que desea eliminar esta plantilla? Esto también eliminará todas las etapas y dependencias. Esta acción no se puede deshacer.",
+    "deleteConfirmButton": "Eliminar Plantilla"
+  },
+  "detail": {
+    "backToTemplates": "Volver a Plantillas",
+    "workflowStages": "Etapas del Flujo de Trabajo",
+    "workflowStagesDescription": "Define las etapas (pasos) de este flujo de trabajo. Las tareas fluirán por estas etapas en orden, respetando cualquier dependencia que configures."
+  },
+  "createStage": {
+    "addButton": "+ Añadir Nueva Etapa",
+    "title": "Añadir Nueva Etapa",
+    "nameLabel": "Nombre de la Etapa *",
+    "orderLabel": "Orden *",
+    "teamLabel": "Equipo Predeterminado",
+    "noTeam": "Sin equipo predeterminado",
+    "namePlaceholder": "ej: Guión",
+    "creating": "Creando...",
+    "create": "Crear Etapa",
+    "cancel": "Cancelar",
+    "successMessage": "¡Etapa creada con éxito!",
+    "errorMessage": "Error al crear etapa"
+  },
+  "stagesList": {
+    "empty": "Aún no hay etapas. Crea tu primera etapa arriba.",
+    "nameLabel": "Nombre de la Etapa *",
+    "orderLabel": "Orden *",
+    "teamLabel": "Equipo Predeterminado",
+    "noTeam": "Sin equipo predeterminado",
+    "saving": "Guardando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "team": "Equipo:",
+    "noTeamAssigned": "Sin equipo asignado",
+    "dependsOn": "Depende de:",
+    "editButton": "Editar",
+    "deleteButton": "Eliminar",
+    "deleteConfirmTitle": "¿Eliminar Etapa?",
+    "deleteConfirmMessage": "¿Está seguro de que desea eliminar la etapa \"{stageName}\"? Esto también eliminará todas las dependencias. Esta acción no se puede deshacer.",
+    "deleteConfirmButton": "Eliminar Etapa",
+    "successMessage": "¡Etapa actualizada con éxito!",
+    "errorMessage": "Error al actualizar etapa"
+  },
+  "dependencies": {
+    "noStagesAvailable": "Ninguna etapa disponible para dependencia",
+    "createStagesFirst": "Crea otras etapas primero",
+    "title": "Depende de las Etapas (opcional)",
+    "subtitle": "Seleccione las etapas que deben completarse antes de que esta pueda iniciarse",
+    "selectedCount": "{count} seleccionada",
+    "selectedCountPlural": "{count} seleccionadas",
+    "prerequisiteLabel": "Esta etapa será un prerequisito",
+    "clickToAdd": "Haz clic para añadir como dependencia",
+    "importantTitle": "💡 Importante:",
+    "importantSingle": "Esta etapa solo estará disponible después de que se complete la etapa seleccionada.",
+    "importantMultiple": "Esta etapa solo estará disponible después de que se completen todas las etapas seleccionadas.",
+    "noDepsTitle": "ℹ️ Sin dependencias:",
+    "noDepsMessage": "Esta etapa podrá iniciarse inmediatamente después de la creación de la tarea."
+  },
+  "visualization": {
+    "empty": "Ninguna etapa para visualizar. Crea etapas para ver el flujo de trabajo.",
+    "title": "Flujo de Trabajo",
+    "subtitle": "Este diagrama muestra cómo las tareas fluyen por las etapas. Las etapas en la misma línea pueden ocurrir en paralelo.",
+    "parallelExecution": "Ejecución Paralela ({count} etapas)",
+    "team": "Equipo:",
+    "requires": "Requiere:",
+    "or": "o",
+    "legendTitle": "Leyenda:",
+    "legendStage": "Cada caja representa una etapa del flujo",
+    "legendParallel": "Las etapas en la misma línea pueden trabajarse simultáneamente",
+    "legendFlow": "Dirección del flujo - las tareas se mueven de arriba hacia abajo"
+  }
+}

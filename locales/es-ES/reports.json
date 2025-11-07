@@ -1,0 +1,75 @@
+{
+  "nav": {
+    "title": "Informes",
+    "liveActivity": "Estado de los Usuarios",
+    "timeTracking": "Control de Horas",
+    "projectProgress": "Progreso de los Proyectos",
+    "teamPerformance": "Rendimiento del Equipo"
+  },
+  "index": {
+    "title": "Informes y Análisis",
+    "subtitle": "Inteligencia de negocio para mejorar la productividad e identificar cuellos de botella en el flujo de trabajo",
+    "productivity": {
+      "title": "Informe de Productividad",
+      "description": "Visualiza el tiempo dedicado por usuario, proyecto, cliente y etapa del workflow",
+      "feature1": "Horas registradas por usuario",
+      "feature2": "Tiempo invertido por proyecto y cliente",
+      "feature3": "Distribución de esfuerzo por etapa del flujo"
+    },
+    "performance": {
+      "title": "Informe de Desempeño",
+      "description": "Identifica cuellos de botella en el workflow y analiza la tasa de retrabajo",
+      "feature1": "Tiempo promedio en cada etapa (cuellos de botella)",
+      "feature2": "Tasa de retrabajo y reversiones",
+      "feature3": "Lead time y throughput del sistema"
+    },
+    "liveActivity": {
+      "title": "Actividad en Tiempo Real",
+      "description": "Visualiza quién está trabajando en qué tareas en este momento",
+      "feature1": "Colaboradores activos en el momento",
+      "feature2": "Tiempo de trabajo en cada tarea",
+      "feature3": "Actualización automática cada 10 segundos"
+    },
+    "guide": {
+      "title": "Cómo usar los informes",
+      "productivityLabel": "📊 Informe de Productividad",
+      "productivityText": "Usa este informe para entender cuánto tiempo tu equipo está dedicando a cada proyecto y etapa. Ideal para facturación por hora y asignación de recursos.",
+      "performanceLabel": "⚡ Informe de Desempeño",
+      "performanceText": "Este informe identifica dónde el trabajo se está \"atascando\". Etapas con alto tiempo promedio son cuellos de botella. Alta tasa de retrabajo indica problemas de calidad o comunicación.",
+      "liveActivityLabel": "🟢 Actividad en Tiempo Real",
+      "liveActivityText": "Monitorea en tiempo real quién está trabajando en qué. Perfecto para gestores que necesitan tener visibilidad inmediata de la asignación del equipo.",
+      "tipLabel": "💡 Consejo",
+      "tipText": "Usa los filtros de fecha para comparar diferentes períodos e identificar tendencias a lo largo del tiempo."
+    }
+  },
+  "liveActivity": {
+    "title": "Estado de los Usuarios",
+    "subtitle": "Visualiza el estado de todos los usuarios en tiempo real (actualiza cada 10 segundos)",
+    "allUsers": "Todos los Usuarios",
+    "online": "En Línea (accedió hoy)",
+    "offline": "Desconectado",
+    "working": "TRABAJANDO",
+    "lastSeen": "Visto",
+    "neverAccessed": "Nunca accedió",
+    "noTeam": "Sin equipo",
+    "noUsers": "No se encontraron usuarios",
+    "loading": "Cargando usuarios...",
+    "updatedAgo": "Actualizado",
+    "started": "Iniciado",
+    "help": {
+      "title": "Cómo funciona",
+      "online": "Usuarios que accedieron al sistema hoy. Pueden estar trabajando activamente en una tarea o solo navegando.",
+      "offline": "Usuarios que no accedieron al sistema hoy o que cerraron sesión explícitamente.",
+      "working": "Cuando un colaborador hace clic en \"Iniciar Tarea\", el tiempo de trabajo se muestra en tiempo real junto con los detalles de la tarea.",
+      "autoUpdate": "Esta página se actualiza automáticamente cada 10 segundos."
+    }
+  },
+  "timeTracking": {
+    "title": "Control de Horas",
+    "subtitle": "Visualiza las horas trabajadas por usuario y proyecto",
+    "totalHours": "Total de Horas",
+    "filterByUser": "Filtrar por Usuario",
+    "filterByProject": "Filtrar por Proyecto",
+    "filterByDate": "Filtrar por Fecha"
+  }
+}

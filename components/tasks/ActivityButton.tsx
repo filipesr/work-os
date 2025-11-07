@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { startWorkOnTask, stopWorkOnTask } from "@/lib/actions/activity";
 import { Play, Square, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 interface ActiveLog {
   id: string;
@@ -31,6 +32,7 @@ export function ActivityButton({
   const [isPending, startTransition] = useTransition();
   const [showStopModal, setShowStopModal] = useState(false);
   const [description, setDescription] = useState("");
+  const t = useTranslations("tasks.activity");
 
   // Check if this specific task is active
   const isThisTaskActive = activeLog?.taskId === taskId;
@@ -40,7 +42,7 @@ export function ActivityButton({
 
   const handleStart = () => {
     if (!currentStageId) {
-      toast.error("Esta tarefa não tem uma etapa atual definida");
+      toast.error(t("noStageError"));
       return;
     }
 
@@ -50,9 +52,9 @@ export function ActivityButton({
       if (result.error) {
         toast.error(result.error);
       } else if ("status" in result && result.status === "already_active") {
-        toast("Você já está trabalhando nesta tarefa");
+        toast(t("alreadyActiveInfo"));
       } else {
-        toast.success(`Você começou a trabalhar em "${taskTitle}"`);
+        toast.success(t("startSuccess", { taskTitle }));
       }
     });
   };
@@ -70,7 +72,7 @@ export function ActivityButton({
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success(`Você parou de trabalhar em "${taskTitle}"`);
+        toast.success(t("stopSuccess", { taskTitle }));
         setShowStopModal(false);
         setDescription("");
       }
@@ -90,12 +92,12 @@ export function ActivityButton({
           {isPending ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Parando...
+              {t("stopping")}
             </>
           ) : (
             <>
               <Square className="h-4 w-4 mr-2" />
-              Parar Tarefa
+              {t("stopWork")}
             </>
           )}
         </Button>
@@ -111,19 +113,18 @@ export function ActivityButton({
             {isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Iniciando...
+                {t("starting")}
               </>
             ) : (
               <>
                 <Play className="h-4 w-4 mr-2" />
-                Iniciar Tarefa
+                {t("startWork")}
               </>
             )}
           </Button>
           {isWorkingOnOtherTask && (
             <p className="text-xs text-muted-foreground text-center">
-              ⚠️ Você está trabalhando em "{activeLog.task.title}". Iniciar esta
-              tarefa irá parar a outra automaticamente.
+              {t("switchWarning", { taskTitle: activeLog.task.title })}
             </p>
           )}
         </div>
@@ -136,17 +137,17 @@ export function ActivityButton({
             {/* Header */}
             <div className="mb-6">
               <h3 className="text-2xl font-bold text-foreground mb-2">
-                Descrever Atividade Realizada
+                {t("modal.title")}
               </h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Descreva brevemente o que foi realizado durante esta sessão de trabalho.
+                {t("modal.subtitle")}
               </p>
             </div>
 
             {/* Description Field */}
             <div className="mb-6">
               <label className="block text-sm font-semibold text-foreground mb-2">
-                Descrição da atividade:
+                {t("modal.label")}
               </label>
               <textarea
                 value={description}
@@ -154,10 +155,10 @@ export function ActivityButton({
                 rows={4}
                 disabled={isPending}
                 className="w-full px-4 py-3 border-2 border-input bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-input disabled:opacity-50 transition-all placeholder:text-muted-foreground"
-                placeholder="Ex: Implementei a funcionalidade de login, corrigi bugs na tela de usuários..."
+                placeholder={t("modal.placeholder")}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Esta descrição será incluída no registro de tempo
+                {t("modal.hint")}
               </p>
             </div>
 
@@ -171,7 +172,7 @@ export function ActivityButton({
                 disabled={isPending}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 font-medium"
               >
-                Cancelar
+                {t("modal.cancel")}
               </button>
               <button
                 onClick={handleConfirmStop}
@@ -181,12 +182,12 @@ export function ActivityButton({
                 {isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Parando...
+                    {t("stopping")}
                   </>
                 ) : (
                   <>
                     <Square className="h-4 w-4" />
-                    Confirmar e Parar
+                    {t("modal.confirm")}
                   </>
                 )}
               </button>

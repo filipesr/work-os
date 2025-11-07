@@ -1,0 +1,259 @@
+{
+  "nav": {
+    "overview": "Resumen",
+    "users": "Usuarios",
+    "teams": "Equipos",
+    "clients": "Clientes",
+    "projects": "Proyectos",
+    "workflows": "Flujos de Trabajo",
+    "tasks": "Tareas",
+    "reports": "Informes"
+  },
+  "dashboard": {
+    "title": "Panel de Administración",
+    "subtitle": "Resumen del sistema y gestión administrativa",
+    "stats": {
+      "users": "Total de Usuarios",
+      "clients": "Total de Clientes",
+      "projects": "Total de Proyectos",
+      "activeTasks": "Tareas Activas",
+      "templates": "Plantillas de Flujo"
+    },
+    "nav": {
+      "title": "Hub de Navegación",
+      "subtitle": "Accede rápidamente a las páginas de gestión administrativa",
+      "users": {
+        "title": "Gestionar Usuarios y Roles",
+        "description": "Administra usuarios, asigna roles y gestiona permisos del sistema"
+      },
+      "teams": {
+        "title": "Gestionar Equipos",
+        "description": "Crea y organiza equipos, agrega miembros y coordina proyectos"
+      },
+      "clients": {
+        "title": "Gestionar Clientes",
+        "description": "Gestiona información de clientes y mantén relaciones"
+      },
+      "projects": {
+        "title": "Gestionar Proyectos",
+        "description": "Supervisa todos los proyectos, asigna equipos y sigue el progreso"
+      },
+      "templates": {
+        "title": "Gestionar Flujos de Trabajo",
+        "description": "Crea y edita plantillas de workflow para estandarizar procesos"
+      },
+      "tasks": {
+        "title": "Gestionar Tareas",
+        "description": "Visualiza y administra todas las tareas del sistema"
+      }
+    }
+  },
+  "overview": {
+    "title": "Administración",
+    "subtitle": "Gestiona tu espacio de trabajo",
+    "stats": {
+      "totalUsers": "Total de Usuarios",
+      "totalTeams": "Total de Equipos",
+      "totalProjects": "Total de Proyectos",
+      "activeTasks": "Tareas Activas"
+    }
+  },
+  "users": {
+    "title": "Usuarios",
+    "subtitle": "Gestiona usuarios, sus roles y asignaciones de equipo",
+    "createUser": "Crear Usuario",
+    "noUsers": "No se encontraron usuarios.",
+    "noName": "N/D",
+    "noTeam": "Sin equipo",
+    "table": {
+      "user": "Usuario",
+      "name": "Nombre",
+      "email": "Correo Electrónico",
+      "role": "Rol",
+      "team": "Equipo",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "roles": {
+      "admin": "Administrador",
+      "manager": "Gerente",
+      "supervisor": "Supervisor",
+      "member": "Miembro",
+      "client": "Cliente",
+      "viewer": "Visualizador"
+    },
+    "actions": {
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "deactivate": "Desactivar",
+      "activate": "Activar"
+    },
+    "edit": {
+      "button": "Editar",
+      "title": "Editar Usuario:",
+      "roleLabel": "Rol",
+      "teamLabel": "Equipo",
+      "noTeam": "Sin Equipo",
+      "cancel": "Cancelar",
+      "saveChanges": "Guardar Cambios",
+      "saving": "Guardando..."
+    }
+  },
+  "teams": {
+    "title": "Equipos",
+    "subtitle": "Gestiona los equipos y sus miembros",
+    "createTeam": "Crear Equipo",
+    "createTitle": "Crear Equipo",
+    "namePlaceholder": "Nombre del equipo",
+    "createButton": "Crear",
+    "noTeams": "No se encontraron equipos. Crea uno para comenzar.",
+    "members": "Miembros",
+    "membersCount": "{count} miembros",
+    "table": {
+      "name": "Nombre",
+      "members": "Miembros",
+      "actions": "Acciones"
+    }
+  },
+  "clients": {
+    "title": "Clientes",
+    "subtitle": "Gestiona clientes y sus proyectos",
+    "createTitle": "Crear Cliente",
+    "namePlaceholder": "Nombre del cliente",
+    "createButton": "Crear",
+    "noClients": "No se encontraron clientes. Crea uno para comenzar.",
+    "projectsCount": "{count} proyectos",
+    "table": {
+      "name": "Nombre",
+      "projects": "Proyectos",
+      "actions": "Acciones"
+    }
+  },
+  "projects": {
+    "title": "Proyectos",
+    "subtitle": "Gestiona proyectos y sus clientes",
+    "createTitle": "Crear Proyecto",
+    "namePlaceholder": "Nombre del proyecto",
+    "selectClient": "Seleccionar Cliente",
+    "createButton": "Crear",
+    "noProjects": "No se encontraron proyectos. Crea uno para comenzar.",
+    "tasksCount": "{count} tareas",
+    "table": {
+      "name": "Nombre",
+      "client": "Cliente",
+      "tasks": "Tareas",
+      "actions": "Acciones"
+    },
+    "kanban": "Kanban del Proyecto"
+  },
+  "workflows": {
+    "title": "Flujos de Trabajo",
+    "subtitle": "Crea y gestiona plantillas de workflow. Estos son los \"guiones\" que definen cómo fluyen las tareas por tu sistema.",
+    "createTitle": "Crear Nueva Plantilla",
+    "createWorkflow": "Crear Flujo de Trabajo",
+    "nameLabel": "Nombre de la Plantilla *",
+    "namePlaceholder": "ej: Video Corto, Landing Page",
+    "descriptionLabel": "Descripción",
+    "descriptionPlaceholder": "Describe para qué sirve esta plantilla de workflow...",
+    "createButton": "Crear Plantilla",
+    "listTitle": "Plantillas Existentes",
+    "noTemplates": "No hay plantillas aún. Crea tu primera plantilla arriba.",
+    "noDescription": "Sin descripción",
+    "stagesCount": "{count} etapas",
+    "created": "Creado el {date}",
+    "noWorkflows": "No se encontraron flujos de trabajo",
+    "stages": "Etapas",
+    "addStage": "Agregar Etapa",
+    "stageOrder": "Orden",
+    "stageName": "Nombre de la Etapa",
+    "dependencies": "Dependencias"
+  },
+  "tasks": {
+    "title": "Todas las Tareas",
+    "subtitle": "Gestiona todas las tareas del sistema",
+    "viewTask": "Ver Tarea",
+    "noTasks": "No se encontraron tareas",
+    "new": {
+      "backToTasks": "Volver a Tareas",
+      "title": "Crear Nueva Tarea",
+      "subtitle": "Inicializa una nueva tarea desde una plantilla de flujo de trabajo. La tarea comenzará en la primera etapa de la plantilla seleccionada.",
+      "howItWorks": {
+        "title": "Cómo funciona:",
+        "step1": "Selecciona un proyecto y una plantilla de workflow",
+        "step2": "Elige una plantilla que defina las etapas por las que pasará esta tarea",
+        "step3": "La tarea se creará automáticamente basándose en las etapas configuradas en la plantilla",
+        "step4": "Serás asignado a la primera etapa automáticamente",
+        "step5": "La tarea puede moverse a través de las etapas a medida que avanza el trabajo"
+      }
+    },
+    "list": {
+      "title": "Tareas",
+      "subtitle": "Gestiona y sigue todas las tareas a través de proyectos",
+      "createTask": "+ Crear Tarea",
+      "noTasksYet": "Aún no hay tareas",
+      "noTasksMessage": "Comienza creando tu primera tarea desde una plantilla de flujo de trabajo.",
+      "createFirstTask": "Crear tu primera tarea",
+      "table": {
+        "task": "Tarea",
+        "project": "Proyecto",
+        "status": "Estado",
+        "currentStage": "Etapa Actual",
+        "priority": "Prioridad",
+        "assignee": "Responsable",
+        "dueDate": "Fecha de Vencimiento"
+      },
+      "status": {
+        "done": "Completada",
+        "inProgress": "En Progreso",
+        "blocked": "Bloqueada"
+      },
+      "priority": {
+        "urgent": "Urgente",
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Baja"
+      },
+      "noStage": "Sin etapa",
+      "unassigned": "No asignada",
+      "noDueDate": "Sin fecha de vencimiento"
+    },
+    "detail": {
+      "backToTasks": "Volver a Tareas",
+      "noDescription": "Sin descripción",
+      "project": "Proyecto",
+      "priority": "Prioridad",
+      "assignee": "Responsable",
+      "unassigned": "No asignado",
+      "dueDate": "Fecha de Vencimiento",
+      "noDueDate": "Sin fecha de vencimiento",
+      "currentStage": "Etapa Actual",
+      "noCurrentStage": "Ninguna etapa actual asignada",
+      "template": "Plantilla:",
+      "team": "Equipo:",
+      "stageHistory": "Historial de Etapas",
+      "noStageHistory": "Aún no hay historial de etapas",
+      "enteredBy": "Iniciado por",
+      "entered": "Iniciado:",
+      "exited": "Completado:",
+      "comments": "Comentarios",
+      "by": "Por",
+      "status": {
+        "done": "Completada",
+        "inProgress": "En Progreso",
+        "blocked": "Bloqueada"
+      },
+      "taskStatus": {
+        "COMPLETED": "Completada",
+        "IN_PROGRESS": "En Progreso",
+        "CANCELLED": "Cancelada",
+        "PAUSED": "Pausada"
+      },
+      "taskPriority": {
+        "URGENT": "Urgente",
+        "HIGH": "Alta",
+        "MEDIUM": "Media",
+        "LOW": "Baja"
+      }
+    }
+  }
+}

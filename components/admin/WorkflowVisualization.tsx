@@ -2,6 +2,7 @@
 
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useTranslations } from "next-intl";
 
 interface Stage {
   id: string;
@@ -73,10 +74,12 @@ function groupStagesByLevel(stages: Stage[]): Stage[][] {
 }
 
 export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
+  const t = useTranslations("template.visualization");
+
   if (stages.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-8">
-        No stages to visualize. Create stages to see the workflow.
+        {t("empty")}
       </div>
     );
   }
@@ -85,9 +88,9 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
 
   return (
     <div className="bg-muted/30 rounded-lg p-6 border-2 border-border">
-      <h3 className="text-lg font-bold text-foreground mb-4">Fluxo de Trabalho</h3>
+      <h3 className="text-lg font-bold text-foreground mb-4">{t("title")}</h3>
       <p className="text-sm text-muted-foreground mb-6">
-        Este diagrama mostra como as tarefas fluem pelas etapas. Etapas na mesma linha podem acontecer em paralelo.
+        {t("subtitle")}
       </p>
 
       <div className="flex flex-col space-y-4">
@@ -98,7 +101,7 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
               {level.length > 1 && (
                 <div className="w-full mb-2">
                   <Badge variant="secondary" className="text-xs">
-                    Parallel Execution ({level.length} stages)
+                    {t("parallelExecution", { count: level.length })}
                   </Badge>
                 </div>
               )}
@@ -117,14 +120,14 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
 
                       {stage.defaultTeam && (
                         <p className="text-xs text-muted-foreground">
-                          Team: {stage.defaultTeam.name}
+                          {t("team")} {stage.defaultTeam.name}
                         </p>
                       )}
 
                       {stage.dependents.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-border">
                           <p className="text-xs text-muted-foreground">
-                            Requer:{" "}
+                            {t("requires")}{" "}
                             {stage.dependents
                               .map(d => d.dependsOn.name)
                               .join(", ")}
@@ -136,7 +139,7 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
                     {/* Separator between parallel stages */}
                     {level.length > 1 && stageIndex < level.length - 1 && (
                       <div className="text-muted-foreground">
-                        <span className="text-xs font-semibold">or</span>
+                        <span className="text-xs font-semibold">{t("or")}</span>
                       </div>
                     )}
                   </div>
@@ -159,22 +162,22 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
 
       {/* Legend */}
       <div className="mt-6 pt-6 border-t-2 border-border">
-        <h4 className="text-sm font-semibold text-foreground mb-3">Legenda:</h4>
+        <h4 className="text-sm font-semibold text-foreground mb-3">{t("legendTitle")}</h4>
         <div className="space-y-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-primary/10 border border-primary/30"></div>
-            <span>Cada caixa representa uma etapa do fluxo</span>
+            <span>{t("legendStage")}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs h-5">Parallel Execution</Badge>
-            <span>Etapas na mesma linha podem ser trabalhadas simultaneamente</span>
+            <Badge variant="secondary" className="text-xs h-5">{t("parallelExecution", { count: 2 })}</Badge>
+            <span>{t("legendParallel")}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex flex-col items-center">
               <div className="w-0.5 h-3 bg-primary"></div>
               <ArrowRight className="h-3 w-3 text-primary rotate-90" />
             </div>
-            <span>Direção do fluxo - tarefas movem de cima para baixo</span>
+            <span>{t("legendFlow")}</span>
           </div>
         </div>
       </div>

@@ -201,6 +201,13 @@ export async function getTaskById(taskId: string) {
               defaultTeam: true,
             },
           },
+          assignee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
         orderBy: {
           stage: { order: "asc" },
@@ -243,6 +250,8 @@ export async function getTaskById(taskId: string) {
     ...task,
     currentStage: currentActiveStage ? currentActiveStage.stage : null,
     currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
+    // Override assignee with the assignee from the active stage
+    assignee: currentActiveStage?.assignee || task.assignee,
   };
 }
 
@@ -277,6 +286,13 @@ export async function getTasks() {
               defaultTeam: true,
             },
           },
+          assignee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
         orderBy: {
           stage: { order: "asc" },
@@ -293,6 +309,8 @@ export async function getTasks() {
       ...task,
       currentStage: currentActiveStage ? currentActiveStage.stage : null,
       currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
+      // Override assignee with the assignee from the active stage
+      assignee: currentActiveStage?.assignee || task.assignee,
     };
   });
 }

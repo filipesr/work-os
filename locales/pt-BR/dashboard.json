@@ -1,0 +1,108 @@
+{
+  "greeting": "Olá, {userName}!",
+  "subtitle": "Visão geral das suas tarefas e responsabilidades",
+  "stats": {
+    "activeTasks": "Tarefas Ativas",
+    "completedWeek": "Concluídas (Semana)",
+    "hoursToday": "Horas Hoje",
+    "upcomingDeadlines": "Prazos Próximos"
+  },
+  "priority": {
+    "URGENT": "URGENTE",
+    "HIGH": "ALTA",
+    "MEDIUM": "MÉDIA",
+    "LOW": "BAIXA"
+  },
+  "status": {
+    "BACKLOG": "Backlog",
+    "IN_PROGRESS": "Em Progresso",
+    "PAUSED": "Pausado",
+    "COMPLETED": "Concluído",
+    "CANCELLED": "Cancelado",
+    "BLOCKED": "Bloqueado"
+  },
+  "dates": {
+    "noDueDate": "Sem prazo",
+    "overdue": "Atrasado ({days}d)",
+    "today": "Hoje",
+    "tomorrow": "Amanhã",
+    "inDays": "Em {days} dias"
+  },
+  "tooltips": {
+    "taskOverdue": "Tarefa atrasada",
+    "deadlineSoon": "Prazo próximo",
+    "stageBlocked": "Etapa bloqueada"
+  },
+  "badges": {
+    "new": "NOVO"
+  },
+  "table": {
+    "task": "Tarefa",
+    "project": "Projeto",
+    "currentStage": "Etapa Atual",
+    "priority": "Prioridade",
+    "status": "Status",
+    "dueDate": "Data de Entrega",
+    "action": "Ação"
+  },
+  "myActiveStages": {
+    "title": "Minhas Etapas Ativas",
+    "subtitle": "Etapas atribuídas a você em tarefas ativas",
+    "noStages": "Nenhuma etapa ativa atribuída a você",
+    "stageCount": "{count} etapa ativa",
+    "stagesCount": "{count} etapas ativas",
+    "startWork": "Iniciar Trabalho",
+    "viewTask": "Ver Tarefa",
+    "claim": "Assumir",
+    "claimedBy": "Assumida por",
+    "unassigned": "Não atribuída",
+    "status": {
+      "active": "Ativa",
+      "pending": "Pendente",
+      "blocked": "Bloqueada",
+      "completed": "Concluída"
+    }
+  },
+  "teamBacklog": {
+    "title": "Backlog da Equipe (Não Atribuído)"
+  },
+  "emptyStates": {
+    "noActiveStages": "Você não tem etapas ativas. Bom trabalho!",
+    "teamBacklogClean": "O backlog da sua equipe está limpo."
+  },
+  "noTeam": {
+    "title": "Olá, {userName}!",
+    "message": "Você ainda não foi atribuído a um time.",
+    "warningTitle": "Aguardando configuração:",
+    "warningMessage": "Entre em contato com o administrador para ter acesso às tarefas da sua equipe."
+  },
+  "activeWork": {
+    "title": "Trabalho Ativo",
+    "workingOn": "Trabalhando em",
+    "stage": "Etapa",
+    "project": "Projeto",
+    "client": "Cliente",
+    "timeElapsed": "Tempo decorrido",
+    "stopWork": "Parar Trabalho",
+    "noActiveWork": "Não está trabalhando em nenhuma tarefa no momento"
+  },
+  "recentActivity": {
+    "title": "Atividade Recente",
+    "noActivity": "Nenhuma atividade recente",
+    "types": {
+      "taskCreated": "Tarefa criada",
+      "taskUpdated": "Tarefa atualizada",
+      "commentAdded": "Comentário adicionado",
+      "stageCompleted": "Etapa concluída",
+      "taskCompleted": "Tarefa concluída"
+    }
+  },
+  "upcomingDeadlines": {
+    "title": "Prazos Próximos",
+    "noDeadlines": "Nenhum prazo próximo",
+    "dueIn": "Vence em",
+    "overdue": "Atrasado",
+    "days": "dias",
+    "hours": "horas"
+  }
+}

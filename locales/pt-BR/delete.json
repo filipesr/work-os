@@ -1,0 +1,17 @@
+{
+  "client": {
+    "confirm": "Tem certeza que deseja deletar este cliente?",
+    "button": "Deletar",
+    "deleting": "Deletando..."
+  },
+  "project": {
+    "confirm": "Tem certeza que deseja deletar este projeto?",
+    "button": "Deletar",
+    "deleting": "Deletando..."
+  },
+  "team": {
+    "confirm": "Tem certeza que deseja deletar este time?",
+    "button": "Deletar",
+    "deleting": "Deletando..."
+  }
+}

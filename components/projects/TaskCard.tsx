@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useTranslations } from "next-intl";
 
 type TaskCardProps = {
   task: Task & {
@@ -15,18 +16,18 @@ type TaskCardProps = {
   };
 };
 
-const priorityConfig: Record<
+const priorityVariants: Record<
   TaskPriority,
-  { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+  "default" | "secondary" | "destructive" | "outline"
 > = {
-  LOW: { label: "Baixa", variant: "secondary" },
-  MEDIUM: { label: "Média", variant: "default" },
-  HIGH: { label: "Alta", variant: "outline" },
-  URGENT: { label: "Urgente", variant: "destructive" },
+  LOW: "secondary",
+  MEDIUM: "default",
+  HIGH: "outline",
+  URGENT: "destructive",
 };
 
 export function TaskCard({ task }: TaskCardProps) {
-  const priorityInfo = priorityConfig[task.priority];
+  const t = useTranslations("projects");
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
 
   return (
@@ -40,8 +41,8 @@ export function TaskCard({ task }: TaskCardProps) {
         <CardContent className="space-y-3">
           {/* Priority Badge */}
           <div>
-            <Badge variant={priorityInfo.variant}>
-              {priorityInfo.label}
+            <Badge variant={priorityVariants[task.priority]}>
+              {t(`priority.${task.priority}`)}
             </Badge>
           </div>
 
@@ -77,7 +78,7 @@ export function TaskCard({ task }: TaskCardProps) {
             </div>
           ) : (
             <div className="text-sm text-muted-foreground italic">
-              Não atribuído
+              {t("unassigned")}
             </div>
           )}
         </CardContent>

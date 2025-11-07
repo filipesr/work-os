@@ -1,0 +1,106 @@
+{
+  "task": {
+    "create": {
+      "title": "Crear Nueva Tarea",
+      "subtitle": "Complete los detalles de la tarea",
+      "fields": {
+        "title": "Título de la Tarea",
+        "titlePlaceholder": "Ingrese el título de la tarea",
+        "description": "Descripción",
+        "descriptionPlaceholder": "Ingrese la descripción de la tarea",
+        "client": "Cliente",
+        "clientPlaceholder": "Seleccione un cliente",
+        "project": "Proyecto",
+        "projectPlaceholder": "Seleccione un proyecto",
+        "workflow": "Flujo de Trabajo",
+        "workflowPlaceholder": "Seleccione un flujo de trabajo",
+        "assignee": "Responsable",
+        "assigneePlaceholder": "Seleccione un responsable",
+        "priority": "Prioridad",
+        "priorityPlaceholder": "Seleccione la prioridad",
+        "dueDate": "Fecha de Vencimiento",
+        "dueDatePlaceholder": "Seleccione la fecha"
+      },
+      "validation": {
+        "titleRequired": "El título es obligatorio",
+        "clientRequired": "El cliente es obligatorio",
+        "projectRequired": "El proyecto es obligatorio",
+        "workflowRequired": "El flujo de trabajo es obligatorio"
+      }
+    },
+    "edit": {
+      "title": "Editar Tarea",
+      "subtitle": "Actualice los detalles de la tarea"
+    }
+  },
+  "comment": {
+    "add": {
+      "placeholder": "Escribe un comentario...",
+      "submit": "Agregar Comentario"
+    }
+  },
+  "artifact": {
+    "add": {
+      "title": "Agregar Artefacto",
+      "fields": {
+        "name": "Nombre del Artefacto",
+        "namePlaceholder": "Ingrese el nombre del artefacto",
+        "type": "Tipo",
+        "typePlaceholder": "Seleccione el tipo",
+        "url": "URL",
+        "urlPlaceholder": "Ingrese la URL",
+        "file": "Archivo",
+        "filePlaceholder": "Seleccione un archivo"
+      }
+    }
+  },
+  "client": {
+    "create": {
+      "title": "Nuevo Cliente",
+      "fields": {
+        "name": "Nombre del Cliente",
+        "namePlaceholder": "Ingrese el nombre del cliente"
+      }
+    }
+  },
+  "project": {
+    "create": {
+      "title": "Nuevo Proyecto",
+      "fields": {
+        "name": "Nombre del Proyecto",
+        "namePlaceholder": "Ingrese el nombre del proyecto",
+        "client": "Cliente",
+        "clientPlaceholder": "Seleccione un cliente"
+      }
+    }
+  },
+  "user": {
+    "create": {
+      "title": "Nuevo Usuario",
+      "fields": {
+        "name": "Nombre",
+        "namePlaceholder": "Ingrese el nombre completo",
+        "email": "Correo Electrónico",
+        "emailPlaceholder": "Ingrese el correo electrónico",
+        "role": "Rol",
+        "rolePlaceholder": "Seleccione el rol",
+        "team": "Equipo",
+        "teamPlaceholder": "Seleccione el equipo"
+      }
+    },
+    "edit": {
+      "title": "Editar Usuario"
+    }
+  },
+  "team": {
+    "create": {
+      "title": "Nuevo Equipo",
+      "fields": {
+        "name": "Nombre del Equipo",
+        "namePlaceholder": "Ingrese el nombre del equipo",
+        "description": "Descripción",
+        "descriptionPlaceholder": "Ingrese la descripción"
+      }
+    }
+  }
+}

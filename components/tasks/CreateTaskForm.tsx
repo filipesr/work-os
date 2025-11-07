@@ -6,6 +6,7 @@ import { createTask } from "@/lib/actions/task";
 import { getTemplateStagePreview } from "@/app/actions/templateActions";
 import { getClients } from "@/lib/actions/client";
 import { QuickCreateProject } from "@/components/quick-create/QuickCreateProject";
+import { useTranslations } from "next-intl";
 
 interface Project {
   id: string;
@@ -34,6 +35,8 @@ interface CreateTaskFormProps {
 type StagePreviewItem = Awaited<ReturnType<typeof getTemplateStagePreview>>[0];
 
 export function CreateTaskForm({ projects: initialProjects, templates }: CreateTaskFormProps) {
+  const t = useTranslations("tasks");
+  const tPriority = useTranslations("tasks.priority");
   const router = useRouter();
   const [projects, setProjects] = useState(initialProjects);
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
@@ -78,7 +81,7 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
       {/* Title */}
       <div>
         <label htmlFor="title" className="block text-sm font-semibold text-foreground mb-2">
-          Task Title *
+          {t("create.titleLabel")}
         </label>
         <input
           type="text"
@@ -86,21 +89,21 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
           name="title"
           required
           className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
-          placeholder="e.g., Create product demo video"
+          placeholder={t("create.titlePlaceholder")}
         />
       </div>
 
       {/* Description */}
       <div>
         <label htmlFor="description" className="block text-sm font-semibold text-foreground mb-2">
-          Description
+          {t("create.descriptionLabel")}
         </label>
         <textarea
           id="description"
           name="description"
           rows={4}
           className="w-full min-h-[100px] rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200 resize-none"
-          placeholder="Provide details about this task..."
+          placeholder={t("create.descriptionPlaceholder")}
         />
       </div>
 
@@ -108,7 +111,7 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
       <div>
         <div className="flex items-center justify-between mb-2">
           <label htmlFor="projectId" className="block text-sm font-semibold text-foreground">
-            Project *
+            {t("create.projectLabel")}
           </label>
           <QuickCreateProject
             clients={clients}
@@ -123,7 +126,7 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
           required
           className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
         >
-          <option value="">Select a project...</option>
+          <option value="">{t("create.projectPlaceholder")}</option>
           {projects.map((project) => (
             <option key={project.id} value={project.id}>
               {project.client.name} - {project.name}
@@ -132,7 +135,7 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
         </select>
         {projects.length === 0 && (
           <p className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
-            <span>No projects available.</span>
+            <span>{t("create.noProjectsAvailable")}</span>
             <QuickCreateProject
               clients={clients}
               variant="ghost"
@@ -147,7 +150,7 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
       {/* Template Selection */}
       <div>
         <label htmlFor="templateId" className="block text-sm font-semibold text-foreground mb-2">
-          Workflow Template *
+          {t("create.templateLabel")}
         </label>
         <select
           id="templateId"
@@ -156,22 +159,22 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
           onChange={handleTemplateChange}
           className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
         >
-          <option value="">Select a workflow template...</option>
+          <option value="">{t("create.templatePlaceholder")}</option>
           {templates.map((template) => (
             <option key={template.id} value={template.id}>
-              {template.name} ({template._count.stages} stages)
+              {template.name} ({t("create.templateStages", { count: template._count.stages })})
             </option>
           ))}
         </select>
         {templates.length === 0 && (
           <p className="mt-2 text-sm text-destructive font-medium">
-            No workflow templates available. Please create a template first.
+            {t("create.noTemplatesAvailable")}
           </p>
         )}
 
         {/* Dynamic Stage Preview */}
         <div className="mt-4 p-4 bg-muted/30 rounded-lg border-2 border-border">
-          <h4 className="text-sm font-semibold text-foreground mb-3">Stage Preview:</h4>
+          <h4 className="text-sm font-semibold text-foreground mb-3">{t("create.stagePreviewTitle")}</h4>
 
           {isPreviewLoading && (
             <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -179,13 +182,13 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Loading stages...
+              {t("create.stagePreviewLoading")}
             </div>
           )}
 
           {!isPreviewLoading && stagePreview.length === 0 && (
             <div className="text-sm text-muted-foreground">
-              Select a workflow template above to preview its stages.
+              {t("create.stagePreviewEmpty")}
             </div>
           )}
 
@@ -204,7 +207,7 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
       {/* Priority */}
       <div>
         <label htmlFor="priority" className="block text-sm font-semibold text-foreground mb-2">
-          Priority *
+          {t("create.priorityLabel")}
         </label>
         <select
           id="priority"
@@ -213,17 +216,17 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
           defaultValue="MEDIUM"
           className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
         >
-          <option value="LOW">Low</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HIGH">High</option>
-          <option value="URGENT">Urgent</option>
+          <option value="LOW">{tPriority("low")}</option>
+          <option value="MEDIUM">{tPriority("medium")}</option>
+          <option value="HIGH">{tPriority("high")}</option>
+          <option value="URGENT">{tPriority("urgent")}</option>
         </select>
       </div>
 
       {/* Due Date */}
       <div>
         <label htmlFor="dueDate" className="block text-sm font-semibold text-foreground mb-2">
-          Due Date
+          {t("create.dueDateLabel")}
         </label>
         <input
           type="date"
@@ -240,13 +243,13 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
           disabled={projects.length === 0 || templates.length === 0}
           className="px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Create Task
+          {t("create.createButton")}
         </button>
         <a
           href="/admin/tasks"
           className="px-6 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/90 transition-all duration-200 shadow-sm"
         >
-          Cancel
+          {t("create.cancelButton")}
         </a>
       </div>
     </form>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createTemplateStage } from "@/lib/actions/stage";
 import { DependencySelector } from "./DependencySelector";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 interface Stage {
   id: string;
@@ -18,6 +19,7 @@ interface CreateStageFormProps {
 }
 
 export function CreateStageForm({ templateId, teams, existingStages }: CreateStageFormProps) {
+  const t = useTranslations("template.createStage");
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDeps, setSelectedDeps] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,14 +40,14 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
         onClick={() => setIsOpen(true)}
         className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
       >
-        + Add New Stage
+        {t("addButton")}
       </button>
     );
   }
 
   return (
     <div className="border-2 border-border rounded-lg p-6 bg-muted/30">
-      <h3 className="font-bold text-foreground text-lg mb-4">Add New Stage</h3>
+      <h3 className="font-bold text-foreground text-lg mb-4">{t("title")}</h3>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
@@ -70,11 +72,11 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
           setIsSubmitting(false);
 
           if (result?.success) {
-            toast.success('Etapa criada com sucesso!');
+            toast.success(t("successMessage"));
             setIsOpen(false);
             setSelectedDeps(new Set());
           } else {
-            toast.error(result?.error || 'Erro ao criar etapa');
+            toast.error(result?.error || t("errorMessage"));
           }
         }}
         className="space-y-4"
@@ -82,7 +84,7 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label htmlFor="name" className="block text-sm font-semibold text-foreground mb-2">
-              Stage Name *
+              {t("nameLabel")}
             </label>
             <input
               type="text"
@@ -90,12 +92,12 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
               name="name"
               required
               className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
-              placeholder="e.g., Script Writing"
+              placeholder={t("namePlaceholder")}
             />
           </div>
           <div>
             <label htmlFor="order" className="block text-sm font-semibold text-foreground mb-2">
-              Order *
+              {t("orderLabel")}
             </label>
             <input
               type="number"
@@ -112,14 +114,14 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
               htmlFor="defaultTeamId"
               className="block text-sm font-semibold text-foreground mb-2"
             >
-              Default Team
+              {t("teamLabel")}
             </label>
             <select
               id="defaultTeamId"
               name="defaultTeamId"
               className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
             >
-              <option value="">No default team</option>
+              <option value="">{t("noTeam")}</option>
               {teams.map((team) => (
                 <option key={team.id} value={team.id}>
                   {team.name}
@@ -142,7 +144,7 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
             disabled={isSubmitting}
             className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Criando...' : 'Criar Etapa'}
+            {isSubmitting ? t("creating") : t("create")}
           </button>
           <button
             type="button"
@@ -153,7 +155,7 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
             disabled={isSubmitting}
             className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all disabled:opacity-50"
           >
-            Cancelar
+            {t("cancel")}
           </button>
         </div>
       </form>

@@ -1,0 +1,259 @@
+{
+  "nav": {
+    "overview": "Visão Geral",
+    "users": "Usuários",
+    "teams": "Equipes",
+    "clients": "Clientes",
+    "projects": "Projetos",
+    "workflows": "Fluxos de Trabalho",
+    "tasks": "Tarefas",
+    "reports": "Relatórios"
+  },
+  "dashboard": {
+    "title": "Admin Dashboard",
+    "subtitle": "Visão geral do sistema e gerenciamento administrativo",
+    "stats": {
+      "users": "Total de Usuários",
+      "clients": "Total de Clientes",
+      "projects": "Total de Projetos",
+      "activeTasks": "Tarefas Ativas",
+      "templates": "Templates de Fluxo"
+    },
+    "nav": {
+      "title": "Hub de Navegação",
+      "subtitle": "Acesse rapidamente as páginas de gerenciamento administrativo",
+      "users": {
+        "title": "Gerenciar Usuários e Funções",
+        "description": "Administre usuários, atribua funções e gerencie permissões do sistema"
+      },
+      "teams": {
+        "title": "Gerenciar Equipes",
+        "description": "Crie e organize equipes, adicione membros e coordene projetos"
+      },
+      "clients": {
+        "title": "Gerenciar Clientes",
+        "description": "Gerencie informações de clientes e mantenha relacionamentos"
+      },
+      "projects": {
+        "title": "Gerenciar Projetos",
+        "description": "Supervisione todos os projetos, atribua equipes e acompanhe o progresso"
+      },
+      "templates": {
+        "title": "Gerenciar Fluxos de Trabalho",
+        "description": "Crie e edite templates de workflow para padronizar processos"
+      },
+      "tasks": {
+        "title": "Gerenciar Tarefas",
+        "description": "Visualize e administre todas as tarefas do sistema"
+      }
+    }
+  },
+  "overview": {
+    "title": "Administração",
+    "subtitle": "Gerencie seu workspace",
+    "stats": {
+      "totalUsers": "Total de Usuários",
+      "totalTeams": "Total de Equipes",
+      "totalProjects": "Total de Projetos",
+      "activeTasks": "Tarefas Ativas"
+    }
+  },
+  "users": {
+    "title": "Usuários",
+    "subtitle": "Gerencie usuários, suas funções e atribuições de equipe",
+    "createUser": "Criar Usuário",
+    "noUsers": "Nenhum usuário encontrado.",
+    "noName": "N/D",
+    "noTeam": "Sem equipe",
+    "table": {
+      "user": "Usuário",
+      "name": "Nome",
+      "email": "Email",
+      "role": "Função",
+      "team": "Equipe",
+      "status": "Status",
+      "actions": "Ações"
+    },
+    "roles": {
+      "admin": "Administrador",
+      "manager": "Gerente",
+      "supervisor": "Supervisor",
+      "member": "Membro",
+      "client": "Cliente",
+      "viewer": "Visualizador"
+    },
+    "actions": {
+      "edit": "Editar",
+      "delete": "Excluir",
+      "deactivate": "Desativar",
+      "activate": "Ativar"
+    },
+    "edit": {
+      "button": "Editar",
+      "title": "Editar Usuário:",
+      "roleLabel": "Função",
+      "teamLabel": "Equipe",
+      "noTeam": "Sem Equipe",
+      "cancel": "Cancelar",
+      "saveChanges": "Salvar Alterações",
+      "saving": "Salvando..."
+    }
+  },
+  "teams": {
+    "title": "Equipes",
+    "subtitle": "Gerencie as equipes e seus membros",
+    "createTeam": "Criar Equipe",
+    "createTitle": "Criar Equipe",
+    "namePlaceholder": "Nome da equipe",
+    "createButton": "Criar",
+    "noTeams": "Nenhuma equipe encontrada. Crie uma para começar.",
+    "members": "Membros",
+    "membersCount": "{count} membros",
+    "table": {
+      "name": "Nome",
+      "members": "Membros",
+      "actions": "Ações"
+    }
+  },
+  "clients": {
+    "title": "Clientes",
+    "subtitle": "Gerencie clientes e seus projetos",
+    "createTitle": "Criar Cliente",
+    "namePlaceholder": "Nome do cliente",
+    "createButton": "Criar",
+    "noClients": "Nenhum cliente encontrado. Crie um para começar.",
+    "projectsCount": "{count} projetos",
+    "table": {
+      "name": "Nome",
+      "projects": "Projetos",
+      "actions": "Ações"
+    }
+  },
+  "projects": {
+    "title": "Projetos",
+    "subtitle": "Gerencie projetos e seus clientes",
+    "createTitle": "Criar Projeto",
+    "namePlaceholder": "Nome do projeto",
+    "selectClient": "Selecionar Cliente",
+    "createButton": "Criar",
+    "noProjects": "Nenhum projeto encontrado. Crie um para começar.",
+    "tasksCount": "{count} tarefas",
+    "table": {
+      "name": "Nome",
+      "client": "Cliente",
+      "tasks": "Tarefas",
+      "actions": "Ações"
+    },
+    "kanban": "Kanban do Projeto"
+  },
+  "workflows": {
+    "title": "Fluxos de Trabalho",
+    "subtitle": "Crie e gerencie templates de workflow. Estes são os \"roteiros\" que definem como as tarefas fluem pelo seu sistema.",
+    "createTitle": "Criar Novo Template",
+    "createWorkflow": "Criar Fluxo de Trabalho",
+    "nameLabel": "Nome do Template *",
+    "namePlaceholder": "ex: Vídeo Curto, Landing Page",
+    "descriptionLabel": "Descrição",
+    "descriptionPlaceholder": "Descreva para que serve este template de workflow...",
+    "createButton": "Criar Template",
+    "listTitle": "Templates Existentes",
+    "noTemplates": "Nenhum template ainda. Crie seu primeiro template acima.",
+    "noDescription": "Sem descrição",
+    "stagesCount": "{count} etapas",
+    "created": "Criado em {date}",
+    "noWorkflows": "Nenhum fluxo de trabalho encontrado",
+    "stages": "Etapas",
+    "addStage": "Adicionar Etapa",
+    "stageOrder": "Ordem",
+    "stageName": "Nome da Etapa",
+    "dependencies": "Dependências"
+  },
+  "tasks": {
+    "title": "Todas as Tarefas",
+    "subtitle": "Gerencie todas as tarefas do sistema",
+    "viewTask": "Ver Tarefa",
+    "noTasks": "Nenhuma tarefa encontrada",
+    "new": {
+      "backToTasks": "Voltar para Tarefas",
+      "title": "Criar Nova Tarefa",
+      "subtitle": "Inicialize uma nova tarefa a partir de um template de fluxo de trabalho. A tarefa começará na primeira etapa do template selecionado.",
+      "howItWorks": {
+        "title": "Como funciona:",
+        "step1": "Selecione um projeto e um template de workflow",
+        "step2": "Escolha um template que define as etapas pelas quais esta tarefa passará",
+        "step3": "A tarefa será criada automaticamente com base nas etapas configuradas no template",
+        "step4": "Você será atribuído à primeira etapa automaticamente",
+        "step5": "A tarefa pode ser movida através das etapas conforme o trabalho progride"
+      }
+    },
+    "list": {
+      "title": "Tarefas",
+      "subtitle": "Gerencie e acompanhe todas as tarefas através de projetos",
+      "createTask": "+ Criar Tarefa",
+      "noTasksYet": "Nenhuma tarefa ainda",
+      "noTasksMessage": "Comece criando sua primeira tarefa a partir de um template de fluxo de trabalho.",
+      "createFirstTask": "Criar sua primeira tarefa",
+      "table": {
+        "task": "Tarefa",
+        "project": "Projeto",
+        "status": "Status",
+        "currentStage": "Etapa Atual",
+        "priority": "Prioridade",
+        "assignee": "Responsável",
+        "dueDate": "Data de Vencimento"
+      },
+      "status": {
+        "done": "Concluída",
+        "inProgress": "Em Progresso",
+        "blocked": "Bloqueada"
+      },
+      "priority": {
+        "urgent": "Urgente",
+        "high": "Alta",
+        "medium": "Média",
+        "low": "Baixa"
+      },
+      "noStage": "Sem etapa",
+      "unassigned": "Não atribuída",
+      "noDueDate": "Sem data de vencimento"
+    },
+    "detail": {
+      "backToTasks": "Voltar para Tarefas",
+      "noDescription": "Sem descrição",
+      "project": "Projeto",
+      "priority": "Prioridade",
+      "assignee": "Responsável",
+      "unassigned": "Não atribuído",
+      "dueDate": "Data de Vencimento",
+      "noDueDate": "Sem data de vencimento",
+      "currentStage": "Etapa Atual",
+      "noCurrentStage": "Nenhuma etapa atual atribuída",
+      "template": "Template:",
+      "team": "Equipe:",
+      "stageHistory": "Histórico de Etapas",
+      "noStageHistory": "Ainda não há histórico de etapas",
+      "enteredBy": "Iniciado por",
+      "entered": "Iniciado:",
+      "exited": "Concluído:",
+      "comments": "Comentários",
+      "by": "Por",
+      "status": {
+        "done": "Concluída",
+        "inProgress": "Em Progresso",
+        "blocked": "Bloqueada"
+      },
+      "taskStatus": {
+        "COMPLETED": "Concluída",
+        "IN_PROGRESS": "Em Progresso",
+        "CANCELLED": "Cancelada",
+        "PAUSED": "Pausada"
+      },
+      "taskPriority": {
+        "URGENT": "Urgente",
+        "HIGH": "Alta",
+        "MEDIUM": "Média",
+        "LOW": "Baixa"
+      }
+    }
+  }
+}

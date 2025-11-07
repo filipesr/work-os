@@ -1,0 +1,75 @@
+{
+  "nav": {
+    "title": "Relatórios",
+    "liveActivity": "Status dos Usuários",
+    "timeTracking": "Controle de Horas",
+    "projectProgress": "Progresso dos Projetos",
+    "teamPerformance": "Desempenho da Equipe"
+  },
+  "index": {
+    "title": "Relatórios e Análises",
+    "subtitle": "Inteligência de negócios para melhorar a produtividade e identificar gargalos no fluxo de trabalho",
+    "productivity": {
+      "title": "Relatório de Produtividade",
+      "description": "Visualize o tempo gasto por usuário, projeto, cliente e etapa do workflow",
+      "feature1": "Horas registradas por usuário",
+      "feature2": "Tempo investido por projeto e cliente",
+      "feature3": "Distribuição de esforço por etapa do fluxo"
+    },
+    "performance": {
+      "title": "Relatório de Desempenho",
+      "description": "Identifique gargalos no workflow e analise a taxa de retrabalho",
+      "feature1": "Tempo médio em cada etapa (bottlenecks)",
+      "feature2": "Taxa de retrabalho e reversões",
+      "feature3": "Lead time e throughput do sistema"
+    },
+    "liveActivity": {
+      "title": "Atividade em Tempo Real",
+      "description": "Visualize quem está trabalhando em quais tarefas neste momento",
+      "feature1": "Colaboradores ativos no momento",
+      "feature2": "Tempo de trabalho em cada tarefa",
+      "feature3": "Atualização automática a cada 10 segundos"
+    },
+    "guide": {
+      "title": "Como usar os relatórios",
+      "productivityLabel": "📊 Relatório de Produtividade",
+      "productivityText": "Use este relatório para entender quanto tempo sua equipe está gastando em cada projeto e etapa. Ideal para faturamento por hora e alocação de recursos.",
+      "performanceLabel": "⚡ Relatório de Desempenho",
+      "performanceText": "Este relatório identifica onde o trabalho está \"travando\". Etapas com alto tempo médio são gargalos. Alta taxa de retrabalho indica problemas de qualidade ou comunicação.",
+      "liveActivityLabel": "🟢 Atividade em Tempo Real",
+      "liveActivityText": "Acompanhe em tempo real quem está trabalhando em quê. Perfeito para gestores que precisam ter visibilidade imediata da alocação da equipe.",
+      "tipLabel": "💡 Dica",
+      "tipText": "Use os filtros de data para comparar períodos diferentes e identificar tendências ao longo do tempo."
+    }
+  },
+  "liveActivity": {
+    "title": "Status dos Usuários",
+    "subtitle": "Visualize o status de todos os usuários em tempo real (atualiza a cada 10 segundos)",
+    "allUsers": "Todos os Usuários",
+    "online": "Online (acessou hoje)",
+    "offline": "Offline",
+    "working": "TRABALHANDO",
+    "lastSeen": "Visto",
+    "neverAccessed": "Nunca acessou",
+    "noTeam": "Sem equipe",
+    "noUsers": "Nenhum usuário encontrado",
+    "loading": "Carregando usuários...",
+    "updatedAgo": "Atualizado",
+    "started": "Iniciado",
+    "help": {
+      "title": "Como funciona",
+      "online": "Usuários que acessaram o sistema hoje. Podem estar trabalhando ativamente em uma tarefa ou apenas navegando.",
+      "offline": "Usuários que não acessaram o sistema hoje ou que fizeram logout explícito.",
+      "working": "Quando um colaborador clica em \"Iniciar Tarefa\", o tempo de trabalho é exibido em tempo real junto com os detalhes da tarefa.",
+      "autoUpdate": "Esta página atualiza automaticamente a cada 10 segundos."
+    }
+  },
+  "timeTracking": {
+    "title": "Controle de Horas",
+    "subtitle": "Visualize as horas trabalhadas por usuário e projeto",
+    "totalHours": "Total de Horas",
+    "filterByUser": "Filtrar por Usuário",
+    "filterByProject": "Filtrar por Projeto",
+    "filterByDate": "Filtrar por Data"
+  }
+}

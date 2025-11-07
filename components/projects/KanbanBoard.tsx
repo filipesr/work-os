@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Task, User, TemplateStage, Project, Client, Team } from "@prisma/client";
 import { TaskCard } from "./TaskCard";
 import { KanbanFilters, FilterState } from "./KanbanFilters";
+import { useTranslations } from "next-intl";
 
 type TaskWithRelations = Task & {
   assignee: Pick<User, "id" | "name" | "email" | "image" | "teamId"> | null;
@@ -36,6 +37,7 @@ export function KanbanBoard({
   currentUserId,
   currentUserTeamId,
 }: KanbanBoardProps) {
+  const t = useTranslations("projects");
   const [filters, setFilters] = useState<FilterState>({
     myTasks: false,
     byTeam: false,
@@ -132,12 +134,15 @@ export function KanbanBoard({
                     {stage.templateName}
                   </p>
                   <span className="text-xs text-muted-foreground">
-                    {stageTasks.length} {stageTasks.length === 1 ? "tarefa" : "tarefas"}
+                    {stageTasks.length === 1
+                      ? t("taskCount", { count: stageTasks.length })
+                      : t("tasksCount", { count: stageTasks.length })
+                    }
                   </span>
                 </div>
                 {stage.defaultTeam && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Time: {stage.defaultTeam.name}
+                    {t("team")}: {stage.defaultTeam.name}
                   </p>
                 )}
               </div>
@@ -146,7 +151,7 @@ export function KanbanBoard({
               <div className="flex flex-col gap-3">
                 {stageTasks.length === 0 ? (
                   <div className="text-center text-sm text-muted-foreground py-8">
-                    Nenhuma tarefa
+                    {t("noTasks")}
                   </div>
                 ) : (
                   stageTasks.map((task) => (
@@ -161,7 +166,7 @@ export function KanbanBoard({
         {stages.length === 0 && (
           <div className="flex items-center justify-center w-full py-12">
             <p className="text-muted-foreground">
-              Nenhuma etapa encontrada. Crie tarefas para este projeto.
+              {t("noStages")}
             </p>
           </div>
         )}

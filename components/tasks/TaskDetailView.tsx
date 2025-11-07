@@ -18,7 +18,8 @@ import { ActivityButton } from "./ActivityButton";
 import { WorkflowHistoryModal } from "./WorkflowHistoryModal";
 import { TimeLogsList } from "./TimeLogsList";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR, es } from "date-fns/locale";
+import { useTranslations, useLocale } from "next-intl";
 
 type TaskWithRelations = Task & {
   project: Project & { client: Client };
@@ -56,21 +57,6 @@ interface TaskDetailViewProps {
   allTemplateStages: (TemplateStage & { defaultTeam: { id: string; name: string } | null })[];
 }
 
-const priorityConfig = {
-  LOW: { label: "Baixa", variant: "secondary" as const },
-  MEDIUM: { label: "Média", variant: "default" as const },
-  HIGH: { label: "Alta", variant: "outline" as const },
-  URGENT: { label: "Urgente", variant: "destructive" as const },
-};
-
-const statusConfig = {
-  BACKLOG: { label: "Backlog", variant: "secondary" as const },
-  IN_PROGRESS: { label: "Em Progresso", variant: "default" as const },
-  PAUSED: { label: "Pausado", variant: "outline" as const },
-  COMPLETED: { label: "Concluído", variant: "default" as const },
-  CANCELLED: { label: "Cancelado", variant: "destructive" as const },
-};
-
 export function TaskDetailView({
   task,
   availableNextStages,
@@ -84,6 +70,32 @@ export function TaskDetailView({
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
   const canViewTimeLogs = currentUserRole === UserRole.ADMIN || currentUserRole === UserRole.MANAGER;
   const totalHours = task.timeLogs.reduce((sum, log) => sum + log.hoursSpent, 0);
+
+  const t = useTranslations("tasks");
+  const tDetail = useTranslations("tasks.detail");
+  const tPriority = useTranslations("tasks.priority");
+  const tComments = useTranslations("tasks.comments");
+  const tArtifacts = useTranslations("tasks.artifacts");
+  const tTimeLogs = useTranslations("tasks.timeLogs");
+  const locale = useLocale();
+  const dateLocale = locale === "es-ES" ? es : ptBR;
+
+  const priorityConfig = {
+    LOW: { label: tPriority("low"), variant: "secondary" as const },
+    MEDIUM: { label: tPriority("medium"), variant: "default" as const },
+    HIGH: { label: tPriority("high"), variant: "outline" as const },
+    URGENT: { label: tPriority("urgent"), variant: "destructive" as const },
+  };
+
+  const tStatus = useTranslations("tasks.status");
+
+  const statusConfig = {
+    BACKLOG: { label: tStatus("backlog"), variant: "secondary" as const },
+    IN_PROGRESS: { label: tStatus("inProgress"), variant: "default" as const },
+    PAUSED: { label: tStatus("paused"), variant: "outline" as const },
+    COMPLETED: { label: tStatus("completed"), variant: "default" as const },
+    CANCELLED: { label: tStatus("cancelled"), variant: "destructive" as const },
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -99,7 +111,7 @@ export function TaskDetailView({
                 className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground shrink-0 mt-1"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar
+                {tDetail("backToTasks")}
               </Link>
               <div className="flex-1 min-w-0">
                 <h1 className="text-2xl font-bold leading-tight mb-2">{task.title}</h1>
@@ -135,7 +147,7 @@ export function TaskDetailView({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-2">
-                  Status
+                  {tDetail("status")}
                 </p>
                 <Badge variant={statusConfig[task.status].variant}>
                   {statusConfig[task.status].label}
@@ -143,7 +155,7 @@ export function TaskDetailView({
               </div>
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-2">
-                  Prioridade
+                  {tDetail("priority")}
                 </p>
                 <Badge variant={priorityConfig[task.priority].variant}>
                   {priorityConfig[task.priority].label}
@@ -151,7 +163,7 @@ export function TaskDetailView({
               </div>
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-2">
-                  Responsável
+                  {tDetail("assignee")}
                 </p>
                 {task.assignee ? (
                   <div className="flex items-center gap-2">
@@ -168,13 +180,13 @@ export function TaskDetailView({
                 ) : (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <UserIcon className="h-4 w-4" />
-                    <span className="text-sm">Não atribuído</span>
+                    <span className="text-sm">{tDetail("noDescription")}</span>
                   </div>
                 )}
               </div>
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-2">
-                  Data de Entrega
+                  {tDetail("dueDate")}
                 </p>
                 {task.dueDate ? (
                   <div className={`flex items-center gap-2 text-sm ${isOverdue ? "text-destructive" : ""}`}>
@@ -185,12 +197,12 @@ export function TaskDetailView({
                     )}
                     <span>
                       {format(new Date(task.dueDate), "dd/MM/yyyy", {
-                        locale: ptBR,
+                        locale: dateLocale,
                       })}
                     </span>
                   </div>
                 ) : (
-                  <span className="text-sm text-muted-foreground">Sem prazo</span>
+                  <span className="text-sm text-muted-foreground">{tDetail("noDescription")}</span>
                 )}
               </div>
             </div>
@@ -201,7 +213,7 @@ export function TaskDetailView({
                 <Separator />
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2">
-                    Descrição
+                    {tDetail("description")}
                   </p>
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">
                     {task.description}
@@ -217,7 +229,7 @@ export function TaskDetailView({
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
-              Comentários
+              {tComments("title")}
               <Badge variant="secondary" className="ml-auto">
                 {task.comments.length}
               </Badge>
@@ -242,7 +254,7 @@ export function TaskDetailView({
         {/* Actions Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Ações</CardTitle>
+            <CardTitle className="text-sm">{t("actions.edit")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Activity Tracking */}
@@ -271,7 +283,7 @@ export function TaskDetailView({
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
               <Paperclip className="h-4 w-4" />
-              Artefatos
+              {tArtifacts("title")}
               <Badge variant="secondary" className="ml-auto text-xs">
                 {task.artifacts.length}
               </Badge>
@@ -290,12 +302,12 @@ export function TaskDetailView({
               {showArtifactForm ? (
                 <>
                   <ChevronUp className="h-4 w-4 mr-2" />
-                  Ocultar Formulário
+                  {tArtifacts("hideForm")}
                 </>
               ) : (
                 <>
                   <ChevronDown className="h-4 w-4 mr-2" />
-                  Adicionar Link/Artefato
+                  {tArtifacts("addArtifact")}
                 </>
               )}
             </Button>
@@ -316,9 +328,9 @@ export function TaskDetailView({
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Tempo Registrado
+                {tTimeLogs("title")}
                 <Badge variant="secondary" className="ml-auto text-xs">
-                  {totalHours.toFixed(1)}h total
+                  {tTimeLogs("totalHours", { hours: totalHours.toFixed(1) })}
                 </Badge>
               </CardTitle>
             </CardHeader>

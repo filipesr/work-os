@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "Painel",
+    "tasks": "Tarefas",
+    "myTasks": "Minhas Tarefas",
+    "reports": "Relatórios",
+    "admin": "Administração",
+    "signOut": "Sair",
+    "taskFlow": "Fluxo de Tarefas",
+    "myAccount": "Minha Conta",
+    "settings": "Configurações",
+    "adminDashboard": "Admin Dashboard"
+  },
+  "buttons": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "close": "Fechar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "confirm": "Confirmar",
+    "submit": "Enviar",
+    "add": "Adicionar",
+    "create": "Criar",
+    "update": "Atualizar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "clear": "Limpar",
+    "refresh": "Atualizar",
+    "export": "Exportar"
+  },
+  "common": {
+    "loading": "Carregando...",
+    "noData": "Nenhum dado disponível",
+    "error": "Erro",
+    "success": "Sucesso",
+    "warning": "Atenção",
+    "info": "Informação",
+    "yes": "Sim",
+    "no": "Não",
+    "actions": "Ações",
+    "details": "Detalhes",
+    "status": "Status"
+  }
+}

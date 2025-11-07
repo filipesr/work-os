@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Building2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ export function QuickCreateClient({
   className,
   onClientCreated,
 }: QuickCreateClientProps) {
+  const t = useTranslations("quickCreate.client");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -46,7 +48,7 @@ export function QuickCreateClient({
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error("Nome do cliente é obrigatório");
+      toast.error(t("errorRequired"));
       return;
     }
 
@@ -56,7 +58,7 @@ export function QuickCreateClient({
       if (result.error) {
         toast.error(result.error);
       } else if (result.client) {
-        toast.success(`Cliente "${result.client.name}" criado com sucesso!`);
+        toast.success(t("successMessage", { name: result.client.name }));
         setOpen(false);
         setFormData({ name: "", description: "", email: "", phone: "" });
 
@@ -74,7 +76,7 @@ export function QuickCreateClient({
       <DialogTrigger asChild>
         <Button variant={variant} size={size} className={className}>
           <Plus className="h-4 w-4 mr-2" />
-          Novo Cliente
+          {t("buttonLabel")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
@@ -82,10 +84,10 @@ export function QuickCreateClient({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              Criar Novo Cliente
+              {t("title")}
             </DialogTitle>
             <DialogDescription>
-              Adicione um novo cliente rapidamente. Você poderá editar mais detalhes depois.
+              {t("description")}
             </DialogDescription>
           </DialogHeader>
 
@@ -93,11 +95,11 @@ export function QuickCreateClient({
             {/* Name */}
             <div className="grid gap-2">
               <Label htmlFor="name">
-                Nome do Cliente <span className="text-destructive">*</span>
+                {t("nameLabel")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
-                placeholder="Ex: Empresa XYZ Ltda"
+                placeholder={t("namePlaceholder")}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 disabled={isPending}
@@ -107,11 +109,11 @@ export function QuickCreateClient({
 
             {/* Email */}
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("emailLabel")}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="contato@empresa.com"
+                placeholder={t("emailPlaceholder")}
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 disabled={isPending}
@@ -120,10 +122,10 @@ export function QuickCreateClient({
 
             {/* Phone */}
             <div className="grid gap-2">
-              <Label htmlFor="phone">Telefone</Label>
+              <Label htmlFor="phone">{t("phoneLabel")}</Label>
               <Input
                 id="phone"
-                placeholder="(11) 99999-9999"
+                placeholder={t("phonePlaceholder")}
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 disabled={isPending}
@@ -132,10 +134,10 @@ export function QuickCreateClient({
 
             {/* Description */}
             <div className="grid gap-2">
-              <Label htmlFor="description">Descrição</Label>
+              <Label htmlFor="description">{t("descriptionLabel")}</Label>
               <Textarea
                 id="description"
-                placeholder="Informações adicionais sobre o cliente..."
+                placeholder={t("descriptionPlaceholder")}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 disabled={isPending}
@@ -151,10 +153,10 @@ export function QuickCreateClient({
               onClick={() => setOpen(false)}
               disabled={isPending}
             >
-              Cancelar
+              {t("cancel")}
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Criando..." : "Criar Cliente"}
+              {isPending ? t("creating") : t("create")}
             </Button>
           </DialogFooter>
         </form>

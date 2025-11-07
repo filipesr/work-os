@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { UserRole } from "@prisma/client"
 import Link from "next/link"
 import { UserMenu } from "@/components/user-menu"
+import { getTranslations } from "next-intl/server"
 
 export async function Navbar() {
   const session = await auth()
@@ -11,6 +12,7 @@ export async function Navbar() {
   }
 
   const userRole = (session.user as any).role as UserRole
+  const t = await getTranslations("common.nav")
 
   return (
     <nav className="bg-card shadow-lg border-b-2 border-border">
@@ -21,33 +23,30 @@ export async function Navbar() {
               href="/dashboard"
               className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
             >
-              Dashboard
+              {t("dashboard")}
             </Link>
 
-            {/* Tasks - Everyone */}
             <Link
               href="/admin/tasks"
               className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
             >
-              Tarefas
+              {t("tasks")}
             </Link>
 
-            {/* Reports Section - Manager or Admin */}
             {(userRole === UserRole.ADMIN || userRole === UserRole.MANAGER) && (
               <Link
                 href="/reports"
                 className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
               >
-                Relatórios
+                {t("reports")}
               </Link>
             )}
 
-            {/* Task Flow Presentation - Everyone */}
             <Link
               href="/task-flow"
               className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
             >
-              Fluxo de Tarefas
+              {t("taskFlow")}
             </Link>
           </div>
 

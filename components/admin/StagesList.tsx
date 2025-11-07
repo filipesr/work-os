@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { updateTemplateStage, deleteTemplateStage } from "@/lib/actions/stage";
 import { DependencySelector } from "./DependencySelector";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 interface Stage {
   id: string;
@@ -34,6 +35,7 @@ interface StagesListProps {
 }
 
 export function StagesList({ stages, templateId, teams }: StagesListProps) {
+  const t = useTranslations("template.stagesList");
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [deletingStageId, setDeletingStageId] = useState<string | null>(null);
   const [editingDeps, setEditingDeps] = useState<Set<string>>(new Set());
@@ -74,7 +76,7 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
   if (stages.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-8">
-        No stages yet. Create your first stage above.
+        {t("empty")}
       </div>
     );
   }
@@ -111,11 +113,11 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                   setIsSubmitting(false);
 
                   if (result?.success) {
-                    toast.success('Etapa atualizada com sucesso!');
+                    toast.success(t("successMessage"));
                     setEditingStageId(null);
                     setEditingDeps(new Set());
                   } else {
-                    toast.error(result?.error || 'Erro ao atualizar etapa');
+                    toast.error(result?.error || t("errorMessage"));
                   }
                 }}
                 className="space-y-4"
@@ -126,7 +128,7 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                       htmlFor={`edit-name-${stage.id}`}
                       className="block text-sm font-semibold text-foreground mb-2"
                     >
-                      Stage Name *
+                      {t("nameLabel")}
                     </label>
                     <input
                       type="text"
@@ -142,7 +144,7 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                       htmlFor={`edit-order-${stage.id}`}
                       className="block text-sm font-semibold text-foreground mb-2"
                     >
-                      Order *
+                      {t("orderLabel")}
                     </label>
                     <input
                       type="number"
@@ -159,7 +161,7 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                       htmlFor={`edit-team-${stage.id}`}
                       className="block text-sm font-semibold text-foreground mb-2"
                     >
-                      Default Team
+                      {t("teamLabel")}
                     </label>
                     <select
                       id={`edit-team-${stage.id}`}
@@ -167,7 +169,7 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                       defaultValue={stage.defaultTeamId || ""}
                       className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
                     >
-                      <option value="">No default team</option>
+                      <option value="">{t("noTeam")}</option>
                       {teams.map((team) => (
                         <option key={team.id} value={team.id}>
                           {team.name}
@@ -191,7 +193,7 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                     disabled={isSubmitting}
                     className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSubmitting ? 'Salvando...' : 'Salvar'}
+                    {isSubmitting ? t("saving") : t("save")}
                   </button>
                   <button
                     type="button"
@@ -202,7 +204,7 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                     disabled={isSubmitting}
                     className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all disabled:opacity-50"
                   >
-                    Cancelar
+                    {t("cancel")}
                   </button>
                 </div>
               </form>
@@ -219,12 +221,12 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                     </div>
                     <div className="ml-11 space-y-1">
                       <p className="text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">Time:</span>{" "}
-                        {stage.defaultTeam?.name || "Sem time atribuído"}
+                        <span className="font-medium text-foreground">{t("team")}</span>{" "}
+                        {stage.defaultTeam?.name || t("noTeamAssigned")}
                       </p>
                       {stage.dependents.length > 0 && (
                         <p className="text-sm text-muted-foreground">
-                          <span className="font-semibold text-foreground">Depende de:</span>{" "}
+                          <span className="font-semibold text-foreground">{t("dependsOn")}</span>{" "}
                           {stage.dependents
                             .map((dep) => dep.dependsOn.name)
                             .join(", ")}
@@ -237,13 +239,13 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                       onClick={() => setEditingStageId(stage.id)}
                       className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all shadow-sm"
                     >
-                      Editar
+                      {t("editButton")}
                     </button>
                     <button
                       onClick={() => setDeletingStageId(stage.id)}
                       className="px-4 py-2 text-sm font-semibold bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-all shadow-sm"
                     >
-                      Excluir
+                      {t("deleteButton")}
                     </button>
                   </div>
                 </div>
@@ -254,17 +256,16 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
             {deletingStageId === stage.id && (
               <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
                 <div className="bg-card border-2 border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-                  <h3 className="text-xl font-bold text-foreground mb-4">Delete Stage?</h3>
+                  <h3 className="text-xl font-bold text-foreground mb-4">{t("deleteConfirmTitle")}</h3>
                   <p className="text-muted-foreground mb-6">
-                    Are you sure you want to delete the stage "{stage.name}"? This will
-                    also delete all dependencies. This action cannot be undone.
+                    {t("deleteConfirmMessage", { stageName: stage.name })}
                   </p>
                   <div className="flex gap-3 justify-end">
                     <button
                       onClick={() => setDeletingStageId(null)}
                       className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all"
                     >
-                      Cancel
+                      {t("cancel")}
                     </button>
                     <form
                       action={async () => {
@@ -278,7 +279,7 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                         type="submit"
                         className="px-5 py-2.5 bg-destructive text-destructive-foreground font-semibold rounded-lg hover:bg-destructive/90 transition-all shadow-sm"
                       >
-                        Delete Stage
+                        {t("deleteConfirmButton")}
                       </button>
                     </form>
                   </div>

@@ -1,0 +1,108 @@
+{
+  "greeting": "¡Hola, {userName}!",
+  "subtitle": "Vista general de tus tareas y responsabilidades",
+  "stats": {
+    "activeTasks": "Tareas Activas",
+    "completedWeek": "Completadas (Semana)",
+    "hoursToday": "Horas Hoy",
+    "upcomingDeadlines": "Plazos Próximos"
+  },
+  "priority": {
+    "URGENT": "URGENTE",
+    "HIGH": "ALTA",
+    "MEDIUM": "MEDIA",
+    "LOW": "BAJA"
+  },
+  "status": {
+    "BACKLOG": "Backlog",
+    "IN_PROGRESS": "En Progreso",
+    "PAUSED": "Pausado",
+    "COMPLETED": "Completado",
+    "CANCELLED": "Cancelado",
+    "BLOCKED": "Bloqueado"
+  },
+  "dates": {
+    "noDueDate": "Sin plazo",
+    "overdue": "Atrasado ({days}d)",
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "inDays": "En {days} días"
+  },
+  "tooltips": {
+    "taskOverdue": "Tarea atrasada",
+    "deadlineSoon": "Plazo próximo",
+    "stageBlocked": "Etapa bloqueada"
+  },
+  "badges": {
+    "new": "NUEVO"
+  },
+  "table": {
+    "task": "Tarea",
+    "project": "Proyecto",
+    "currentStage": "Etapa Actual",
+    "priority": "Prioridad",
+    "status": "Estado",
+    "dueDate": "Fecha de Entrega",
+    "action": "Acción"
+  },
+  "myActiveStages": {
+    "title": "Mis Etapas Activas",
+    "subtitle": "Etapas asignadas a ti en tareas activas",
+    "noStages": "No hay etapas activas asignadas a ti",
+    "stageCount": "{count} etapa activa",
+    "stagesCount": "{count} etapas activas",
+    "startWork": "Iniciar Trabajo",
+    "viewTask": "Ver Tarea",
+    "claim": "Reclamar",
+    "claimedBy": "Reclamada por",
+    "unassigned": "Sin asignar",
+    "status": {
+      "active": "Activa",
+      "pending": "Pendiente",
+      "blocked": "Bloqueada",
+      "completed": "Completada"
+    }
+  },
+  "teamBacklog": {
+    "title": "Backlog del Equipo (Sin Asignar)"
+  },
+  "emptyStates": {
+    "noActiveStages": "No tienes etapas activas. ¡Buen trabajo!",
+    "teamBacklogClean": "El backlog de tu equipo está limpio."
+  },
+  "noTeam": {
+    "title": "¡Hola, {userName}!",
+    "message": "Aún no has sido asignado a un equipo.",
+    "warningTitle": "Esperando configuración:",
+    "warningMessage": "Contacta con el administrador para tener acceso a las tareas de tu equipo."
+  },
+  "activeWork": {
+    "title": "Trabajo Activo",
+    "workingOn": "Trabajando en",
+    "stage": "Etapa",
+    "project": "Proyecto",
+    "client": "Cliente",
+    "timeElapsed": "Tiempo transcurrido",
+    "stopWork": "Detener Trabajo",
+    "noActiveWork": "No estás trabajando en ninguna tarea en este momento"
+  },
+  "recentActivity": {
+    "title": "Actividad Reciente",
+    "noActivity": "No hay actividad reciente",
+    "types": {
+      "taskCreated": "Tarea creada",
+      "taskUpdated": "Tarea actualizada",
+      "commentAdded": "Comentario agregado",
+      "stageCompleted": "Etapa completada",
+      "taskCompleted": "Tarea completada"
+    }
+  },
+  "upcomingDeadlines": {
+    "title": "Plazos Próximos",
+    "noDeadlines": "No hay plazos próximos",
+    "dueIn": "Vence en",
+    "overdue": "Atrasado",
+    "days": "días",
+    "hours": "horas"
+  }
+}

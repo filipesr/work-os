@@ -1,0 +1,25 @@
+{
+  "client": "Cliente",
+  "team": "Equipo",
+  "taskCount": "{count} tarea",
+  "tasksCount": "{count} tareas",
+  "noTasks": "Ninguna tarea",
+  "noStages": "No se encontraron etapas. Crea tareas para este proyecto.",
+  "filters": {
+    "title": "Filtros:",
+    "myTasks": "Mis Tareas",
+    "myTeam": "Mi Equipo",
+    "byAssignee": "Por responsable",
+    "allAssignees": "Todos los responsables",
+    "byPriority": "Por prioridad",
+    "allPriorities": "Todas las prioridades",
+    "clearFilters": "Limpiar filtros"
+  },
+  "priority": {
+    "LOW": "Baja",
+    "MEDIUM": "Media",
+    "HIGH": "Alta",
+    "URGENT": "Urgente"
+  },
+  "unassigned": "Sin asignar"
+}

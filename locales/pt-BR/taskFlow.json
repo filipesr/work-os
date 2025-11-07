@@ -1,0 +1,163 @@
+{
+  "header": {
+    "title": "Fluxo de Tarefas",
+    "subtitle": "A Jornada da Landing Page: Do Briefing ao Lançamento",
+    "backButton": "Voltar ao Início"
+  },
+  "introduction": {
+    "title": "Bem-vindo ao Futuro da Gestão de Projetos",
+    "description": "Vamos simular a criação de uma Landing Page, algo que hoje gera dezenas de e-mails, mensagens no WhatsApp e links perdidos no Trello. Veja como isso funciona no novo sistema."
+  },
+  "step1": {
+    "badge": "Etapa 1",
+    "title": "Concepção - O Pedido",
+    "actor": "Manager ou Supervisor",
+    "actionLabel": "O que ele faz:",
+    "actionText": "Clica em \"Nova Demanda\" e seleciona o template",
+    "systemLabel": "O que o sistema faz:",
+    "systemText": "Mostra instantaneamente o caminho que a tarefa vai percorrer:",
+    "infoTitle": "Informações preenchidas:",
+    "infoItems": {
+      "title": "Título: \"LP Lançamento Produto X\"",
+      "client": "Cliente: \"Cliente Y\"",
+      "deadline": "Data de Entrega: \"30/11\"",
+      "artifact": "Artefato: \"Briefing da Reunião (Google Doc)\""
+    }
+  },
+  "step2": {
+    "badge": "Etapa 2",
+    "title": "Briefing & Copy",
+    "actor": "Copywriter em Ação",
+    "highlightTitle": "O Pulo do Gato",
+    "highlightText": "A tarefa aparece APENAS no dashboard da equipe de Copywriting. O Designer e o Dev não veem este card. O dashboard deles continua limpo.",
+    "who": "Quem:",
+    "whoText": "Copywriter",
+    "actionLabel": "Ação:",
+    "actions": {
+      "1": "Abre a tarefa e vê o briefing anexado (não precisa perguntar \"cadê o briefing?\")",
+      "2": "Clica em Iniciar Tarefa (O Manager vê no Dashboard Ao Vivo que o trabalho começou)",
+      "3": "Escreve o texto em um Google Doc",
+      "4": "Anexa o link \"Textos Finais (Google Doc)\"",
+      "5": "Clica em Avançar Etapa"
+    }
+  },
+  "step3": {
+    "badge": "Etapa 3",
+    "title": "Design - O Handoff Automático",
+    "actor": "Designer Recebe Contexto Completo",
+    "highlightTitle": "Transição Automática",
+    "highlightText": "O sistema é a \"Máquina de Estados\". Quando o Copywriter avança, a tarefa desaparece do seu dashboard e aparece magicamente no dashboard dos Designers.",
+    "who": "Quem:",
+    "whoText": "Designer",
+    "contextLabel": "Contexto disponível:",
+    "context": {
+      "1": "Briefing original",
+      "2": "Textos Finais do Copywriter",
+      "3": "100% do contexto necessário"
+    },
+    "actionLabel": "Ação:",
+    "actionText": "Clica em Iniciar Tarefa e começa a desenhar no Figma"
+  },
+  "step4": {
+    "badge": "Loop de Revisão",
+    "title": "A Realidade do Dia a Dia",
+    "actor": "Rejeição e Retrabalho",
+    "scenarioLabel": "Cenário:",
+    "scenarioText": "O Designer finaliza a v1, anexa o Figma e avança. Mas o Supervisor não gosta do resultado.",
+    "supervisorActionTitle": "Ação do Supervisor:",
+    "supervisorActions": {
+      "1": "Clica em Reverter Etapa",
+      "2": "Sistema OBRIGA a escrever um comentário: \"O botão Comprar está muito pequeno. Ajustar a cor.\"",
+      "3": "Tarefa volta para a fila do Designer, sinalizada como \"Em Revisão\""
+    },
+    "keyPointTitle": "Ponto Chave para a Gestão:",
+    "keyPointText": "Todo esse vai e vem, que hoje se perde, fica 100% registrado no histórico da tarefa. E o Relatório de Gargalos registra automaticamente que a etapa de Design teve retrabalho."
+  },
+  "step5": {
+    "badge": "Etapa 4",
+    "title": "Desenvolvimento",
+    "actor": "Dev com Fonte Única da Verdade",
+    "who": "Quem:",
+    "whoText": "Desenvolvedor",
+    "contextLabel": "Contexto disponível:",
+    "context": {
+      "1": "Briefing original",
+      "2": "Textos Finais",
+      "3": "v2 do Figma Aprovado (não corre risco de usar versão antiga)"
+    },
+    "keyPointTitle": "Ponto Chave:",
+    "keyPointText": "O Dev não precisa perguntar nada. Tem a versão correta e aprovada do design. Fonte única da verdade!",
+    "finalizationLabel": "Finalização:",
+    "finalization": {
+      "1": "Clica em Iniciar Tarefa",
+      "2": "Constrói a página",
+      "3": "Anexa o artefato: \"Link de Staging (Vercel)\"",
+      "4": "Clica em Avançar Etapa"
+    }
+  },
+  "step6": {
+    "badge": "Etapas 5 & 6",
+    "title": "QC e SEO - Trabalho Paralelo",
+    "actor": "A Mágica do Sistema",
+    "highlightTitle": "Trabalho Simultâneo",
+    "highlightText": "O Dev era dependência para duas etapas. A tarefa aparece SIMULTANEAMENTE na fila de Quality Control E na fila de SEO.",
+    "qcTitle": "Equipe QC:",
+    "qcTasks": {
+      "1": "Testa todos os links",
+      "2": "Verifica responsividade",
+      "3": "Valida funcionalidades",
+      "4": "Clica em Concluir Etapa"
+    },
+    "seoTitle": "Equipe SEO:",
+    "seoTasks": {
+      "1": "Otimiza meta tags",
+      "2": "Ajusta URLs",
+      "3": "Configura Analytics",
+      "4": "Clica em Concluir Etapa"
+    },
+    "keyPointTitle": "Ponto Chave:",
+    "keyPointText": "Não precisamos esperar o QC terminar para o SEO começar. As duas equipes trabalham em paralelo, economizando dias de projeto!"
+  },
+  "step7": {
+    "badge": "Conclusão",
+    "title": "Tarefa Concluída",
+    "actor": "Todas as Etapas Completas",
+    "whatHappens": "O que acontece:",
+    "whatHappensText": "O sistema detecta que todas as etapas foram concluídas e move a demanda para status",
+    "benefitsTitle": "Benefícios para a Gestão:",
+    "benefits": {
+      "organization": {
+        "title": "1. Organização",
+        "text": "A tarefa é fechada e sai dos dashboards automaticamente"
+      },
+      "timesheet": {
+        "title": "2. Timesheet Automático",
+        "text": "O Relatório de Produtividade foi 100% preenchido:",
+        "items": {
+          "copy": "Copy: 2h",
+          "design": "Design: 6h",
+          "dev": "Dev: 8h",
+          "qc": "QC: 1.5h",
+          "seo": "SEO: 2h"
+        }
+      },
+      "analysis": {
+        "title": "3. Análise de Gargalos",
+        "text": "O Relatório mostra exatamente quantos dias a tarefa ficou parada em cada etapa"
+      }
+    }
+  },
+  "summary": {
+    "title": "Resumo da Apresentação",
+    "intro": "Em 5 minutos, a tarefa navegou por 5 equipes diferentes, teve uma revisão (rejeição) e duas equipes trabalharam em paralelo, sem que ninguém precisasse:",
+    "noNeeds": {
+      "1": "Enviar um e-mail",
+      "2": "Mandar uma mensagem no WhatsApp",
+      "3": "\"Cutucar\" o colega perguntando \"E aí, já terminou?\""
+    },
+    "conclusion": "Tudo acontece automaticamente. Tudo fica registrado. Zero fricção."
+  },
+  "footer": {
+    "text": "Work OS - Sistema de Gestão de Operações"
+  }
+}

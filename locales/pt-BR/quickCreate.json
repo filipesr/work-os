@@ -1,0 +1,38 @@
+{
+  "client": {
+    "buttonLabel": "Novo Cliente",
+    "title": "Criar Novo Cliente",
+    "description": "Adicione um novo cliente rapidamente. Você poderá editar mais detalhes depois.",
+    "nameLabel": "Nome do Cliente",
+    "namePlaceholder": "Ex: Empresa XYZ Ltda",
+    "emailLabel": "Email",
+    "emailPlaceholder": "contato@empresa.com",
+    "phoneLabel": "Telefone",
+    "phonePlaceholder": "(11) 99999-9999",
+    "descriptionLabel": "Descrição",
+    "descriptionPlaceholder": "Informações adicionais sobre o cliente...",
+    "cancel": "Cancelar",
+    "creating": "Criando...",
+    "create": "Criar Cliente",
+    "errorRequired": "Nome do cliente é obrigatório",
+    "successMessage": "Cliente \"{name}\" criado com sucesso!"
+  },
+  "project": {
+    "buttonLabel": "Novo Projeto",
+    "title": "Criar Novo Projeto",
+    "description": "Adicione um novo projeto rapidamente. Você poderá editar mais detalhes depois.",
+    "clientLabel": "Cliente",
+    "clientPlaceholder": "Selecione um cliente",
+    "noClients": "Nenhum cliente cadastrado",
+    "nameLabel": "Nome do Projeto",
+    "namePlaceholder": "Ex: Website Institucional",
+    "descriptionLabel": "Descrição",
+    "descriptionPlaceholder": "Informações adicionais sobre o projeto...",
+    "cancel": "Cancelar",
+    "creating": "Criando...",
+    "create": "Criar Projeto",
+    "errorNameRequired": "Nome do projeto é obrigatório",
+    "errorClientRequired": "Selecione um cliente",
+    "successMessage": "Projeto \"{name}\" criado com sucesso!"
+  }
+}
