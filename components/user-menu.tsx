@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, User, LogOut, Settings } from "lucide-react";
+import { ChevronDown, User, LogOut, Settings, BarChart3, TrendingUp, Activity, GitBranch } from "lucide-react";
 import { signOutAction } from "@/lib/actions/auth";
 import { useTranslations } from "next-intl";
 
@@ -42,6 +42,40 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
           <span>{t("nav.settings")}</span>
         </div>
       </DropdownMenuItem>
+
+      <DropdownMenuSeparator />
+
+      <DropdownMenuItem href="/task-flow">
+        <div className="flex items-center gap-2">
+          <GitBranch className="h-4 w-4" />
+          <span>{t("nav.taskFlow")}</span>
+        </div>
+      </DropdownMenuItem>
+
+      {(userRole === UserRole.ADMIN || userRole === UserRole.MANAGER) && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>{t("nav.reports")}</DropdownMenuLabel>
+          <DropdownMenuItem href="/reports/productivity">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              <span>{t("nav.productivity")}</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem href="/reports/performance">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              <span>{t("nav.performance")}</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem href="/reports/live-activity">
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              <span>{t("nav.liveActivity")}</span>
+            </div>
+          </DropdownMenuItem>
+        </>
+      )}
 
       {(userRole === UserRole.ADMIN || userRole === UserRole.MANAGER) && (
         <>

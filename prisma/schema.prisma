@@ -237,6 +237,10 @@ model TaskActiveStage {
 
   // Unique constraint: A task cannot have the same stage active twice
   @@unique([taskId, stageId])
+  // Composite indexes para queries de dashboard otimizadas
+  @@index([assigneeId, status]) // getMyActiveStages: WHERE assigneeId = ? AND status = 'ACTIVE'
+  @@index([stageId, assigneeId, status]) // getTeamBacklog: WHERE stageId IN (...) AND assigneeId IS NULL AND status = 'ACTIVE'
+  @@index([status, completedAt]) // stats completedThisWeek: WHERE status = 'COMPLETED' AND completedAt >= ?
   @@index([taskId])
   @@index([stageId])
   @@index([assigneeId])

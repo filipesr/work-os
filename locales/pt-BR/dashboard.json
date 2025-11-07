@@ -64,7 +64,9 @@
     }
   },
   "teamBacklog": {
-    "title": "Backlog da Equipe (Não Atribuído)"
+    "title": "Backlog da Equipe (Não Atribuído)",
+    "stageCount": "{count} etapa disponível",
+    "stagesCount": "{count} etapas disponíveis"
   },
   "emptyStates": {
     "noActiveStages": "Você não tem etapas ativas. Bom trabalho!",

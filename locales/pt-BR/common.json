@@ -9,7 +9,10 @@
     "taskFlow": "Fluxo de Tarefas",
     "myAccount": "Minha Conta",
     "settings": "Configurações",
-    "adminDashboard": "Admin Dashboard"
+    "adminDashboard": "Admin Dashboard",
+    "productivity": "Produtividade",
+    "performance": "Gargalos",
+    "liveActivity": "Atividade ao Vivo"
   },
   "buttons": {
     "save": "Salvar",

@@ -9,7 +9,10 @@
     "taskFlow": "Flujo de Tareas",
     "myAccount": "Mi Cuenta",
     "settings": "Configuración",
-    "adminDashboard": "Panel de Administración"
+    "adminDashboard": "Panel de Administración",
+    "productivity": "Productividad",
+    "performance": "Cuellos de Botella",
+    "liveActivity": "Actividad en Vivo"
   },
   "buttons": {
     "save": "Guardar",
