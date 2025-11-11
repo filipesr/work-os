@@ -128,18 +128,18 @@ export default function LiveActivityPage() {
                 <DialogHeader>
                   <DialogTitle>{t("help.title")}</DialogTitle>
                   <DialogDescription className="space-y-3 pt-4">
-                    <div>
+                    <span>
                       {t("help.online")}
-                    </div>
-                    <div>
+                    </span>
+                    <span>
                       {t("help.offline")}
-                    </div>
-                    <div>
+                    </span>
+                    <span>
                       {t("help.working")}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
+                    </span>
+                    <span className="text-xs text-muted-foreground">
                       💡 {t("help.autoUpdate")}
-                    </div>
+                    </span>
                   </DialogDescription>
                 </DialogHeader>
               </DialogContent>
