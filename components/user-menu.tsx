@@ -43,15 +43,6 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
         </div>
       </DropdownMenuItem>
 
-      <DropdownMenuSeparator />
-
-      <DropdownMenuItem href="/task-flow">
-        <div className="flex items-center gap-2">
-          <GitBranch className="h-4 w-4" />
-          <span>{t("nav.taskFlow")}</span>
-        </div>
-      </DropdownMenuItem>
-
       {(userRole === UserRole.ADMIN || userRole === UserRole.MANAGER) && (
         <>
           <DropdownMenuSeparator />
@@ -94,6 +85,16 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
           <DropdownMenuItem href="/admin/templates">{tAdmin("nav.workflows")}</DropdownMenuItem>
         </>
       )}
+
+      <DropdownMenuSeparator />
+
+      <DropdownMenuLabel>Help</DropdownMenuLabel>
+      <DropdownMenuItem href="/task-flow">
+        <div className="flex items-center gap-2">
+          <GitBranch className="h-4 w-4" />
+          <span>{t("nav.taskFlow")}</span>
+        </div>
+      </DropdownMenuItem>
 
       <DropdownMenuSeparator />
       <form action={signOutAction}>
