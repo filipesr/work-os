@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, CheckCircle2, XCircle, Users, FileText, Palette, Code, Search, Sparkles } from "lucide-react"
+import { ArrowRight, CheckCircle2, XCircle, Users, FileText, Palette, Code, Search, Sparkles, GitBranch, GitMerge, Lock, Zap, Eye, Bot } from "lucide-react"
 import { getTranslations } from "next-intl/server"
 
 export default async function TaskFlowPresentation() {
@@ -35,6 +35,62 @@ export default async function TaskFlowPresentation() {
             </CardDescription>
           </CardHeader>
         </Card>
+
+        {/* Concepts Section */}
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold mb-6 text-center">{t("concepts.title")}</h2>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <Card className="border-blue-500/50">
+              <CardHeader>
+                <div className="flex items-center gap-2 mb-2">
+                  <GitBranch className="h-6 w-6 text-blue-500" />
+                  <CardTitle className="text-lg">{t("concepts.taskActiveStage.title")}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm">{t("concepts.taskActiveStage.description")}</p>
+                <div className="bg-muted p-3 rounded text-xs space-y-2">
+                  <p className="text-red-600 dark:text-red-400">❌ {t("concepts.taskActiveStage.traditional")}</p>
+                  <p className="text-green-600 dark:text-green-400">✅ {t("concepts.taskActiveStage.new")}</p>
+                </div>
+                <div className="text-xs space-y-1">
+                  <p className="font-semibold">{t("concepts.taskActiveStage.statuses.title")}</p>
+                  <p className="text-green-600">🟢 {t("concepts.taskActiveStage.statuses.active")}</p>
+                  <p className="text-orange-600">⏸️ {t("concepts.taskActiveStage.statuses.blocked")}</p>
+                  <p className="text-gray-600">✅ {t("concepts.taskActiveStage.statuses.completed")}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-purple-500/50">
+              <CardHeader>
+                <div className="flex items-center gap-2 mb-2">
+                  <Eye className="h-6 w-6 text-purple-500" />
+                  <CardTitle className="text-lg">{t("concepts.dashboard.title")}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm">{t("concepts.dashboard.description")}</p>
+                <div className="bg-purple-50 dark:bg-purple-950 p-3 rounded text-xs">
+                  <p className="font-semibold mb-2">💡 {t("concepts.dashboard.example")}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-green-500/50">
+              <CardHeader>
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-6 w-6 text-green-500" />
+                  <CardTitle className="text-lg">{t("concepts.assignment.title")}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm">{t("concepts.assignment.description")}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         {/* Step 1: Conception */}
         <div className="mb-12">
@@ -239,7 +295,7 @@ export default async function TaskFlowPresentation() {
           </Card>
         </div>
 
-        {/* Step 6: Parallel Work */}
+        {/* Step 6: Parallel Work - FORK */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-6">
             <Badge variant="default" className="text-lg px-4 py-2">{t("step6.badge")}</Badge>
@@ -249,14 +305,14 @@ export default async function TaskFlowPresentation() {
           <Card className="border-purple-500/50">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Search className="h-6 w-6 text-purple-500" />
+                <GitBranch className="h-6 w-6 text-purple-500" />
                 <CardTitle>{t("step6.actor")}</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-purple-50 dark:bg-purple-950 border-2 border-purple-500 p-4 rounded-lg">
                 <p className="flex items-center gap-2 font-semibold text-purple-700 dark:text-purple-300">
-                  <Sparkles className="h-5 w-5" />
+                  <GitBranch className="h-5 w-5" />
                   {t("step6.highlightTitle")}
                 </p>
                 <p className="mt-2 text-sm text-purple-600 dark:text-purple-400">
@@ -264,9 +320,36 @@ export default async function TaskFlowPresentation() {
                 </p>
               </div>
 
+              {/* What happens during Fork */}
+              <div className="bg-muted p-4 rounded-lg">
+                <p className="font-semibold mb-3">{t("step6.whatHappens")}</p>
+                <ol className="list-decimal list-inside space-y-2 text-sm ml-2">
+                  <li>{t("step6.forkSteps.1")}</li>
+                  <li>{t("step6.forkSteps.2")}</li>
+                  <li>{t("step6.forkSteps.3")}</li>
+                  <li>{t("step6.forkSteps.4")}</li>
+                </ol>
+              </div>
+
+              {/* Dashboard Visibility */}
+              <div className="bg-blue-50 dark:bg-blue-950 border-2 border-blue-500 p-4 rounded-lg">
+                <p className="font-semibold text-blue-700 dark:text-blue-300 mb-2">
+                  {t("step6.dashboardTitle")}
+                </p>
+                <p className="text-sm text-blue-600 dark:text-blue-400 mb-3">
+                  {t("step6.dashboardText")}
+                </p>
+                <ul className="list-disc list-inside text-sm space-y-1 ml-2 text-blue-600 dark:text-blue-400">
+                  <li>{t("step6.dashboardItems.1")}</li>
+                  <li>{t("step6.dashboardItems.2")}</li>
+                  <li>{t("step6.dashboardItems.3")}</li>
+                </ul>
+              </div>
+
+              {/* Parallel Work */}
               <div className="grid md:grid-cols-2 gap-4 mt-4">
-                <div className="bg-muted p-4 rounded-lg">
-                  <p className="font-semibold mb-2">{t("step6.qcTitle")}</p>
+                <div className="bg-muted p-4 rounded-lg border-2 border-green-300">
+                  <p className="font-semibold mb-2 text-green-700 dark:text-green-400">{t("step6.qcTitle")}</p>
                   <ul className="list-disc list-inside text-sm space-y-1">
                     <li>{t("step6.qcTasks.1")}</li>
                     <li>{t("step6.qcTasks.2")}</li>
@@ -274,8 +357,8 @@ export default async function TaskFlowPresentation() {
                     <li>{t("step6.qcTasks.4")}</li>
                   </ul>
                 </div>
-                <div className="bg-muted p-4 rounded-lg">
-                  <p className="font-semibold mb-2">{t("step6.seoTitle")}</p>
+                <div className="bg-muted p-4 rounded-lg border-2 border-green-300">
+                  <p className="font-semibold mb-2 text-green-700 dark:text-green-400">{t("step6.seoTitle")}</p>
                   <ul className="list-disc list-inside text-sm space-y-1">
                     <li>{t("step6.seoTasks.1")}</li>
                     <li>{t("step6.seoTasks.2")}</li>
@@ -283,6 +366,17 @@ export default async function TaskFlowPresentation() {
                     <li>{t("step6.seoTasks.4")}</li>
                   </ul>
                 </div>
+              </div>
+
+              {/* Time Savings */}
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950 dark:to-orange-950 border-2 border-yellow-500 p-4 rounded-lg">
+                <p className="flex items-center gap-2 font-semibold text-yellow-700 dark:text-yellow-300">
+                  <Zap className="h-5 w-5" />
+                  {t("step6.timeSavingsTitle")}
+                </p>
+                <p className="text-sm mt-2 text-yellow-600 dark:text-yellow-400">
+                  {t("step6.timeSavingsText")}
+                </p>
               </div>
 
               <div className="bg-green-50 dark:bg-green-950 border-2 border-green-500 p-4 rounded-lg mt-4">
@@ -343,6 +437,126 @@ export default async function TaskFlowPresentation() {
           </Card>
         </div>
 
+        {/* JOIN Example */}
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <Badge variant="default" className="text-lg px-4 py-2 bg-orange-500">{t("joinExample.badge")}</Badge>
+            <h2 className="text-3xl font-bold text-foreground">{t("joinExample.title")}</h2>
+          </div>
+
+          <Card className="border-orange-500/50">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <GitMerge className="h-6 w-6 text-orange-500" />
+                <CardTitle>{t("joinExample.subtitle")}</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Scenario */}
+              <div className="bg-orange-50 dark:bg-orange-950 border-2 border-orange-500 p-4 rounded-lg">
+                <p className="font-semibold text-orange-700 dark:text-orange-300 mb-2">
+                  {t("joinExample.scenario")}
+                </p>
+                <p className="text-sm text-orange-600 dark:text-orange-400">
+                  {t("joinExample.scenarioText")}
+                </p>
+                <div className="mt-3 bg-white dark:bg-gray-900 p-3 rounded">
+                  <p className="font-semibold text-xs mb-1">{t("joinExample.workflow.title")}</p>
+                  <p className="text-xs font-mono">{t("joinExample.workflow.stages")}</p>
+                </div>
+              </div>
+
+              <p className="font-semibold">{t("joinExample.whatHappens")}</p>
+
+              {/* Step 1: First completion */}
+              <div className="bg-muted p-4 rounded-lg">
+                <p className="font-semibold mb-3 text-blue-700 dark:text-blue-400">
+                  {t("joinExample.step1Title")}
+                </p>
+                <ol className="list-decimal list-inside space-y-2 text-sm ml-2">
+                  <li>{t("joinExample.step1Items.1")}</li>
+                  <li>{t("joinExample.step1Items.2")}</li>
+                  <li>{t("joinExample.step1Items.3")}</li>
+                  <li>{t("joinExample.step1Items.4")}</li>
+                  <li className="font-semibold text-orange-600">{t("joinExample.step1Items.5")}</li>
+                </ol>
+              </div>
+
+              {/* Step 2: JOIN happens */}
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-2 border-green-500 p-4 rounded-lg">
+                <p className="font-semibold mb-3 text-green-700 dark:text-green-400">
+                  {t("joinExample.step2Title")}
+                </p>
+                <ol className="list-decimal list-inside space-y-2 text-sm ml-2">
+                  <li>{t("joinExample.step2Items.1")}</li>
+                  <li>{t("joinExample.step2Items.2")}</li>
+                  <li>{t("joinExample.step2Items.3")}</li>
+                  <li>{t("joinExample.step2Items.4")}</li>
+                  <li className="font-bold text-green-700 dark:text-green-300">{t("joinExample.step2Items.5")}</li>
+                  <li>{t("joinExample.step2Items.6")}</li>
+                </ol>
+              </div>
+
+              {/* Dashboard Visualization */}
+              <div className="bg-blue-50 dark:bg-blue-950 border-2 border-blue-500 p-4 rounded-lg">
+                <p className="font-semibold text-blue-700 dark:text-blue-300 mb-3">
+                  {t("joinExample.visualTitle")}
+                </p>
+
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                      {t("joinExample.visualBefore")}
+                    </p>
+                    <div className="bg-orange-100 dark:bg-orange-900 p-3 rounded border-l-4 border-orange-500">
+                      <p className="text-sm font-mono">
+                        {t("joinExample.visualBeforeText")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                      {t("joinExample.visualAfter")}
+                    </p>
+                    <div className="bg-green-100 dark:bg-green-900 p-3 rounded border-l-4 border-green-500">
+                      <p className="text-sm font-mono">
+                        {t("joinExample.visualAfterText")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Point */}
+              <div className="bg-purple-50 dark:bg-purple-950 border-2 border-purple-500 p-4 rounded-lg">
+                <p className="flex items-center gap-2 font-semibold text-purple-700 dark:text-purple-300">
+                  <Lock className="h-5 w-5" />
+                  {t("joinExample.keyPointTitle")}
+                </p>
+                <p className="text-sm mt-2 text-purple-600 dark:text-purple-400">
+                  {t("joinExample.keyPointText")}
+                </p>
+              </div>
+
+              {/* Comparison */}
+              <div className="bg-muted p-4 rounded-lg">
+                <p className="font-semibold mb-3">{t("joinExample.comparisonTitle")}</p>
+                <div className="space-y-2 text-sm">
+                  <p className="flex items-center gap-2">
+                    <GitBranch className="h-4 w-4 text-purple-500" />
+                    <span className="font-semibold">FORK:</span> {t("joinExample.fork")}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <GitMerge className="h-4 w-4 text-orange-500" />
+                    <span className="font-semibold">JOIN:</span> {t("joinExample.join")}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Summary */}
         <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/30">
           <CardHeader>
@@ -359,6 +573,29 @@ export default async function TaskFlowPresentation() {
             </ul>
             <div className="mt-6 p-4 bg-primary text-primary-foreground rounded-lg text-center">
               <p className="text-xl font-bold">{t("summary.conclusion")}</p>
+            </div>
+
+            {/* Benefits */}
+            <div className="mt-8">
+              <p className="font-semibold text-xl mb-4">{t("summary.benefits.title")}</p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3 bg-background p-4 rounded-lg border">
+                  <Zap className="h-6 w-6 text-yellow-500 flex-shrink-0 mt-1" />
+                  <p className="text-sm">{t("summary.benefits.parallelization")}</p>
+                </div>
+                <div className="flex items-start gap-3 bg-background p-4 rounded-lg border">
+                  <Lock className="h-6 w-6 text-purple-500 flex-shrink-0 mt-1" />
+                  <p className="text-sm">{t("summary.benefits.synchronization")}</p>
+                </div>
+                <div className="flex items-start gap-3 bg-background p-4 rounded-lg border">
+                  <Eye className="h-6 w-6 text-blue-500 flex-shrink-0 mt-1" />
+                  <p className="text-sm">{t("summary.benefits.visibility")}</p>
+                </div>
+                <div className="flex items-start gap-3 bg-background p-4 rounded-lg border">
+                  <Bot className="h-6 w-6 text-green-500 flex-shrink-0 mt-1" />
+                  <p className="text-sm">{t("summary.benefits.automation")}</p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

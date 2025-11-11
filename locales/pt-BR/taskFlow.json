@@ -96,27 +96,43 @@
     }
   },
   "step6": {
-    "badge": "Etapas 5 & 6",
+    "badge": "Etapas 5 & 6 - FORK",
     "title": "QC e SEO - Trabalho Paralelo",
-    "actor": "A Mágica do Sistema",
-    "highlightTitle": "Trabalho Simultâneo",
-    "highlightText": "O Dev era dependência para duas etapas. A tarefa aparece SIMULTANEAMENTE na fila de Quality Control E na fila de SEO.",
-    "qcTitle": "Equipe QC:",
+    "actor": "A Mágica do Sistema: FORK",
+    "highlightTitle": "🔀 FORK: Trabalho Simultâneo",
+    "highlightText": "O Dev (Etapa 4) era dependência para DUAS etapas diferentes. O sistema executa um FORK: ativa QC E SEO simultaneamente!",
+    "whatHappens": "O que acontece quando o Dev clica em 'Concluir Etapa':",
+    "forkSteps": {
+      "1": "Sistema detecta que Dev é dependência de QC e SEO",
+      "2": "Cria TaskActiveStage para QC com status ACTIVE",
+      "3": "Cria TaskActiveStage para SEO com status ACTIVE",
+      "4": "Ambas as etapas aparecem simultaneamente nos respectivos dashboards"
+    },
+    "dashboardTitle": "Visibilidade no Dashboard:",
+    "dashboardText": "A tarefa 'LP Lançamento Produto X' agora aparece DUAS VEZES nos dashboards:",
+    "dashboardItems": {
+      "1": "Uma entrada no dashboard do time de QC (etapa QC)",
+      "2": "Uma entrada no dashboard do time de SEO (etapa SEO)",
+      "3": "São a MESMA tarefa, mas em etapas diferentes, trabalhando em paralelo!"
+    },
+    "qcTitle": "Equipe QC trabalha simultaneamente:",
     "qcTasks": {
       "1": "Testa todos os links",
       "2": "Verifica responsividade",
       "3": "Valida funcionalidades",
-      "4": "Clica em Concluir Etapa"
+      "4": "Clica em Concluir Etapa (QC marcada como COMPLETED)"
     },
-    "seoTitle": "Equipe SEO:",
+    "seoTitle": "Equipe SEO trabalha simultaneamente:",
     "seoTasks": {
       "1": "Otimiza meta tags",
       "2": "Ajusta URLs",
       "3": "Configura Analytics",
-      "4": "Clica em Concluir Etapa"
+      "4": "Clica em Concluir Etapa (SEO marcada como COMPLETED)"
     },
+    "timeSavingsTitle": "⏱️ Economia de Tempo:",
+    "timeSavingsText": "Sem Fork (linear): QC (2 dias) + SEO (2 dias) = 4 dias. Com Fork (paralelo): QC e SEO simultâneos = 2 dias. Economia: 50%!",
     "keyPointTitle": "Ponto Chave:",
-    "keyPointText": "Não precisamos esperar o QC terminar para o SEO começar. As duas equipes trabalham em paralelo, economizando dias de projeto!"
+    "keyPointText": "Não precisamos esperar o QC terminar para o SEO começar. As duas equipes trabalham em paralelo, sem bloqueios, economizando dias de projeto!"
   },
   "step7": {
     "badge": "Conclusão",
@@ -147,6 +163,69 @@
       }
     }
   },
+  "joinExample": {
+    "badge": "Exemplo: JOIN",
+    "title": "Entendendo JOIN - Sincronização de Dependências",
+    "subtitle": "O que acontece quando uma etapa depende de MÚLTIPLAS etapas anteriores",
+    "scenario": "Cenário: Deploy de Produção",
+    "scenarioText": "Imagine que adicionamos uma etapa final 'Deploy' que depende de QC E SEO estarem completos (ambas as etapas!).",
+    "workflow": {
+      "title": "Workflow Completo:",
+      "stages": "Design → Dev → (QC + SEO em paralelo) → Deploy"
+    },
+    "whatHappens": "O que acontece:",
+    "step1Title": "1. QC completa primeiro:",
+    "step1Items": {
+      "1": "Equipe de QC clica em 'Concluir Etapa' na etapa QC",
+      "2": "Sistema marca QC como COMPLETED",
+      "3": "Sistema verifica: Deploy depende de QC E SEO",
+      "4": "SEO ainda está ACTIVE (não completou)",
+      "5": "Deploy é criado como BLOCKED (aguardando SEO)"
+    },
+    "step2Title": "2. SEO completa depois:",
+    "step2Items": {
+      "1": "Equipe de SEO clica em 'Concluir Etapa' na etapa SEO",
+      "2": "Sistema marca SEO como COMPLETED",
+      "3": "Sistema verifica: Deploy estava BLOCKED aguardando SEO",
+      "4": "TODAS as dependências agora estão COMPLETED (QC ✓ + SEO ✓)",
+      "5": "🔀 JOIN ACONTECE: Deploy muda automaticamente de BLOCKED para ACTIVE!",
+      "6": "Deploy aparece no dashboard do time de DevOps"
+    },
+    "visualTitle": "Visualização no Dashboard do Time de DevOps:",
+    "visualBefore": "Antes (QC completo, SEO em progresso):",
+    "visualBeforeText": "⏸️ Deploy - BLOQUEADO - Aguardando: SEO (QC já completo)",
+    "visualAfter": "Depois (QC e SEO completos):",
+    "visualAfterText": "🔵 Deploy - ATIVO - Pronto para trabalho! Pegue esta etapa.",
+    "keyPointTitle": "Ponto Chave do JOIN:",
+    "keyPointText": "O JOIN garante que uma etapa SÓ é ativada quando TODAS as dependências são satisfeitas. Isso previne trabalho prematuro e garante que todas as validações necessárias foram feitas antes de prosseguir.",
+    "comparisonTitle": "Comparação Fork vs Join:",
+    "fork": "FORK = Uma etapa completa → Múltiplas etapas ativam (divisão/paralelização)",
+    "join": "JOIN = Múltiplas etapas completam → Uma etapa ativa (sincronização/convergência)"
+  },
+  "concepts": {
+    "title": "Conceitos Fundamentais do Sistema",
+    "taskActiveStage": {
+      "title": "TaskActiveStage - Múltiplas Etapas Simultâneas",
+      "description": "Diferente de sistemas tradicionais onde uma tarefa tem apenas UMA etapa atual, nosso sistema permite MÚLTIPLAS etapas ativas simultaneamente através do modelo TaskActiveStage.",
+      "traditional": "Sistema Tradicional: 1 Tarefa = 1 Etapa Atual",
+      "new": "Sistema Novo: 1 Tarefa = N Etapas Ativas (Fork) + M Etapas Bloqueadas (Join)",
+      "statuses": {
+        "title": "Status das Etapas:",
+        "active": "ACTIVE: Pronta para trabalho, todas dependências satisfeitas",
+        "blocked": "BLOCKED: Criada mas aguardando dependências serem completadas",
+        "completed": "COMPLETED: Trabalho finalizado nesta etapa"
+      }
+    },
+    "dashboard": {
+      "title": "Dashboard por Etapa (não por Tarefa)",
+      "description": "O dashboard mostra UMA ENTRADA por ETAPA ATIVA, não por tarefa. Se uma tarefa tem 3 etapas ativas, aparecem 3 cards no dashboard.",
+      "example": "Exemplo: Tarefa 'Landing Page' com Front-end e Back-end ativos = 2 cards no dashboard (um para cada etapa)"
+    },
+    "assignment": {
+      "title": "Atribuição por Etapa",
+      "description": "Cada etapa ativa pode ter seu próprio assignee. Front-end pode ser atribuído para João enquanto Back-end é atribuído para Maria, na mesma tarefa!"
+    }
+  },
   "summary": {
     "title": "Resumo da Apresentação",
     "intro": "Em 5 minutos, a tarefa navegou por 5 equipes diferentes, teve uma revisão (rejeição) e duas equipes trabalharam em paralelo, sem que ninguém precisasse:",
@@ -155,7 +234,14 @@
       "2": "Mandar uma mensagem no WhatsApp",
       "3": "\"Cutucar\" o colega perguntando \"E aí, já terminou?\""
     },
-    "conclusion": "Tudo acontece automaticamente. Tudo fica registrado. Zero fricção."
+    "conclusion": "Tudo acontece automaticamente. Tudo fica registrado. Zero fricção.",
+    "benefits": {
+      "title": "Benefícios do Sistema Fork/Join:",
+      "parallelization": "⚡ Paralelização: Economize até 50% do tempo em workflows com Fork",
+      "synchronization": "🔒 Sincronização: Join garante que todas as validações foram feitas",
+      "visibility": "👁️ Visibilidade: Dashboard mostra exatamente quem está aguardando quem",
+      "automation": "🤖 Automação: Transições acontecem automaticamente sem intervenção manual"
+    }
   },
   "footer": {
     "text": "Work OS - Sistema de Gestão de Operações"
