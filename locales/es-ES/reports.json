@@ -46,7 +46,7 @@
     "title": "Estado de los Usuarios",
     "subtitle": "Visualiza el estado de todos los usuarios en tiempo real (actualiza cada 10 segundos)",
     "allUsers": "Todos los Usuarios",
-    "online": "En Línea (accedió hoy)",
+    "online": "En Línea",
     "offline": "Desconectado",
     "working": "TRABAJANDO",
     "lastSeen": "Visto",
