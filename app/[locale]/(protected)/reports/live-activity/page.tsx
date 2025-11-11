@@ -215,10 +215,20 @@ export default function LiveActivityPage() {
                       `}
                     >
                       {/* Badge de status no canto */}
-                      {user.activeLog && (
-                        <div className="absolute top-2 right-2">
-                          <span className="bg-white/90 text-green-600 px-2 py-1 rounded-full text-xs font-bold shadow-sm">
-                            {t("working")}
+                      {user.lastSeenAt && (
+                        <div className="absolute top-2 right-2 ">
+                          <span className="bg-white/90 px-2 py-1 rounded-md shadow-sm flex flex-col items-end">
+                            <span className="text-green-600 text-xs font-bold">
+                              {user.activeLog ? user.activeLog.task.title : t("online")}
+                            </span>
+                            {user.activeLog && (
+                              <span className="text-gray-600 text-[0.5rem]">
+                                {user.activeLog.task.project.name}
+                                {durationHours !== undefined && (
+                                  durationHours > 0 ? ` - ${durationHours}h ${remainingMinutes}min`: ` - ${durationMinutes}min`
+                                )}
+                              </span>
+                            )}
                           </span>
                         </div>
                       )}
@@ -245,63 +255,30 @@ export default function LiveActivityPage() {
                     </div>
 
                     {/* Conteúdo empilhado verticalmente */}
-                    <div className="px-4 pb-4 space-y-3 text-center">
+                    <div className="px-4 pb-4 text-center">
                       {/* Nome */}
                       <h3 className={`font-bold text-lg truncate ${!user.isOnline ? "text-gray-600" : ""}`}>
                         {user.name || user.email}
                       </h3>
 
                       {/* Equipe */}
-                      <p className={`text-xs ${!user.isOnline ? "text-gray-500" : "text-muted-foreground"}`}>
+                      <p className={`text-xs pb-3 ${!user.isOnline ? "text-gray-500" : "text-muted-foreground"}`}>
                         {user.team?.name || t("noTeam")}
                       </p>
 
-                      {/* Informações da tarefa (se ativo) */}
-                      {user.activeLog ? (
-                        <div className="space-y-2 pt-2 border-t">
-                          <p className="text-sm font-medium text-foreground truncate" title={user.activeLog.task.title}>
-                            {user.activeLog.task.title}
-                          </p>
-                          <div className="text-xs text-muted-foreground space-y-1">
-                            <p className="truncate" title={`${user.activeLog.task.project.name} (${user.activeLog.task.project.client.name})`}>
-                              📁 {user.activeLog.task.project.name}
-                            </p>
-                            <p className="truncate" title={user.activeLog.stage.name}>
-                              📌 {user.activeLog.stage.name}
-                            </p>
-                          </div>
-                          {/* Tempo trabalhado */}
-                          <div className="flex items-center justify-center gap-1 text-sm font-bold text-green-600 pt-1">
-                            <Clock className="h-4 w-4" />
-                            {durationHours !== undefined && durationHours > 0 ? (
-                              <span>{durationHours}h {remainingMinutes}min</span>
-                            ) : (
-                              <span>{durationMinutes} min</span>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {t("started")}{" "}
-                            {formatDistanceToNow(new Date(user.activeLog.startedAt), {
+                      <div className="pt-2 border-t text-xs text-muted-foreground">
+                        {user.lastSeenAt ? (
+                          <p>
+                            {t("lastSeen")}{" "}
+                            {formatDistanceToNow(new Date(user.lastSeenAt), {
                               addSuffix: true,
                               locale: dateLocale,
                             })}
                           </p>
-                        </div>
-                      ) : (
-                        <div className="pt-2 border-t text-xs text-muted-foreground">
-                          {user.lastSeenAt ? (
-                            <p>
-                              {t("lastSeen")}{" "}
-                              {formatDistanceToNow(new Date(user.lastSeenAt), {
-                                addSuffix: true,
-                                locale: dateLocale,
-                              })}
-                            </p>
-                          ) : (
-                            <p>{t("neverAccessed")}</p>
-                          )}
-                        </div>
-                      )}
+                        ) : (
+                          <p>{t("neverAccessed")}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
