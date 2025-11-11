@@ -40,14 +40,16 @@ export async function Navbar() {
             )}
 
             {/* Tarefas: Para admin/manager vai para /admin/tasks, para outros vai para /dashboard */}
-            <Link
-              href={isAdminOrManager ? "/admin/tasks" : "/dashboard"}
-              className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
-            >
-              {t("tasks")}
-            </Link>
-          </div>
+            {isAdminOrManager && (
+              <Link
+                href="/admin/tasks"
+                className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
+              >
+                {t("tasks")}
+              </Link>
+            )}
 
+          </div>
           <div className="flex items-center space-x-4">
             <UserMenu userName={session.user.name ?? null} userRole={userRole} />
           </div>

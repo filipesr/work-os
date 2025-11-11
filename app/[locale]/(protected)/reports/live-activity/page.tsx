@@ -102,7 +102,7 @@ export default function LiveActivityPage() {
   });
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -165,7 +165,7 @@ export default function LiveActivityPage() {
             <Activity className="h-5 w-5" />
             {t("allUsers")} ({allUsers.length})
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground hidden">
             <span className="text-green-600 font-medium">{t("online")}</span> |
             <span className="text-red-600 font-medium"> {t("offline")}</span>
           </p>
@@ -182,7 +182,7 @@ export default function LiveActivityPage() {
               <p className="text-lg font-medium">{t("noUsers")}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="flex flex-wrap justify-center gap-4">
               {allUsers.map((user) => {
                 // Calculate duration for users actively working
                 let duration, durationMinutes, durationHours, remainingMinutes;
@@ -196,7 +196,7 @@ export default function LiveActivityPage() {
                 const cardContent = (
                   <div
                     className={`
-                      relative overflow-hidden rounded-xl transition-all
+                      relative overflow-hidden rounded-xl transition-all w-52
                       ${user.isOnline
                         ? "border-2 border-green-500 shadow-lg shadow-green-500/20 hover:shadow-xl"
                         : "border-2 border-gray-300 grayscale opacity-60"
@@ -285,7 +285,7 @@ export default function LiveActivityPage() {
 
                 // Return wrapped in Link if activeLog exists, otherwise plain div
                 return user.activeLog ? (
-                  <Link key={user.id} href={`/tasks/${user.activeLog.task.id}`}>
+                  <Link key={user.id} href={`/tasks/${user.activeLog.task.id}`} target="_blank">
                     {cardContent}
                   </Link>
                 ) : (
