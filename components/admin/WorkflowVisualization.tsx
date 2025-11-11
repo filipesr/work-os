@@ -93,13 +93,13 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
         {t("subtitle")}
       </p>
 
-      <div className="flex flex-col space-y-4">
+      <div className="flex flex-col">
         {levels.map((level, levelIndex) => (
           <div key={levelIndex}>
             {/* Stages in this level (can happen in parallel) */}
-            <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center justify-center gap-4 flex-wrap ">
               {level.length > 1 && (
-                <div className="w-full mb-2">
+                <div className="w-full text-center mb-2">
                   <Badge variant="secondary" className="text-xs">
                     {t("parallelExecution", { count: level.length })}
                   </Badge>
@@ -151,7 +151,6 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
             {levelIndex < levels.length - 1 && (
               <div className="flex justify-center py-2">
                 <div className="flex flex-col items-center">
-                  <div className="w-0.5 h-8 bg-primary"></div>
                   <ArrowRight className="h-5 w-5 text-primary rotate-90" />
                 </div>
               </div>
