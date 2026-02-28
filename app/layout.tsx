@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/toast-provider";
 
+const inter = Inter({ subsets: ["latin"] });
+
 export const metadata: Metadata = {
-  title: "Work OS - Sistema de Gestão de Operações",
+  title: {
+    template: "%s | Work OS",
+    default: "Work OS - Sistema de Gestão de Operações",
+  },
   description: "Sistema de gestão de operações para agências",
 };
 
@@ -14,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html>
-      <body>
+      <body className={inter.className}>
         {children}
         <ToastProvider />
       </body>

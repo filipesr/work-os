@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
@@ -6,6 +7,10 @@ import { getTranslations } from "next-intl/server";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { MyActiveStagesWidget, TeamBacklogWidget } from "@/components/dashboard/ActiveStagesWidget";
 import { StatsCardSkeleton, TableSkeleton } from "@/components/dashboard/DashboardSkeleton";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+};
 
 /**
  * Dashboard Page - Optimized with Suspense boundaries

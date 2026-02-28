@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { ActiveStageStatus } from "@prisma/client";
 import { getMyAllStages } from "@/lib/actions/task";
@@ -8,7 +9,11 @@ import type { MyAllStagesResult, ActiveStageWithDetails } from "@/lib/actions/ta
 import { MyStagesFilters } from "./MyStagesFilters";
 import { MyStagesKPIs } from "./MyStagesKPIs";
 import { MyStagesTable } from "./MyStagesTable";
-import { StageDetailModal } from "./StageDetailModal";
+
+const StageDetailModal = dynamic(
+  () => import("./StageDetailModal").then((mod) => mod.StageDetailModal),
+  { ssr: false }
+);
 
 interface MyStagesPageClientProps {
   initialData: MyAllStagesResult;

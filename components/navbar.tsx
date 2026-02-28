@@ -25,7 +25,7 @@ export async function Navbar() {
   const isAdminOrManager = userRole === UserRole.ADMIN || userRole === UserRole.MANAGER
 
   return (
-    <nav className="bg-card shadow-lg border-b-2 border-border">
+    <nav className="bg-card shadow-lg border-b-2 border-border" aria-label="Main navigation">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex space-x-8">

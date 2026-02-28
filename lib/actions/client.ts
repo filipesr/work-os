@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireMemberOrHigher } from "@/lib/permissions";
+import { createClientSchema } from "@/lib/validations";
 
 interface CreateClientData {
   name: string;
@@ -15,11 +16,12 @@ export async function createClient(data: CreateClientData) {
   try {
     await requireMemberOrHigher();
 
-    const { name, description, email, phone } = data;
-
-    if (!name || !name.trim()) {
-      return { error: "Nome do cliente é obrigatório" };
+    const parsed = createClientSchema.safeParse(data);
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0].message };
     }
+
+    const { name, description, email, phone } = parsed.data;
 
     const client = await prisma.client.create({
       data: {

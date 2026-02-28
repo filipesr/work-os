@@ -5,6 +5,11 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireMemberOrHigher, getSessionUser } from "@/lib/permissions";
+import { createTaskSchema } from "@/lib/validations";
+import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
+
+// Re-export types for backward compatibility
+export type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
 // Helper to get current user
 async function getCurrentUser() {
@@ -38,26 +43,21 @@ export async function createTask(formData: FormData) {
   const user = await requireMemberOrHigher();
   const userId = user.id as string;
 
-  // Extract form data
-  const title = formData.get("title") as string;
-  const description = formData.get("description") as string;
-  const projectId = formData.get("projectId") as string;
-  const templateId = formData.get("templateId") as string;
-  const priority = formData.get("priority") as TaskPriority;
-  const dueDateStr = formData.get("dueDate") as string;
+  // Extract and validate form data with Zod
+  const parsed = createTaskSchema.safeParse({
+    title: formData.get("title"),
+    description: formData.get("description"),
+    projectId: formData.get("projectId"),
+    templateId: formData.get("templateId"),
+    priority: formData.get("priority"),
+    dueDate: formData.get("dueDate"),
+  });
 
-  // Validation
-  if (!title) {
-    throw new Error("Task title is required");
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0].message);
   }
 
-  if (!projectId) {
-    throw new Error("Project is required");
-  }
-
-  if (!templateId) {
-    throw new Error("Workflow template is required");
-  }
+  const { title, description, projectId, templateId, priority, dueDate: dueDateStr } = parsed.data;
 
   // Convert dueDate string to Date if provided
   const dueDate = dueDateStr ? new Date(dueDateStr) : null;
@@ -826,65 +826,8 @@ export async function getMyActiveStages() {
 }
 
 /**
- * Types for getMyAllStages
+ * Types for getMyAllStages — defined in @/types/task.ts
  */
-export type ActiveStageWithDetails = {
-  id: string;
-  status: "ACTIVE" | "BLOCKED" | "COMPLETED";
-  taskId: string;
-  stageId: string;
-  assigneeId: string | null;
-  activatedAt: Date;
-  completedAt: Date | null;
-  assignee: {
-    name: string | null;
-    email: string | null;
-  } | null;
-  task: {
-    id: string;
-    title: string;
-    priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-    status: "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED";
-    dueDate: Date | null;
-    createdAt: Date;
-    project: {
-      name: string;
-    };
-  };
-  stage: {
-    id: string;
-    name: string;
-    order: number;
-    defaultTeam: {
-      id: string;
-      name: string;
-    } | null;
-    template: {
-      id: string;
-      name: string;
-    };
-  };
-};
-
-export type MyAllStagesResult = {
-  stages: ActiveStageWithDetails[];
-  stats: {
-    total: number;
-    byStatus: {
-      ACTIVE: number;
-      BLOCKED: number;
-      COMPLETED: number;
-    };
-    byPriority: {
-      LOW: number;
-      MEDIUM: number;
-      HIGH: number;
-      URGENT: number;
-    };
-    overdue: number;
-    totalHoursLogged: number;
-  };
-};
 
 /**
  * Get all stages assigned to current user with optional filters and stats

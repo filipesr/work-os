@@ -37,9 +37,10 @@ export function MyStagesFilters({
   return (
     <div className="flex flex-wrap items-center gap-3">
       {/* Ownership Toggle */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" role="group" aria-label={t("filters.title")}>
         <button
           onClick={() => onOwnershipChange(true)}
+          aria-pressed={onlyMine}
           className={`px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
             onlyMine
               ? "bg-primary text-primary-foreground border-primary"
@@ -50,6 +51,7 @@ export function MyStagesFilters({
         </button>
         <button
           onClick={() => onOwnershipChange(false)}
+          aria-pressed={!onlyMine}
           className={`px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
             !onlyMine
               ? "bg-primary text-primary-foreground border-primary"
@@ -69,6 +71,7 @@ export function MyStagesFilters({
           <button
             key={s}
             onClick={() => onStatusChange(status === s ? null : s)}
+            aria-pressed={status === s}
             className={`px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
               status === s
                 ? s === "ACTIVE"
@@ -86,18 +89,22 @@ export function MyStagesFilters({
 
       {/* Date Filters */}
       <div className="flex items-center gap-2">
-        <label className="text-sm text-muted-foreground">{t("filters.from")}</label>
+        <label htmlFor="filter-start-date" className="text-sm text-muted-foreground">{t("filters.from")}</label>
         <input
+          id="filter-start-date"
           type="date"
           value={startDate}
           onChange={(e) => onStartDateChange(e.target.value)}
+          aria-label={t("filters.from")}
           className="px-2 py-1.5 text-sm border border-border rounded-md bg-background"
         />
-        <label className="text-sm text-muted-foreground">{t("filters.to")}</label>
+        <label htmlFor="filter-end-date" className="text-sm text-muted-foreground">{t("filters.to")}</label>
         <input
+          id="filter-end-date"
           type="date"
           value={endDate}
           onChange={(e) => onEndDateChange(e.target.value)}
+          aria-label={t("filters.to")}
           className="px-2 py-1.5 text-sm border border-border rounded-md bg-background"
         />
       </div>

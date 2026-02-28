@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Task, User, Project, Client, TemplateStage, Team, TaskComment, TaskArtifact, TaskStageLog, TimeLog, UserRole } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +16,12 @@ import { AddCommentForm } from "./AddCommentForm";
 import { AddArtifactForm } from "./AddArtifactForm";
 import { TaskActionsMenu } from "./TaskActionsMenu";
 import { ActivityButton } from "./ActivityButton";
-import { WorkflowHistoryModal } from "./WorkflowHistoryModal";
 import { TimeLogsList } from "./TimeLogsList";
+
+const WorkflowHistoryModal = dynamic(
+  () => import("./WorkflowHistoryModal").then((mod) => mod.WorkflowHistoryModal),
+  { ssr: false }
+);
 import { format } from "date-fns";
 import { ptBR, es } from "date-fns/locale";
 import { useTranslations, useLocale } from "next-intl";

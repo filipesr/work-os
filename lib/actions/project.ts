@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireMemberOrHigher } from "@/lib/permissions";
+import { createProjectSchema } from "@/lib/validations";
 
 interface CreateProjectData {
   name: string;
@@ -14,15 +15,12 @@ export async function createProject(data: CreateProjectData) {
   try {
     await requireMemberOrHigher();
 
-    const { name, description, clientId } = data;
-
-    if (!name || !name.trim()) {
-      return { error: "Nome do projeto é obrigatório" };
+    const parsed = createProjectSchema.safeParse(data);
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0].message };
     }
 
-    if (!clientId) {
-      return { error: "Cliente é obrigatório" };
-    }
+    const { name, description, clientId } = parsed.data;
 
     // Verify client exists
     const client = await prisma.client.findUnique({

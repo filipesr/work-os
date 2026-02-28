@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getMyAllStages } from "@/lib/actions/task";
 import { MyStagesPageClient } from "@/components/my-stages/MyStagesPageClient";
+
+export const metadata: Metadata = {
+  title: "Tarefas",
+};
 
 export default async function TasksPage() {
   const session = await auth();
