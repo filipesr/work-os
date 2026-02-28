@@ -1,9 +1,13 @@
 {
-  "title": "Minhas Etapas",
-  "subtitle": "Visualize e acompanhe todas as suas etapas",
+  "title": "Tarefas",
+  "subtitle": "Listagem de tarefas com etapa atual e responsável",
   "emptyState": "Nenhuma etapa encontrada com os filtros selecionados.",
   "filters": {
     "title": "Filtros",
+    "ownership": {
+      "mine": "Minhas",
+      "all": "Todas"
+    },
     "status": {
       "ACTIVE": "Ativas",
       "BLOCKED": "Bloqueadas",
@@ -25,6 +29,7 @@
     "task": "Tarefa",
     "project": "Projeto",
     "stage": "Etapa",
+    "assignee": "Responsável",
     "priority": "Prioridade",
     "status": "Status",
     "dueDate": "Data de Entrega"
@@ -41,12 +46,14 @@
     "stageName": "Nome da Etapa",
     "stageStatus": "Status da Etapa",
     "template": "Template",
+    "assignee": "Responsável",
     "team": "Equipe",
     "activatedAt": "Ativada em",
     "completedAt": "Concluída em",
     "noDueDate": "Sem prazo",
     "noTeam": "Sem equipe"
   },
+  "unassigned": "Não atribuído",
   "priority": {
     "URGENT": "URGENTE",
     "HIGH": "ALTA",

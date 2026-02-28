@@ -836,6 +836,10 @@ export type ActiveStageWithDetails = {
   assigneeId: string | null;
   activatedAt: Date;
   completedAt: Date | null;
+  assignee: {
+    name: string | null;
+    email: string | null;
+  } | null;
   task: {
     id: string;
     title: string;
@@ -889,14 +893,18 @@ export async function getMyAllStages(filters?: {
   status?: "ACTIVE" | "BLOCKED" | "COMPLETED" | null;
   startDate?: string | null;
   endDate?: string | null;
+  onlyMine?: boolean;
 }): Promise<MyAllStagesResult> {
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser.id as string;
+  const onlyMine = filters?.onlyMine !== false;
 
   // Build where clause
-  const where: Record<string, unknown> = {
-    assigneeId: currentUserId,
-  };
+  const where: Record<string, unknown> = {};
+
+  if (onlyMine) {
+    where.assigneeId = currentUserId;
+  }
 
   if (filters?.status) {
     where.status = filters.status;
@@ -919,6 +927,12 @@ export async function getMyAllStages(filters?: {
   const stages = await prisma.taskActiveStage.findMany({
     where,
     include: {
+      assignee: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
       task: {
         include: {
           project: {
@@ -927,9 +941,7 @@ export async function getMyAllStages(filters?: {
             },
           },
           timeLogs: {
-            where: {
-              userId: currentUserId,
-            },
+            ...(onlyMine ? { where: { userId: currentUserId } } : {}),
             select: {
               hoursSpent: true,
             },
@@ -985,6 +997,7 @@ export async function getMyAllStages(filters?: {
     assigneeId: s.assigneeId,
     activatedAt: s.activatedAt,
     completedAt: s.completedAt,
+    assignee: s.assignee ? { name: s.assignee.name, email: s.assignee.email } : null,
     task: {
       id: s.task.id,
       title: s.task.title,

@@ -135,6 +135,10 @@ export function StageDetailModal({ stage, open, onOpenChange }: StageDetailModal
               <p className="text-sm">{stage.stage.template.name}</p>
             </div>
             <div>
+              <p className="text-xs text-muted-foreground mb-1">{t("modal.assignee")}</p>
+              <p className="text-sm">{stage.assignee?.name || stage.assignee?.email || t("unassigned")}</p>
+            </div>
+            <div>
               <p className="text-xs text-muted-foreground mb-1">{t("modal.team")}</p>
               <p className="text-sm">{stage.stage.defaultTeam?.name || t("modal.noTeam")}</p>
             </div>

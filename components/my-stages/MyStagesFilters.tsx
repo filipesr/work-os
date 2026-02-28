@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
 interface MyStagesFiltersProps {
+  onlyMine: boolean;
+  onOwnershipChange: (onlyMine: boolean) => void;
   status: ActiveStageStatus | null;
   startDate: string;
   endDate: string;
@@ -18,6 +20,8 @@ interface MyStagesFiltersProps {
 const STATUS_OPTIONS: ActiveStageStatus[] = ["ACTIVE", "BLOCKED", "COMPLETED"];
 
 export function MyStagesFilters({
+  onlyMine,
+  onOwnershipChange,
   status,
   startDate,
   endDate,
@@ -28,10 +32,37 @@ export function MyStagesFilters({
 }: MyStagesFiltersProps) {
   const t = useTranslations("myStages");
 
-  const hasActiveFilters = status !== null || startDate !== "" || endDate !== "";
+  const hasActiveFilters = !onlyMine || status !== null || startDate !== "" || endDate !== "";
 
   return (
     <div className="flex flex-wrap items-center gap-3">
+      {/* Ownership Toggle */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onOwnershipChange(true)}
+          className={`px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
+            onlyMine
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background text-muted-foreground border-border hover:bg-muted/50"
+          }`}
+        >
+          {t("filters.ownership.mine")}
+        </button>
+        <button
+          onClick={() => onOwnershipChange(false)}
+          className={`px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
+            !onlyMine
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background text-muted-foreground border-border hover:bg-muted/50"
+          }`}
+        >
+          {t("filters.ownership.all")}
+        </button>
+      </div>
+
+      {/* Separator */}
+      <div className="h-6 border-l border-border" />
+
       {/* Status Toggle Buttons */}
       <div className="flex items-center gap-2">
         {STATUS_OPTIONS.map((s) => (

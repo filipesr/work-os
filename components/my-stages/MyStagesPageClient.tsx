@@ -20,6 +20,7 @@ export function MyStagesPageClient({ initialData }: MyStagesPageClientProps) {
   const [isPending, startTransition] = useTransition();
 
   // Filter state
+  const [onlyMine, setOnlyMine] = useState(true);
   const [status, setStatus] = useState<ActiveStageStatus | null>("ACTIVE");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -29,12 +30,14 @@ export function MyStagesPageClient({ initialData }: MyStagesPageClientProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
   const fetchData = (
+    newOnlyMine: boolean,
     newStatus: ActiveStageStatus | null,
     newStartDate: string,
     newEndDate: string
   ) => {
     startTransition(async () => {
       const result = await getMyAllStages({
+        onlyMine: newOnlyMine,
         status: newStatus,
         startDate: newStartDate || null,
         endDate: newEndDate || null,
@@ -43,26 +46,32 @@ export function MyStagesPageClient({ initialData }: MyStagesPageClientProps) {
     });
   };
 
+  const handleOwnershipChange = (newOnlyMine: boolean) => {
+    setOnlyMine(newOnlyMine);
+    fetchData(newOnlyMine, status, startDate, endDate);
+  };
+
   const handleStatusChange = (newStatus: ActiveStageStatus | null) => {
     setStatus(newStatus);
-    fetchData(newStatus, startDate, endDate);
+    fetchData(onlyMine, newStatus, startDate, endDate);
   };
 
   const handleStartDateChange = (date: string) => {
     setStartDate(date);
-    fetchData(status, date, endDate);
+    fetchData(onlyMine, status, date, endDate);
   };
 
   const handleEndDateChange = (date: string) => {
     setEndDate(date);
-    fetchData(status, startDate, date);
+    fetchData(onlyMine, status, startDate, date);
   };
 
   const handleClearAll = () => {
+    setOnlyMine(true);
     setStatus(null);
     setStartDate("");
     setEndDate("");
-    fetchData(null, "", "");
+    fetchData(true, null, "", "");
   };
 
   const handleRowClick = (stage: ActiveStageWithDetails) => {
@@ -74,6 +83,8 @@ export function MyStagesPageClient({ initialData }: MyStagesPageClientProps) {
     <div className="space-y-6">
       {/* Filters */}
       <MyStagesFilters
+        onlyMine={onlyMine}
+        onOwnershipChange={handleOwnershipChange}
         status={status}
         startDate={startDate}
         endDate={endDate}
@@ -93,7 +104,7 @@ export function MyStagesPageClient({ initialData }: MyStagesPageClientProps) {
             <p className="text-sm text-muted-foreground">{t("emptyState")}</p>
           </div>
         ) : (
-          <MyStagesTable stages={data.stages} onRowClick={handleRowClick} />
+          <MyStagesTable stages={data.stages} showAssignee={!onlyMine} onRowClick={handleRowClick} />
         )}
       </div>
 

@@ -5,6 +5,7 @@ import type { ActiveStageWithDetails } from "@/lib/actions/task";
 
 interface MyStagesTableProps {
   stages: ActiveStageWithDetails[];
+  showAssignee: boolean;
   onRowClick: (stage: ActiveStageWithDetails) => void;
 }
 
@@ -21,7 +22,7 @@ const stageStatusStyles: Record<string, string> = {
   COMPLETED: "bg-green-100 text-green-800 border-green-300",
 };
 
-export function MyStagesTable({ stages, onRowClick }: MyStagesTableProps) {
+export function MyStagesTable({ stages, showAssignee, onRowClick }: MyStagesTableProps) {
   const t = useTranslations("myStages");
 
   const formatDate = (date: Date | null) => {
@@ -47,6 +48,11 @@ export function MyStagesTable({ stages, onRowClick }: MyStagesTableProps) {
             <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               {t("table.stage")}
             </th>
+            {showAssignee && (
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {t("table.assignee")}
+              </th>
+            )}
             <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               {t("table.priority")}
             </th>
@@ -102,6 +108,13 @@ export function MyStagesTable({ stages, onRowClick }: MyStagesTableProps) {
                     <span className="text-sm text-muted-foreground">{stage.name}</span>
                   </div>
                 </td>
+                {showAssignee && (
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-muted-foreground">
+                      {activeStage.assignee?.name || activeStage.assignee?.email || t("unassigned")}
+                    </span>
+                  </td>
+                )}
                 <td className="px-4 py-3">
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-md border ${
