@@ -23,6 +23,7 @@ export async function getMessages(locale: Locale) {
     quickCreate: (await import(`@/locales/${locale}/quickCreate.json`)).default,
     delete: (await import(`@/locales/${locale}/delete.json`)).default,
     taskFlow: (await import(`@/locales/${locale}/taskFlow.json`)).default,
+    myStages: (await import(`@/locales/${locale}/myStages.json`)).default,
   };
 }
 

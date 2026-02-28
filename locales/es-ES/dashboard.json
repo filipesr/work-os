@@ -61,7 +61,8 @@
       "pending": "Pendiente",
       "blocked": "Bloqueada",
       "completed": "Completada"
-    }
+    },
+    "viewTasks": "Tareas"
   },
   "teamBacklog": {
     "title": "Backlog del Equipo (Sin Asignar)",

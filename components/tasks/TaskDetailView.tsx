@@ -55,6 +55,7 @@ interface TaskDetailViewProps {
   currentUserRole: UserRole;
   activeLog: ActiveLog | null;
   allTemplateStages: (TemplateStage & { defaultTeam: { id: string; name: string } | null })[];
+  canPerformActions: boolean;
 }
 
 export function TaskDetailView({
@@ -65,6 +66,7 @@ export function TaskDetailView({
   currentUserRole,
   activeLog,
   allTemplateStages,
+  canPerformActions,
 }: TaskDetailViewProps) {
   const [showArtifactForm, setShowArtifactForm] = useState(false);
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
@@ -252,31 +254,33 @@ export function TaskDetailView({
       {/* Sidebar - Right Side */}
       <div className="space-y-6">
         {/* Actions Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">{t("actions.edit")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Activity Tracking */}
-            <ActivityButton
-              taskId={task.id}
-              taskTitle={task.title}
-              currentStageId={task.currentStageId}
-              activeLog={activeLog}
-            />
+        {canPerformActions && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">{t("actions.edit")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Activity Tracking */}
+              <ActivityButton
+                taskId={task.id}
+                taskTitle={task.title}
+                currentStageId={task.currentStageId}
+                activeLog={activeLog}
+              />
 
-            <Separator />
+              <Separator />
 
-            {/* Actions Menu */}
-            <TaskActionsMenu
-              taskId={task.id}
-              currentStageId={task.currentStageId}
-              taskStatus={task.status}
-              currentAssignee={task.assignee?.name || task.assignee?.email || null}
-              previousStages={previousStages}
-            />
-          </CardContent>
-        </Card>
+              {/* Actions Menu */}
+              <TaskActionsMenu
+                taskId={task.id}
+                currentStageId={task.currentStageId}
+                taskStatus={task.status}
+                currentAssignee={task.assignee?.name || task.assignee?.email || null}
+                previousStages={previousStages}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Artifacts Section */}
         <Card>
@@ -293,27 +297,29 @@ export function TaskDetailView({
             <ArtifactsList artifacts={task.artifacts} />
 
             {/* Toggle button for form */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowArtifactForm(!showArtifactForm)}
-              className="w-full"
-            >
-              {showArtifactForm ? (
-                <>
-                  <ChevronUp className="h-4 w-4 mr-2" />
-                  {tArtifacts("hideForm")}
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4 mr-2" />
-                  {tArtifacts("addArtifact")}
-                </>
-              )}
-            </Button>
+            {canPerformActions && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowArtifactForm(!showArtifactForm)}
+                className="w-full"
+              >
+                {showArtifactForm ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-2" />
+                    {tArtifacts("hideForm")}
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-2" />
+                    {tArtifacts("addArtifact")}
+                  </>
+                )}
+              </Button>
+            )}
 
             {/* Collapsible Add Artifact Form */}
-            {showArtifactForm && (
+            {canPerformActions && showArtifactForm && (
               <>
                 <Separator />
                 <AddArtifactForm taskId={task.id} userId={currentUserId} />

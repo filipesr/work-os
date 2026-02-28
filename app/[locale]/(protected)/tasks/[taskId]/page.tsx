@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { TaskDetailView } from "@/components/tasks/TaskDetailView";
 import { getAvailableNextStages, getPreviousStages } from "@/lib/actions/task";
 import { getCurrentActiveLog } from "@/lib/actions/activity";
+import { UserRole } from "@prisma/client";
 
 interface TaskDetailPageProps {
   params: Promise<{
@@ -155,6 +156,14 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
     getCurrentActiveLog(session.user.id!),
   ]);
 
+  // Permission: can perform actions if assignee of an active stage or has managerial role
+  const isStageAssignee = taskData.activeStages.some(
+    (as) => as.assigneeId === session.user.id && as.status === "ACTIVE"
+  );
+  const managerialRoles: UserRole[] = [UserRole.ADMIN, UserRole.MANAGER, UserRole.SUPERVISOR];
+  const isManagerialRole = managerialRoles.includes(session.user.role as UserRole);
+  const canPerformActions = isStageAssignee || isManagerialRole;
+
   return (
     <div className="container mx-auto py-6">
       <TaskDetailView
@@ -165,6 +174,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
         currentUserRole={session.user.role!}
         activeLog={activeLog}
         allTemplateStages={allTemplateStages}
+        canPerformActions={canPerformActions}
       />
     </div>
   );

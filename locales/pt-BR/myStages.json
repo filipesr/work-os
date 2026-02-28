@@ -1,0 +1,65 @@
+{
+  "title": "Minhas Etapas",
+  "subtitle": "Visualize e acompanhe todas as suas etapas",
+  "emptyState": "Nenhuma etapa encontrada com os filtros selecionados.",
+  "filters": {
+    "title": "Filtros",
+    "status": {
+      "ACTIVE": "Ativas",
+      "BLOCKED": "Bloqueadas",
+      "COMPLETED": "Concluídas"
+    },
+    "from": "De",
+    "to": "Até",
+    "clearAll": "Limpar Filtros"
+  },
+  "kpis": {
+    "total": "Total",
+    "active": "Ativas",
+    "blocked": "Bloqueadas",
+    "completed": "Concluídas",
+    "overdue": "Atrasadas",
+    "totalHours": "Horas Registradas"
+  },
+  "table": {
+    "task": "Tarefa",
+    "project": "Projeto",
+    "stage": "Etapa",
+    "priority": "Prioridade",
+    "status": "Status",
+    "dueDate": "Data de Entrega"
+  },
+  "modal": {
+    "readOnlyNotice": "Visualização somente leitura",
+    "taskInfo": "Informações da Tarefa",
+    "stageInfo": "Informações da Etapa",
+    "project": "Projeto",
+    "priority": "Prioridade",
+    "taskStatus": "Status da Tarefa",
+    "dueDate": "Data de Entrega",
+    "createdAt": "Criada em",
+    "stageName": "Nome da Etapa",
+    "stageStatus": "Status da Etapa",
+    "template": "Template",
+    "team": "Equipe",
+    "activatedAt": "Ativada em",
+    "completedAt": "Concluída em",
+    "noDueDate": "Sem prazo",
+    "noTeam": "Sem equipe"
+  },
+  "priority": {
+    "URGENT": "URGENTE",
+    "HIGH": "ALTA",
+    "MEDIUM": "MÉDIA",
+    "LOW": "BAIXA"
+  },
+  "status": {
+    "ACTIVE": "Ativa",
+    "BLOCKED": "Bloqueada",
+    "COMPLETED": "Concluída",
+    "BACKLOG": "Backlog",
+    "IN_PROGRESS": "Em Progresso",
+    "PAUSED": "Pausado",
+    "CANCELLED": "Cancelado"
+  }
+}

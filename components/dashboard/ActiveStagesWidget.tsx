@@ -6,7 +6,7 @@ import { UnassignActiveStageButton } from "@/components/tasks/UnassignActiveStag
 import { TaskPriority, TaskStatus, ActiveStageStatus } from "@prisma/client";
 
 // Types
-type ActiveStageWithDetails = {
+export type ActiveStageWithDetails = {
   id: string;
   status: ActiveStageStatus;
   taskId: string;
@@ -211,17 +211,22 @@ export async function MyActiveStagesWidget() {
 
   return (
     <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
-      <div className="bg-primary/5 px-6 py-4 border-b-2 border-border">
-        <h2 className="text-xl font-bold text-foreground">
-          {t("myActiveStages.title")}
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          {myActiveStages.length === 1
-            ? t("myActiveStages.stageCount", { count: myActiveStages.length })
-            : t("myActiveStages.stagesCount", {
-                count: myActiveStages.length,
-              })}
-        </p>
+      <div className="bg-primary/5 px-6 py-4 border-b-2 border-border flex justify-between items-start">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">
+            {t("myActiveStages.title")}
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {myActiveStages.length === 1
+              ? t("myActiveStages.stageCount", { count: myActiveStages.length })
+              : t("myActiveStages.stagesCount", {
+                  count: myActiveStages.length,
+                })}
+          </p>
+        </div>
+        <Link href="/tasks" className="text-sm font-medium text-primary hover:underline">
+          {t("myActiveStages.viewTasks")}
+        </Link>
       </div>
 
       {myActiveStages.length === 0 ? (

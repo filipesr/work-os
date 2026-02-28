@@ -826,6 +826,198 @@ export async function getMyActiveStages() {
 }
 
 /**
+ * Types for getMyAllStages
+ */
+export type ActiveStageWithDetails = {
+  id: string;
+  status: "ACTIVE" | "BLOCKED" | "COMPLETED";
+  taskId: string;
+  stageId: string;
+  assigneeId: string | null;
+  activatedAt: Date;
+  completedAt: Date | null;
+  task: {
+    id: string;
+    title: string;
+    priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+    status: "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED";
+    dueDate: Date | null;
+    createdAt: Date;
+    project: {
+      name: string;
+    };
+  };
+  stage: {
+    id: string;
+    name: string;
+    order: number;
+    defaultTeam: {
+      id: string;
+      name: string;
+    } | null;
+    template: {
+      id: string;
+      name: string;
+    };
+  };
+};
+
+export type MyAllStagesResult = {
+  stages: ActiveStageWithDetails[];
+  stats: {
+    total: number;
+    byStatus: {
+      ACTIVE: number;
+      BLOCKED: number;
+      COMPLETED: number;
+    };
+    byPriority: {
+      LOW: number;
+      MEDIUM: number;
+      HIGH: number;
+      URGENT: number;
+    };
+    overdue: number;
+    totalHoursLogged: number;
+  };
+};
+
+/**
+ * Get all stages assigned to current user with optional filters and stats
+ */
+export async function getMyAllStages(filters?: {
+  status?: "ACTIVE" | "BLOCKED" | "COMPLETED" | null;
+  startDate?: string | null;
+  endDate?: string | null;
+}): Promise<MyAllStagesResult> {
+  const currentUser = await getCurrentUser();
+  const currentUserId = currentUser.id as string;
+
+  // Build where clause
+  const where: Record<string, unknown> = {
+    assigneeId: currentUserId,
+  };
+
+  if (filters?.status) {
+    where.status = filters.status;
+  }
+
+  if (filters?.startDate || filters?.endDate) {
+    const activatedAtFilter: Record<string, Date> = {};
+    if (filters.startDate) {
+      activatedAtFilter.gte = new Date(filters.startDate);
+    }
+    if (filters.endDate) {
+      // Set end date to end of day
+      const endDate = new Date(filters.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      activatedAtFilter.lte = endDate;
+    }
+    where.activatedAt = activatedAtFilter;
+  }
+
+  const stages = await prisma.taskActiveStage.findMany({
+    where,
+    include: {
+      task: {
+        include: {
+          project: {
+            select: {
+              name: true,
+            },
+          },
+          timeLogs: {
+            where: {
+              userId: currentUserId,
+            },
+            select: {
+              hoursSpent: true,
+            },
+          },
+        },
+      },
+      stage: {
+        include: {
+          template: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          defaultTeam: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      task: {
+        dueDate: "asc",
+      },
+    },
+  });
+
+  // Compute stats
+  const now = new Date();
+  let totalHoursLogged = 0;
+  const byStatus = { ACTIVE: 0, BLOCKED: 0, COMPLETED: 0 };
+  const byPriority = { LOW: 0, MEDIUM: 0, HIGH: 0, URGENT: 0 };
+  let overdue = 0;
+
+  for (const stage of stages) {
+    byStatus[stage.status]++;
+    byPriority[stage.task.priority]++;
+    if (stage.task.dueDate && new Date(stage.task.dueDate) < now && stage.status !== "COMPLETED") {
+      overdue++;
+    }
+    totalHoursLogged += stage.task.timeLogs.reduce((sum, log) => sum + log.hoursSpent, 0);
+  }
+
+  // Map stages to remove timeLogs from response (used only for stats)
+  const mappedStages: ActiveStageWithDetails[] = stages.map((s) => ({
+    id: s.id,
+    status: s.status,
+    taskId: s.taskId,
+    stageId: s.stageId,
+    assigneeId: s.assigneeId,
+    activatedAt: s.activatedAt,
+    completedAt: s.completedAt,
+    task: {
+      id: s.task.id,
+      title: s.task.title,
+      priority: s.task.priority,
+      status: s.task.status,
+      dueDate: s.task.dueDate,
+      createdAt: s.task.createdAt,
+      project: {
+        name: s.task.project.name,
+      },
+    },
+    stage: {
+      id: s.stage.id,
+      name: s.stage.name,
+      order: s.stage.order,
+      defaultTeam: s.stage.defaultTeam,
+      template: s.stage.template,
+    },
+  }));
+
+  return {
+    stages: mappedStages,
+    stats: {
+      total: stages.length,
+      byStatus,
+      byPriority,
+      overdue,
+      totalHoursLogged,
+    },
+  };
+}
+
+/**
  * Get team backlog (active stages not assigned)
  */
 export async function getTeamBacklog(teamId: string) {
