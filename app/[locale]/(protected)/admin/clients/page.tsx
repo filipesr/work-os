@@ -1,11 +1,12 @@
-import { revalidatePath } from "next/cache"
-import prisma from "@/lib/prisma"
-import { requireManagerOrAdmin } from "@/lib/permissions"
-import { DeleteClientButton } from "./delete-client-button"
-import { getTranslations } from "next-intl/server"
+import { revalidatePath } from "next/cache";
+import Link from "next/link";
+import prisma from "@/lib/prisma";
+import { requireManagerOrAdmin } from "@/lib/permissions";
+import { DeleteClientButton } from "./delete-client-button";
+import { getTranslations } from "next-intl/server";
 
 async function getClients() {
-  await requireManagerOrAdmin()
+  await requireManagerOrAdmin();
   return await prisma.client.findMany({
     include: {
       _count: {
@@ -13,61 +14,59 @@ async function getClients() {
       },
     },
     orderBy: { name: "asc" },
-  })
+  });
 }
 
 async function createClient(formData: FormData) {
-  "use server"
-  await requireManagerOrAdmin()
-  const name = formData.get("name") as string
-  if (!name) return
+  "use server";
+  await requireManagerOrAdmin();
+  const name = formData.get("name") as string;
+  if (!name) return;
 
   await prisma.client.create({
     data: { name },
-  })
+  });
 
-  revalidatePath("/admin/clients")
+  revalidatePath("/admin/clients");
 }
 
 async function updateClient(formData: FormData) {
-  "use server"
-  await requireManagerOrAdmin()
-  const id = formData.get("id") as string
-  const name = formData.get("name") as string
-  if (!id || !name) return
+  "use server";
+  await requireManagerOrAdmin();
+  const id = formData.get("id") as string;
+  const name = formData.get("name") as string;
+  if (!id || !name) return;
 
   await prisma.client.update({
     where: { id },
     data: { name },
-  })
+  });
 
-  revalidatePath("/admin/clients")
+  revalidatePath("/admin/clients");
 }
 
 async function deleteClient(formData: FormData) {
-  "use server"
-  await requireManagerOrAdmin()
-  const id = formData.get("id") as string
-  if (!id) return
+  "use server";
+  await requireManagerOrAdmin();
+  const id = formData.get("id") as string;
+  if (!id) return;
 
   await prisma.client.delete({
     where: { id },
-  })
+  });
 
-  revalidatePath("/admin/clients")
+  revalidatePath("/admin/clients");
 }
 
 export default async function ClientsPage() {
-  const clients = await getClients()
-  const t = await getTranslations("admin.clients")
+  const clients = await getClients();
+  const t = await getTranslations("admin.clients");
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t("subtitle")}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {/* Create Form */}
@@ -110,9 +109,12 @@ export default async function ClientsPage() {
             {clients.map((client) => (
               <tr key={client.id} className="hover:bg-accent transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-semibold text-foreground">
+                  <Link
+                    href={`/admin/clients/${client.id}`}
+                    className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                  >
                     {client.name}
-                  </div>
+                  </Link>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-muted-foreground">
@@ -135,5 +137,5 @@ export default async function ClientsPage() {
         </table>
       </div>
     </div>
-  )
+  );
 }

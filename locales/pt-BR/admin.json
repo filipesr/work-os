@@ -97,6 +97,26 @@
       "cancel": "Cancelar",
       "saveChanges": "Salvar Alterações",
       "saving": "Salvando..."
+    },
+    "detail": {
+      "backToUsers": "Voltar para Usuários",
+      "lastSeen": "Visto por último em",
+      "never": "Nunca",
+      "activeStages": "Etapas Ativas",
+      "assignedTasks": "Tarefas Atribuídas",
+      "hoursLogged": "Horas Registradas",
+      "activeStagesTable": "Etapas Ativas",
+      "task": "Tarefa",
+      "stage": "Etapa",
+      "template": "Template",
+      "activatedAt": "Ativada em",
+      "noActiveStages": "Nenhuma etapa ativa no momento.",
+      "recentTimeLogs": "Registros de Tempo Recentes",
+      "date": "Data",
+      "hours": "Horas",
+      "description": "Descrição",
+      "noDescription": "Sem descrição",
+      "noTimeLogs": "Nenhum registro de tempo recente."
     }
   },
   "teams": {
@@ -113,6 +133,30 @@
       "name": "Nome",
       "members": "Membros",
       "actions": "Ações"
+    },
+    "detail": {
+      "backToTeams": "Voltar para Equipes",
+      "editButton": "Editar",
+      "deleteButton": "Excluir",
+      "saveChanges": "Salvar Alterações",
+      "cancel": "Cancelar",
+      "deleteConfirmTitle": "Excluir Equipe",
+      "deleteConfirmMessage": "Tem certeza que deseja excluir esta equipe? Os membros serão desvinculados. Esta ação não pode ser desfeita.",
+      "deleteConfirmButton": "Sim, Excluir",
+      "editTitle": "Editar Equipe",
+      "nameLabel": "Nome *",
+      "totalMembers": "Total de Membros",
+      "defaultStages": "Etapas Padrão",
+      "membersTable": "Membros",
+      "memberName": "Nome",
+      "memberEmail": "Email",
+      "memberRole": "Função",
+      "noMembers": "Nenhum membro nesta equipe.",
+      "stagesTable": "Etapas Padrão",
+      "stageName": "Etapa",
+      "stageTemplate": "Template",
+      "stageOrder": "Ordem",
+      "noStages": "Nenhuma etapa padrão configurada."
     }
   },
   "clients": {
@@ -127,6 +171,32 @@
       "name": "Nome",
       "projects": "Projetos",
       "actions": "Ações"
+    },
+    "detail": {
+      "backToClients": "Voltar para Clientes",
+      "editButton": "Editar",
+      "deleteButton": "Excluir",
+      "saveChanges": "Salvar Alterações",
+      "cancel": "Cancelar",
+      "deleteConfirmTitle": "Excluir Cliente",
+      "deleteConfirmMessage": "Tem certeza que deseja excluir este cliente? Todos os projetos associados também serão removidos. Esta ação não pode ser desfeita.",
+      "deleteConfirmButton": "Sim, Excluir",
+      "editTitle": "Editar Cliente",
+      "nameLabel": "Nome *",
+      "descriptionLabel": "Descrição",
+      "emailLabel": "Email",
+      "phoneLabel": "Telefone",
+      "noDescription": "Sem descrição",
+      "noEmail": "Sem email",
+      "noPhone": "Sem telefone",
+      "totalProjects": "Total de Projetos",
+      "totalTasks": "Total de Tarefas",
+      "projectsTable": "Projetos",
+      "projectName": "Nome",
+      "taskCount": "Tarefas",
+      "projectActions": "Ações",
+      "viewKanban": "Ver Kanban",
+      "noProjects": "Nenhum projeto associado a este cliente."
     }
   },
   "projects": {
@@ -144,7 +214,49 @@
       "tasks": "Tarefas",
       "actions": "Ações"
     },
-    "kanban": "Kanban do Projeto"
+    "kanban": "Kanban do Projeto",
+    "detail": {
+      "backToProjects": "Voltar para Projetos",
+      "editButton": "Editar",
+      "deleteButton": "Excluir",
+      "saveChanges": "Salvar Alterações",
+      "cancel": "Cancelar",
+      "deleteConfirmTitle": "Excluir Projeto",
+      "deleteConfirmMessage": "Tem certeza que deseja excluir este projeto? Todas as tarefas associadas também serão removidas. Esta ação não pode ser desfeita.",
+      "deleteConfirmButton": "Sim, Excluir",
+      "editTitle": "Editar Projeto",
+      "nameLabel": "Nome *",
+      "descriptionLabel": "Descrição",
+      "clientLabel": "Cliente",
+      "selectClient": "Selecionar Cliente",
+      "noDescription": "Sem descrição",
+      "viewKanban": "Ver Kanban",
+      "client": "Cliente",
+      "totalTasks": "Total de Tarefas",
+      "tasksByStatus": "Tarefas por Status",
+      "tasksTable": "Tarefas",
+      "taskTitle": "Título",
+      "taskStatus": "Status",
+      "taskPriority": "Prioridade",
+      "taskAssignee": "Responsável",
+      "taskDueDate": "Data de Vencimento",
+      "unassigned": "Não atribuído",
+      "noDueDate": "Sem data",
+      "noTasks": "Nenhuma tarefa neste projeto.",
+      "status": {
+        "BACKLOG": "Backlog",
+        "IN_PROGRESS": "Em Progresso",
+        "COMPLETED": "Concluída",
+        "CANCELLED": "Cancelada",
+        "PAUSED": "Pausada"
+      },
+      "priority": {
+        "URGENT": "Urgente",
+        "HIGH": "Alta",
+        "MEDIUM": "Média",
+        "LOW": "Baixa"
+      }
+    }
   },
   "workflows": {
     "title": "Fluxos de Trabalho",

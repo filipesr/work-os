@@ -1,11 +1,12 @@
-import { revalidatePath } from "next/cache"
-import prisma from "@/lib/prisma"
-import { requireManagerOrAdmin } from "@/lib/permissions"
-import { DeleteProjectButton } from "./delete-project-button"
-import { getTranslations } from "next-intl/server"
+import { revalidatePath } from "next/cache";
+import Link from "next/link";
+import prisma from "@/lib/prisma";
+import { requireManagerOrAdmin } from "@/lib/permissions";
+import { DeleteProjectButton } from "./delete-project-button";
+import { getTranslations } from "next-intl/server";
 
 async function getProjects() {
-  await requireManagerOrAdmin()
+  await requireManagerOrAdmin();
   return await prisma.project.findMany({
     include: {
       client: true,
@@ -14,77 +15,73 @@ async function getProjects() {
       },
     },
     orderBy: { name: "asc" },
-  })
+  });
 }
 
 async function getClients() {
-  await requireManagerOrAdmin()
+  await requireManagerOrAdmin();
   return await prisma.client.findMany({
     orderBy: { name: "asc" },
-  })
+  });
 }
 
 async function createProject(formData: FormData) {
-  "use server"
-  await requireManagerOrAdmin()
-  const name = formData.get("name") as string
-  const clientId = formData.get("clientId") as string
-  if (!name || !clientId) return
+  "use server";
+  await requireManagerOrAdmin();
+  const name = formData.get("name") as string;
+  const clientId = formData.get("clientId") as string;
+  if (!name || !clientId) return;
 
   await prisma.project.create({
     data: { name, clientId },
-  })
+  });
 
-  revalidatePath("/admin/projects")
+  revalidatePath("/admin/projects");
 }
 
 async function updateProject(formData: FormData) {
-  "use server"
-  await requireManagerOrAdmin()
-  const id = formData.get("id") as string
-  const name = formData.get("name") as string
-  const clientId = formData.get("clientId") as string
-  if (!id || !name || !clientId) return
+  "use server";
+  await requireManagerOrAdmin();
+  const id = formData.get("id") as string;
+  const name = formData.get("name") as string;
+  const clientId = formData.get("clientId") as string;
+  if (!id || !name || !clientId) return;
 
   await prisma.project.update({
     where: { id },
     data: { name, clientId },
-  })
+  });
 
-  revalidatePath("/admin/projects")
+  revalidatePath("/admin/projects");
 }
 
 async function deleteProject(formData: FormData) {
-  "use server"
-  await requireManagerOrAdmin()
-  const id = formData.get("id") as string
-  if (!id) return
+  "use server";
+  await requireManagerOrAdmin();
+  const id = formData.get("id") as string;
+  if (!id) return;
 
   await prisma.project.delete({
     where: { id },
-  })
+  });
 
-  revalidatePath("/admin/projects")
+  revalidatePath("/admin/projects");
 }
 
 export default async function ProjectsPage() {
-  const [projects, clients] = await Promise.all([getProjects(), getClients()])
-  const t = await getTranslations("admin.projects")
+  const [projects, clients] = await Promise.all([getProjects(), getClients()]);
+  const t = await getTranslations("admin.projects");
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t("subtitle")}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {/* Create Form */}
       <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-8">
-        <h2 className="text-lg font-semibold text-foreground mb-4">
-          {t("createTitle")}
-        </h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">{t("createTitle")}</h2>
         <form action={createProject} className="flex gap-4">
           <input
             type="text"
@@ -137,14 +134,15 @@ export default async function ProjectsPage() {
             {projects.map((project) => (
               <tr key={project.id} className="hover:bg-accent transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-semibold text-foreground">
+                  <Link
+                    href={`/admin/projects/${project.id}`}
+                    className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                  >
                     {project.name}
-                  </div>
+                  </Link>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-muted-foreground">
-                    {project.client.name}
-                  </div>
+                  <div className="text-sm text-muted-foreground">{project.client.name}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-muted-foreground">
@@ -158,10 +156,7 @@ export default async function ProjectsPage() {
             ))}
             {projects.length === 0 && (
               <tr>
-                <td
-                  colSpan={4}
-                  className="px-6 py-8 text-center text-sm text-muted-foreground"
-                >
+                <td colSpan={4} className="px-6 py-8 text-center text-sm text-muted-foreground">
                   {t("noProjects")}
                 </td>
               </tr>
@@ -170,5 +165,5 @@ export default async function ProjectsPage() {
         </table>
       </div>
     </div>
-  )
+  );
 }

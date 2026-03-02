@@ -1,11 +1,12 @@
-import { revalidatePath } from "next/cache"
-import prisma from "@/lib/prisma"
-import { requireAdmin } from "@/lib/permissions"
-import { DeleteTeamButton } from "./delete-team-button"
-import { getTranslations } from "next-intl/server"
+import { revalidatePath } from "next/cache";
+import Link from "next/link";
+import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/permissions";
+import { DeleteTeamButton } from "./delete-team-button";
+import { getTranslations } from "next-intl/server";
 
 async function getTeams() {
-  await requireAdmin()
+  await requireAdmin();
   return await prisma.team.findMany({
     include: {
       _count: {
@@ -13,61 +14,59 @@ async function getTeams() {
       },
     },
     orderBy: { name: "asc" },
-  })
+  });
 }
 
 async function createTeam(formData: FormData) {
-  "use server"
-  await requireAdmin()
-  const name = formData.get("name") as string
-  if (!name) return
+  "use server";
+  await requireAdmin();
+  const name = formData.get("name") as string;
+  if (!name) return;
 
   await prisma.team.create({
     data: { name },
-  })
+  });
 
-  revalidatePath("/admin/teams")
+  revalidatePath("/admin/teams");
 }
 
 async function updateTeam(formData: FormData) {
-  "use server"
-  await requireAdmin()
-  const id = formData.get("id") as string
-  const name = formData.get("name") as string
-  if (!id || !name) return
+  "use server";
+  await requireAdmin();
+  const id = formData.get("id") as string;
+  const name = formData.get("name") as string;
+  if (!id || !name) return;
 
   await prisma.team.update({
     where: { id },
     data: { name },
-  })
+  });
 
-  revalidatePath("/admin/teams")
+  revalidatePath("/admin/teams");
 }
 
 async function deleteTeam(formData: FormData) {
-  "use server"
-  await requireAdmin()
-  const id = formData.get("id") as string
-  if (!id) return
+  "use server";
+  await requireAdmin();
+  const id = formData.get("id") as string;
+  if (!id) return;
 
   await prisma.team.delete({
     where: { id },
-  })
+  });
 
-  revalidatePath("/admin/teams")
+  revalidatePath("/admin/teams");
 }
 
 export default async function TeamsPage() {
-  const teams = await getTeams()
-  const t = await getTranslations("admin.teams")
+  const teams = await getTeams();
+  const t = await getTranslations("admin.teams");
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t("subtitle")}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {/* Create Form */}
@@ -110,9 +109,12 @@ export default async function TeamsPage() {
             {teams.map((team) => (
               <tr key={team.id} className="hover:bg-accent transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-semibold text-foreground">
+                  <Link
+                    href={`/admin/teams/${team.id}`}
+                    className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                  >
                     {team.name}
-                  </div>
+                  </Link>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-muted-foreground">
@@ -135,5 +137,5 @@ export default async function TeamsPage() {
         </table>
       </div>
     </div>
-  )
+  );
 }

@@ -1,35 +1,36 @@
-import { revalidatePath } from "next/cache"
-import prisma from "@/lib/prisma"
-import { UserRole } from "@prisma/client"
-import EditUserButton from "./edit-user-button"
-import { requireAdmin } from "@/lib/permissions"
-import { getProxiedImageUrl } from "@/lib/utils/image-proxy"
-import { getTranslations } from "next-intl/server"
+import { revalidatePath } from "next/cache";
+import Link from "next/link";
+import prisma from "@/lib/prisma";
+import { UserRole } from "@prisma/client";
+import EditUserButton from "./edit-user-button";
+import { requireAdmin } from "@/lib/permissions";
+import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
+import { getTranslations } from "next-intl/server";
 
 async function getUsers() {
-  await requireAdmin()
+  await requireAdmin();
   return await prisma.user.findMany({
     include: {
       team: true,
     },
     orderBy: { email: "asc" },
-  })
+  });
 }
 
 async function getTeams() {
-  await requireAdmin()
+  await requireAdmin();
   return await prisma.team.findMany({
     orderBy: { name: "asc" },
-  })
+  });
 }
 
 async function updateUser(formData: FormData) {
-  "use server"
-  await requireAdmin()
-  const id = formData.get("id") as string
-  const role = formData.get("role") as UserRole
-  const newTeamId = formData.get("teamId") as string | null
-  if (!id || !role) return
+  "use server";
+  await requireAdmin();
+  const id = formData.get("id") as string;
+  const role = formData.get("role") as UserRole;
+  const newTeamId = formData.get("teamId") as string | null;
+  if (!id || !role) return;
 
   // ✅ VALIDATION: Check if user has active stages when changing teams
   const activeStages = await prisma.taskActiveStage.findMany({
@@ -38,7 +39,7 @@ async function updateUser(formData: FormData) {
       status: "ACTIVE",
     },
     select: { id: true },
-  })
+  });
 
   // If changing team and has active stages, automatically unassign them
   if (activeStages.length > 0) {
@@ -48,7 +49,7 @@ async function updateUser(formData: FormData) {
         status: "ACTIVE",
       },
       data: { assigneeId: null }, // ✅ Desatribui etapas ativas automaticamente
-    })
+    });
 
     // Also update task status if needed
     const affectedTasks = await prisma.taskActiveStage.findMany({
@@ -58,7 +59,7 @@ async function updateUser(formData: FormData) {
       },
       select: { taskId: true },
       distinct: ["taskId"],
-    })
+    });
 
     // Set tasks back to BACKLOG if they have no more assigned stages
     for (const stage of affectedTasks) {
@@ -68,13 +69,13 @@ async function updateUser(formData: FormData) {
           assigneeId: { not: null },
           status: "ACTIVE",
         },
-      })
+      });
 
       if (remainingAssigned === 0) {
         await prisma.task.update({
           where: { id: stage.taskId },
           data: { status: "BACKLOG" },
-        })
+        });
       }
     }
   }
@@ -85,23 +86,21 @@ async function updateUser(formData: FormData) {
       role,
       teamId: newTeamId || null,
     },
-  })
+  });
 
-  revalidatePath("/admin/users")
-  revalidatePath("/dashboard") // ✅ Revalidate dashboard
+  revalidatePath("/admin/users");
+  revalidatePath("/dashboard"); // ✅ Revalidate dashboard
 }
 
 export default async function UsersPage() {
-  const [users, teams] = await Promise.all([getUsers(), getTeams()])
-  const t = await getTranslations("admin.users")
+  const [users, teams] = await Promise.all([getUsers(), getTeams()]);
+  const t = await getTranslations("admin.users");
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t("subtitle")}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {/* Users List */}
@@ -138,9 +137,12 @@ export default async function UsersPage() {
                         alt=""
                       />
                     )}
-                    <div className="text-sm font-semibold text-foreground">
+                    <Link
+                      href={`/admin/users/${user.id}`}
+                      className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                    >
                       {user.name || t("noName")}
-                    </div>
+                    </Link>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -157,20 +159,13 @@ export default async function UsersPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <EditUserButton
-                    user={user}
-                    teams={teams}
-                    updateUser={updateUser}
-                  />
+                  <EditUserButton user={user} teams={teams} updateUser={updateUser} />
                 </td>
               </tr>
             ))}
             {users.length === 0 && (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-6 py-8 text-center text-sm text-muted-foreground"
-                >
+                <td colSpan={5} className="px-6 py-8 text-center text-sm text-muted-foreground">
                   {t("noUsers")}
                 </td>
               </tr>
@@ -179,5 +174,5 @@ export default async function UsersPage() {
         </table>
       </div>
     </div>
-  )
+  );
 }
