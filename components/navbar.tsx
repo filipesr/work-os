@@ -1,31 +1,34 @@
-import { auth } from "@/auth"
-import { UserRole } from "@prisma/client"
-import { prisma } from "@/lib/prisma"
-import Link from "next/link"
-import { UserMenu } from "@/components/user-menu"
-import { getTranslations } from "next-intl/server"
+import { auth } from "@/auth";
+import { UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { UserMenu } from "@/components/user-menu";
+import { getTranslations } from "next-intl/server";
 
 export async function Navbar() {
-  const session = await auth()
+  const session = await auth();
 
   if (!session?.user) {
-    return null
+    return null;
   }
 
-  const userRole = (session.user as any).role as UserRole
-  const userId = (session.user as any).id
-  const t = await getTranslations("common.nav")
+  const userRole = (session.user as any).role as UserRole;
+  const userId = (session.user as any).id;
+  const t = await getTranslations("common.nav");
 
   // Buscar teamId atualizado do banco
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { teamId: true }
-  })
-  const hasTeam = !!currentUser?.teamId
-  const isAdminOrManager = userRole === UserRole.ADMIN || userRole === UserRole.MANAGER
+    select: { teamId: true },
+  });
+  const hasTeam = !!currentUser?.teamId;
+  const isAdminOrManager = userRole === UserRole.ADMIN || userRole === UserRole.MANAGER;
 
   return (
-    <nav className="bg-card shadow-lg border-b-2 border-border" aria-label="Main navigation">
+    <nav
+      className="sticky top-0 z-50 bg-card shadow-lg border-b-2 border-border"
+      aria-label="Main navigation"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex space-x-8">
@@ -48,7 +51,6 @@ export async function Navbar() {
                 {t("tasks")}
               </Link>
             )}
-
           </div>
           <div className="flex items-center space-x-4">
             <UserMenu userName={session.user.name ?? null} userRole={userRole} />
@@ -56,5 +58,5 @@ export async function Navbar() {
         </div>
       </div>
     </nav>
-  )
+  );
 }

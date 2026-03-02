@@ -221,7 +221,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
 
         {/* Artifacts Sidebar */}
         <div className="lg:col-span-1">
-          <div className="sticky top-8">
+          <div className="sticky top-24">
             <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
               <h2 className="text-xl font-bold text-foreground mb-4">{t("artifacts")}</h2>
               {task.artifacts.length > 0 ? (
