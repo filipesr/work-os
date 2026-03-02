@@ -7,7 +7,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, User, LogOut, Settings, BarChart3, TrendingUp, Activity, GitBranch } from "lucide-react";
+import {
+  ChevronDown,
+  User,
+  LogOut,
+  Settings,
+  BarChart3,
+  TrendingUp,
+  Activity,
+  GitBranch,
+} from "lucide-react";
 import { signOutAction } from "@/lib/actions/auth";
 import { useTranslations } from "next-intl";
 
@@ -75,6 +84,7 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
           <DropdownMenuItem href="/admin">{t("nav.adminDashboard")}</DropdownMenuItem>
           <DropdownMenuItem href="/admin/clients">{tAdmin("nav.clients")}</DropdownMenuItem>
           <DropdownMenuItem href="/admin/projects">{tAdmin("nav.projects")}</DropdownMenuItem>
+          <DropdownMenuItem href="/admin/tasks">{tAdmin("nav.tasks")}</DropdownMenuItem>
         </>
       )}
 

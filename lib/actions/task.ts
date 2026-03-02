@@ -126,12 +126,14 @@ export async function createTask(formData: FormData) {
 /**
  * Get all projects for selection
  */
-export async function getProjectsForSelect(): Promise<Array<{
-  id: string;
-  name: string;
-  clientId: string;
-  client: { name: string };
-}>> {
+export async function getProjectsForSelect(): Promise<
+  Array<{
+    id: string;
+    name: string;
+    clientId: string;
+    client: { name: string };
+  }>
+> {
   await getCurrentUser();
 
   // Return all projects - access control can be added later if needed
@@ -238,13 +240,26 @@ export async function getTaskById(taskId: string) {
         },
         orderBy: { createdAt: "desc" },
       },
+      artifacts: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
 
   if (!task) return null;
 
   // Add computed properties for backward compatibility
-  const currentActiveStage = task.activeStages.find(as => as.status === "ACTIVE");
+  const currentActiveStage = task.activeStages.find((as) => as.status === "ACTIVE");
 
   return {
     ...task,
@@ -304,7 +319,7 @@ export async function getTasks() {
 
   // Add computed properties for backward compatibility
   return tasks.map((task) => {
-    const currentActiveStage = task.activeStages.find(as => as.status === "ACTIVE");
+    const currentActiveStage = task.activeStages.find((as) => as.status === "ACTIVE");
     return {
       ...task,
       currentStage: currentActiveStage ? currentActiveStage.stage : null,
@@ -368,7 +383,9 @@ export async function unassignTask(taskId: string) {
     const isAssignee = task.assigneeId === currentUserId;
 
     if (!isAdmin && !isManager && !isAssignee) {
-      return { error: "Apenas administradores, gerentes ou o responsável atual podem desatribuir tarefas" };
+      return {
+        error: "Apenas administradores, gerentes ou o responsável atual podem desatribuir tarefas",
+      };
     }
 
     // Unassign task and return it to backlog
@@ -388,7 +405,7 @@ export async function unassignTask(taskId: string) {
       data: {
         taskId: taskId,
         userId: currentUserId,
-        content: `**TAREFA DESATRIBUÍDA** por ${userName}\nAnterior: ${previousAssignee}\nData: ${new Date().toLocaleString('pt-BR')}`,
+        content: `**TAREFA DESATRIBUÍDA** por ${userName}\nAnterior: ${previousAssignee}\nData: ${new Date().toLocaleString("pt-BR")}`,
       },
     });
 
@@ -435,7 +452,9 @@ export async function completeTask(taskId: string) {
     const isAssignee = task.assigneeId === currentUserId;
 
     if (!isAdmin && !isManager && !isAssignee) {
-      return { error: "Apenas administradores, gerentes ou o responsável atual podem concluir tarefas" };
+      return {
+        error: "Apenas administradores, gerentes ou o responsável atual podem concluir tarefas",
+      };
     }
 
     // Check if task is already completed
@@ -458,7 +477,7 @@ export async function completeTask(taskId: string) {
       data: {
         taskId: taskId,
         userId: currentUserId,
-        content: `**TAREFA CONCLUÍDA** por ${userName}\nData: ${new Date().toLocaleString('pt-BR')}`,
+        content: `**TAREFA CONCLUÍDA** por ${userName}\nData: ${new Date().toLocaleString("pt-BR")}`,
       },
     });
 
@@ -680,7 +699,8 @@ export async function completeStageAndAdvance(taskId: string, stageId: string) {
       const [artifactCount, commentCount] = contributions;
       if (artifactCount === 0 && commentCount === 0) {
         return {
-          error: "Você precisa adicionar pelo menos 1 artefato ou comentário antes de completar esta etapa.",
+          error:
+            "Você precisa adicionar pelo menos 1 artefato ou comentário antes de completar esta etapa.",
         };
       }
     }
@@ -715,7 +735,7 @@ export async function completeStageAndAdvance(taskId: string, stageId: string) {
         data: {
           taskId,
           userId: currentUserId,
-          content: `**ETAPA CONCLUÍDA POR ${userRole}** ${userName}\nEtapa: ${activeStage.stage.name}\nData: ${new Date().toLocaleString('pt-BR')}\n\n⚠️ Esta etapa foi concluída manualmente por um ${userRole === 'ADMIN' ? 'administrador' : 'gerente'}.`,
+          content: `**ETAPA CONCLUÍDA POR ${userRole}** ${userName}\nEtapa: ${activeStage.stage.name}\nData: ${new Date().toLocaleString("pt-BR")}\n\n⚠️ Esta etapa foi concluída manualmente por um ${userRole === "ADMIN" ? "administrador" : "gerente"}.`,
         },
       });
     }
@@ -1090,7 +1110,7 @@ export async function claimActiveStage(taskId: string, stageId: string) {
       data: {
         taskId,
         userId: currentUserId,
-        content: `**ETAPA REIVINDICADA** por ${userName}\nEtapa: ${activeStage.stage.name}\nData: ${new Date().toLocaleString('pt-BR')}`,
+        content: `**ETAPA REIVINDICADA** por ${userName}\nEtapa: ${activeStage.stage.name}\nData: ${new Date().toLocaleString("pt-BR")}`,
       },
     });
 
@@ -1150,7 +1170,9 @@ export async function unassignActiveStage(taskId: string, stageId: string) {
     const isAssignee = activeStage.assigneeId === currentUserId;
 
     if (!isAdmin && !isManager && !isAssignee) {
-      return { error: "Apenas administradores, gerentes ou o responsável atual podem desatribuir etapas" };
+      return {
+        error: "Apenas administradores, gerentes ou o responsável atual podem desatribuir etapas",
+      };
     }
 
     await prisma.taskActiveStage.update({
@@ -1176,13 +1198,14 @@ export async function unassignActiveStage(taskId: string, stageId: string) {
 
     // Add comment
     const userName = currentUser.name || currentUser.email;
-    const previousAssignee = activeStage.assignee?.name || activeStage.assignee?.email || "Não atribuído";
+    const previousAssignee =
+      activeStage.assignee?.name || activeStage.assignee?.email || "Não atribuído";
 
     await prisma.taskComment.create({
       data: {
         taskId,
         userId: currentUserId,
-        content: `**ETAPA DESATRIBUÍDA** por ${userName}\nEtapa: ${activeStage.stage.name}\nAnterior: ${previousAssignee}\nData: ${new Date().toLocaleString('pt-BR')}`,
+        content: `**ETAPA DESATRIBUÍDA** por ${userName}\nEtapa: ${activeStage.stage.name}\nAnterior: ${previousAssignee}\nData: ${new Date().toLocaleString("pt-BR")}`,
       },
     });
 
@@ -1246,16 +1269,12 @@ export async function getPreviousStages(taskId: string) {
   }
 }
 
-
 /**
  * Advances a task to the next stage (forward movement).
  * Validates that all dependencies are met before allowing the transition.
  * This is the core of the workflow engine.
  */
-export async function advanceTaskStage(
-  taskId: string,
-  nextStageId: string
-) {
+export async function advanceTaskStage(taskId: string, nextStageId: string) {
   const user = await requireMemberOrHigher();
   const currentUserId = user.id as string;
 
@@ -1292,7 +1311,11 @@ export async function advanceTaskStage(
     }
 
     // ✅ Admin/Manager can bypass team validation
-    if (!isAdminOrManager && userWithTeam?.teamId && nextStage.defaultTeamId !== userWithTeam.teamId) {
+    if (
+      !isAdminOrManager &&
+      userWithTeam?.teamId &&
+      nextStage.defaultTeamId !== userWithTeam.teamId
+    ) {
       return {
         error: `Você não pode avançar para a etapa "${nextStage.name}" porque ela pertence ao time "${nextStage.defaultTeam?.name}". Você faz parte do time "${userWithTeam.team?.name}".`,
       };
@@ -1315,11 +1338,7 @@ export async function advanceTaskStage(
  * 2. Creates a new ACTIVE stage for the reverted-to stage
  * 3. Logs the reversion with a comment
  */
-export async function revertTaskStage(
-  taskId: string,
-  revertToStageId: string,
-  comment: string
-) {
+export async function revertTaskStage(taskId: string, revertToStageId: string, comment: string) {
   const user = await requireMemberOrHigher();
   const currentUserId = user.id as string;
   const userRole = (user as any).role as string;
@@ -1365,7 +1384,7 @@ export async function revertTaskStage(
 
     const isAdmin = userWithRole?.role === "ADMIN";
     const isManager = userWithRole?.role === "MANAGER";
-    const isAssignee = currentActiveStages.some(as => as.assigneeId === currentUserId);
+    const isAssignee = currentActiveStages.some((as) => as.assigneeId === currentUserId);
 
     if (!isAdmin && !isManager && !isAssignee) {
       return { error: "Você não tem permissão para reverter esta tarefa" };
@@ -1449,13 +1468,13 @@ export async function revertTaskStage(
 
       // 4d. Add comment explaining the reversion
       const userName = userWithRole?.name || user.email;
-      const stageNames = currentActiveStages.map(as => as.stage.name).join(", ");
+      const stageNames = currentActiveStages.map((as) => as.stage.name).join(", ");
 
       await tx.taskComment.create({
         data: {
           taskId,
           userId: currentUserId,
-          content: `**TAREFA REVERTIDA** por ${userName}\n\nDe: ${stageNames}\nPara: ${targetStage.name}\n\n**Motivo:** ${comment.trim()}\n\nData: ${new Date().toLocaleString('pt-BR')}`,
+          content: `**TAREFA REVERTIDA** por ${userName}\n\nDe: ${stageNames}\nPara: ${targetStage.name}\n\n**Motivo:** ${comment.trim()}\n\nData: ${new Date().toLocaleString("pt-BR")}`,
         },
       });
 
@@ -1698,7 +1717,10 @@ export async function claimTask(taskId: string) {
   try {
     // DEPRECATED: Old claimTask function for task-level assignment
     // New system uses claimActiveStage for stage-level assignment
-    return { error: "Esta função foi depreciada. Use claimActiveStage() para reivindicar etapas específicas." };
+    return {
+      error:
+        "Esta função foi depreciada. Use claimActiveStage() para reivindicar etapas específicas.",
+    };
   } catch (error) {
     console.error("Error claiming task:", error);
     return { error: "Erro ao reivindicar tarefa" };
@@ -1711,7 +1733,9 @@ export async function assignTask(taskId: string, targetUserId: string) {
   try {
     // DEPRECATED: Old assignTask function for task-level assignment
     // New system uses claimActiveStage for stage-level assignment with automatic team validation
-    return { error: "Esta função foi depreciada. Use claimActiveStage() para atribuir etapas específicas." };
+    return {
+      error: "Esta função foi depreciada. Use claimActiveStage() para atribuir etapas específicas.",
+    };
   } catch (error) {
     console.error("Error assigning task:", error);
     return {

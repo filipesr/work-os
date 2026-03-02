@@ -237,12 +237,15 @@
       "exited": "Concluído:",
       "comments": "Comentários",
       "by": "Por",
+      "artifacts": "Artefatos",
+      "noArtifacts": "Nenhum artefato anexado",
       "status": {
         "done": "Concluída",
         "inProgress": "Em Progresso",
         "blocked": "Bloqueada"
       },
       "taskStatus": {
+        "BACKLOG": "Backlog",
         "COMPLETED": "Concluída",
         "IN_PROGRESS": "Em Progresso",
         "CANCELLED": "Cancelada",
