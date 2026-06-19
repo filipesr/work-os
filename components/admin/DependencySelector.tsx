@@ -25,19 +25,7 @@ export function DependencySelector({
 }: DependencySelectorProps) {
   const t = useTranslations("template.dependencies");
 
-  // Filter out current stage if provided
-  const availableStages = currentStageId
-    ? stages.filter(s => s.id !== currentStageId)
-    : stages;
-
-  // Debug: log when component renders
-  console.log('[DEPENDENCY SELECTOR] Rendering with:', {
-    totalStages: stages.length,
-    availableStages: availableStages.length,
-    selectedCount: selectedDeps.size,
-    selectedIds: Array.from(selectedDeps),
-    currentStageId
-  });
+  const availableStages = currentStageId ? stages.filter((s) => s.id !== currentStageId) : stages;
 
   if (availableStages.length === 0) {
     return (
@@ -52,19 +40,14 @@ export function DependencySelector({
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <label className="block text-sm font-semibold text-foreground">
-            {t("title")}
-          </label>
-          <p className="text-xs text-muted-foreground mt-1">
-            {t("subtitle")}
-          </p>
+          <label className="block text-sm font-semibold text-foreground">{t("title")}</label>
+          <p className="text-xs text-muted-foreground mt-1">{t("subtitle")}</p>
         </div>
         {selectedDeps.size > 0 && (
           <Badge variant="default" className="ml-2">
             {selectedDeps.size === 1
               ? t("selectedCount", { count: selectedDeps.size })
-              : t("selectedCountPlural", { count: selectedDeps.size })
-            }
+              : t("selectedCountPlural", { count: selectedDeps.size })}
           </Badge>
         )}
       </div>

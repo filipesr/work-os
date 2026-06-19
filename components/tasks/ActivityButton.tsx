@@ -83,12 +83,7 @@ export function ActivityButton({
     <>
       {isThisTaskActive ? (
         // This task is currently active - show STOP button
-        <Button
-          onClick={handleStop}
-          disabled={isPending}
-          variant="destructive"
-          className="w-full"
-        >
+        <Button onClick={handleStop} disabled={isPending} variant="destructive" className="w-full">
           {isPending ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -133,15 +128,18 @@ export function ActivityButton({
       {/* Stop Activity Modal */}
       {showStopModal && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-background rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 border border-border">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="stop-activity-title"
+            className="bg-background rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 border border-border"
+          >
             {/* Header */}
             <div className="mb-6">
-              <h3 className="text-2xl font-bold text-foreground mb-2">
+              <h3 id="stop-activity-title" className="text-2xl font-bold text-foreground mb-2">
                 {t("modal.title")}
               </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                {t("modal.subtitle")}
-              </p>
+              <p className="text-muted-foreground text-sm leading-relaxed">{t("modal.subtitle")}</p>
             </div>
 
             {/* Description Field */}
@@ -157,9 +155,7 @@ export function ActivityButton({
                 className="w-full px-4 py-3 border-2 border-input bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-input disabled:opacity-50 transition-all placeholder:text-muted-foreground"
                 placeholder={t("modal.placeholder")}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                {t("modal.hint")}
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">{t("modal.hint")}</p>
             </div>
 
             {/* Actions */}

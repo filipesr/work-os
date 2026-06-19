@@ -6,15 +6,21 @@ import EditUserButton from "./edit-user-button";
 import { requireAdmin } from "@/lib/permissions";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { getTranslations } from "next-intl/server";
+import { Pagination } from "@/components/ui/pagination";
+import { DEFAULT_PAGE_SIZE, paginate, parsePage, type PageParams } from "@/lib/pagination";
 
-async function getUsers() {
+async function getUsers(page: number, pageSize: number) {
   await requireAdmin();
-  return await prisma.user.findMany({
-    include: {
-      team: true,
-    },
-    orderBy: { email: "asc" },
-  });
+  const [items, total] = await Promise.all([
+    prisma.user.findMany({
+      include: { team: true },
+      orderBy: { email: "asc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.user.count(),
+  ]);
+  return paginate(items, total, page, pageSize);
 }
 
 async function getTeams() {
@@ -92,8 +98,14 @@ async function updateUser(formData: FormData) {
   revalidatePath("/dashboard"); // ✅ Revalidate dashboard
 }
 
-export default async function UsersPage() {
-  const [users, teams] = await Promise.all([getUsers(), getTeams()]);
+export default async function UsersPage({ searchParams }: { searchParams: Promise<PageParams> }) {
+  const params = await searchParams;
+  const page = parsePage(params.page);
+  const [paginatedUsers, teams] = await Promise.all([
+    getUsers(page, DEFAULT_PAGE_SIZE),
+    getTeams(),
+  ]);
+  const { items: users, total, totalPages, pageSize } = paginatedUsers;
   const t = await getTranslations("admin.users");
 
   return (
@@ -172,6 +184,13 @@ export default async function UsersPage() {
             )}
           </tbody>
         </table>
+        <Pagination
+          basePath="/admin/users"
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+        />
       </div>
     </div>
   );

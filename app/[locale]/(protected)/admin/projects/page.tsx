@@ -4,18 +4,24 @@ import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { DeleteProjectButton } from "./delete-project-button";
 import { getTranslations } from "next-intl/server";
+import { Pagination } from "@/components/ui/pagination";
+import { DEFAULT_PAGE_SIZE, paginate, parsePage, type PageParams } from "@/lib/pagination";
 
-async function getProjects() {
+async function getProjects(page: number, pageSize: number) {
   await requireManagerOrAdmin();
-  return await prisma.project.findMany({
-    include: {
-      client: true,
-      _count: {
-        select: { tasks: true },
+  const [items, total] = await Promise.all([
+    prisma.project.findMany({
+      include: {
+        client: true,
+        _count: { select: { tasks: true } },
       },
-    },
-    orderBy: { name: "asc" },
-  });
+      orderBy: { name: "asc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.project.count(),
+  ]);
+  return paginate(items, total, page, pageSize);
 }
 
 async function getClients() {
@@ -68,8 +74,18 @@ async function deleteProject(formData: FormData) {
   revalidatePath("/admin/projects");
 }
 
-export default async function ProjectsPage() {
-  const [projects, clients] = await Promise.all([getProjects(), getClients()]);
+export default async function ProjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  const params = await searchParams;
+  const page = parsePage(params.page);
+  const [paginatedProjects, clients] = await Promise.all([
+    getProjects(page, DEFAULT_PAGE_SIZE),
+    getClients(),
+  ]);
+  const { items: projects, total, totalPages, pageSize } = paginatedProjects;
   const t = await getTranslations("admin.projects");
 
   return (
@@ -163,6 +179,13 @@ export default async function ProjectsPage() {
             )}
           </tbody>
         </table>
+        <Pagination
+          basePath="/admin/projects"
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+        />
       </div>
     </div>
   );

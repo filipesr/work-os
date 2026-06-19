@@ -72,29 +72,34 @@ export function RevertStageButton({
           disabled={isPending}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-          ← Revert Stage
+          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}← Revert Stage
         </button>
       )}
 
       {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-background rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 border border-border">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="revert-stage-title"
+            className="bg-background rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 border border-border"
+          >
             {/* Header */}
             <div className="mb-6">
-              <h3 className="text-2xl font-bold text-foreground mb-2">
+              <h3 id="revert-stage-title" className="text-2xl font-bold text-foreground mb-2">
                 Reverter para Etapa Anterior
               </h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Envie esta tarefa de volta para uma etapa anterior (ex: necessita ajustes).
-                Um comentário explicativo é obrigatório.
+                Envie esta tarefa de volta para uma etapa anterior (ex: necessita ajustes). Um
+                comentário explicativo é obrigatório.
               </p>
             </div>
 
             {/* Info Badge */}
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs text-blue-800">
-                <strong>ℹ️ Informação:</strong> Esta ação marcará a etapa atual como revertida e criará um novo log de entrada na etapa anterior.
+                <strong>ℹ️ Informação:</strong> Esta ação marcará a etapa atual como revertida e
+                criará um novo log de entrada na etapa anterior.
               </p>
             </div>
 
@@ -147,8 +152,18 @@ export function RevertStageButton({
                       {selectedStageId === stage.id && (
                         <div className="flex-shrink-0">
                           <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            <svg
+                              className="w-3 h-3 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={3}
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                           </div>
                         </div>
@@ -185,25 +200,25 @@ export function RevertStageButton({
                   : `${previousStages.length} etapas anteriores disponíveis`}
               </p>
               <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  setComment("");
-                  setSelectedStageId(null);
-                }}
-                disabled={isPending}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRevert}
-                disabled={isPending || !selectedStageId || !comment.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isPending ? "Reverting..." : "Revert Task"}
-              </button>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    setComment("");
+                    setSelectedStageId(null);
+                  }}
+                  disabled={isPending}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRevert}
+                  disabled={isPending || !selectedStageId || !comment.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {isPending ? "Reverting..." : "Revert Task"}
+                </button>
               </div>
             </div>
           </div>

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+
+const ALLOWED_HOSTS = new Set(["lh3.googleusercontent.com", "res.cloudinary.com"]);
 
 export async function GET(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
@@ -18,8 +21,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "URL parameter is required" }, { status: 400 });
   }
 
+  let parsed: URL;
   try {
-    const response = await fetch(imageUrl, {
+    parsed = new URL(imageUrl);
+  } catch {
+    return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+  }
+
+  if (parsed.protocol !== "https:" || !ALLOWED_HOSTS.has(parsed.hostname)) {
+    return NextResponse.json({ error: "Host not allowed" }, { status: 400 });
+  }
+
+  try {
+    const response = await fetch(parsed.toString(), {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
@@ -30,16 +44,19 @@ export async function GET(request: NextRequest) {
     }
 
     const contentType = response.headers.get("content-type") || "image/jpeg";
+    if (!contentType.startsWith("image/")) {
+      return NextResponse.json({ error: "Not an image" }, { status: 400 });
+    }
     const imageBuffer = await response.arrayBuffer();
 
     return new NextResponse(imageBuffer, {
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "public, max-age=86400", // Cache for 24 hours
+        "Cache-Control": "public, max-age=86400",
       },
     });
   } catch (error) {
-    console.error("Error proxying image:", error);
+    logger.error("Error proxying image:", error);
     return NextResponse.json({ error: "Failed to proxy image" }, { status: 500 });
   }
 }

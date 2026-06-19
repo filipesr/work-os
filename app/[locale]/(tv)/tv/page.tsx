@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getTVActiveWorkLogs, getTVOnlineUsers, getTVOfflineUsers } from "@/lib/actions/tv-activity";
+import {
+  getTVActiveWorkLogs,
+  getTVOnlineUsers,
+  getTVOfflineUsers,
+} from "@/lib/actions/tv-activity";
 import { RefreshCw } from "lucide-react";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
+import { logger } from "@/lib/logger";
 import { useTranslations } from "next-intl";
 
 type ActiveLogData = Awaited<ReturnType<typeof getTVActiveWorkLogs>>;
@@ -43,7 +48,7 @@ export default function TVLiveActivityPage() {
       setOfflineUsers(offlineData);
       setIsLoading(false);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      logger.error("Error fetching TV data:", error);
       setIsLoading(false);
     }
   };
@@ -88,7 +93,11 @@ export default function TVLiveActivityPage() {
       <div className="flex items-center justify-between mb-4 text-gray-400 text-sm">
         <div className="flex items-center gap-4">
           <span className="text-lg font-mono text-gray-300">
-            {clock.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            {clock.toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })}
           </span>
           <span>
             <span className="inline-block h-2 w-2 rounded-full bg-green-500 mr-1" />
@@ -98,9 +107,7 @@ export default function TVLiveActivityPage() {
             <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mr-1" />
             {workingCount} {t("working")}
           </span>
-          <span className="text-gray-600">
-            {allUsers.length} total
-          </span>
+          <span className="text-gray-600">{allUsers.length} total</span>
         </div>
         <RefreshCw className="h-3 w-3 animate-spin text-gray-600" />
       </div>
@@ -124,11 +131,12 @@ export default function TVLiveActivityPage() {
               key={user.id}
               className={`
                 flex flex-col items-center gap-1.5 rounded-lg px-2 py-3 transition-all
-                ${user.isOnline
-                  ? user.activeLog
-                    ? "bg-green-950/60 border border-green-700/60"
-                    : "bg-green-950/30 border border-green-800/40"
-                  : "bg-gray-900/50 border border-gray-800/40 opacity-50"
+                ${
+                  user.isOnline
+                    ? user.activeLog
+                      ? "bg-green-950/60 border border-green-700/60"
+                      : "bg-green-950/30 border border-green-800/40"
+                    : "bg-gray-900/50 border border-gray-800/40 opacity-50"
                 }
               `}
             >
@@ -138,7 +146,10 @@ export default function TVLiveActivityPage() {
                   src={getProxiedImageUrl(user.image) || undefined}
                   alt={firstName}
                   className={`h-full w-full object-cover ${!user.isOnline ? "grayscale" : ""}`}
-                  onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.nextElementSibling?.classList.remove("hidden"); }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                  }}
                 />
                 <div className="hidden h-full w-full items-center justify-center bg-gray-700 text-2xl font-bold text-gray-400 absolute inset-0 flex">
                   {firstName.charAt(0).toUpperCase()}
@@ -149,7 +160,9 @@ export default function TVLiveActivityPage() {
               </div>
 
               {/* Name */}
-              <p className={`text-xs font-medium truncate w-full text-center ${user.isOnline ? "text-gray-100" : "text-gray-500"}`}>
+              <p
+                className={`text-xs font-medium truncate w-full text-center ${user.isOnline ? "text-gray-100" : "text-gray-500"}`}
+              >
                 {firstName}
               </p>
             </div>

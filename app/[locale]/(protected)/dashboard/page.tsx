@@ -37,7 +37,7 @@ export default async function DashboardPage() {
     return notFound();
   }
 
-  const userId = (session.user as any).id;
+  const userId = session.user.id;
 
   // 🔥 FIX CRÍTICO: Buscar teamId atual do banco de dados
   // Resolve problema de sessão desatualizada quando admin adiciona usuário ao time
@@ -58,9 +58,7 @@ export default async function DashboardPage() {
               userName: session.user.name?.split(" ")[0] || "Usuário",
             })}
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {tNoTeam("message")}
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{tNoTeam("message")}</p>
         </div>
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded dark:bg-yellow-950/20">
           <div className="flex">
@@ -69,8 +67,7 @@ export default async function DashboardPage() {
             </div>
             <div className="ml-3">
               <p className="text-sm text-yellow-700 dark:text-yellow-200">
-                <strong>{tNoTeam("warningTitle")}</strong>{" "}
-                {tNoTeam("warningMessage")}
+                <strong>{tNoTeam("warningTitle")}</strong> {tNoTeam("warningMessage")}
               </p>
             </div>
           </div>

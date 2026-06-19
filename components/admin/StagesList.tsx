@@ -43,42 +43,28 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
 
   const handleToggleDep = (stageId: string) => {
     const newSelected = new Set(editingDeps);
-    const action = newSelected.has(stageId) ? 'remove' : 'add';
-
     if (newSelected.has(stageId)) {
       newSelected.delete(stageId);
     } else {
       newSelected.add(stageId);
     }
-
-    console.log(`[TOGGLE DEP] ${action} stage ${stageId}, new deps:`, Array.from(newSelected));
     setEditingDeps(newSelected);
   };
 
-  // Effect to initialize editing dependencies when entering edit mode
   useEffect(() => {
     if (editingStageId) {
-      const stage = stages.find(s => s.id === editingStageId);
+      const stage = stages.find((s) => s.id === editingStageId);
       if (stage) {
-        const deps = stage.dependents.map(d => d.dependsOnStageId);
-        console.log('[EDIT MODE] Loading dependencies for stage:', stage.name);
-        console.log('[EDIT MODE] Current dependencies:', stage.dependents.map(d => d.dependsOn.name).join(', '));
-        console.log('[EDIT MODE] Dependency IDs:', deps);
+        const deps = stage.dependents.map((d) => d.dependsOnStageId);
         setEditingDeps(new Set(deps));
       }
     } else {
-      // Clear deps when not editing
-      console.log('[EDIT MODE] Clearing dependencies');
       setEditingDeps(new Set());
     }
   }, [editingStageId, stages]);
 
   if (stages.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground py-8">
-        {t("empty")}
-      </div>
-    );
+    return <div className="text-center text-muted-foreground py-8">{t("empty")}</div>;
   }
 
   return (
@@ -98,17 +84,11 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                   const formData = new FormData(e.currentTarget);
 
                   // Add selected dependencies to form data
-                  editingDeps.forEach(depId => {
-                    formData.append('dependencies[]', depId);
+                  editingDeps.forEach((depId) => {
+                    formData.append("dependencies[]", depId);
                   });
 
-                  console.log('Updating stage', stage.id, 'with dependencies:', Array.from(editingDeps));
-
-                  const result = await updateTemplateStage(
-                    stage.id,
-                    templateId,
-                    formData
-                  );
+                  const result = await updateTemplateStage(stage.id, templateId, formData);
 
                   setIsSubmitting(false);
 
@@ -227,9 +207,7 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                       {stage.dependents.length > 0 && (
                         <p className="text-sm text-muted-foreground">
                           <span className="font-semibold text-foreground">{t("dependsOn")}</span>{" "}
-                          {stage.dependents
-                            .map((dep) => dep.dependsOn.name)
-                            .join(", ")}
+                          {stage.dependents.map((dep) => dep.dependsOn.name).join(", ")}
                         </p>
                       )}
                     </div>
@@ -255,8 +233,18 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
             {/* Delete Confirmation Modal */}
             {deletingStageId === stage.id && (
               <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                <div className="bg-card border-2 border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-                  <h3 className="text-xl font-bold text-foreground mb-4">{t("deleteConfirmTitle")}</h3>
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby={`delete-stage-title-${stage.id}`}
+                  className="bg-card border-2 border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg"
+                >
+                  <h3
+                    id={`delete-stage-title-${stage.id}`}
+                    className="text-xl font-bold text-foreground mb-4"
+                  >
+                    {t("deleteConfirmTitle")}
+                  </h3>
                   <p className="text-muted-foreground mb-6">
                     {t("deleteConfirmMessage", { stageName: stage.name })}
                   </p>

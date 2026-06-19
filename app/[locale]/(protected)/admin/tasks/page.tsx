@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { getTasks } from "@/lib/actions/task";
 import { getTranslations } from "next-intl/server";
+import { Pagination } from "@/components/ui/pagination";
+import { parsePage, type PageParams } from "@/lib/pagination";
 
-export default async function TasksPage() {
+export default async function TasksPage({ searchParams }: { searchParams: Promise<PageParams> }) {
   const t = await getTranslations("admin.tasks.list");
-  const tasks = await getTasks();
+  const params = await searchParams;
+  const page = parsePage(params.page);
+  const { items: tasks, total, totalPages, pageSize } = await getTasks({ page });
 
   return (
     <div className="container mx-auto p-8">
@@ -12,9 +16,7 @@ export default async function TasksPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {t("subtitle")}
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
         <Link
           href="/admin/tasks/new"
@@ -44,9 +46,7 @@ export default async function TasksPage() {
               </svg>
             </div>
             <h3 className="text-xl font-bold text-foreground mb-3">{t("noTasksYet")}</h3>
-            <p className="text-muted-foreground mb-6">
-              {t("noTasksMessage")}
-            </p>
+            <p className="text-muted-foreground mb-6">{t("noTasksMessage")}</p>
             <Link
               href="/admin/tasks/new"
               className="inline-flex items-center px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 shadow-sm hover:shadow-md transition-all duration-200"
@@ -82,7 +82,7 @@ export default async function TasksPage() {
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
-              {tasks.map((task: any) => (
+              {tasks.map((task) => (
                 <tr key={task.id} className="hover:bg-accent transition-colors">
                   <td className="px-6 py-4">
                     <Link
@@ -98,22 +98,16 @@ export default async function TasksPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-3 py-1 text-xs font-bold rounded-full ${
-                        task.status === "DONE"
+                        task.status === "COMPLETED"
                           ? "bg-green-100 text-green-800 border border-green-200"
                           : task.status === "IN_PROGRESS"
-                          ? "bg-primary/10 text-primary border border-primary/20"
-                          : task.status === "BLOCKED"
-                          ? "bg-destructive/10 text-destructive border border-destructive/20"
-                          : "bg-muted text-muted-foreground border border-border"
+                            ? "bg-primary/10 text-primary border border-primary/20"
+                            : task.status === "PAUSED" || task.status === "CANCELLED"
+                              ? "bg-destructive/10 text-destructive border border-destructive/20"
+                              : "bg-muted text-muted-foreground border border-border"
                       }`}
                     >
-                      {task.status === "DONE"
-                        ? t("status.done")
-                        : task.status === "IN_PROGRESS"
-                        ? t("status.inProgress")
-                        : task.status === "BLOCKED"
-                        ? t("status.blocked")
-                        : task.status}
+                      {t(`taskStatus.${task.status}`)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
@@ -125,36 +119,41 @@ export default async function TasksPage() {
                         task.priority === "URGENT"
                           ? "bg-red-100 text-red-800 border border-red-200"
                           : task.priority === "HIGH"
-                          ? "bg-orange-100 text-orange-800 border border-orange-200"
-                          : task.priority === "MEDIUM"
-                          ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
-                          : "bg-muted text-muted-foreground border border-border"
+                            ? "bg-orange-100 text-orange-800 border border-orange-200"
+                            : task.priority === "MEDIUM"
+                              ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                              : "bg-muted text-muted-foreground border border-border"
                       }`}
                     >
                       {task.priority === "URGENT"
                         ? t("priority.urgent")
                         : task.priority === "HIGH"
-                        ? t("priority.high")
-                        : task.priority === "MEDIUM"
-                        ? t("priority.medium")
-                        : task.priority === "LOW"
-                        ? t("priority.low")
-                        : task.priority}
+                          ? t("priority.high")
+                          : task.priority === "MEDIUM"
+                            ? t("priority.medium")
+                            : task.priority === "LOW"
+                              ? t("priority.low")
+                              : task.priority}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {task.assignee?.name || t("unassigned")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                    {task.dueDate
-                      ? new Date(task.dueDate).toLocaleDateString()
-                      : t("noDueDate")}
+                    {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : t("noDueDate")}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
+        <Pagination
+          basePath="/admin/tasks"
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+        />
       </div>
     </div>
   );

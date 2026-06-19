@@ -314,11 +314,6 @@
         "assignee": "Responsable",
         "dueDate": "Fecha de Vencimiento"
       },
-      "status": {
-        "done": "Completada",
-        "inProgress": "En Progreso",
-        "blocked": "Bloqueada"
-      },
       "priority": {
         "urgent": "Urgente",
         "high": "Alta",
@@ -327,7 +322,14 @@
       },
       "noStage": "Sin etapa",
       "unassigned": "No asignada",
-      "noDueDate": "Sin fecha de vencimiento"
+      "noDueDate": "Sin fecha de vencimiento",
+      "taskStatus": {
+        "BACKLOG": "Backlog",
+        "IN_PROGRESS": "En Progreso",
+        "PAUSED": "Pausada",
+        "COMPLETED": "Completada",
+        "CANCELLED": "Cancelada"
+      }
     },
     "detail": {
       "backToTasks": "Volver a Tareas",

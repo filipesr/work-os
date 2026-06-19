@@ -38,12 +38,7 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
     }
 
     startTransition(async () => {
-      const result = await logTime(
-        taskId,
-        hours,
-        new Date(logDate),
-        description || undefined
-      );
+      const result = await logTime(taskId, hours, new Date(logDate), description || undefined);
 
       if (result.error) {
         toast.error(result.error);
@@ -75,6 +70,7 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
             size="sm"
             onClick={onClose}
             disabled={isPending}
+            aria-label="Fechar"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -130,19 +126,11 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
 
       <div className="flex gap-2 justify-end">
         {onClose && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={isPending}
-          >
+          <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
             Cancelar
           </Button>
         )}
-        <Button
-          type="submit"
-          disabled={isPending || !hoursSpent || !logDate}
-        >
+        <Button type="submit" disabled={isPending || !hoursSpent || !logDate}>
           {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           {isPending ? "Registrando..." : "Registrar Tempo"}
         </Button>

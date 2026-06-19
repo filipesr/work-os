@@ -12,8 +12,8 @@ export async function Navbar() {
     return null;
   }
 
-  const userRole = (session.user as any).role as UserRole;
-  const userId = (session.user as any).id;
+  const userRole = session.user.role;
+  const userId = session.user.id;
   const t = await getTranslations("common.nav");
 
   // Buscar teamId atualizado do banco

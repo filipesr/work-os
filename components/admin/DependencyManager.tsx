@@ -20,9 +20,7 @@ export function DependencyManager({
   currentDependencies,
   onClose,
 }: DependencyManagerProps) {
-  const [selectedDeps, setSelectedDeps] = useState<Set<string>>(
-    new Set(currentDependencies)
-  );
+  const [selectedDeps, setSelectedDeps] = useState<Set<string>>(new Set(currentDependencies));
   const [isSaving, setIsSaving] = useState(false);
 
   // Filter out the current stage from available dependencies
@@ -40,11 +38,7 @@ export function DependencyManager({
 
   const handleSave = async () => {
     setIsSaving(true);
-    const result = await updateStageDependencies(
-      stageId,
-      templateId,
-      Array.from(selectedDeps)
-    );
+    const result = await updateStageDependencies(stageId, templateId, Array.from(selectedDeps));
 
     if (result?.success) {
       onClose();
@@ -54,13 +48,18 @@ export function DependencyManager({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-card border-2 border-border rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto shadow-lg">
-        <h3 className="text-xl font-bold text-foreground mb-3">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dependency-manager-title"
+        className="bg-card border-2 border-border rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto shadow-lg"
+      >
+        <h3 id="dependency-manager-title" className="text-xl font-bold text-foreground mb-3">
           Manage Dependencies: {stageName}
         </h3>
         <p className="text-muted-foreground mb-6 text-base">
-          Select which stages must be completed before "{stageName}" can start. These
-          are the prerequisites for this stage.
+          Select which stages must be completed before "{stageName}" can start. These are the
+          prerequisites for this stage.
         </p>
 
         {availableStages.length === 0 ? (
@@ -118,11 +117,8 @@ export function DependencyManager({
         {selectedDeps.size > 0 && (
           <div className="mt-4 p-4 bg-primary/5 border-2 border-primary/20 rounded-lg">
             <p className="text-sm text-foreground">
-              <span className="font-bold">Note:</span> "{stageName}" will only become
-              available after{" "}
-              {selectedDeps.size === 1
-                ? "1 stage is"
-                : `${selectedDeps.size} stages are`}{" "}
+              <span className="font-bold">Note:</span> "{stageName}" will only become available
+              after {selectedDeps.size === 1 ? "1 stage is" : `${selectedDeps.size} stages are`}{" "}
               completed.
             </p>
           </div>

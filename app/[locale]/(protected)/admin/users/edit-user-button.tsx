@@ -1,45 +1,41 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { UserRole } from "@prisma/client"
-import { useTranslations } from "next-intl"
+import { useState } from "react";
+import { UserRole } from "@prisma/client";
+import { useTranslations } from "next-intl";
 
 interface User {
-  id: string
-  name: string | null
-  email: string | null
-  role: UserRole
-  teamId: string | null
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: UserRole;
+  teamId: string | null;
 }
 
 interface Team {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface EditUserButtonProps {
-  user: User
-  teams: Team[]
-  updateUser: (formData: FormData) => Promise<void>
+  user: User;
+  teams: Team[];
+  updateUser: (formData: FormData) => Promise<void>;
 }
 
-export default function EditUserButton({
-  user,
-  teams,
-  updateUser,
-}: EditUserButtonProps) {
-  const t = useTranslations("admin.users.edit")
-  const tRoles = useTranslations("admin.users.roles")
-  const [isOpen, setIsOpen] = useState(false)
-  const [role, setRole] = useState(user.role)
-  const [teamId, setTeamId] = useState(user.teamId || "")
+export default function EditUserButton({ user, teams, updateUser }: EditUserButtonProps) {
+  const t = useTranslations("admin.users.edit");
+  const tRoles = useTranslations("admin.users.roles");
+  const [isOpen, setIsOpen] = useState(false);
+  const [role, setRole] = useState(user.role);
+  const [teamId, setTeamId] = useState(user.teamId || "");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    await updateUser(formData)
-    setIsOpen(false)
-  }
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    await updateUser(formData);
+    setIsOpen(false);
+  };
 
   return (
     <>
@@ -52,9 +48,14 @@ export default function EditUserButton({
 
       {isOpen && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-6 border-2 border-border w-96 shadow-lg rounded-xl bg-card">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-user-title"
+            className="relative top-20 mx-auto p-6 border-2 border-border w-96 shadow-lg rounded-xl bg-card"
+          >
             <div className="mt-3">
-              <h3 className="text-lg leading-6 font-bold text-foreground mb-4">
+              <h3 id="edit-user-title" className="text-lg leading-6 font-bold text-foreground mb-4">
                 {t("title")} {user.name || user.email}
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -130,5 +131,5 @@ export default function EditUserButton({
         </div>
       )}
     </>
-  )
+  );
 }

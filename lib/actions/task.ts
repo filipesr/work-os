@@ -273,61 +273,53 @@ export async function getTaskById(taskId: string) {
 /**
  * Get all tasks (with optional filtering)
  */
-export async function getTasks() {
+export async function getTasks(options?: { page?: number; pageSize?: number }) {
   await getCurrentUser();
 
-  const tasks = await prisma.task.findMany({
-    include: {
-      project: {
-        include: {
-          client: true,
-        },
-      },
-      assignee: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      activeStages: {
-        where: {
-          status: { in: ["ACTIVE", "BLOCKED"] },
-        },
-        include: {
-          stage: {
-            include: {
-              template: true,
-              defaultTeam: true,
-            },
-          },
-          assignee: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-        orderBy: {
-          stage: { order: "asc" },
-        },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const { DEFAULT_PAGE_SIZE, paginate } = await import("@/lib/pagination");
+  const page = options?.page && options.page > 0 ? options.page : 1;
+  const pageSize = options?.pageSize ?? DEFAULT_PAGE_SIZE;
 
-  // Add computed properties for backward compatibility
-  return tasks.map((task) => {
+  const [tasks, total] = await Promise.all([
+    prisma.task.findMany({
+      include: {
+        project: {
+          include: { client: true },
+        },
+        assignee: {
+          select: { id: true, name: true, email: true },
+        },
+        activeStages: {
+          where: { status: { in: ["ACTIVE", "BLOCKED"] } },
+          include: {
+            stage: {
+              include: { template: true, defaultTeam: true },
+            },
+            assignee: {
+              select: { id: true, name: true, email: true },
+            },
+          },
+          orderBy: { stage: { order: "asc" } },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.task.count(),
+  ]);
+
+  const items = tasks.map((task) => {
     const currentActiveStage = task.activeStages.find((as) => as.status === "ACTIVE");
     return {
       ...task,
       currentStage: currentActiveStage ? currentActiveStage.stage : null,
       currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
-      // Override assignee with the assignee from the active stage
       assignee: currentActiveStage?.assignee || task.assignee,
     };
   });
+
+  return paginate(items, total, page, pageSize);
 }
 
 // ========== State Machine: Stage Transitions ==========
@@ -1259,10 +1251,10 @@ export async function getPreviousStages(taskId: string) {
 
     // Get unique stages (in case task went through same stage multiple times)
     const uniqueStages = Array.from(
-      new Map(stageLogs.map((log: any) => [log.stage.id, log.stage])).values()
+      new Map(stageLogs.map((log) => [log.stage.id, log.stage])).values()
     );
 
-    return uniqueStages as any[];
+    return uniqueStages;
   } catch (error) {
     console.error("Error getting previous stages:", error);
     return [];
@@ -1280,7 +1272,7 @@ export async function advanceTaskStage(taskId: string, nextStageId: string) {
 
   try {
     // Check if user is admin or manager
-    const userRole = (user as any).role as string;
+    const userRole = user.role;
     const isAdminOrManager = userRole === "ADMIN" || userRole === "MANAGER";
 
     // 1. ✅ TEAM VALIDATION: Get user's team and verify next stage belongs to same team
@@ -1341,7 +1333,7 @@ export async function advanceTaskStage(taskId: string, nextStageId: string) {
 export async function revertTaskStage(taskId: string, revertToStageId: string, comment: string) {
   const user = await requireMemberOrHigher();
   const currentUserId = user.id as string;
-  const userRole = (user as any).role as string;
+  const userRole = user.role;
 
   if (!comment || comment.trim().length === 0) {
     return { error: "Um comentário explicando a reversão é obrigatório." };

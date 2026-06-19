@@ -12,7 +12,9 @@
     "adminDashboard": "Admin Dashboard",
     "productivity": "Produtividade",
     "performance": "Gargalos",
-    "liveActivity": "Atividade ao Vivo"
+    "liveActivity": "Atividade ao Vivo",
+    "calendar": "Calendário",
+    "teamProductivity": "Produtividade por Equipe"
   },
   "buttons": {
     "save": "Salvar",
@@ -34,6 +36,10 @@
     "refresh": "Atualizar",
     "export": "Exportar"
   },
+  "theme": {
+    "light": "Tema claro",
+    "dark": "Tema escuro"
+  },
   "common": {
     "loading": "Carregando...",
     "noData": "Nenhum dado disponível",
@@ -46,5 +52,11 @@
     "actions": "Ações",
     "details": "Detalhes",
     "status": "Status"
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Próxima",
+    "page": "Página {current} de {total}",
+    "showing": "Mostrando {from}–{to} de {total}"
   }
 }

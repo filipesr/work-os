@@ -49,14 +49,20 @@ export function UnassignActiveStageButton({
 
       {showConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 border border-gray-200">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="unassign-stage-title"
+            className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 border border-gray-200"
+          >
             {/* Header */}
             <div className="mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              <h3 id="unassign-stage-title" className="text-2xl font-bold text-gray-900 mb-2">
                 Liberar Etapa
               </h3>
               <p className="text-gray-600 text-sm leading-relaxed">
-                Tem certeza que deseja desatribuir esta etapa? A etapa voltará para o backlog e ficará disponível para outros membros do time reivindicarem.
+                Tem certeza que deseja desatribuir esta etapa? A etapa voltará para o backlog e
+                ficará disponível para outros membros do time reivindicarem.
               </p>
             </div>
 

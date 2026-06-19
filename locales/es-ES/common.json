@@ -12,7 +12,9 @@
     "adminDashboard": "Panel de Administración",
     "productivity": "Productividad",
     "performance": "Cuellos de Botella",
-    "liveActivity": "Actividad en Vivo"
+    "liveActivity": "Actividad en Vivo",
+    "calendar": "Calendario",
+    "teamProductivity": "Productividad por Equipo"
   },
   "buttons": {
     "save": "Guardar",
@@ -34,6 +36,10 @@
     "refresh": "Actualizar",
     "export": "Exportar"
   },
+  "theme": {
+    "light": "Tema claro",
+    "dark": "Tema oscuro"
+  },
   "common": {
     "loading": "Cargando...",
     "noData": "No hay datos disponibles",
@@ -46,5 +52,11 @@
     "actions": "Acciones",
     "details": "Detalles",
     "status": "Estado"
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "page": "Página {current} de {total}",
+    "showing": "Mostrando {from}–{to} de {total}"
   }
 }

@@ -65,14 +65,20 @@ export function CompleteTaskButton({
 
       {showConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-background rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 border border-border">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="complete-task-title"
+            className="bg-background rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 border border-border"
+          >
             {/* Header */}
             <div className="mb-6">
-              <h3 className="text-2xl font-bold text-foreground mb-2">
+              <h3 id="complete-task-title" className="text-2xl font-bold text-foreground mb-2">
                 Concluir Tarefa
               </h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Tem certeza que deseja marcar esta tarefa como concluída? Esta ação indica que todo o trabalho foi finalizado.
+                Tem certeza que deseja marcar esta tarefa como concluída? Esta ação indica que todo
+                o trabalho foi finalizado.
               </p>
             </div>
 

@@ -31,9 +31,8 @@ export const getSessionUser = async () => {
  */
 export const checkRole = async (allowedRoles: UserRole[]) => {
   const user = await getSessionUser();
-  const userRole = (user as any).role as UserRole;
 
-  if (!allowedRoles.includes(userRole)) {
+  if (!allowedRoles.includes(user.role)) {
     throw new Error("Access Denied: Insufficient permissions.");
   }
 
@@ -59,12 +58,7 @@ export const requireManagerOrAdmin = async () => {
  * Check if the current user is a Member or higher (Member, Supervisor, Manager, or Admin).
  */
 export const requireMemberOrHigher = async () => {
-  return checkRole([
-    UserRole.ADMIN,
-    UserRole.MANAGER,
-    UserRole.SUPERVISOR,
-    UserRole.MEMBER,
-  ]);
+  return checkRole([UserRole.ADMIN, UserRole.MANAGER, UserRole.SUPERVISOR, UserRole.MEMBER]);
 };
 
 /**
@@ -74,7 +68,7 @@ export const requireMemberOrHigher = async () => {
 export const getUserRole = async (): Promise<UserRole | null> => {
   try {
     const user = await getSessionUser();
-    return (user as any).role as UserRole;
+    return user.role;
   } catch {
     return null;
   }

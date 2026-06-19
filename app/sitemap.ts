@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
+import { env } from "@/lib/env";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXTAUTH_URL || "https://workos.app";
+  const baseUrl = env.NEXTAUTH_URL || "https://workos.app";
 
   return [
     {

@@ -55,17 +55,9 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
 
           const formData = new FormData(e.currentTarget);
 
-          // Add selected dependencies to form data
-          selectedDeps.forEach(depId => {
-            formData.append('dependencies[]', depId);
+          selectedDeps.forEach((depId) => {
+            formData.append("dependencies[]", depId);
           });
-
-          console.log('[FRONTEND CREATE] Form data being sent:');
-          console.log('  - name:', formData.get('name'));
-          console.log('  - order:', formData.get('order'));
-          console.log('  - defaultTeamId:', formData.get('defaultTeamId'));
-          console.log('  - dependencies[]:', formData.getAll('dependencies[]'));
-          console.log('  - selectedDeps (state):', Array.from(selectedDeps));
 
           const result = await createTemplateStage(templateId, formData);
 

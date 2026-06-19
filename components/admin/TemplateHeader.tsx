@@ -106,11 +106,16 @@ export function TemplateHeader({ template }: TemplateHeaderProps) {
       {/* Delete Confirmation Modal */}
       {isDeleting && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-card border-2 border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
-            <h3 className="text-xl font-bold text-foreground mb-4">{t("deleteConfirmTitle")}</h3>
-            <p className="text-muted-foreground mb-6">
-              {t("deleteConfirmMessage")}
-            </p>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-template-title"
+            className="bg-card border-2 border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg"
+          >
+            <h3 id="delete-template-title" className="text-xl font-bold text-foreground mb-4">
+              {t("deleteConfirmTitle")}
+            </h3>
+            <p className="text-muted-foreground mb-6">{t("deleteConfirmMessage")}</p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setIsDeleting(false)}

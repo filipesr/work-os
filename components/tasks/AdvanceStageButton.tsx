@@ -45,9 +45,7 @@ export function AdvanceStageButton({
       <div className="border border-yellow-300 bg-yellow-50 rounded-lg p-4">
         <div className="flex items-center gap-2">
           <AlertCircle className="h-5 w-5 text-yellow-600" />
-          <p className="text-sm font-medium text-yellow-900">
-            Nenhuma etapa ativa para concluir
-          </p>
+          <p className="text-sm font-medium text-yellow-900">Nenhuma etapa ativa para concluir</p>
         </div>
       </div>
     );
@@ -63,7 +61,7 @@ export function AdvanceStageButton({
         // Store result for preview
         setPreviewResult({
           activated: result.activated || [],
-          blocked: result.blocked || []
+          blocked: result.blocked || [],
         });
 
         // Show success toast with summary
@@ -76,15 +74,13 @@ export function AdvanceStageButton({
             { duration: 5000 }
           );
         } else if (activatedCount > 0) {
-          toast.success(
-            `Etapa concluída! ${activatedCount} etapa(s) ativada(s)`,
-            { duration: 4000 }
-          );
+          toast.success(`Etapa concluída! ${activatedCount} etapa(s) ativada(s)`, {
+            duration: 4000,
+          });
         } else if (blockedCount > 0) {
-          toast.success(
-            `Etapa concluída! ${blockedCount} etapa(s) criada(s) como bloqueadas`,
-            { duration: 4000 }
-          );
+          toast.success(`Etapa concluída! ${blockedCount} etapa(s) criada(s) como bloqueadas`, {
+            duration: 4000,
+          });
         } else {
           toast.success("Etapa concluída com sucesso!");
         }
@@ -122,10 +118,15 @@ export function AdvanceStageButton({
       {/* Confirmation Modal */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-background rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 border border-border">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="advance-stage-title"
+            className="bg-background rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 border border-border"
+          >
             {/* Header */}
             <div className="mb-6">
-              <h3 className="text-2xl font-bold text-foreground mb-2">
+              <h3 id="advance-stage-title" className="text-2xl font-bold text-foreground mb-2">
                 Concluir Etapa Atual
               </h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
@@ -141,10 +142,27 @@ export function AdvanceStageButton({
               </p>
               <ul className="text-xs text-blue-700 mt-2 space-y-1 list-disc pl-5">
                 <li>A etapa atual será concluída</li>
-                <li>Todas as etapas dependentes com dependências cumpridas serão <strong>ativadas</strong></li>
-                <li>Etapas com dependências pendentes serão criadas como <strong>bloqueadas</strong></li>
+                <li>
+                  Todas as etapas dependentes com dependências cumpridas serão{" "}
+                  <strong>ativadas</strong>
+                </li>
+                <li>
+                  Etapas com dependências pendentes serão criadas como <strong>bloqueadas</strong>
+                </li>
                 <li>Um log será adicionado ao histórico da tarefa</li>
               </ul>
+            </div>
+
+            {/* Requirement Box */}
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-900">
+                <strong>⚠️ Requisito de contribuição:</strong>
+              </p>
+              <p className="text-xs text-amber-800 mt-2">
+                Você precisa ter adicionado <strong>pelo menos 1 artefato ou 1 comentário</strong>{" "}
+                nesta tarefa antes de concluir a etapa. (Admins e Gerentes podem ignorar este
+                requisito.)
+              </p>
             </div>
 
             {/* Show preview if available */}
@@ -157,7 +175,9 @@ export function AdvanceStageButton({
                     </p>
                     <ul className="text-xs text-green-700 space-y-1">
                       {previewResult.activated.map((stage: Stage) => (
-                        <li key={stage.id}>• {stage.name} (ordem {stage.order})</li>
+                        <li key={stage.id}>
+                          • {stage.name} (ordem {stage.order})
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -170,7 +190,9 @@ export function AdvanceStageButton({
                     </p>
                     <ul className="text-xs text-yellow-700 space-y-1">
                       {previewResult.blocked.map((stage: Stage) => (
-                        <li key={stage.id}>• {stage.name} (ordem {stage.order})</li>
+                        <li key={stage.id}>
+                          • {stage.name} (ordem {stage.order})
+                        </li>
                       ))}
                     </ul>
                   </div>

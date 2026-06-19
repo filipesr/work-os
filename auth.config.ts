@@ -1,39 +1,39 @@
-import type { NextAuthConfig } from "next-auth"
-import Google from "next-auth/providers/google"
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import prisma from "@/lib/prisma"
+import type { NextAuthConfig } from "next-auth";
+import type { Adapter } from "next-auth/adapters";
+import Google from "next-auth/providers/google";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import prisma from "@/lib/prisma";
+import { env } from "@/lib/env";
 
 export const authConfig = {
-  adapter: PrismaAdapter(prisma) as any,
+  // PrismaAdapter is built against an older @auth/core minor than next-auth uses
+  // (Adapter shape is identical at runtime). Cast through Adapter to align.
+  adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
     }),
-    // Add more providers here as needed
   ],
   callbacks: {
     async session({ session, user }) {
-      // Include user id, role, and teamId in the session
       if (session.user) {
-        session.user.id = user.id
-        // @ts-ignore - We're adding custom fields to the session
-        session.user.role = user.role
-        // @ts-ignore - We're adding custom fields to the session
-        session.user.teamId = user.teamId
+        session.user.id = user.id;
+        session.user.role = user.role;
+        session.user.teamId = user.teamId;
       }
-      return session
+      return session;
     },
     async redirect({ url, baseUrl }) {
       // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
       // Allows callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url
+      else if (new URL(url).origin === baseUrl) return url;
       // Default redirect to home page after sign in
-      return baseUrl
+      return baseUrl;
     },
   },
   pages: {
     signIn: "/auth/signin",
   },
-} satisfies NextAuthConfig
+} satisfies NextAuthConfig;
