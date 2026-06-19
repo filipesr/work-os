@@ -1,0 +1,47 @@
+{
+  "title": "Calendario de Tareas",
+  "subtitle": "Vista semanal de tareas en curso por equipo",
+  "filters": {
+    "team": "Equipo",
+    "project": "Proyecto",
+    "user": "Colaborador",
+    "allTeams": "Todos los equipos",
+    "allProjects": "Todos los proyectos",
+    "allUsers": "Todos los colaboradores",
+    "showCompleted": "Mostrar completadas",
+    "clear": "Limpiar filtros"
+  },
+  "navigation": {
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Próxima semana",
+    "currentWeek": "Semana actual",
+    "weekOf": "Semana del {start} al {end}",
+    "range": "{start} – {end}"
+  },
+  "days": {
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mié",
+    "thu": "Jue",
+    "fri": "Vie",
+    "sat": "Sáb",
+    "sun": "Dom"
+  },
+  "lanes": {
+    "noDueDate": "Sin plazo",
+    "noTeam": "Sin equipo"
+  },
+  "bar": {
+    "dueIn": "Vence en {days}d",
+    "dueToday": "Vence hoy",
+    "overdue": "Atrasada {days}d",
+    "extraStages": "+{count} etapa(s)",
+    "completed": "Completada",
+    "ariaLabel": "Tarea {title}, equipo {team}, etapa {stage}, {dueText}"
+  },
+  "empty": {
+    "title": "Ninguna tarea esta semana",
+    "subtitle": "Prueba cambiar los filtros o navegar a otra semana",
+    "clear": "Limpiar filtros"
+  }
+}

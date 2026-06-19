@@ -16,9 +16,14 @@ import {
   TrendingUp,
   Activity,
   GitBranch,
+  Calendar,
+  Users,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { signOutAction } from "@/lib/actions/auth";
 import { useTranslations } from "next-intl";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface UserMenuProps {
   userName: string | null;
@@ -32,6 +37,7 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
 
   const t = useTranslations("common");
   const tAdmin = useTranslations("admin");
+  const { theme, toggle: toggleTheme } = useTheme();
 
   return (
     <DropdownMenu
@@ -74,6 +80,18 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
               <span>{t("nav.liveActivity")}</span>
             </div>
           </DropdownMenuItem>
+          <DropdownMenuItem href="/reports/calendar">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span>{t("nav.calendar")}</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem href="/reports/team-productivity">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span>{t("nav.teamProductivity")}</span>
+            </div>
+          </DropdownMenuItem>
         </>
       )}
 
@@ -105,6 +123,18 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
           <span>{t("nav.taskFlow")}</span>
         </div>
       </DropdownMenuItem>
+
+      <DropdownMenuSeparator />
+
+      <button
+        type="button"
+        onClick={toggleTheme}
+        aria-pressed={theme === "dark"}
+        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors text-left"
+      >
+        {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        <span>{t(theme === "dark" ? "theme.light" : "theme.dark")}</span>
+      </button>
 
       <DropdownMenuSeparator />
       <form action={signOutAction}>

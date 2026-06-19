@@ -1,0 +1,89 @@
+/**
+ * Date helpers para Calendar + Team Productivity reports.
+ *
+ * Convenção interna: uma "SP-local Date" é um Date cujos campos getUTC* refletem
+ * o ano/mês/dia/hora de São Paulo. Pra construir uma a partir de "agora",
+ * use todayInSaoPaulo() ou nowInSaoPaulo(). Pra construir a partir de uma
+ * string YYYY-MM-DD, use parseWeekParam() — o resultado já é SP-local.
+ *
+ * Premissas:
+ * - Brasil está fixo em UTC-03:00 desde 2019 (sem DST).
+ * - Se o BR reintroduzir DST, trocar SP_OFFSET_MS por Intl.DateTimeFormat com
+ *   timeZone: 'America/Sao_Paulo'.
+ */
+
+const SP_OFFSET_MS = -3 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** "Now" as a SP-local Date (UTC fields hold SP calendar). */
+export function nowInSaoPaulo(ref: Date = new Date()): Date {
+  return new Date(ref.getTime() + SP_OFFSET_MS);
+}
+
+/** "Today" SP-local at midnight (Y/M/D in UTC fields == SP calendar). */
+export function todayInSaoPaulo(ref: Date = new Date()): Date {
+  const sp = nowInSaoPaulo(ref);
+  return new Date(Date.UTC(sp.getUTCFullYear(), sp.getUTCMonth(), sp.getUTCDate()));
+}
+
+/**
+ * Monday of the calendar week containing `day`. Reads getUTCDay directly —
+ * caller is responsible for passing a Date whose UTC fields encode the SP
+ * calendar (or whose UTC fields ARE the calendar of interest).
+ */
+export function mondayOfWeek(day: Date = todayInSaoPaulo()): Date {
+  const dow = day.getUTCDay(); // 0=Sun..6=Sat
+  const daysFromMonday = (dow + 6) % 7;
+  return new Date(day.getTime() - daysFromMonday * DAY_MS);
+}
+
+/**
+ * Parses ?week=YYYY-MM-DD into the Monday of that week.
+ * The input is treated as a SP-local calendar date; the returned Date
+ * keeps the SP-local-at-midnight invariant.
+ */
+export function parseWeekParam(value: string | string[] | undefined): Date {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return mondayOfWeek();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (!match) return mondayOfWeek();
+  const [, y, m, d] = match;
+  const day = new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)));
+  if (Number.isNaN(day.getTime())) return mondayOfWeek();
+  return mondayOfWeek(day);
+}
+
+export interface WeekRange {
+  start: Date; // Monday 00:00 (SP-local repr)
+  end: Date; // last millisecond before next Monday
+  days: Date[]; // 7 entries, each at SP-local midnight
+}
+
+export function weekRangeFromMonday(monday: Date): WeekRange {
+  const days: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    days.push(new Date(monday.getTime() + i * DAY_MS));
+  }
+  const end = new Date(monday.getTime() + 7 * DAY_MS - 1);
+  return { start: monday, end, days };
+}
+
+/** Whole-day delta between SP calendar days. Negative = target in past. */
+export function daysUntil(target: Date, ref: Date = new Date()): number {
+  const t = todayInSaoPaulo(target);
+  const r = todayInSaoPaulo(ref);
+  return Math.round((t.getTime() - r.getTime()) / DAY_MS);
+}
+
+/** YYYY-MM-DD from a Date's UTC fields (callers pass SP-local Dates). */
+export function formatISODate(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Shifts a SP-local Monday by N weeks. */
+export function shiftWeek(monday: Date, deltaWeeks: number): Date {
+  return new Date(monday.getTime() + deltaWeeks * 7 * DAY_MS);
+}

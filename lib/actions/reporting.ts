@@ -363,8 +363,7 @@ export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
   stageLogs.forEach((log) => {
     if (!log.exitedAt) return;
 
-    const durationMs =
-      new Date(log.exitedAt).getTime() - new Date(log.enteredAt).getTime();
+    const durationMs = new Date(log.exitedAt).getTime() - new Date(log.enteredAt).getTime();
     const durationHours = durationMs / (1000 * 60 * 60);
 
     const stageId = log.stageId;
@@ -383,16 +382,14 @@ export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
   });
 
   // Calculate averages
-  const results: AverageTimePerStage[] = Object.values(stageData).map(
-    (data: any) => ({
-      stageId: data.stageId,
-      stageName: data.stageName,
-      templateName: data.templateName,
-      averageDurationHours: data.totalDurationHours / data.count,
-      averageDurationDays: data.totalDurationHours / data.count / 24,
-      count: data.count,
-    })
-  );
+  const results: AverageTimePerStage[] = Object.values(stageData).map((data: any) => ({
+    stageId: data.stageId,
+    stageName: data.stageName,
+    templateName: data.templateName,
+    averageDurationHours: data.totalDurationHours / data.count,
+    averageDurationDays: data.totalDurationHours / data.count / 24,
+    count: data.count,
+  }));
 
   // Sort by average duration (descending) to show bottlenecks first
   return results.sort((a, b) => b.averageDurationHours - a.averageDurationHours);
@@ -460,19 +457,17 @@ export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
   });
 
   // Calculate rework rate
-  const results: ReworkRateByStage[] = Object.values(stageData).map(
-    (data: any) => {
-      const total = data.completed + data.reverted;
-      return {
-        stageId: data.stageId,
-        stageName: data.stageName,
-        templateName: data.templateName,
-        completed: data.completed,
-        reverted: data.reverted,
-        reworkRate: total > 0 ? data.reverted / total : 0,
-      };
-    }
-  );
+  const results: ReworkRateByStage[] = Object.values(stageData).map((data: any) => {
+    const total = data.completed + data.reverted;
+    return {
+      stageId: data.stageId,
+      stageName: data.stageName,
+      templateName: data.templateName,
+      completed: data.completed,
+      reverted: data.reverted,
+      reworkRate: total > 0 ? data.reverted / total : 0,
+    };
+  });
 
   // Sort by rework rate (descending) to show problem areas first
   return results.sort((a, b) => b.reworkRate - a.reworkRate);
@@ -521,27 +516,445 @@ export async function getLeadTimeMetrics(filters: PerformanceFilters = {}) {
 
   // Calculate lead time for each task
   const leadTimes = tasks.map((task) => {
-    const durationMs =
-      new Date(task.completedAt!).getTime() -
-      new Date(task.createdAt).getTime();
+    const durationMs = new Date(task.completedAt!).getTime() - new Date(task.createdAt).getTime();
     return durationMs / (1000 * 60 * 60 * 24); // Convert to days
   });
 
   // Calculate average
-  const averageLeadTimeDays =
-    leadTimes.reduce((sum, time) => sum + time, 0) / leadTimes.length;
+  const averageLeadTimeDays = leadTimes.reduce((sum, time) => sum + time, 0) / leadTimes.length;
 
   // Calculate median
   const sorted = leadTimes.sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   const medianLeadTimeDays =
-    sorted.length % 2 === 0
-      ? (sorted[mid - 1] + sorted[mid]) / 2
-      : sorted[mid];
+    sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 
   return {
     averageLeadTimeDays,
     medianLeadTimeDays,
     count: tasks.length,
+  };
+}
+
+// ========== Calendar (Gantt) ==========
+
+export interface CalendarFilters {
+  weekStart: Date;
+  weekEnd: Date;
+  teamId?: string;
+  projectId?: string;
+  userId?: string;
+  showCompleted?: boolean;
+}
+
+export interface CalendarTask {
+  id: string;
+  title: string;
+  dueDate: Date | null;
+  status: "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED";
+  projectId: string;
+  projectName: string;
+  clientName: string;
+  primaryStageId: string | null;
+  primaryStageName: string | null;
+  extraStageCount: number;
+  assigneeId: string | null;
+  assigneeName: string | null;
+  teamId: string | null;
+  teamName: string | null;
+}
+
+export interface CalendarTeamBucket {
+  teamId: string | null;
+  teamName: string;
+  tasks: CalendarTask[];
+}
+
+export interface CalendarBuckets {
+  noDueDate: CalendarTask[];
+  byTeam: CalendarTeamBucket[];
+}
+
+export async function getCalendarTasks(filters: CalendarFilters): Promise<CalendarBuckets> {
+  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+
+  const { weekStart, weekEnd, teamId, projectId, userId, showCompleted } = filters;
+
+  const statusFilter = showCompleted
+    ? ["IN_PROGRESS", "BACKLOG", "PAUSED", "COMPLETED"]
+    : ["IN_PROGRESS", "BACKLOG", "PAUSED"];
+
+  const tasks = await prisma.task.findMany({
+    where: {
+      status: { in: statusFilter as ("IN_PROGRESS" | "BACKLOG" | "PAUSED" | "COMPLETED")[] },
+      ...(projectId ? { projectId } : {}),
+      ...(showCompleted
+        ? {
+            OR: [
+              { dueDate: null },
+              { dueDate: { gte: weekStart, lte: weekEnd } },
+              { dueDate: { lt: weekStart } },
+              { dueDate: { gt: weekEnd } },
+              { completedAt: { gte: weekStart, lte: weekEnd } },
+            ],
+          }
+        : {}),
+      ...(teamId || userId
+        ? {
+            activeStages: {
+              some: {
+                status: { in: ["ACTIVE", "BLOCKED"] },
+                ...(teamId ? { stage: { defaultTeamId: teamId } } : {}),
+                ...(userId ? { assigneeId: userId } : {}),
+              },
+            },
+          }
+        : {}),
+    },
+    include: {
+      project: { include: { client: true } },
+      assignee: { select: { id: true, name: true } },
+      activeStages: {
+        include: {
+          stage: { include: { defaultTeam: true } },
+          assignee: { select: { id: true, name: true } },
+        },
+        orderBy: { stage: { order: "asc" } },
+      },
+    },
+    orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+    take: 200,
+  });
+
+  const calendarTasks: CalendarTask[] = tasks.map((task) => {
+    const ongoingStages = task.activeStages.filter(
+      (s) => s.status === "ACTIVE" || s.status === "BLOCKED"
+    );
+    const completedStages = task.activeStages.filter((s) => s.status === "COMPLETED");
+
+    let primaryStage: (typeof task.activeStages)[number] | undefined =
+      ongoingStages.find((s) => s.status === "ACTIVE") || ongoingStages[0];
+
+    if (!primaryStage && task.status === "COMPLETED" && completedStages.length > 0) {
+      primaryStage = completedStages.reduce((latest, current) =>
+        current.stage.order > latest.stage.order ? current : latest
+      );
+    }
+
+    const extraStageCount = Math.max(0, ongoingStages.length - 1);
+    const stageAssignee = primaryStage?.assignee || null;
+
+    return {
+      id: task.id,
+      title: task.title,
+      dueDate: task.dueDate,
+      status: task.status,
+      projectId: task.project.id,
+      projectName: task.project.name,
+      clientName: task.project.client.name,
+      primaryStageId: primaryStage?.stage.id ?? null,
+      primaryStageName: primaryStage?.stage.name ?? null,
+      extraStageCount,
+      assigneeId: stageAssignee?.id ?? task.assignee?.id ?? null,
+      assigneeName: stageAssignee?.name ?? task.assignee?.name ?? null,
+      teamId: primaryStage?.stage.defaultTeam?.id ?? null,
+      teamName: primaryStage?.stage.defaultTeam?.name ?? null,
+    };
+  });
+
+  const noDueDate: CalendarTask[] = [];
+  const teamMap = new Map<string, CalendarTeamBucket>();
+  const NO_TEAM_KEY = "__no_team__";
+
+  for (const task of calendarTasks) {
+    if (!task.dueDate) {
+      noDueDate.push(task);
+      continue;
+    }
+    const key = task.teamId ?? NO_TEAM_KEY;
+    if (!teamMap.has(key)) {
+      teamMap.set(key, {
+        teamId: task.teamId,
+        teamName: task.teamName ?? "Sem equipe",
+        tasks: [],
+      });
+    }
+    teamMap.get(key)!.tasks.push(task);
+  }
+
+  const byTeam = Array.from(teamMap.values()).sort((a, b) => {
+    if (a.teamId === null) return 1;
+    if (b.teamId === null) return -1;
+    return a.teamName.localeCompare(b.teamName);
+  });
+
+  return { noDueDate, byTeam };
+}
+
+// ========== Team Productivity ==========
+
+export interface PeriodRange {
+  from: Date;
+  to: Date;
+}
+
+export interface TeamThroughputRow {
+  teamId: string;
+  teamName: string;
+  completedCount: number;
+  previousCompletedCount: number;
+}
+
+export async function getTeamThroughput(range: PeriodRange): Promise<TeamThroughputRow[]> {
+  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+
+  const spanMs = range.to.getTime() - range.from.getTime();
+  const prevFrom = new Date(range.from.getTime() - spanMs);
+  const prevTo = new Date(range.from.getTime() - 1);
+
+  const [currentLogs, previousLogs, teams] = await Promise.all([
+    prisma.taskStageLog.findMany({
+      where: {
+        exitedAt: { gte: range.from, lte: range.to, not: null },
+        status: "COMPLETED",
+      },
+      include: { stage: { include: { defaultTeam: true } } },
+    }),
+    prisma.taskStageLog.findMany({
+      where: {
+        exitedAt: { gte: prevFrom, lte: prevTo, not: null },
+        status: "COMPLETED",
+      },
+      include: { stage: { include: { defaultTeam: true } } },
+    }),
+    prisma.team.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+  ]);
+
+  // Count distinct (teamId, taskId) pairs where each task was last completed by the team
+  const tally = (logs: typeof currentLogs) => {
+    const seen = new Map<string, Set<string>>();
+    for (const log of logs) {
+      const tid = log.stage.defaultTeam?.id;
+      if (!tid) continue;
+      if (!seen.has(tid)) seen.set(tid, new Set());
+      seen.get(tid)!.add(log.taskId);
+    }
+    return seen;
+  };
+
+  const current = tally(currentLogs);
+  const previous = tally(previousLogs);
+
+  return teams
+    .map((team) => ({
+      teamId: team.id,
+      teamName: team.name,
+      completedCount: current.get(team.id)?.size ?? 0,
+      previousCompletedCount: previous.get(team.id)?.size ?? 0,
+    }))
+    .sort((a, b) => b.completedCount - a.completedCount);
+}
+
+export interface TeamLoadRow {
+  teamId: string;
+  teamName: string;
+  inProgress: number;
+  overdue: number;
+  attention: number;
+  onTrack: number;
+}
+
+export async function getTeamCurrentLoad(): Promise<TeamLoadRow[]> {
+  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+
+  const { todayInSaoPaulo, daysUntil } = await import("@/lib/dates");
+  const today = todayInSaoPaulo();
+
+  const [activeStages, teams] = await Promise.all([
+    prisma.taskActiveStage.findMany({
+      where: { status: "ACTIVE" },
+      include: {
+        stage: { include: { defaultTeam: true } },
+        task: { select: { id: true, dueDate: true } },
+      },
+    }),
+    prisma.team.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+  ]);
+
+  const seenByTeam = new Map<
+    string,
+    { tasks: Set<string>; overdue: number; attention: number; onTrack: number }
+  >();
+
+  for (const active of activeStages) {
+    const tid = active.stage.defaultTeam?.id;
+    if (!tid) continue;
+    let bucket = seenByTeam.get(tid);
+    if (!bucket) {
+      bucket = { tasks: new Set(), overdue: 0, attention: 0, onTrack: 0 };
+      seenByTeam.set(tid, bucket);
+    }
+    if (bucket.tasks.has(active.task.id)) continue;
+    bucket.tasks.add(active.task.id);
+
+    const due = active.task.dueDate;
+    if (!due) {
+      bucket.onTrack++;
+      continue;
+    }
+    const delta = daysUntil(due, today);
+    if (delta < 0) bucket.overdue++;
+    else if (delta <= 2) bucket.attention++;
+    else bucket.onTrack++;
+  }
+
+  return teams
+    .map((team) => {
+      const b = seenByTeam.get(team.id);
+      return {
+        teamId: team.id,
+        teamName: team.name,
+        inProgress: b?.tasks.size ?? 0,
+        overdue: b?.overdue ?? 0,
+        attention: b?.attention ?? 0,
+        onTrack: b?.onTrack ?? 0,
+      };
+    })
+    .sort((a, b) => b.inProgress - a.inProgress);
+}
+
+export interface StageDurationRow {
+  stageId: string;
+  stageName: string;
+  templateName: string;
+  avgDurationHours: number;
+  sampleSize: number;
+}
+
+export async function getStageDuration(range: PeriodRange): Promise<StageDurationRow[]> {
+  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+
+  const MIN_SAMPLE = 3;
+
+  const logs = await prisma.taskStageLog.findMany({
+    where: {
+      enteredAt: { gte: range.from, lte: range.to },
+      exitedAt: { not: null },
+      status: "COMPLETED",
+    },
+    include: { stage: { include: { template: true } } },
+  });
+
+  const grouped = new Map<string, { name: string; template: string; durations: number[] }>();
+
+  for (const log of logs) {
+    if (!log.exitedAt) continue;
+    const durationMs = log.exitedAt.getTime() - log.enteredAt.getTime();
+    if (durationMs <= 0) continue;
+    const key = log.stage.id;
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        name: log.stage.name,
+        template: log.stage.template.name,
+        durations: [],
+      });
+    }
+    grouped.get(key)!.durations.push(durationMs);
+  }
+
+  return Array.from(grouped.entries())
+    .filter(([, v]) => v.durations.length >= MIN_SAMPLE)
+    .map(([id, v]) => {
+      const sum = v.durations.reduce((a, b) => a + b, 0);
+      const avgMs = sum / v.durations.length;
+      return {
+        stageId: id,
+        stageName: v.name,
+        templateName: v.template,
+        avgDurationHours: avgMs / (1000 * 60 * 60),
+        sampleSize: v.durations.length,
+      };
+    })
+    .sort((a, b) => b.avgDurationHours - a.avgDurationHours);
+}
+
+export interface OnTimeRateResult {
+  overall: { onTime: number; total: number; percentage: number };
+  previousPercentage: number;
+  byTeam: { teamId: string; teamName: string; onTime: number; total: number; percentage: number }[];
+}
+
+export async function getOnTimeRate(range: PeriodRange): Promise<OnTimeRateResult> {
+  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+
+  const spanMs = range.to.getTime() - range.from.getTime();
+  const prevFrom = new Date(range.from.getTime() - spanMs);
+  const prevTo = new Date(range.from.getTime() - 1);
+
+  const computeRate = async (from: Date, to: Date) => {
+    const tasks = await prisma.task.findMany({
+      where: {
+        completedAt: { gte: from, lte: to, not: null },
+        dueDate: { not: null },
+      },
+      select: {
+        id: true,
+        dueDate: true,
+        completedAt: true,
+        activeStages: {
+          where: { status: "COMPLETED" },
+          orderBy: { stage: { order: "desc" } },
+          take: 1,
+          include: { stage: { include: { defaultTeam: true } } },
+        },
+      },
+    });
+    return tasks;
+  };
+
+  const [currentTasks, previousTasks] = await Promise.all([
+    computeRate(range.from, range.to),
+    computeRate(prevFrom, prevTo),
+  ]);
+
+  const rate = (tasks: typeof currentTasks) => {
+    const total = tasks.length;
+    const onTime = tasks.filter(
+      (t) => t.completedAt && t.dueDate && t.completedAt <= t.dueDate
+    ).length;
+    return { total, onTime, percentage: total === 0 ? 0 : (onTime / total) * 100 };
+  };
+
+  const overall = rate(currentTasks);
+  const previous = rate(previousTasks);
+
+  const byTeamMap = new Map<string, { teamName: string; onTime: number; total: number }>();
+  for (const t of currentTasks) {
+    const lastStage = t.activeStages[0];
+    const team = lastStage?.stage.defaultTeam;
+    if (!team) continue;
+    const key = team.id;
+    if (!byTeamMap.has(key)) {
+      byTeamMap.set(key, { teamName: team.name, onTime: 0, total: 0 });
+    }
+    const bucket = byTeamMap.get(key)!;
+    bucket.total++;
+    if (t.completedAt && t.dueDate && t.completedAt <= t.dueDate) bucket.onTime++;
+  }
+
+  const byTeam = Array.from(byTeamMap.entries())
+    .map(([teamId, v]) => ({
+      teamId,
+      teamName: v.teamName,
+      onTime: v.onTime,
+      total: v.total,
+      percentage: v.total === 0 ? 0 : (v.onTime / v.total) * 100,
+    }))
+    .sort((a, b) => b.percentage - a.percentage);
+
+  return {
+    overall,
+    previousPercentage: previous.percentage,
+    byTeam,
   };
 }

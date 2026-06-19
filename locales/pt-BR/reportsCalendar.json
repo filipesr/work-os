@@ -1,0 +1,47 @@
+{
+  "title": "Calendário de Tarefas",
+  "subtitle": "Visão semanal das tarefas em andamento por equipe",
+  "filters": {
+    "team": "Equipe",
+    "project": "Projeto",
+    "user": "Colaborador",
+    "allTeams": "Todas as equipes",
+    "allProjects": "Todos os projetos",
+    "allUsers": "Todos os colaboradores",
+    "showCompleted": "Mostrar concluídas",
+    "clear": "Limpar filtros"
+  },
+  "navigation": {
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Próxima semana",
+    "currentWeek": "Semana atual",
+    "weekOf": "Semana de {start} a {end}",
+    "range": "{start} – {end}"
+  },
+  "days": {
+    "mon": "Seg",
+    "tue": "Ter",
+    "wed": "Qua",
+    "thu": "Qui",
+    "fri": "Sex",
+    "sat": "Sáb",
+    "sun": "Dom"
+  },
+  "lanes": {
+    "noDueDate": "Sem prazo",
+    "noTeam": "Sem equipe"
+  },
+  "bar": {
+    "dueIn": "Vence em {days}d",
+    "dueToday": "Vence hoje",
+    "overdue": "Atrasada há {days}d",
+    "extraStages": "+{count} etapa(s)",
+    "completed": "Concluída",
+    "ariaLabel": "Tarefa {title}, equipe {team}, etapa {stage}, {dueText}"
+  },
+  "empty": {
+    "title": "Nenhuma tarefa nessa semana",
+    "subtitle": "Tente mudar os filtros ou navegar pra outra semana",
+    "clear": "Limpar filtros"
+  }
+}

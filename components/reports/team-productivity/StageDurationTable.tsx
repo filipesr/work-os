@@ -1,0 +1,70 @@
+import { getTranslations } from "next-intl/server";
+import type { StageDurationRow } from "@/lib/actions/reporting";
+
+interface StageDurationTableProps {
+  rows: StageDurationRow[];
+}
+
+export async function StageDurationTable({ rows }: StageDurationTableProps) {
+  const t = await getTranslations("reportsTeam.stageDuration");
+
+  const formatDuration = (hours: number): string => {
+    if (hours >= 1) {
+      const whole = Math.floor(hours);
+      const mins = Math.round((hours - whole) * 60);
+      if (mins === 0) return t("hoursShort", { hours: whole });
+      return `${t("hoursShort", { hours: whole })} ${t("minutesShort", { minutes: mins })}`;
+    }
+    return t("minutesShort", { minutes: Math.round(hours * 60) });
+  };
+
+  if (rows.length === 0) {
+    return (
+      <div className="bg-card border-2 border-border rounded-xl p-6">
+        <h2 className="text-lg font-bold text-foreground mb-1">{t("title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("empty")}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-card border-2 border-border rounded-xl overflow-hidden">
+      <div className="p-6 pb-3">
+        <h2 className="text-lg font-bold text-foreground">{t("title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
+      </div>
+      <table className="min-w-full">
+        <thead className="bg-muted">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-bold text-foreground uppercase">
+              {t("columns.stage")}
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-bold text-foreground uppercase">
+              {t("columns.template")}
+            </th>
+            <th className="px-6 py-3 text-right text-xs font-bold text-foreground uppercase">
+              {t("columns.avgDuration")}
+            </th>
+            <th className="px-6 py-3 text-right text-xs font-bold text-foreground uppercase">
+              {t("columns.sampleSize")}
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {rows.map((row) => (
+            <tr key={row.stageId}>
+              <td className="px-6 py-3 text-sm font-medium text-foreground">{row.stageName}</td>
+              <td className="px-6 py-3 text-sm text-muted-foreground">{row.templateName}</td>
+              <td className="px-6 py-3 text-sm text-right font-bold tabular-nums text-foreground">
+                {formatDuration(row.avgDurationHours)}
+              </td>
+              <td className="px-6 py-3 text-sm text-right tabular-nums text-muted-foreground">
+                {row.sampleSize}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}

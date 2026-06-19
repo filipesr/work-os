@@ -40,6 +40,20 @@
       "liveActivityText": "Acompanhe em tempo real quem está trabalhando em quê. Perfeito para gestores que precisam ter visibilidade imediata da alocação da equipe.",
       "tipLabel": "💡 Dica",
       "tipText": "Use os filtros de data para comparar períodos diferentes e identificar tendências ao longo do tempo."
+    },
+    "calendar": {
+      "title": "Calendário de Tarefas",
+      "description": "Visão semanal das tarefas em andamento agrupadas por equipe, com prazo e responsável",
+      "feature1": "Navegação entre semanas",
+      "feature2": "Filtros por equipe, projeto e colaborador",
+      "feature3": "Destaque visual de tarefas atrasadas e próximas do vencimento"
+    },
+    "teamProductivity": {
+      "title": "Produtividade por Equipe",
+      "description": "Métricas gerenciais: throughput, carga atual, tempo médio por etapa e taxa no prazo",
+      "feature1": "Throughput por equipe com comparativo de período",
+      "feature2": "Carga atual com classificação no prazo / atenção / atrasada",
+      "feature3": "Tempo médio por etapa pra identificar gargalos"
     }
   },
   "liveActivity": {

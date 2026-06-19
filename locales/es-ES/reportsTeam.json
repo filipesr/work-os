@@ -1,0 +1,51 @@
+{
+  "title": "Productividad por Equipo",
+  "subtitle": "Throughput, carga actual, tiempo promedio por etapa y tasa en plazo",
+  "period": {
+    "label": "Período",
+    "week": "Esta semana",
+    "month": "Últimos 30 días",
+    "custom": "Personalizado",
+    "from": "Desde",
+    "to": "Hasta"
+  },
+  "onTime": {
+    "title": "Tasa de tareas en plazo",
+    "subtitle": "{onTime} de {total} tareas completadas dentro del plazo",
+    "delta": "Δ vs período anterior: {value}pp",
+    "noData": "Sin tareas completadas con plazo en el período",
+    "byTeam": "Por equipo"
+  },
+  "throughput": {
+    "title": "Throughput por equipo",
+    "subtitle": "Tareas completadas en el período",
+    "columns": {
+      "team": "Equipo",
+      "completed": "Completadas",
+      "delta": "Δ período anterior"
+    },
+    "empty": "Ninguna tarea completada en el período"
+  },
+  "load": {
+    "title": "Carga actual",
+    "subtitle": "Tareas en curso ahora",
+    "inProgress": "En curso",
+    "onTrack": "En plazo",
+    "attention": "Atención (≤2d)",
+    "overdue": "Atrasadas",
+    "empty": "Ninguna tarea activa"
+  },
+  "stageDuration": {
+    "title": "Tiempo promedio por etapa",
+    "subtitle": "Tiempo promedio entre entrada y salida en cada etapa completada",
+    "columns": {
+      "stage": "Etapa",
+      "template": "Plantilla",
+      "avgDuration": "Tiempo promedio",
+      "sampleSize": "Muestras"
+    },
+    "hoursShort": "{hours}h",
+    "minutesShort": "{minutes}min",
+    "empty": "Muestra insuficiente: espera más tareas completadas"
+  }
+}
