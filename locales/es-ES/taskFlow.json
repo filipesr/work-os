@@ -8,64 +8,64 @@
   },
   "slides": {
     "cover": {
-      "eyebrow": "Para agencias de marketing",
-      "title": "Cuando Trello ya no alcanza",
-      "subtitle": "Por qué un tablero de tarjetas no controla un flujo de producción real",
+      "eyebrow": "Para GoOn",
+      "title": "La próxima fase de la operación",
+      "subtitle": "Cómo evolucionar el control del proceso sin perder la agilidad que los trajo hasta aquí",
       "hint": "Pulsa → para empezar"
     },
     "premise": {
-      "kicker": "La premisa",
-      "title": "Trello resolvió una cosa.",
-      "highlight": "Pero dejó tres en el camino.",
-      "body": "Para una agencia que entrega Landing Pages, carruseles, videos y campañas cada semana, un tablero Kanban es solo una planilla coloreada. Falta proceso, falta responsable por etapa, falta paralelismo, falta visión gerencial."
+      "kicker": "El punto de partida",
+      "title": "El proceso actual trajo a GoOn hasta aquí.",
+      "highlight": "Pero la operación ya es más grande que él.",
+      "body": "Trello, WhatsApp, planillas paralelas. Cada herramienta resolvió una parte, y el equipo aprendió a coser todo a la improvisada. Funciona — pero el costo de esa improvisación se hace visible cuando el volumen crece: pases de batón informales, falta de estándar entre tareas, retrabajo difícil de medir."
     },
     "problems1": {
-      "kicker": "Los problemas · 1 de 2",
-      "title": "Lo que falta en Trello",
+      "kicker": "Los síntomas · 1 de 2",
+      "title": "Síntomas de una operación que creció",
       "cards": {
         "flow": {
           "title": "Tarjetas cambian de columna a mano",
-          "text": "¿Quién es el dueño ahora? ¿Quién la movió a Done sin revisar?"
+          "text": "Cuando Copy, Diseño, Dev y QC hablan al mismo tiempo: ¿quién es el dueño ahora? ¿Quién la movió a Done sin revisar?"
         },
         "reuse": {
-          "title": "No hay plantilla de workflow",
-          "text": "Cada LP nueva se arma desde cero. El proceso solo vive en la cabeza del gerente."
+          "title": "Cada LP se arma desde cero",
+          "text": "El proceso solo vive en la cabeza del gerente. Cuando alguien sale, sale con el proceso en la mochila."
         },
         "parallel": {
           "title": "La tarea se detiene en la primera columna",
-          "text": "Trello es lineal. Pero QC y SEO podían (y debían) correr en paralelo."
+          "text": "El tablero es lineal. Pero QC y SEO podían (y debían) avanzar en paralelo — y hoy no avanzan."
         }
       }
     },
     "problems2": {
-      "kicker": "Los problemas · 2 de 2",
-      "title": "Y otros tres puntos ciegos",
+      "kicker": "Los síntomas · 2 de 2",
+      "title": "Y tres puntos ciegos que aparecen con volumen",
       "cards": {
         "assignment": {
           "title": "Asignación por tarjeta, no por etapa",
-          "text": "El diseñador sigue marcado tras terminar. Dev sin aviso cuando entra su turno."
+          "text": "El diseñador sigue marcado tras terminar. Dev sin aviso cuando entra su turno. El pase de batón se va al WhatsApp."
         },
         "timesheet": {
           "title": "Sin timesheet por etapa",
-          "text": "¿Cuánto costó el diseño de esa LP? ¿Qué cliente consume más horas? Nadie sabe."
+          "text": "¿Cuánto costó el diseño de esa LP? ¿Qué cliente consume más horas? Hoy: estimación a fin de mes."
         },
         "visibility": {
           "title": "Gestor sin visión de carga",
-          "text": "\"El equipo de Diseño tiene 12 tareas esta semana\" — solo se descubre en planilla aparte."
+          "text": "\"El equipo de Diseño tiene 12 tareas esta semana\" — solo se descubre en planilla aparte o en el chat."
         }
       }
     },
     "solutions1": {
-      "kicker": "La solución · 1 de 2",
+      "kicker": "La evolución · 1 de 2",
       "title": "Proceso en lugar de improvisación",
       "cards": {
         "template": {
           "title": "Plantilla = receta del proceso",
-          "text": "Cada tipo de entrega tiene el workflow definido una vez. Cliente nuevo es solo clonar."
+          "text": "Cada tipo de entrega de GoOn tiene el workflow definido una vez. Cliente nuevo es solo clonar — sin reinventar."
         },
         "assignment": {
           "title": "Asignación por etapa",
-          "text": "¿Copy cerró? Diseño se activa automáticamente, escalado al equipo correcto. Sin WhatsApp."
+          "text": "¿Copy cerró? Diseño se activa automáticamente, escalado al equipo correcto. Sin llamar al WhatsApp."
         },
         "parallel": {
           "title": "Paralelismo nativo (fork/join)",
@@ -74,7 +74,7 @@
       }
     },
     "solutions2": {
-      "kicker": "La solución · 2 de 2",
+      "kicker": "La evolución · 2 de 2",
       "title": "Control en lugar de estimación",
       "cards": {
         "validation": {
@@ -83,18 +83,18 @@
         },
         "timesheet": {
           "title": "Tiempo registrado por etapa",
-          "text": "Cada minuto vinculado a la etapa correcta. Cobro por cliente se vuelve tabla."
+          "text": "Cada minuto vinculado a la etapa correcta. Cobro por cliente se vuelve tabla — no estimación."
         },
         "visibility": {
           "title": "Visión gerencial nativa",
-          "text": "Carga, throughput, % en plazo, calendario semanal. Todo en el menú de Informes."
+          "text": "Carga actual por equipo, throughput, % en plazo, calendario semanal. Todo en el menú de Informes."
         }
       }
     },
     "flowIntro": {
-      "kicker": "El flujo en acción",
+      "kicker": "Cómo queda el proceso",
       "title": "Anatomía de una Landing Page",
-      "subtitle": "El mismo trabajo que ya haces hoy. Lo único que cambia es dónde sucede.",
+      "subtitle": "El mismo trabajo que GoOn ya hace hoy. Lo único que cambia es dónde sucede.",
       "stages": "Briefing & Copy → Diseño → Dev → (QC + SEO en paralelo)",
       "steps": {
         "1": {
@@ -113,7 +113,7 @@
           "badge": "3",
           "title": "Diseño",
           "actor": "Equipo de Diseño",
-          "text": "La conclusión de Copy activa Diseño. El diseñador lo ve en su dashboard, sin checar el tablero entero."
+          "text": "La conclusión de Copy activa Diseño. El diseñador lo ve en su propia dashboard — sin checar el tablero entero."
         },
         "4": {
           "badge": "↺",
@@ -124,8 +124,8 @@
       }
     },
     "forkJoin": {
-      "kicker": "El flujo en acción · paralelismo",
-      "title": "Fork & Join: lo que Kanban no logra",
+      "kicker": "Cómo queda el proceso · paralelismo",
+      "title": "Fork & Join: la ganancia de tiempo real",
       "subtitle": "Dos equipos, al mismo tiempo. Sincronización automática.",
       "steps": {
         "5": {
@@ -150,8 +150,8 @@
     },
     "bonus1": {
       "kicker": "Bonus · 1 de 2",
-      "title": "Visión de gestión sin Power-Up de pago",
-      "subtitle": "Ya viene listo, integrado a la misma base que registra cada clic.",
+      "title": "Visión de gestión integrada",
+      "subtitle": "No es Power-Up paralelo — viene de la misma base que registra cada clic.",
       "cards": {
         "calendar": {
           "title": "Calendario Gantt semanal",
@@ -183,10 +183,10 @@
       }
     },
     "closer": {
-      "kicker": "Resumiendo",
-      "title": "Trello es un cuaderno coloreado.",
-      "highlight": "Work OS es una planta de producción.",
-      "body": "Si tu agencia está creciendo y Trello empezó a doler — tarjetas perdidas, asignación al azar, gestor sin visión de carga, cliente cobrando por hora — ya pasaste el punto.",
+      "kicker": "En una frase",
+      "title": "La operación de GoOn está lista",
+      "highlight": "para este próximo paso.",
+      "body": "No es cambiar lo que funciona — es darle al proceso que el equipo ya corre en automático la estructura que merece. Plantillas explícitas, asignación por etapa, paralelismo nativo, timesheet por etapa, visión gerencial integrada.",
       "cta": "Entrar al panel"
     }
   }
