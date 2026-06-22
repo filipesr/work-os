@@ -1,150 +1,193 @@
 {
-  "hero": {
-    "eyebrow": "Para agencias de marketing",
-    "title": "Cuando Trello ya no alcanza",
-    "subtitle": "Por qué un tablero de tarjetas no controla un flujo de producción real — y cómo Work OS lo resuelve",
-    "back": "Volver al panel"
+  "ui": {
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "slideOf": "{current} de {total}",
+    "shortcut": "← → para navegar · F para pantalla completa · ESC para salir",
+    "exit": "Salir"
   },
-  "intro": {
-    "title": "Trello resolvió una cosa. Pero dejó tres en el camino.",
-    "body": "Para una agencia que entrega Landing Pages, carruseles, videos y campañas de tráfico cada semana, un tablero Kanban es solo una planilla coloreada. Falta proceso estandarizado, falta responsable por etapa, falta paralelismo, falta visión gerencial."
-  },
-  "problems": {
-    "title": "Lo que falta en Trello (y en Asana, y en Notion)",
-    "subtitle": "Síntomas que toda gestora de agencia reconoce",
-    "cards": {
-      "flow": {
-        "title": "Tarjetas cambian de columna a mano",
-        "text": "Toda tarjeta se vuelve caos cuando Copy, Diseño, Dev y QC hablan al mismo tiempo. ¿Quién es el dueño ahora? ¿Dónde está el checklist? ¿Quién la movió a Done sin revisar?"
-      },
-      "reuse": {
-        "title": "No hay plantilla de workflow",
-        "text": "Cada LP nueva se arma desde cero. El proceso solo existe en la cabeza del gerente. Cuando alguien sale, sale con el proceso en la mochila."
-      },
-      "parallel": {
-        "title": "La tarea se detiene en la primera columna",
-        "text": "Trello es lineal. Pero QC y SEO pueden (y deben) correr en paralelo. En Trello duplicas la tarjeta o creas otro tablero — y pierdes trazabilidad."
-      },
-      "assignment": {
-        "title": "Asignación es por tarjeta, no por etapa",
-        "text": "El diseñador sigue marcado después de terminar el diseño. Dev sin aviso cuando el diseño entró. El pase de batón es manual y silencioso — casi siempre por WhatsApp."
-      },
-      "timesheet": {
-        "title": "Sin timesheet por etapa",
-        "text": "¿Cuánto costó el diseño de esa LP? ¿Cuánto gastó el equipo en QC el mes pasado? ¿Qué cliente consume más horas? En Trello: nadie sabe."
-      },
-      "visibility": {
-        "title": "Gestor sin visión de carga",
-        "text": "No puedes ver \"el equipo de Diseño tiene 12 tareas esta semana\". Cada gestor abre cada tablero, cuenta a mano, arma planilla aparte."
+  "slides": {
+    "cover": {
+      "eyebrow": "Para agencias de marketing",
+      "title": "Cuando Trello ya no alcanza",
+      "subtitle": "Por qué un tablero de tarjetas no controla un flujo de producción real",
+      "hint": "Pulsa → para empezar"
+    },
+    "premise": {
+      "kicker": "La premisa",
+      "title": "Trello resolvió una cosa.",
+      "highlight": "Pero dejó tres en el camino.",
+      "body": "Para una agencia que entrega Landing Pages, carruseles, videos y campañas cada semana, un tablero Kanban es solo una planilla coloreada. Falta proceso, falta responsable por etapa, falta paralelismo, falta visión gerencial."
+    },
+    "problems1": {
+      "kicker": "Los problemas · 1 de 2",
+      "title": "Lo que falta en Trello",
+      "cards": {
+        "flow": {
+          "title": "Tarjetas cambian de columna a mano",
+          "text": "¿Quién es el dueño ahora? ¿Quién la movió a Done sin revisar?"
+        },
+        "reuse": {
+          "title": "No hay plantilla de workflow",
+          "text": "Cada LP nueva se arma desde cero. El proceso solo vive en la cabeza del gerente."
+        },
+        "parallel": {
+          "title": "La tarea se detiene en la primera columna",
+          "text": "Trello es lineal. Pero QC y SEO podían (y debían) correr en paralelo."
+        }
       }
-    }
-  },
-  "solution": {
-    "title": "Lo que Work OS resuelve",
-    "subtitle": "Sin Power-Up, sin automatización externa, sin planilla paralela",
-    "cards": {
-      "template": {
-        "title": "Plantilla = receta del proceso",
-        "text": "Cada tipo de entrega (LP, Carrusel, Reel, Tráfico) tiene el workflow definido una vez: etapas, equipos responsables, dependencias, reglas de fork/join. Cliente nuevo es solo clonar."
-      },
-      "assignment": {
-        "title": "Asignación por etapa, no por tarea",
-        "text": "Cuando Copy cierra, automáticamente pasa a Diseño — escalado al equipo correcto. Sin llamar por WhatsApp, sin duda de quién tiene la pelota."
-      },
-      "parallel": {
-        "title": "Paralelismo nativo (fork/join)",
-        "text": "¿Dev terminado? QC y SEO se activan al mismo tiempo. La tarea solo cierra cuando ambos entregan. Sin duplicar tarjeta, sin perder rastro."
-      },
-      "validation": {
-        "title": "La etapa solo cierra con contribución",
-        "text": "No puedes hacer clic en \"Completado\" sin haber subido el archivo final o registrado un comentario. Nada de etapa fantasma."
-      },
-      "timesheet": {
-        "title": "Tiempo registrado por etapa",
-        "text": "Quien trabaja marca hora en la tarea. Sabemos cuánto costó cada etapa, de cada tarea, de cada cliente — sin pedido posterior, sin estimación."
-      },
-      "visibility": {
-        "title": "Visión gerencial nativa",
-        "text": "Carga actual por equipo, throughput por período, % en plazo, calendario semanal. Todo en el menú de Informes."
+    },
+    "problems2": {
+      "kicker": "Los problemas · 2 de 2",
+      "title": "Y otros tres puntos ciegos",
+      "cards": {
+        "assignment": {
+          "title": "Asignación por tarjeta, no por etapa",
+          "text": "El diseñador sigue marcado tras terminar. Dev sin aviso cuando entra su turno."
+        },
+        "timesheet": {
+          "title": "Sin timesheet por etapa",
+          "text": "¿Cuánto costó el diseño de esa LP? ¿Qué cliente consume más horas? Nadie sabe."
+        },
+        "visibility": {
+          "title": "Gestor sin visión de carga",
+          "text": "\"El equipo de Diseño tiene 12 tareas esta semana\" — solo se descubre en planilla aparte."
+        }
       }
-    }
-  },
-  "flow": {
-    "title": "Anatomía de una Landing Page en Work OS",
-    "intro": "El mismo trabajo que ya haces hoy. Lo único que cambia es dónde sucede.",
-    "stages": "Briefing & Copy → Diseño → Dev → (QC + SEO en paralelo)",
-    "steps": {
-      "1": {
-        "badge": "1",
-        "title": "Concepción",
-        "actor": "Gerente crea la tarea",
-        "text": "A partir de la plantilla \"Landing Page\". Las etapas (Copy → Diseño → Dev → QC + SEO) ya vienen predefinidas con equipos responsables y dependencias correctas."
-      },
-      "2": {
-        "badge": "2",
-        "title": "Briefing & Copy",
-        "actor": "Equipo de Copy",
-        "text": "Etapa activa automáticamente. No hay \"¿quién agarra esto?\". Un miembro reclama la etapa, escribe el copy, sube el documento, comenta lo que hizo."
-      },
-      "3": {
-        "badge": "3",
-        "title": "Diseño",
-        "actor": "Equipo de Diseño",
-        "text": "La conclusión de Copy activa Diseño automáticamente. El diseñador ve la etapa nueva en su dashboard personal — sin checar el tablero entero."
-      },
-      "4": {
-        "badge": "↺",
-        "title": "Loop de revisión",
-        "actor": "Supervisor",
-        "text": "¿QC rechaza? Devuelve a Diseño con comentario obligatorio explicando qué está mal. Todo registrado. Sin \"ya te lo dije ayer\"."
-      },
-      "5": {
-        "badge": "4",
-        "title": "Dev",
-        "actor": "Equipo de Dev",
-        "text": "Diseño aprobado activa Dev. Misma mecánica: el equipo ve en la dashboard, reclama, ejecuta, sube artefacto, completa."
-      },
-      "6": {
-        "badge": "⑂",
-        "title": "Fork: QC + SEO en paralelo",
-        "actor": "Dos equipos al mismo tiempo",
-        "text": "¿Dev terminado? Dos etapas se activan de una. QC valida la entrega; SEO optimiza meta tags, schema, sitemap. Equipos diferentes, sin que uno bloquee al otro."
-      },
-      "7": {
-        "badge": "⩕",
-        "title": "Join: la tarea cierra junta",
-        "actor": "Sincronización automática",
-        "text": "¿QC entrega antes? Espera. Cuando SEO entregue, la tarea cierra automáticamente. Sin tarea cerrada en la cara del SEO, sin reclamo en el chat."
+    },
+    "solutions1": {
+      "kicker": "La solución · 1 de 2",
+      "title": "Proceso en lugar de improvisación",
+      "cards": {
+        "template": {
+          "title": "Plantilla = receta del proceso",
+          "text": "Cada tipo de entrega tiene el workflow definido una vez. Cliente nuevo es solo clonar."
+        },
+        "assignment": {
+          "title": "Asignación por etapa",
+          "text": "¿Copy cerró? Diseño se activa automáticamente, escalado al equipo correcto. Sin WhatsApp."
+        },
+        "parallel": {
+          "title": "Paralelismo nativo (fork/join)",
+          "text": "¿Dev terminado? QC y SEO se activan juntos. La tarea solo cierra cuando ambos entregan."
+        }
       }
-    }
-  },
-  "bonus": {
-    "title": "Bonus: visión de gestión sin Power-Up de pago",
-    "intro": "Trello tiene Power-Ups e integraciones de pago para simular informes. Aquí ya viene listo, integrado a la misma base que registra cada clic.",
-    "cards": {
-      "calendar": {
-        "title": "Calendario (Gantt semanal)",
-        "text": "Mira la semana entera agrupada por equipo. Atrasadas en rojo, próximas al plazo en amarillo, en plazo en verde. Filtra por equipo, proyecto o colaborador."
-      },
-      "productivity": {
-        "title": "Productividad por Equipo",
-        "text": "Throughput semanal, carga actual clasificada (en plazo/atención/atrasada), tiempo promedio por etapa (identifica cuello de botella), % de entrega en plazo. Comparativo automático con período anterior."
-      },
-      "live": {
-        "title": "TV: Actividad en Vivo",
-        "text": "Pantalla completa mostrando quién trabaja ahora, en qué tarea, hace cuánto. Para colgar en la pared de la oficina — o abrir en un monitor extra."
-      },
-      "timesheet": {
-        "title": "Informe de Horas",
-        "text": "Horas por colaborador, proyecto, cliente y etapa. Cobro por cliente se vuelve tabla, no estimación. Análisis de cuellos de botella se vuelve gráfico, no opinión."
+    },
+    "solutions2": {
+      "kicker": "La solución · 2 de 2",
+      "title": "Control en lugar de estimación",
+      "cards": {
+        "validation": {
+          "title": "La etapa solo cierra con contribución",
+          "text": "Sin artefacto o comentario, el botón \"Completado\" no se libera. Nada de etapa fantasma."
+        },
+        "timesheet": {
+          "title": "Tiempo registrado por etapa",
+          "text": "Cada minuto vinculado a la etapa correcta. Cobro por cliente se vuelve tabla."
+        },
+        "visibility": {
+          "title": "Visión gerencial nativa",
+          "text": "Carga, throughput, % en plazo, calendario semanal. Todo en el menú de Informes."
+        }
       }
+    },
+    "flowIntro": {
+      "kicker": "El flujo en acción",
+      "title": "Anatomía de una Landing Page",
+      "subtitle": "El mismo trabajo que ya haces hoy. Lo único que cambia es dónde sucede.",
+      "stages": "Briefing & Copy → Diseño → Dev → (QC + SEO en paralelo)",
+      "steps": {
+        "1": {
+          "badge": "1",
+          "title": "Concepción",
+          "actor": "Gerente",
+          "text": "Crea la tarea a partir de la plantilla \"Landing Page\". Etapas, equipos y dependencias ya vienen definidas."
+        },
+        "2": {
+          "badge": "2",
+          "title": "Briefing & Copy",
+          "actor": "Equipo de Copy",
+          "text": "Etapa activa automáticamente. Un miembro reclama, escribe, sube el artefacto."
+        },
+        "3": {
+          "badge": "3",
+          "title": "Diseño",
+          "actor": "Equipo de Diseño",
+          "text": "La conclusión de Copy activa Diseño. El diseñador lo ve en su dashboard, sin checar el tablero entero."
+        },
+        "4": {
+          "badge": "↺",
+          "title": "Loop de revisión",
+          "actor": "Supervisor",
+          "text": "¿QC rechaza? Devuelve con comentario obligatorio. Historial queda registrado."
+        }
+      }
+    },
+    "forkJoin": {
+      "kicker": "El flujo en acción · paralelismo",
+      "title": "Fork & Join: lo que Kanban no logra",
+      "subtitle": "Dos equipos, al mismo tiempo. Sincronización automática.",
+      "steps": {
+        "5": {
+          "badge": "4",
+          "title": "Dev",
+          "actor": "Equipo de Dev",
+          "text": "Diseño aprobado activa Dev. Mismo patrón: dashboard, claim, artefacto, conclusión."
+        },
+        "6": {
+          "badge": "⑂",
+          "title": "Fork: QC + SEO en paralelo",
+          "actor": "Dos equipos activos",
+          "text": "¿Dev terminado? Dos etapas abren de una. QC valida; SEO optimiza meta tags, schema, sitemap."
+        },
+        "7": {
+          "badge": "⩕",
+          "title": "Join: la tarea cierra junta",
+          "actor": "Sincronización automática",
+          "text": "¿QC entrega antes? Espera al SEO. Cuando ambos cierren, la tarea cierra sola."
+        }
+      }
+    },
+    "bonus1": {
+      "kicker": "Bonus · 1 de 2",
+      "title": "Visión de gestión sin Power-Up de pago",
+      "subtitle": "Ya viene listo, integrado a la misma base que registra cada clic.",
+      "cards": {
+        "calendar": {
+          "title": "Calendario Gantt semanal",
+          "text": "Semana entera agrupada por equipo. Rojo para atrasada, amarillo para cerca del plazo, verde para en plazo. Filtros por equipo, proyecto y colaborador.",
+          "cta": "Abrir calendario"
+        },
+        "productivity": {
+          "title": "Productividad por equipo",
+          "text": "Throughput, carga actual (en plazo / atención / atrasada), tiempo promedio por etapa, % en plazo. Comparativo automático con período anterior.",
+          "cta": "Abrir informe"
+        }
+      }
+    },
+    "bonus2": {
+      "kicker": "Bonus · 2 de 2",
+      "title": "Operación visible en tiempo real",
+      "subtitle": "Lo que está pasando ahora — y cuánto costó.",
+      "cards": {
+        "live": {
+          "title": "TV: Actividad en vivo",
+          "text": "Pantalla completa mostrando quién trabaja ahora, en qué tarea, hace cuánto. Para colgar en la pared.",
+          "cta": "Abrir TV"
+        },
+        "timesheet": {
+          "title": "Informe de horas",
+          "text": "Horas por colaborador, proyecto, cliente y etapa. Cobro por cliente se vuelve tabla. Análisis de cuello de botella se vuelve gráfico.",
+          "cta": "Abrir informe"
+        }
+      }
+    },
+    "closer": {
+      "kicker": "Resumiendo",
+      "title": "Trello es un cuaderno coloreado.",
+      "highlight": "Work OS es una planta de producción.",
+      "body": "Si tu agencia está creciendo y Trello empezó a doler — tarjetas perdidas, asignación al azar, gestor sin visión de carga, cliente cobrando por hora — ya pasaste el punto.",
+      "cta": "Entrar al panel"
     }
-  },
-  "closer": {
-    "title": "Trello es un cuaderno coloreado. Work OS es una planta de producción.",
-    "body": "Si tu agencia está creciendo y Trello empezó a doler — tarjetas perdidas, asignación a la suerte, gestor sin visión de carga, cliente cobrando por hora — ya pasaste el punto."
-  },
-  "footer": {
-    "text": "Work OS · Gestión de operaciones para agencias de marketing"
   }
 }
