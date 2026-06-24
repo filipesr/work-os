@@ -5,27 +5,21 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
-  AlertTriangle,
   ArrowRight,
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Clock,
   Eye,
   FileText,
   GitBranch,
   GitMerge,
-  Layers,
-  Lock,
   Maximize2,
   MessageSquareWarning,
   PauseCircle,
-  Shuffle,
   TrendingDown,
   TrendingUp,
   Tv,
   Users,
-  Workflow,
   X,
 } from "lucide-react";
 import { SlideShell } from "./SlideShell";
@@ -35,10 +29,8 @@ import { StepCard } from "./StepCard";
 const SLIDE_KEYS = [
   "cover",
   "premise",
-  "problems1",
-  "problems2",
-  "solutions1",
-  "solutions2",
+  "problems",
+  "solutions",
   "flowIntro",
   "forkJoin",
   "bonus1",
@@ -88,19 +80,18 @@ function PremiseSlide() {
 }
 
 const PROBLEM_ICONS = {
-  flow: AlertTriangle,
-  reuse: Shuffle,
-  parallel: PauseCircle,
+  doing: Eye,
+  planned: Calendar,
   assignment: MessageSquareWarning,
-  timesheet: TrendingDown,
-  visibility: Eye,
+  parallel: PauseCircle,
+  metrics: TrendingDown,
 } as const;
 
 function ProblemsSlide({
   slideKey,
   keys,
 }: {
-  slideKey: "problems1" | "problems2";
+  slideKey: "problems";
   keys: ReadonlyArray<keyof typeof PROBLEM_ICONS>;
 }) {
   const t = useTranslations(`taskFlow.slides.${slideKey}`);
@@ -122,19 +113,18 @@ function ProblemsSlide({
 }
 
 const SOLUTION_ICONS = {
-  template: Workflow,
+  doing: Tv,
+  planned: Calendar,
   assignment: Users,
   parallel: GitBranch,
-  validation: Lock,
-  timesheet: Clock,
-  visibility: Layers,
+  metrics: TrendingUp,
 } as const;
 
 function SolutionsSlide({
   slideKey,
   keys,
 }: {
-  slideKey: "solutions1" | "solutions2";
+  slideKey: "solutions";
   keys: ReadonlyArray<keyof typeof SOLUTION_ICONS>;
 }) {
   const t = useTranslations(`taskFlow.slides.${slideKey}`);
@@ -277,17 +267,19 @@ function renderSlide(key: SlideKey) {
       return <CoverSlide />;
     case "premise":
       return <PremiseSlide />;
-    case "problems1":
-      return <ProblemsSlide slideKey="problems1" keys={["flow", "reuse", "parallel"]} />;
-    case "problems2":
+    case "problems":
       return (
-        <ProblemsSlide slideKey="problems2" keys={["assignment", "timesheet", "visibility"]} />
+        <ProblemsSlide
+          slideKey="problems"
+          keys={["doing", "planned", "assignment", "parallel", "metrics"]}
+        />
       );
-    case "solutions1":
-      return <SolutionsSlide slideKey="solutions1" keys={["template", "assignment", "parallel"]} />;
-    case "solutions2":
+    case "solutions":
       return (
-        <SolutionsSlide slideKey="solutions2" keys={["validation", "timesheet", "visibility"]} />
+        <SolutionsSlide
+          slideKey="solutions"
+          keys={["doing", "planned", "assignment", "parallel", "metrics"]}
+        />
       );
     case "flowIntro":
       return <FlowIntroSlide />;

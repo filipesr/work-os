@@ -19,75 +19,55 @@
       "highlight": "Mas a operação já é maior, muito maior.",
       "body": "Trello, WhatsApp, planilhas paralelas. Cada ferramenta resolveu uma parte, e o time aprendeu a costurar tudo no improviso. Funciona — mas o custo desse improviso fica visível à medida que o volume cresce: passagens de bastão informais, falta de padrão entre tarefas, retrabalho difícil de medir."
     },
-    "problems1": {
-      "kicker": "Os sintomas · 1 de 2",
+    "problems": {
+      "kicker": "Os sintomas",
       "title": "Sintomas de uma operação que cresceu",
       "cards": {
-        "flow": {
-          "title": "Cards mudam de coluna no braço",
-          "text": "Quando Copy, Design, Dev e QC falam ao mesmo tempo: quem é o dono agora? Quem moveu pra Done sem revisar?"
+        "doing": {
+          "title": "Difícil ver o que está sendo feito agora",
+          "text": "Quem está em qual tarefa, há quanto tempo? A resposta vive espalhada entre Trello, WhatsApp e a memória do gerente."
         },
-        "reuse": {
-          "title": "Cada LP é montada do zero",
-          "text": "O processo só existe na cabeça do gerente. Quando alguém sai, sai com o processo na mochila."
+        "planned": {
+          "title": "E o que foi planejado some de vista",
+          "text": "O quadro mostra o agora, não a semana. Prazos, sequência e carga futura só numa planilha à parte."
+        },
+        "assignment": {
+          "title": "Passagem de bastão no braço",
+          "text": "Etapa terminou? Alguém precisa lembrar de chamar a próxima equipe. O designer continua marcado depois do design pronto."
         },
         "parallel": {
-          "title": "A tarefa para na primeira coluna",
-          "text": "O quadro é linear. Mas QC e SEO podiam (e deviam) andar em paralelo — e hoje não andam."
+          "title": "A tarefa anda em fila única",
+          "text": "O quadro é linear. QC e SEO podiam andar em paralelo — e hoje esperam um ao outro sem motivo."
+        },
+        "metrics": {
+          "title": "Métricas só no fim do mês",
+          "text": "Quanto custou o design dessa LP? Qual cliente come mais hora? Hoje: estimativa, não número."
         }
       }
     },
-    "problems2": {
-      "kicker": "Os sintomas · 2 de 2",
-      "title": "E três pontos cegos que aparecem com volume",
-      "cards": {
-        "assignment": {
-          "title": "Atribuição por card, não por etapa",
-          "text": "O designer continua marcado depois do design pronto. Dev sem aviso quando entra a vez dele. A passagem de bastão vai pro WhatsApp."
-        },
-        "timesheet": {
-          "title": "Sem timesheet por etapa",
-          "text": "Quanto custou o design dessa LP? Qual cliente come mais hora? Hoje: estimativa no fim do mês."
-        },
-        "visibility": {
-          "title": "Gestor sem visão de carga",
-          "text": "\"O time de Design tem 12 tarefas essa semana\" — só descobrindo na planilha à parte ou no chat."
-        }
-      }
-    },
-    "solutions1": {
-      "kicker": "A evolução · 1 de 2",
+    "solutions": {
+      "kicker": "A evolução",
       "title": "Processo no lugar de improviso",
       "cards": {
-        "template": {
-          "title": "Template = receita do processo",
-          "text": "Cada tipo de entrega da GoOn tem o workflow definido uma vez. Cliente novo é só clonar — sem reinventar."
+        "doing": {
+          "title": "Veja o que está rolando agora",
+          "text": "TV de atividade ao vivo: quem trabalha, em qual tarefa, há quanto tempo. Sem perguntar no chat."
+        },
+        "planned": {
+          "title": "E o que está planejado pra semana",
+          "text": "Calendário Gantt semanal por equipe: vermelho atrasado, amarelo perto do prazo, verde no prazo."
         },
         "assignment": {
-          "title": "Atribuição por etapa",
-          "text": "Copy fechou? Design ativa automaticamente, escalado pro time certo. Sem chamar no WhatsApp."
+          "title": "Atribuição automática por etapa",
+          "text": "Copy fechou? Design ativa sozinho, escalado pro time certo, na dashboard de quem precisa agir."
         },
         "parallel": {
           "title": "Paralelismo nativo (fork/join)",
-          "text": "Dev concluído? QC e SEO ativam juntos. A tarefa só fecha quando os dois entregam."
-        }
-      }
-    },
-    "solutions2": {
-      "kicker": "A evolução · 2 de 2",
-      "title": "Controle no lugar de estimativa",
-      "cards": {
-        "validation": {
-          "title": "Etapa só fecha com contribuição",
-          "text": "Sem artefato ou comentário, o botão \"Concluído\" não libera. Nada de etapa fantasma."
+          "text": "Dev concluído? QC e SEO abrem juntos. A tarefa só fecha quando os dois entregam."
         },
-        "timesheet": {
-          "title": "Tempo registrado por etapa",
-          "text": "Cada minuto vinculado à etapa certa. Cobrança por cliente vira tabela — não estimativa."
-        },
-        "visibility": {
-          "title": "Visão gerencial nativa",
-          "text": "Carga atual por equipe, throughput, % no prazo, calendário semanal. Tudo no menu de Relatórios."
+        "metrics": {
+          "title": "Métricas geradas sozinhas",
+          "text": "Tempo por etapa, throughput, % no prazo, custo por cliente — do mesmo banco que registra cada clique."
         }
       }
     },
@@ -186,7 +166,7 @@
       "kicker": "Em uma frase",
       "title": "A operação da GoOn está pronta",
       "highlight": "pra esse próximo passo.",
-      "body": "Não é trocar o que funciona — é dar ao processo que a equipe já roda no automático a estrutura que ele merece. Templates explícitos, atribuição por etapa, paralelismo nativo, timesheet por etapa, visão gerencial integrada.",
+      "body": "Não é trocar o que funciona — é dar ao processo que a equipe já roda no automático a estrutura que ele merece. Visão do que roda agora e do que foi planejado, atribuição automática por etapa, paralelismo nativo e métricas que se geram sozinhas.",
       "cta": "Entrar no painel"
     }
   }

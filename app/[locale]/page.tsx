@@ -1,13 +1,13 @@
-import { auth } from "@/auth"
-import { redirect } from "next/navigation"
-import Link from "next/link"
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export default async function Home() {
-  const session = await auth()
+  const session = await auth();
 
   // Redirect authenticated users to dashboard
   if (session?.user) {
-    redirect("/dashboard")
+    redirect("/dashboard");
   }
 
   return (
@@ -31,15 +31,15 @@ export default async function Home() {
                 Entrar
               </Link>
               <Link
-                href="/task-flow"
+                href="/next"
                 className="inline-block px-8 py-3.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/90 shadow-md hover:shadow-lg transition-all duration-200"
               >
-                Ver Apresentação do Fluxo
+                Ver Apresentação
               </Link>
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
