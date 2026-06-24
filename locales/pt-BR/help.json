@@ -1,0 +1,368 @@
+{
+  "hub": {
+    "title": "Central de Ajuda",
+    "subtitle": "Aprenda a configurar e operar o Work OS em três guias, na ordem natural de uso.",
+    "openGuide": "Abrir guia",
+    "guides": {
+      "templates": {
+        "badge": "1",
+        "title": "Criar um Fluxo de Trabalho",
+        "description": "Monte a receita do processo: etapas, times e paralelismo."
+      },
+      "projetos": {
+        "badge": "2",
+        "title": "Cliente, Projeto e Demanda",
+        "description": "Organize o trabalho e crie demandas a partir de um template."
+      },
+      "colaborador": {
+        "badge": "3",
+        "title": "O dia a dia do colaborador",
+        "description": "Pegar, executar e concluir etapas — e o paralelismo na prática."
+      }
+    }
+  },
+  "ui": {
+    "backToHelp": "Voltar para a Central de Ajuda",
+    "routeBadge": "Onde encontrar",
+    "figurePlaceholder": "O print deste passo entra aqui",
+    "stepLabel": "Passo"
+  },
+  "guides": {
+    "templates": {
+      "badge": "1",
+      "title": "Criar um Template de Fluxo de Trabalho",
+      "intro": "O template é a receita do seu processo: você define uma vez quais etapas uma entrega percorre, em que ordem, qual time cuida de cada uma e o que pode acontecer em paralelo. Toda nova demanda nasce a partir de um template — sem reinventar o processo a cada cliente.",
+      "route": "/admin/templates",
+      "sections": [
+        {
+          "title": "Passo 1 — Criar o template",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Abra Administração → Fluxos de Trabalho",
+              "body": [
+                "No menu, vá para a área de templates (rota /admin/templates). É uma área de administrador."
+              ],
+              "image": "templates-01-lista.png",
+              "caption": "Lista de templates existentes e o card de criação."
+            },
+            {
+              "n": "2",
+              "title": "Preencha nome e descrição",
+              "body": ["No card “Criar Novo Template”, informe:"],
+              "bullets": [
+                "Nome do Template — ex.: “Landing Page”, “Vídeo Curto”.",
+                "Descrição (opcional) — para que serve esse fluxo."
+              ],
+              "callout": {
+                "label": "Dica",
+                "text": "Use nomes que descrevam o tipo de entrega. Cada tipo de trabalho recorrente merece o seu próprio template."
+              },
+              "image": "templates-02-criar.png",
+              "caption": "Card “Criar Novo Template”."
+            },
+            {
+              "n": "3",
+              "title": "Clique em Criar Template",
+              "body": ["Você é levado direto ao editor do template, onde vai montar as etapas."],
+              "image": "templates-03-editor.png",
+              "caption": "Editor do template recém-criado."
+            }
+          ]
+        },
+        {
+          "title": "Passo 2 — Adicionar as etapas",
+          "intro": "As etapas são as fases do trabalho (ex.: Briefing, Copy, Design, Dev, QC, SEO).",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Clique em “+ Adicionar Nova Etapa”",
+              "body": ["Na seção “Etapas do Fluxo de Trabalho”, abra o formulário de etapa."],
+              "image": "templates-04-add-etapa.png",
+              "caption": "Botão de adicionar etapa."
+            },
+            {
+              "n": "2",
+              "title": "Defina nome, ordem e time padrão",
+              "body": ["Cada etapa tem três campos básicos:"],
+              "bullets": [
+                "Nome da Etapa — ex.: “Roteiro”, “Design”.",
+                "Ordem — a posição na sequência (1, 2, 3…).",
+                "Time Padrão — o time escalado automaticamente quando a tarefa chega nesta etapa (opcional)."
+              ],
+              "callout": {
+                "label": "Por que o time padrão importa",
+                "text": "É ele que faz a atribuição automática: quando a etapa ativa, ela já aparece para o time certo, sem ninguém precisar avisar."
+              },
+              "image": "templates-05-campos-etapa.png",
+              "caption": "Campos de uma etapa."
+            }
+          ]
+        },
+        {
+          "title": "Passo 3 — Definir dependências (e paralelismo)",
+          "intro": "As dependências dizem o que precisa terminar antes de uma etapa começar. É aqui que nasce o paralelismo.",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Selecione as etapas pré-requisito",
+              "body": [
+                "Ainda no formulário da etapa, em “Depende das Etapas”, clique nas etapas que precisam estar concluídas antes desta começar.",
+                "Sem nenhuma dependência, a etapa fica disponível imediatamente."
+              ],
+              "image": "templates-06-dependencias.png",
+              "caption": "Seletor de dependências."
+            },
+            {
+              "n": "2",
+              "title": "Entenda fork e join",
+              "body": [
+                "Duas etapas que dependem da mesma etapa anterior abrem juntas quando ela conclui — isso é o fork (paralelismo).",
+                "Uma etapa que depende de várias só abre quando todas terminam — isso é o join (sincronização)."
+              ],
+              "callout": {
+                "label": "Exemplo",
+                "text": "QC e SEO dependem de Dev: assim que Dev conclui, as duas ativam em paralelo. A entrega só fecha quando ambas terminam."
+              },
+              "image": "templates-07-forkjoin.png",
+              "caption": "Etapas em paralelo no editor."
+            }
+          ]
+        },
+        {
+          "title": "Passo 4 — Conferir o fluxo",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Veja o diagrama do fluxo",
+              "body": [
+                "No fim do editor, o “Fluxo de Trabalho” mostra as etapas agrupadas por nível. Etapas na mesma linha rodam em paralelo (“Execução Paralela”); as setas indicam a direção."
+              ],
+              "image": "templates-08-visualizacao.png",
+              "caption": "Diagrama do fluxo de trabalho."
+            }
+          ]
+        }
+      ],
+      "closing": "Pronto: com o template salvo, qualquer demanda desse tipo já nasce com todas as etapas, times e dependências configurados."
+    },
+    "projetos": {
+      "badge": "2",
+      "title": "Cliente → Projeto → Demanda",
+      "intro": "O trabalho mora numa hierarquia simples: cada Cliente tem Projetos, e cada Projeto tem Demandas (tarefas). A demanda é onde o template vira execução.",
+      "route": "/admin/clients",
+      "sections": [
+        {
+          "title": "Passo 1 — Criar um cliente",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Abra Administração → Clientes",
+              "body": [
+                "Na rota /admin/clients você vê a lista de clientes e o formulário de criação."
+              ],
+              "image": "hierarquia-01-clientes.png",
+              "caption": "Lista de clientes."
+            },
+            {
+              "n": "2",
+              "title": "Informe o nome e crie",
+              "body": [
+                "Digite o Nome do cliente e clique em Criar. No detalhe do cliente você pode complementar com descrição, email e telefone."
+              ],
+              "image": "hierarquia-02-criar-cliente.png",
+              "caption": "Formulário de cliente."
+            }
+          ]
+        },
+        {
+          "title": "Passo 2 — Criar um projeto",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Abra Administração → Projetos",
+              "body": ["Na rota /admin/projects, preencha os campos do projeto:"],
+              "bullets": [
+                "Nome do projeto.",
+                "Selecionar Cliente — vincula o projeto a um cliente existente."
+              ],
+              "image": "hierarquia-03-criar-projeto.png",
+              "caption": "Formulário de projeto."
+            },
+            {
+              "n": "2",
+              "title": "Atalho: criar na hora",
+              "body": [
+                "No formulário de demanda você também pode criar um projeto novo sem sair da tela, pelo botão “Novo Projeto”."
+              ],
+              "image": "hierarquia-04-quick-projeto.png",
+              "caption": "Criação rápida de projeto."
+            }
+          ]
+        },
+        {
+          "title": "Passo 3 — Criar uma demanda (tarefa)",
+          "intro": "A demanda é criada a partir de um template — é o momento em que o processo ganha vida.",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Abra “Criar Nova Tarefa”",
+              "body": ["Na rota /admin/tasks/new, preencha os campos da demanda:"],
+              "bullets": [
+                "Título da Tarefa — ex.: “Criar vídeo demo do produto”.",
+                "Descrição — detalhes (opcional).",
+                "Projeto — no formato “Cliente - Projeto”.",
+                "Template de Fluxo de Trabalho — define as etapas; mostra uma pré-visualização ao selecionar.",
+                "Prioridade — Baixa, Média (padrão), Alta ou Urgente.",
+                "Data de Vencimento — opcional."
+              ],
+              "image": "hierarquia-05-criar-demanda.png",
+              "caption": "Formulário “Criar Nova Tarefa”."
+            },
+            {
+              "n": "2",
+              "title": "O que acontece ao criar",
+              "body": [
+                "A demanda nasce no Backlog. A primeira etapa do template já é ativada automaticamente e fica disponível para o time responsável. A partir daí, é com os colaboradores."
+              ],
+              "callout": {
+                "label": "Atribuição automática",
+                "text": "Você não precisa designar ninguém manualmente: a etapa ativa aparece para o time padrão configurado no template."
+              },
+              "image": "hierarquia-06-demanda-criada.png",
+              "caption": "Demanda criada com a 1ª etapa ativa."
+            }
+          ]
+        }
+      ],
+      "closing": "Com a demanda criada, o fluxo definido no template começa a rodar sozinho, etapa após etapa."
+    },
+    "colaborador": {
+      "badge": "3",
+      "title": "Demandas no dia a dia do colaborador",
+      "intro": "Para quem executa, tudo gira em torno de etapas: pegar uma etapa, fazer o trabalho, registrar a contribuição e concluir — passando o bastão automaticamente para a próxima fase.",
+      "route": "/dashboard",
+      "sections": [
+        {
+          "title": "Onde encontrar o trabalho",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Dashboard: suas etapas e o backlog do time",
+              "body": ["No /dashboard há duas listas:"],
+              "bullets": [
+                "Minhas Etapas Ativas — o que está com você agora.",
+                "Backlog da Equipe (Não Atribuído) — etapas disponíveis para qualquer um do time pegar."
+              ],
+              "image": "colaborador-01-dashboard.png",
+              "caption": "Dashboard do colaborador."
+            },
+            {
+              "n": "2",
+              "title": "Minhas Tarefas: visão completa",
+              "body": [
+                "A página /tasks traz filtros (Minhas/Todas, Ativas/Bloqueadas/Concluídas, datas) e KPIs: Total, Ativas, Bloqueadas, Concluídas, Atrasadas e Horas Registradas."
+              ],
+              "image": "colaborador-02-minhas-tarefas.png",
+              "caption": "Página Minhas Tarefas."
+            }
+          ]
+        },
+        {
+          "title": "Passo 1 — Pegar uma etapa",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Clique em “Pegar Etapa”",
+              "body": [
+                "No backlog do time, assuma a etapa que vai trabalhar. Ela passa para “Minhas Etapas Ativas” e a tarefa entra Em Progresso."
+              ],
+              "callout": {
+                "label": "Bloqueada?",
+                "text": "Etapas com 🔒 “Bloqueado” ainda dependem de outra fase. Só dá para pegar quando ficam ativas."
+              },
+              "image": "colaborador-03-pegar-etapa.png",
+              "caption": "Botão Pegar Etapa no backlog."
+            }
+          ]
+        },
+        {
+          "title": "Passo 2 — Trabalhar e registrar a contribuição",
+          "intro": "Antes de concluir, é obrigatório deixar pelo menos um artefato ou comentário — é o que comprova a entrega.",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Adicione um artefato ou comentário",
+              "body": ["Na demanda, anexe o resultado do seu trabalho:"],
+              "bullets": [
+                "Artefato — Nome, URL e Tipo (Documento, Imagem, Vídeo, Figma, Outro).",
+                "Comentário — registro ou observação."
+              ],
+              "image": "colaborador-04-artefato.png",
+              "caption": "Adicionar artefato/comentário."
+            }
+          ]
+        },
+        {
+          "title": "Passo 3 — Concluir e passar o bastão",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Clique em “Concluir Etapa”",
+              "body": [
+                "Ao concluir, o sistema marca sua etapa como pronta e ativa automaticamente as próximas etapas dependentes (fork/join). Um modal mostra o que será ativado e o que ficará bloqueado aguardando outras fases."
+              ],
+              "callout": {
+                "label": "Fork & Join",
+                "text": "Se duas etapas dependiam da sua, ambas abrem juntas. Se uma próxima etapa depende de várias, ela só abre quando todas concluírem."
+              },
+              "image": "colaborador-05-concluir.png",
+              "caption": "Modal de conclusão de etapa."
+            }
+          ]
+        },
+        {
+          "title": "Quando algo muda de rumo",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Liberar Etapa",
+              "body": [
+                "Não vai conseguir tocar agora? “Liberar Etapa” devolve a etapa ao backlog do time para outra pessoa pegar."
+              ],
+              "image": "colaborador-06-liberar.png",
+              "caption": "Liberar etapa."
+            },
+            {
+              "n": "2",
+              "title": "Reverter Etapa",
+              "body": [
+                "Precisa voltar para uma fase anterior (ex.: ajustes)? “Reverter Etapa” envia a tarefa de volta — com comentário obrigatório explicando o motivo, que fica no histórico."
+              ],
+              "image": "colaborador-07-reverter.png",
+              "caption": "Reverter etapa."
+            }
+          ]
+        },
+        {
+          "title": "Status e cores",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Como ler os indicadores",
+              "body": ["Os badges mostram o estado de cada etapa e a prioridade:"],
+              "bullets": [
+                "Etapa: Ativa (azul), Bloqueada (cinza/🔒), Concluída (verde).",
+                "Prioridade: Urgente (vermelho), Alta (laranja), Média (amarelo), Baixa (verde).",
+                "Sinais: 🔥 atrasada, ⚠️ prazo próximo, 🆕 nova (criada há menos de 24h)."
+              ],
+              "image": "colaborador-08-status.png",
+              "caption": "Legenda de status e prioridade."
+            }
+          ]
+        }
+      ],
+      "closing": "No fim, cada colaborador só precisa olhar para as próprias etapas ativas — o fluxo cuida de quem entra em seguida."
+    }
+  }
+}

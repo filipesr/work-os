@@ -26,6 +26,7 @@ export async function getMessages(locale: Locale) {
     myStages: (await import(`@/locales/${locale}/myStages.json`)).default,
     reportsCalendar: (await import(`@/locales/${locale}/reportsCalendar.json`)).default,
     reportsTeam: (await import(`@/locales/${locale}/reportsTeam.json`)).default,
+    help: (await import(`@/locales/${locale}/help.json`)).default,
   };
 }
 

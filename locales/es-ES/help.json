@@ -1,0 +1,368 @@
+{
+  "hub": {
+    "title": "Centro de Ayuda",
+    "subtitle": "Aprende a configurar y operar Work OS en tres guías, en el orden natural de uso.",
+    "openGuide": "Abrir guía",
+    "guides": {
+      "templates": {
+        "badge": "1",
+        "title": "Crear un Flujo de Trabajo",
+        "description": "Arma la receta del proceso: etapas, equipos y paralelismo."
+      },
+      "projetos": {
+        "badge": "2",
+        "title": "Cliente, Proyecto y Demanda",
+        "description": "Organiza el trabajo y crea demandas a partir de una plantilla."
+      },
+      "colaborador": {
+        "badge": "3",
+        "title": "El día a día del colaborador",
+        "description": "Tomar, ejecutar y completar etapas — y el paralelismo en la práctica."
+      }
+    }
+  },
+  "ui": {
+    "backToHelp": "Volver al Centro de Ayuda",
+    "routeBadge": "Dónde encontrar",
+    "figurePlaceholder": "La captura de este paso va aquí",
+    "stepLabel": "Paso"
+  },
+  "guides": {
+    "templates": {
+      "badge": "1",
+      "title": "Crear una Plantilla de Flujo de Trabajo",
+      "intro": "La plantilla es la receta de tu proceso: defines una vez qué etapas recorre una entrega, en qué orden, qué equipo cuida cada una y qué puede ocurrir en paralelo. Toda demanda nueva nace a partir de una plantilla — sin reinventar el proceso con cada cliente.",
+      "route": "/admin/templates",
+      "sections": [
+        {
+          "title": "Paso 1 — Crear la plantilla",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Abre Administración → Flujos de Trabajo",
+              "body": [
+                "En el menú, ve al área de plantillas (ruta /admin/templates). Es un área de administrador."
+              ],
+              "image": "templates-01-lista.png",
+              "caption": "Lista de plantillas existentes y el card de creación."
+            },
+            {
+              "n": "2",
+              "title": "Completa nombre y descripción",
+              "body": ["En el card “Crear Nueva Plantilla”, indica:"],
+              "bullets": [
+                "Nombre de la Plantilla — ej.: “Landing Page”, “Video Corto”.",
+                "Descripción (opcional) — para qué sirve este flujo."
+              ],
+              "callout": {
+                "label": "Consejo",
+                "text": "Usa nombres que describan el tipo de entrega. Cada tipo de trabajo recurrente merece su propia plantilla."
+              },
+              "image": "templates-02-criar.png",
+              "caption": "Card “Crear Nueva Plantilla”."
+            },
+            {
+              "n": "3",
+              "title": "Haz clic en Crear Plantilla",
+              "body": ["Vas directo al editor de la plantilla, donde armarás las etapas."],
+              "image": "templates-03-editor.png",
+              "caption": "Editor de la plantilla recién creada."
+            }
+          ]
+        },
+        {
+          "title": "Paso 2 — Agregar las etapas",
+          "intro": "Las etapas son las fases del trabajo (ej.: Briefing, Copy, Diseño, Dev, QC, SEO).",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Haz clic en “+ Agregar Nueva Etapa”",
+              "body": ["En la sección “Etapas del Flujo de Trabajo”, abre el formulario de etapa."],
+              "image": "templates-04-add-etapa.png",
+              "caption": "Botón de agregar etapa."
+            },
+            {
+              "n": "2",
+              "title": "Define nombre, orden y equipo por defecto",
+              "body": ["Cada etapa tiene tres campos básicos:"],
+              "bullets": [
+                "Nombre de la Etapa — ej.: “Guion”, “Diseño”.",
+                "Orden — la posición en la secuencia (1, 2, 3…).",
+                "Equipo por Defecto — el equipo asignado automáticamente cuando la tarea llega a esta etapa (opcional)."
+              ],
+              "callout": {
+                "label": "Por qué importa el equipo por defecto",
+                "text": "Es lo que hace la asignación automática: cuando la etapa se activa, ya aparece para el equipo correcto, sin que nadie tenga que avisar."
+              },
+              "image": "templates-05-campos-etapa.png",
+              "caption": "Campos de una etapa."
+            }
+          ]
+        },
+        {
+          "title": "Paso 3 — Definir dependencias (y paralelismo)",
+          "intro": "Las dependencias dicen qué debe terminar antes de que una etapa empiece. Aquí nace el paralelismo.",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Selecciona las etapas prerrequisito",
+              "body": [
+                "Aún en el formulario de la etapa, en “Depende de las Etapas”, haz clic en las etapas que deben estar completadas antes de que esta empiece.",
+                "Sin ninguna dependencia, la etapa queda disponible de inmediato."
+              ],
+              "image": "templates-06-dependencias.png",
+              "caption": "Selector de dependencias."
+            },
+            {
+              "n": "2",
+              "title": "Entiende fork y join",
+              "body": [
+                "Dos etapas que dependen de la misma etapa anterior abren juntas cuando esta concluye — eso es el fork (paralelismo).",
+                "Una etapa que depende de varias solo abre cuando todas terminan — eso es el join (sincronización)."
+              ],
+              "callout": {
+                "label": "Ejemplo",
+                "text": "QC y SEO dependen de Dev: apenas Dev concluye, las dos se activan en paralelo. La entrega solo cierra cuando ambas terminan."
+              },
+              "image": "templates-07-forkjoin.png",
+              "caption": "Etapas en paralelo en el editor."
+            }
+          ]
+        },
+        {
+          "title": "Paso 4 — Revisar el flujo",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Mira el diagrama del flujo",
+              "body": [
+                "Al final del editor, el “Flujo de Trabajo” muestra las etapas agrupadas por nivel. Las etapas en la misma línea corren en paralelo (“Ejecución Paralela”); las flechas indican la dirección."
+              ],
+              "image": "templates-08-visualizacao.png",
+              "caption": "Diagrama del flujo de trabajo."
+            }
+          ]
+        }
+      ],
+      "closing": "Listo: con la plantilla guardada, cualquier demanda de ese tipo nace ya con todas las etapas, equipos y dependencias configurados."
+    },
+    "projetos": {
+      "badge": "2",
+      "title": "Cliente → Proyecto → Demanda",
+      "intro": "El trabajo vive en una jerarquía simple: cada Cliente tiene Proyectos, y cada Proyecto tiene Demandas (tareas). La demanda es donde la plantilla se vuelve ejecución.",
+      "route": "/admin/clients",
+      "sections": [
+        {
+          "title": "Paso 1 — Crear un cliente",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Abre Administración → Clientes",
+              "body": [
+                "En la ruta /admin/clients ves la lista de clientes y el formulario de creación."
+              ],
+              "image": "hierarquia-01-clientes.png",
+              "caption": "Lista de clientes."
+            },
+            {
+              "n": "2",
+              "title": "Indica el nombre y crea",
+              "body": [
+                "Escribe el Nombre del cliente y haz clic en Crear. En el detalle del cliente puedes complementar con descripción, email y teléfono."
+              ],
+              "image": "hierarquia-02-criar-cliente.png",
+              "caption": "Formulario de cliente."
+            }
+          ]
+        },
+        {
+          "title": "Paso 2 — Crear un proyecto",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Abre Administración → Proyectos",
+              "body": ["En la ruta /admin/projects, completa los campos del proyecto:"],
+              "bullets": [
+                "Nombre del proyecto.",
+                "Seleccionar Cliente — vincula el proyecto a un cliente existente."
+              ],
+              "image": "hierarquia-03-criar-projeto.png",
+              "caption": "Formulario de proyecto."
+            },
+            {
+              "n": "2",
+              "title": "Atajo: crear al instante",
+              "body": [
+                "En el formulario de demanda también puedes crear un proyecto nuevo sin salir de la pantalla, con el botón “Nuevo Proyecto”."
+              ],
+              "image": "hierarquia-04-quick-projeto.png",
+              "caption": "Creación rápida de proyecto."
+            }
+          ]
+        },
+        {
+          "title": "Paso 3 — Crear una demanda (tarea)",
+          "intro": "La demanda se crea a partir de una plantilla — es el momento en que el proceso cobra vida.",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Abre “Crear Nueva Tarea”",
+              "body": ["En la ruta /admin/tasks/new, completa los campos de la demanda:"],
+              "bullets": [
+                "Título de la Tarea — ej.: “Crear video demo del producto”.",
+                "Descripción — detalles (opcional).",
+                "Proyecto — en el formato “Cliente - Proyecto”.",
+                "Plantilla de Flujo de Trabajo — define las etapas; muestra una vista previa al seleccionar.",
+                "Prioridad — Baja, Media (por defecto), Alta o Urgente.",
+                "Fecha de Vencimiento — opcional."
+              ],
+              "image": "hierarquia-05-criar-demanda.png",
+              "caption": "Formulario “Crear Nueva Tarea”."
+            },
+            {
+              "n": "2",
+              "title": "Qué ocurre al crear",
+              "body": [
+                "La demanda nace en el Backlog. La primera etapa de la plantilla ya se activa automáticamente y queda disponible para el equipo responsable. A partir de ahí, es con los colaboradores."
+              ],
+              "callout": {
+                "label": "Asignación automática",
+                "text": "No necesitas designar a nadie manualmente: la etapa activa aparece para el equipo por defecto configurado en la plantilla."
+              },
+              "image": "hierarquia-06-demanda-criada.png",
+              "caption": "Demanda creada con la 1ª etapa activa."
+            }
+          ]
+        }
+      ],
+      "closing": "Con la demanda creada, el flujo definido en la plantilla empieza a correr solo, etapa tras etapa."
+    },
+    "colaborador": {
+      "badge": "3",
+      "title": "Las demandas en el día a día del colaborador",
+      "intro": "Para quien ejecuta, todo gira en torno a etapas: tomar una etapa, hacer el trabajo, registrar la contribución y completar — pasando el testigo automáticamente a la siguiente fase.",
+      "route": "/dashboard",
+      "sections": [
+        {
+          "title": "Dónde encontrar el trabajo",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Dashboard: tus etapas y el backlog del equipo",
+              "body": ["En /dashboard hay dos listas:"],
+              "bullets": [
+                "Mis Etapas Activas — lo que está contigo ahora.",
+                "Backlog del Equipo (No Asignado) — etapas disponibles para que cualquiera del equipo tome."
+              ],
+              "image": "colaborador-01-dashboard.png",
+              "caption": "Dashboard del colaborador."
+            },
+            {
+              "n": "2",
+              "title": "Mis Tareas: vista completa",
+              "body": [
+                "La página /tasks trae filtros (Mías/Todas, Activas/Bloqueadas/Completadas, fechas) y KPIs: Total, Activas, Bloqueadas, Completadas, Atrasadas y Horas Registradas."
+              ],
+              "image": "colaborador-02-minhas-tarefas.png",
+              "caption": "Página Mis Tareas."
+            }
+          ]
+        },
+        {
+          "title": "Paso 1 — Tomar una etapa",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Haz clic en “Tomar Etapa”",
+              "body": [
+                "En el backlog del equipo, asume la etapa que vas a trabajar. Pasa a “Mis Etapas Activas” y la tarea entra En Progreso."
+              ],
+              "callout": {
+                "label": "¿Bloqueada?",
+                "text": "Las etapas con 🔒 “Bloqueado” aún dependen de otra fase. Solo se pueden tomar cuando se activan."
+              },
+              "image": "colaborador-03-pegar-etapa.png",
+              "caption": "Botón Tomar Etapa en el backlog."
+            }
+          ]
+        },
+        {
+          "title": "Paso 2 — Trabajar y registrar la contribución",
+          "intro": "Antes de completar, es obligatorio dejar al menos un artefacto o comentario — es lo que comprueba la entrega.",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Agrega un artefacto o comentario",
+              "body": ["En la demanda, adjunta el resultado de tu trabajo:"],
+              "bullets": [
+                "Artefacto — Nombre, URL y Tipo (Documento, Imagen, Video, Figma, Otro).",
+                "Comentario — registro u observación."
+              ],
+              "image": "colaborador-04-artefato.png",
+              "caption": "Agregar artefacto/comentario."
+            }
+          ]
+        },
+        {
+          "title": "Paso 3 — Completar y pasar el testigo",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Haz clic en “Completar Etapa”",
+              "body": [
+                "Al completar, el sistema marca tu etapa como lista y activa automáticamente las próximas etapas dependientes (fork/join). Un modal muestra qué se activará y qué quedará bloqueado esperando otras fases."
+              ],
+              "callout": {
+                "label": "Fork & Join",
+                "text": "Si dos etapas dependían de la tuya, ambas abren juntas. Si una etapa siguiente depende de varias, solo abre cuando todas concluyen."
+              },
+              "image": "colaborador-05-concluir.png",
+              "caption": "Modal de finalización de etapa."
+            }
+          ]
+        },
+        {
+          "title": "Cuando algo cambia de rumbo",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Liberar Etapa",
+              "body": [
+                "¿No vas a poder avanzar ahora? “Liberar Etapa” devuelve la etapa al backlog del equipo para que otra persona la tome."
+              ],
+              "image": "colaborador-06-liberar.png",
+              "caption": "Liberar etapa."
+            },
+            {
+              "n": "2",
+              "title": "Revertir Etapa",
+              "body": [
+                "¿Necesitas volver a una fase anterior (ej.: ajustes)? “Revertir Etapa” envía la tarea de vuelta — con comentario obligatorio explicando el motivo, que queda en el historial."
+              ],
+              "image": "colaborador-07-reverter.png",
+              "caption": "Revertir etapa."
+            }
+          ]
+        },
+        {
+          "title": "Estados y colores",
+          "steps": [
+            {
+              "n": "1",
+              "title": "Cómo leer los indicadores",
+              "body": ["Los badges muestran el estado de cada etapa y la prioridad:"],
+              "bullets": [
+                "Etapa: Activa (azul), Bloqueada (gris/🔒), Completada (verde).",
+                "Prioridad: Urgente (rojo), Alta (naranja), Media (amarillo), Baja (verde).",
+                "Señales: 🔥 atrasada, ⚠️ vencimiento próximo, 🆕 nueva (creada hace menos de 24h)."
+              ],
+              "image": "colaborador-08-status.png",
+              "caption": "Leyenda de estado y prioridad."
+            }
+          ]
+        }
+      ],
+      "closing": "Al final, cada colaborador solo necesita mirar sus propias etapas activas — el flujo se encarga de quién entra después."
+    }
+  }
+}

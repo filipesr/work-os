@@ -20,6 +20,7 @@ import {
   Users,
   Sun,
   Moon,
+  BookOpen,
 } from "lucide-react";
 import { signOutAction } from "@/lib/actions/auth";
 import { useTranslations } from "next-intl";
@@ -117,6 +118,12 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
       <DropdownMenuSeparator />
 
       <DropdownMenuLabel>Help</DropdownMenuLabel>
+      <DropdownMenuItem href="/help">
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-4 w-4" />
+          <span>{t("nav.help")}</span>
+        </div>
+      </DropdownMenuItem>
       <DropdownMenuItem href="/next">
         <div className="flex items-center gap-2">
           <GitBranch className="h-4 w-4" />
