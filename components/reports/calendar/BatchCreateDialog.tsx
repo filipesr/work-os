@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Plus } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   Dialog,
@@ -16,55 +17,84 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createTasksBatch } from "@/lib/actions/task";
-import type { MonthEvent, ProjectOption, TemplateOption } from "./monthly-types";
+import { createProject } from "@/lib/actions/project";
+import {
+  isoToDisplay,
+  type ClientOption,
+  type ProjectOption,
+  type TemplateOption,
+} from "./monthly-types";
 
 interface BatchCreateDialogProps {
-  event: MonthEvent;
+  date: string;
+  eventTitle?: string;
+  clients: ClientOption[];
   projects: ProjectOption[];
   templates: TemplateOption[];
   onClose: () => void;
 }
 
-export function BatchCreateDialog({ event, projects, templates, onClose }: BatchCreateDialogProps) {
+export function BatchCreateDialog({
+  date,
+  eventTitle,
+  clients,
+  projects,
+  templates,
+  onClose,
+}: BatchCreateDialogProps) {
   const t = useTranslations("reportsCalendar.monthly.batch");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  const [projectList, setProjectList] = useState<ProjectOption[]>(projects);
   const [templateId, setTemplateId] = useState("");
   const [title, setTitle] = useState("");
   const [titleDirty, setTitleDirty] = useState(false);
-  const [dueDate, setDueDate] = useState(event.iso);
+  const [dueDate, setDueDate] = useState(date);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  // Inline "create project for client" state
+  const [creatingFor, setCreatingFor] = useState<string | null>(null);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [savingProject, setSavingProject] = useState(false);
 
   const inputClass =
     "h-10 w-full rounded-lg border-2 border-input-border bg-input px-3 text-sm text-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all";
 
-  // Auto-fill the title from template + event until the user edits it.
+  // Auto-fill the title from template (+ event) until the user edits it.
   const applyTemplate = (id: string) => {
     setTemplateId(id);
     if (!titleDirty) {
       const tpl = templates.find((x) => x.id === id);
-      setTitle(tpl ? `${tpl.name} — ${event.title}` : "");
+      if (!tpl) setTitle("");
+      else setTitle(eventTitle ? `${tpl.name} — ${eventTitle}` : tpl.name);
     }
   };
 
   const groups = useMemo(() => {
     const term = search.trim().toLowerCase();
-    const map = new Map<string, { clientName: string; projects: ProjectOption[] }>();
-    for (const p of projects) {
-      if (
-        term &&
-        !p.name.toLowerCase().includes(term) &&
-        !p.clientName.toLowerCase().includes(term)
-      ) {
-        continue;
-      }
-      if (!map.has(p.clientId)) map.set(p.clientId, { clientName: p.clientName, projects: [] });
-      map.get(p.clientId)!.projects.push(p);
+    const byClient = new Map<string, ProjectOption[]>();
+    for (const p of projectList) {
+      if (!byClient.has(p.clientId)) byClient.set(p.clientId, []);
+      byClient.get(p.clientId)!.push(p);
     }
-    return Array.from(map.values()).sort((a, b) => a.clientName.localeCompare(b.clientName));
-  }, [projects, search]);
+    return clients
+      .map((c) => {
+        const all = (byClient.get(c.id) ?? []).sort((a, b) => a.name.localeCompare(b.name));
+        const clientMatch = !term || c.name.toLowerCase().includes(term);
+        const visibleProjects =
+          term && !clientMatch ? all.filter((p) => p.name.toLowerCase().includes(term)) : all;
+        return {
+          clientId: c.id,
+          clientName: c.name,
+          projects: visibleProjects,
+          visible: clientMatch || visibleProjects.length > 0,
+        };
+      })
+      .filter((g) => g.visible)
+      .sort((a, b) => a.clientName.localeCompare(b.clientName));
+  }, [clients, projectList, search]);
 
   const visibleIds = useMemo(() => groups.flatMap((g) => g.projects.map((p) => p.id)), [groups]);
 
@@ -79,6 +109,30 @@ export function BatchCreateDialog({ event, projects, templates, onClose }: Batch
 
   const selectAll = () => setSelected((prev) => new Set([...prev, ...visibleIds]));
   const clearSelection = () => setSelected(new Set());
+
+  const handleCreateProject = async (clientId: string) => {
+    const name = newProjectName.trim();
+    if (!name) return;
+    setSavingProject(true);
+    const result = await createProject({ name, clientId });
+    setSavingProject(false);
+    if (result.error || !result.project) {
+      toast.error(result.error ?? t("projectError"));
+      return;
+    }
+    const p = result.project;
+    const option: ProjectOption = {
+      id: p.id,
+      name: p.name,
+      clientId: p.clientId,
+      clientName: p.client.name,
+    };
+    setProjectList((prev) => [...prev, option]);
+    setSelected((prev) => new Set([...prev, p.id]));
+    setNewProjectName("");
+    setCreatingFor(null);
+    toast.success(t("projectCreated"));
+  };
 
   const canSubmit =
     templateId !== "" && title.trim() !== "" && dueDate !== "" && selected.size > 0 && !isPending;
@@ -106,7 +160,11 @@ export function BatchCreateDialog({ event, projects, templates, onClose }: Batch
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-[640px]">
         <DialogHeader>
-          <DialogTitle>{t("title", { event: event.title })}</DialogTitle>
+          <DialogTitle>
+            {eventTitle
+              ? t("title", { event: eventTitle })
+              : t("titleForDay", { date: isoToDisplay(date) })}
+          </DialogTitle>
           <DialogDescription>{t("subtitle")}</DialogDescription>
         </DialogHeader>
 
@@ -180,15 +238,55 @@ export function BatchCreateDialog({ event, projects, templates, onClose }: Batch
               </button>
             </div>
 
-            {projects.length === 0 ? (
+            {clients.length === 0 ? (
               <p className="py-4 text-center text-sm text-muted-foreground">{t("noProjects")}</p>
             ) : (
               <div className="max-h-[34vh] space-y-3 overflow-y-auto rounded-lg border border-border p-3">
                 {groups.map((group) => (
-                  <div key={group.clientName}>
-                    <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      {group.clientName}
-                    </p>
+                  <div key={group.clientId}>
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                        {group.clientName}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCreatingFor(creatingFor === group.clientId ? null : group.clientId);
+                          setNewProjectName("");
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        {t("addProject")}
+                      </button>
+                    </div>
+
+                    {creatingFor === group.clientId && (
+                      <div className="mb-2 flex items-center gap-2">
+                        <Input
+                          autoFocus
+                          value={newProjectName}
+                          placeholder={t("newProjectPlaceholder")}
+                          onChange={(e) => setNewProjectName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              void handleCreateProject(group.clientId);
+                            }
+                          }}
+                          className="h-8"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={savingProject || newProjectName.trim() === ""}
+                          onClick={() => void handleCreateProject(group.clientId)}
+                        >
+                          {t("saveProject")}
+                        </Button>
+                      </div>
+                    )}
+
                     <div className="space-y-1">
                       {group.projects.map((p) => (
                         <label

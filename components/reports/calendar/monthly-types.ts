@@ -36,6 +36,11 @@ export interface ProjectOption {
   clientName: string;
 }
 
+export interface ClientOption {
+  id: string;
+  name: string;
+}
+
 export interface TemplateOption {
   id: string;
   name: string;

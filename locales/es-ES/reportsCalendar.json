@@ -76,6 +76,7 @@
       "noEvents": "Ningún evento en este día.",
       "noDemands": "Ninguna demanda en este día.",
       "createForEvent": "Crear demandas",
+      "createForDay": "Crear demandas para este día",
       "clientCount": "{count} demanda(s)"
     },
     "dayDemands": {
@@ -105,7 +106,13 @@
       "creating": "Creando…",
       "cancel": "Cancelar",
       "success": "{count} demanda(s) creada(s) con éxito",
-      "error": "No se pudieron crear las demandas"
+      "error": "No se pudieron crear las demandas",
+      "titleForDay": "Crear demandas para {date}",
+      "addProject": "Nuevo proyecto",
+      "newProjectPlaceholder": "Nombre del proyecto",
+      "saveProject": "Crear",
+      "projectCreated": "Proyecto creado",
+      "projectError": "No se pudo crear el proyecto"
     }
   }
 }

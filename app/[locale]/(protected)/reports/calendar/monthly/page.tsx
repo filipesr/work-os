@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getMonthlyCalendarDemands } from "@/lib/actions/reporting";
 import { getProjectsForSelect, getTemplatesForSelect } from "@/lib/actions/task";
+import { getClients } from "@/lib/actions/client";
 import { getEventsInRange } from "@/lib/calendar/events";
 import {
   parseMonthParam,
@@ -37,10 +38,11 @@ export default async function MonthlyCalendarPage({ searchParams }: PageProps) {
   const range = monthRangeFromFirst(first);
   const todayIso = formatISODate(todayInSaoPaulo());
 
-  const [demandsByDay, rawProjects, rawTemplates] = await Promise.all([
+  const [demandsByDay, rawProjects, rawTemplates, clients] = await Promise.all([
     getMonthlyCalendarDemands({ start: range.gridStart, end: range.gridEnd }),
     getProjectsForSelect(),
     getTemplatesForSelect(),
+    getClients(),
   ]);
 
   const rawEvents = getEventsInRange(formatISODate(range.gridStart), formatISODate(range.gridEnd));
@@ -121,6 +123,7 @@ export default async function MonthlyCalendarPage({ searchParams }: PageProps) {
         days={days}
         eventsByDay={eventsByDay}
         demandsByDay={demandsByDay}
+        clients={clients}
         projects={projects}
         templates={templates}
       />

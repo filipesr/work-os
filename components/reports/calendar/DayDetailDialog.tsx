@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,7 @@ interface DayDetailDialogProps {
   clients: ClientDemands[];
   onClose: () => void;
   onCreateForEvent: (event: MonthEvent) => void;
+  onCreateForDay: () => void;
 }
 
 export function DayDetailDialog({
@@ -40,6 +41,7 @@ export function DayDetailDialog({
   clients,
   onClose,
   onCreateForEvent,
+  onCreateForDay,
 }: DayDetailDialogProps) {
   const t = useTranslations("reportsCalendar.monthly");
 
@@ -50,6 +52,13 @@ export function DayDetailDialog({
           <DialogTitle>{t("dayDetail.title")}</DialogTitle>
           <DialogDescription>{t("dayDetail.subtitle", { date: dateLabel })}</DialogDescription>
         </DialogHeader>
+
+        <div className="pt-1">
+          <Button type="button" size="sm" onClick={onCreateForDay} className="w-full sm:w-auto">
+            <Plus className="mr-1.5 h-4 w-4" />
+            {t("dayDetail.createForDay")}
+          </Button>
+        </div>
 
         <div className="max-h-[70vh] space-y-6 overflow-y-auto py-2">
           {/* Events */}

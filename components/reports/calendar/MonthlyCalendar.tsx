@@ -9,6 +9,7 @@ import {
   COUNTRY_FLAG,
   isoToDisplay,
   type ClientDemands,
+  type ClientOption,
   type MonthDay,
   type MonthEvent,
   type ProjectOption,
@@ -22,6 +23,7 @@ interface MonthlyCalendarProps {
   days: MonthDay[];
   eventsByDay: Record<string, MonthEvent[]>;
   demandsByDay: Record<string, ClientDemands[]>;
+  clients: ClientOption[];
   projects: ProjectOption[];
   templates: TemplateOption[];
 }
@@ -30,11 +32,12 @@ export function MonthlyCalendar({
   days,
   eventsByDay,
   demandsByDay,
+  clients,
   projects,
   templates,
 }: MonthlyCalendarProps) {
   const t = useTranslations("reportsCalendar.monthly");
-  const [batchEvent, setBatchEvent] = useState<MonthEvent | null>(null);
+  const [batch, setBatch] = useState<{ date: string; eventTitle?: string } | null>(null);
   const [detailIso, setDetailIso] = useState<string | null>(null);
   const [dayClient, setDayClient] = useState<{
     clientName: string;
@@ -79,7 +82,6 @@ export function MonthlyCalendar({
           const clients = demandsByDay[day.iso] ?? [];
           const shownClients = clients.slice(0, MAX_CLIENTS);
           const extraClients = clients.length - shownClients.length;
-          const hasContent = events.length > 0 || clients.length > 0;
 
           return (
             <div
@@ -92,14 +94,9 @@ export function MonthlyCalendar({
               <div className="mb-1 flex justify-end">
                 <button
                   type="button"
-                  disabled={!hasContent}
                   onClick={() => setDetailIso(day.iso)}
-                  title={hasContent ? t("viewDay") : undefined}
-                  className={`flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-semibold transition-shadow ${
-                    hasContent
-                      ? "cursor-pointer hover:ring-2 hover:ring-primary/40"
-                      : "cursor-default"
-                  } ${
+                  title={t("viewDay")}
+                  className={`flex h-6 min-w-6 cursor-pointer items-center justify-center rounded-full px-1.5 text-xs font-semibold transition-shadow hover:ring-2 hover:ring-primary/40 ${
                     day.isToday
                       ? "bg-primary text-primary-foreground"
                       : day.inMonth
@@ -117,7 +114,7 @@ export function MonthlyCalendar({
                   <button
                     key={event.id}
                     type="button"
-                    onClick={() => setBatchEvent(event)}
+                    onClick={() => setBatch({ date: event.iso, eventTitle: event.title })}
                     title={event.title}
                     className={`block w-full truncate rounded border px-1.5 py-0.5 text-left text-[11px] font-medium transition-colors ${
                       event.type === "holiday"
@@ -181,18 +178,25 @@ export function MonthlyCalendar({
           onClose={() => setDetailIso(null)}
           onCreateForEvent={(event) => {
             setDetailIso(null);
-            setBatchEvent(event);
+            setBatch({ date: event.iso, eventTitle: event.title });
+          }}
+          onCreateForDay={() => {
+            const iso = detailIso;
+            setDetailIso(null);
+            setBatch({ date: iso });
           }}
         />
       )}
 
-      {batchEvent && (
+      {batch && (
         <BatchCreateDialog
-          key={batchEvent.id}
-          event={batchEvent}
+          key={`${batch.date}-${batch.eventTitle ?? "day"}`}
+          date={batch.date}
+          eventTitle={batch.eventTitle}
+          clients={clients}
           projects={projects}
           templates={templates}
-          onClose={() => setBatchEvent(null)}
+          onClose={() => setBatch(null)}
         />
       )}
 
