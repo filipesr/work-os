@@ -257,6 +257,64 @@ export default async function ReportsIndexPage() {
           </Card>
         </Link>
 
+        {/* Monthly Event Calendar */}
+        <Link href="/reports/calendar/monthly">
+          <Card className="hover:shadow-xl hover:border-primary transition-all duration-200 cursor-pointer h-full">
+            <CardHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-3 bg-violet-500/10 rounded-lg">
+                  <svg
+                    className="h-6 w-6 text-violet-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <CardTitle>{t("calendarMonthly.title")}</CardTitle>
+                </div>
+                <svg
+                  className="h-5 w-5 text-muted-foreground"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </div>
+              <CardDescription>{t("calendarMonthly.description")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-violet-500 font-bold">•</span>
+                  <span>{t("calendarMonthly.feature1")}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-violet-500 font-bold">•</span>
+                  <span>{t("calendarMonthly.feature2")}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-violet-500 font-bold">•</span>
+                  <span>{t("calendarMonthly.feature3")}</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+        </Link>
+
         {/* Team Productivity Report */}
         <Link href="/reports/team-productivity">
           <Card className="hover:shadow-xl hover:border-primary transition-all duration-200 cursor-pointer h-full">

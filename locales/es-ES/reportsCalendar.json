@@ -43,5 +43,69 @@
     "title": "Ninguna tarea esta semana",
     "subtitle": "Prueba cambiar los filtros o navegar a otra semana",
     "clear": "Limpiar filtros"
+  },
+  "monthly": {
+    "title": "Calendario de Eventos y Demandas",
+    "subtitle": "Feriados y fechas conmemorativas de AR, BR y PY, con las demandas de cada cliente por día",
+    "nav": {
+      "prev": "Mes anterior",
+      "next": "Mes siguiente",
+      "today": "Hoy"
+    },
+    "weekdays": {
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mié",
+      "thu": "Jue",
+      "fri": "Vie",
+      "sat": "Sáb",
+      "sun": "Dom"
+    },
+    "legend": {
+      "holiday": "Feriado",
+      "commercial": "Fecha conmemorativa",
+      "demands": "Cliente con demandas"
+    },
+    "moreClients": "+{count} cliente(s)",
+    "viewDay": "Ver día completo",
+    "dayDetail": {
+      "title": "Eventos y demandas del día",
+      "subtitle": "{date}",
+      "eventsHeading": "Eventos",
+      "demandsHeading": "Clientes con demandas",
+      "noEvents": "Ningún evento en este día.",
+      "noDemands": "Ninguna demanda en este día.",
+      "createForEvent": "Crear demandas",
+      "clientCount": "{count} demanda(s)"
+    },
+    "dayDemands": {
+      "title": "Demandas de {client}",
+      "subtitle": "{count} demanda(s) en {date}",
+      "empty": "Ninguna demanda en este día.",
+      "openTask": "Abrir tarea",
+      "noStage": "Sin etapa",
+      "unassigned": "Sin responsable",
+      "close": "Cerrar"
+    },
+    "batch": {
+      "title": "Crear demandas para {event}",
+      "subtitle": "Selecciona los proyectos, la plantilla y crea las demandas en lote.",
+      "templateLabel": "Plantilla de Flujo de Trabajo",
+      "templatePlaceholder": "Selecciona una plantilla…",
+      "titleLabel": "Título de la demanda",
+      "dueDateLabel": "Fecha de vencimiento",
+      "projectsLabel": "Proyectos",
+      "projectsHint": "Marca los proyectos que recibirán la demanda",
+      "selectedCount": "{count} proyecto(s) seleccionado(s)",
+      "selectAll": "Seleccionar todos",
+      "clearSelection": "Limpiar selección",
+      "searchPlaceholder": "Buscar cliente o proyecto…",
+      "noProjects": "Ningún proyecto disponible. Crea un proyecto primero.",
+      "create": "Crear demandas",
+      "creating": "Creando…",
+      "cancel": "Cancelar",
+      "success": "{count} demanda(s) creada(s) con éxito",
+      "error": "No se pudieron crear las demandas"
+    }
   }
 }

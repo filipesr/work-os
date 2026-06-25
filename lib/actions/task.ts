@@ -122,6 +122,78 @@ export async function createTask(formData: FormData) {
   redirect(`/admin/tasks/${task.id}`);
 }
 
+/**
+ * Creates one task per selected project from a single template, all sharing the
+ * same title and due date. Used by the monthly event calendar for batch creation
+ * (e.g. "create an Easter LP demand for 5 projects at once").
+ */
+export async function createTasksBatch(input: {
+  projectIds: string[];
+  templateId: string;
+  title: string;
+  dueDate: string;
+}): Promise<{ created: number }> {
+  const user = await requireMemberOrHigher();
+  const userId = user.id as string;
+
+  const title = input.title?.trim();
+  const projectIds = Array.from(new Set(input.projectIds ?? []));
+
+  if (!title) throw new Error("O título é obrigatório.");
+  if (!input.templateId) throw new Error("Selecione um template de fluxo de trabalho.");
+  if (projectIds.length === 0) throw new Error("Selecione ao menos um projeto.");
+
+  const dueDate = input.dueDate ? new Date(input.dueDate) : null;
+  if (!dueDate || Number.isNaN(dueDate.getTime())) throw new Error("Data de vencimento inválida.");
+
+  const firstStage = await prisma.templateStage.findFirst({
+    where: { templateId: input.templateId },
+    orderBy: { order: "asc" },
+  });
+  if (!firstStage) throw new Error("Template sem etapas configuradas.");
+
+  const projects = await prisma.project.findMany({
+    where: { id: { in: projectIds } },
+    select: { id: true },
+  });
+  const validIds = projects.map((p) => p.id);
+  if (validIds.length === 0) throw new Error("Nenhum projeto válido selecionado.");
+
+  await prisma.$transaction(async (tx: any) => {
+    for (const projectId of validIds) {
+      const task = await tx.task.create({
+        data: {
+          title,
+          description: null,
+          priority: "MEDIUM",
+          dueDate,
+          status: "BACKLOG",
+          projectId,
+          assigneeId: null,
+        },
+      });
+      await tx.taskActiveStage.create({
+        data: { taskId: task.id, stageId: firstStage.id, status: "ACTIVE", assigneeId: null },
+      });
+      await tx.taskStageLog.create({
+        data: {
+          taskId: task.id,
+          stageId: firstStage.id,
+          enteredAt: new Date(),
+          exitedAt: null,
+          userId,
+        },
+      });
+    }
+  });
+
+  revalidatePath("/reports/calendar/monthly");
+  revalidatePath("/admin/tasks");
+  revalidatePath("/dashboard");
+
+  return { created: validIds.length };
+}
+
 // ========== Helper Functions ==========
 
 /**

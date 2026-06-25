@@ -17,6 +17,7 @@ import {
   Activity,
   GitBranch,
   Calendar,
+  CalendarRange,
   Users,
   Sun,
   Moon,
@@ -85,6 +86,12 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               <span>{t("nav.calendar")}</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem href="/reports/calendar/monthly">
+            <div className="flex items-center gap-2">
+              <CalendarRange className="h-4 w-4" />
+              <span>{t("nav.calendarMonthly")}</span>
             </div>
           </DropdownMenuItem>
           <DropdownMenuItem href="/reports/team-productivity">

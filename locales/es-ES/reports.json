@@ -48,6 +48,13 @@
       "feature2": "Filtros por equipo, proyecto y colaborador",
       "feature3": "Destaque visual de tareas atrasadas y próximas al vencimiento"
     },
+    "calendarMonthly": {
+      "title": "Calendario de Eventos y Demandas",
+      "description": "Vista mensual con feriados y fechas conmemorativas de AR, BR y PY y las demandas de cada cliente por día",
+      "feature1": "Feriados y fechas comerciales de los 3 países",
+      "feature2": "Demandas por cliente en cada día",
+      "feature3": "Creación de demandas en lote a partir de un evento"
+    },
     "teamProductivity": {
       "title": "Productividad por Equipo",
       "description": "Métricas gerenciales: throughput, carga actual, tiempo promedio por etapa y tasa en plazo",

@@ -87,3 +87,47 @@ export function formatISODate(date: Date): string {
 export function shiftWeek(monday: Date, deltaWeeks: number): Date {
   return new Date(monday.getTime() + deltaWeeks * 7 * DAY_MS);
 }
+
+/** First day (midnight, SP-local repr) of the month containing `day`. */
+export function firstOfMonth(day: Date = todayInSaoPaulo()): Date {
+  return new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), 1));
+}
+
+/** Parses ?month=YYYY-MM into the first day of that month (SP-local). */
+export function parseMonthParam(value: string | string[] | undefined): Date {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return firstOfMonth();
+  const match = /^(\d{4})-(\d{2})$/.exec(raw);
+  if (!match) return firstOfMonth();
+  const [, y, m] = match;
+  const first = new Date(Date.UTC(Number(y), Number(m) - 1, 1));
+  if (Number.isNaN(first.getTime())) return firstOfMonth();
+  return first;
+}
+
+export interface MonthRange {
+  first: Date; // first of month 00:00 (SP-local repr)
+  daysInMonth: number;
+  gridStart: Date; // Monday on/before the 1st
+  gridEnd: Date; // last millisecond of the 42-day grid
+  gridDays: Date[]; // 42 entries (6 weeks), Monday-first, each at SP-local midnight
+}
+
+/** Builds a 6-week (42-day) Monday-first grid covering the month of `first`. */
+export function monthRangeFromFirst(first: Date): MonthRange {
+  const year = first.getUTCFullYear();
+  const month = first.getUTCMonth();
+  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const gridStart = mondayOfWeek(first);
+  const gridDays: Date[] = [];
+  for (let i = 0; i < 42; i++) {
+    gridDays.push(new Date(gridStart.getTime() + i * DAY_MS));
+  }
+  const gridEnd = new Date(gridStart.getTime() + 42 * DAY_MS - 1);
+  return { first, daysInMonth, gridStart, gridEnd, gridDays };
+}
+
+/** Shifts a SP-local first-of-month by N months. */
+export function shiftMonth(first: Date, deltaMonths: number): Date {
+  return new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + deltaMonths, 1));
+}

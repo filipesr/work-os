@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { requireAnyRole } from "@/lib/auth";
 import { UserRole } from "@prisma/client";
+import { formatISODate } from "@/lib/dates";
 
 // ========== Productivity Report (TimeLog Aggregations) ==========
 
@@ -689,6 +690,87 @@ export async function getCalendarTasks(filters: CalendarFilters): Promise<Calend
   });
 
   return { noDueDate, byTeam };
+}
+
+// ========== Monthly Event Calendar ==========
+
+export interface MonthlyDemandTask {
+  id: string;
+  title: string;
+  status: "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED";
+  projectId: string;
+  projectName: string;
+  stageName: string | null;
+  assigneeName: string | null;
+}
+
+export interface MonthlyClientDemands {
+  clientId: string;
+  clientName: string;
+  tasks: MonthlyDemandTask[];
+}
+
+/**
+ * Tasks with a dueDate inside [start, end], grouped by ISO day → client.
+ * Used by the monthly event calendar to show which clients have demands per day.
+ */
+export async function getMonthlyCalendarDemands(range: {
+  start: Date;
+  end: Date;
+}): Promise<Record<string, MonthlyClientDemands[]>> {
+  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+
+  const tasks = await prisma.task.findMany({
+    where: {
+      dueDate: { gte: range.start, lte: range.end },
+      status: { not: "CANCELLED" },
+    },
+    include: {
+      project: { include: { client: true } },
+      activeStages: {
+        where: { status: { in: ["ACTIVE", "BLOCKED"] } },
+        include: {
+          stage: { select: { name: true, order: true } },
+          assignee: { select: { id: true, name: true } },
+        },
+        orderBy: { stage: { order: "asc" } },
+      },
+    },
+    orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+    take: 1000,
+  });
+
+  const byDay = new Map<string, Map<string, MonthlyClientDemands>>();
+
+  for (const task of tasks) {
+    if (!task.dueDate) continue;
+    const day = formatISODate(task.dueDate);
+    const primary = task.activeStages.find((s) => s.status === "ACTIVE") || task.activeStages[0];
+    const clientId = task.project.client.id;
+
+    if (!byDay.has(day)) byDay.set(day, new Map());
+    const clients = byDay.get(day)!;
+    if (!clients.has(clientId)) {
+      clients.set(clientId, { clientId, clientName: task.project.client.name, tasks: [] });
+    }
+    clients.get(clientId)!.tasks.push({
+      id: task.id,
+      title: task.title,
+      status: task.status,
+      projectId: task.project.id,
+      projectName: task.project.name,
+      stageName: primary?.stage.name ?? null,
+      assigneeName: primary?.assignee?.name ?? null,
+    });
+  }
+
+  const result: Record<string, MonthlyClientDemands[]> = {};
+  for (const [day, clients] of byDay.entries()) {
+    result[day] = Array.from(clients.values()).sort((a, b) =>
+      a.clientName.localeCompare(b.clientName)
+    );
+  }
+  return result;
 }
 
 // ========== Team Productivity ==========
