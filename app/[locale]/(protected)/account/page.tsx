@@ -7,6 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { getTranslations } from "next-intl/server";
 
+function formatDate(value: Date | string): string {
+  const d = new Date(value);
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}/${d.getUTCFullYear()}`;
+}
+
 export default async function AccountPage() {
   const session = await auth();
   const t = await getTranslations("account");
@@ -103,6 +110,26 @@ export default async function AccountPage() {
                 </dt>
                 <dd className="text-base font-semibold text-foreground">
                   {user.teams.length > 0 ? user.teams.map((tm) => tm.name).join(", ") : t("noTeam")}
+                </dd>
+              </div>
+
+              {/* Birthday */}
+              <div className="border-b border-border pb-3">
+                <dt className="text-sm font-medium text-muted-foreground mb-1">
+                  {t("fields.birthday")}
+                </dt>
+                <dd className="text-base font-semibold text-foreground">
+                  {user.birthday ? formatDate(user.birthday) : t("noInfo")}
+                </dd>
+              </div>
+
+              {/* Admission */}
+              <div className="border-b border-border pb-3">
+                <dt className="text-sm font-medium text-muted-foreground mb-1">
+                  {t("fields.admission")}
+                </dt>
+                <dd className="text-base font-semibold text-foreground">
+                  {user.admissionDate ? formatDate(user.admissionDate) : t("noInfo")}
                 </dd>
               </div>
 

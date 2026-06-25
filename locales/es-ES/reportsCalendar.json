@@ -67,12 +67,16 @@
       "demands": "Cliente con demandas"
     },
     "moreClients": "+{count} cliente(s)",
+    "birthdaysCount": "{count} cumpleaños",
+    "workAnnivCount": "{count} aniv. de contrato",
     "viewDay": "Ver día completo",
     "dayDetail": {
       "title": "Eventos y demandas del día",
       "subtitle": "{date}",
       "eventsHeading": "Eventos",
       "demandsHeading": "Clientes con demandas",
+      "anniversariesHeading": "Cumpleaños y aniversarios",
+      "workAnnivYears": "{years} año(s)",
       "noEvents": "Ningún evento en este día.",
       "noDemands": "Ninguna demanda en este día.",
       "createForEvent": "Crear demandas",

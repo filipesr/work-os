@@ -7,6 +7,8 @@
     "email": "Email",
     "role": "Função",
     "team": "Equipe",
+    "birthday": "Nascimento",
+    "admission": "Admissão",
     "language": "Idioma"
   },
   "noInfo": "Não informado",

@@ -773,6 +773,16 @@ export async function getMonthlyCalendarDemands(range: {
   return result;
 }
 
+/** Users that have a birthday and/or admission date (for the event calendar). */
+export async function getTeamAnniversaries() {
+  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  return prisma.user.findMany({
+    where: { OR: [{ birthday: { not: null } }, { admissionDate: { not: null } }] },
+    select: { id: true, name: true, email: true, birthday: true, admissionDate: true },
+    orderBy: { name: "asc" },
+  });
+}
+
 // ========== Team Productivity ==========
 
 export interface PeriodRange {

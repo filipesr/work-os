@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
-import { getMonthlyCalendarDemands } from "@/lib/actions/reporting";
+import { getMonthlyCalendarDemands, getTeamAnniversaries } from "@/lib/actions/reporting";
 import { getProjectsForSelect, getTemplatesForSelect } from "@/lib/actions/task";
 import { getClients } from "@/lib/actions/client";
 import { getEventsInRange } from "@/lib/calendar/events";
@@ -13,7 +13,11 @@ import {
   todayInSaoPaulo,
 } from "@/lib/dates";
 import { MonthlyCalendar } from "@/components/reports/calendar/MonthlyCalendar";
-import type { MonthDay, MonthEvent } from "@/components/reports/calendar/monthly-types";
+import type {
+  DayAnniversaries,
+  MonthDay,
+  MonthEvent,
+} from "@/components/reports/calendar/monthly-types";
 
 export async function generateMetadata() {
   const t = await getTranslations("reportsCalendar.monthly");
@@ -38,12 +42,46 @@ export default async function MonthlyCalendarPage({ searchParams }: PageProps) {
   const range = monthRangeFromFirst(first);
   const todayIso = formatISODate(todayInSaoPaulo());
 
-  const [demandsByDay, rawProjects, rawTemplates, clients] = await Promise.all([
+  const [demandsByDay, rawProjects, rawTemplates, clients, people] = await Promise.all([
     getMonthlyCalendarDemands({ start: range.gridStart, end: range.gridEnd }),
     getProjectsForSelect(),
     getTemplatesForSelect(),
     getClients(),
+    getTeamAnniversaries(),
   ]);
+
+  // Birthdays + contract anniversaries falling on each grid day (matched by month/day).
+  const anniversariesByDay: Record<string, DayAnniversaries> = {};
+  for (const d of range.gridDays) {
+    const month = d.getUTCMonth();
+    const day = d.getUTCDate();
+    const year = d.getUTCFullYear();
+    const birthdays: { name: string }[] = [];
+    const workAnniversaries: { name: string; years: number }[] = [];
+    for (const person of people) {
+      const label = person.name || person.email || "—";
+      if (
+        person.birthday &&
+        person.birthday.getUTCMonth() === month &&
+        person.birthday.getUTCDate() === day
+      ) {
+        birthdays.push({ name: label });
+      }
+      if (
+        person.admissionDate &&
+        person.admissionDate.getUTCMonth() === month &&
+        person.admissionDate.getUTCDate() === day
+      ) {
+        workAnniversaries.push({
+          name: label,
+          years: year - person.admissionDate.getUTCFullYear(),
+        });
+      }
+    }
+    if (birthdays.length > 0 || workAnniversaries.length > 0) {
+      anniversariesByDay[formatISODate(d)] = { birthdays, workAnniversaries };
+    }
+  }
 
   const rawEvents = getEventsInRange(formatISODate(range.gridStart), formatISODate(range.gridEnd));
   const eventsByDay: Record<string, MonthEvent[]> = {};
@@ -123,6 +161,7 @@ export default async function MonthlyCalendarPage({ searchParams }: PageProps) {
         days={days}
         eventsByDay={eventsByDay}
         demandsByDay={demandsByDay}
+        anniversariesByDay={anniversariesByDay}
         clients={clients}
         projects={projects}
         templates={templates}

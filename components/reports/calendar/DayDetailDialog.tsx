@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import {
   COUNTRY_FLAG,
   type ClientDemands,
+  type DayAnniversaries,
   type DemandTask,
   type MonthEvent,
 } from "./monthly-types";
@@ -30,6 +31,7 @@ interface DayDetailDialogProps {
   dateLabel: string;
   events: MonthEvent[];
   clients: ClientDemands[];
+  anniversaries: DayAnniversaries | null;
   onClose: () => void;
   onCreateForEvent: (event: MonthEvent) => void;
   onCreateForDay: () => void;
@@ -39,6 +41,7 @@ export function DayDetailDialog({
   dateLabel,
   events,
   clients,
+  anniversaries,
   onClose,
   onCreateForEvent,
   onCreateForDay,
@@ -61,6 +64,35 @@ export function DayDetailDialog({
         </div>
 
         <div className="max-h-[70vh] space-y-6 overflow-y-auto py-2">
+          {/* Anniversaries */}
+          {anniversaries &&
+            (anniversaries.birthdays.length > 0 || anniversaries.workAnniversaries.length > 0) && (
+              <section>
+                <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  {t("dayDetail.anniversariesHeading")}
+                </h3>
+                <ul className="space-y-1.5">
+                  {anniversaries.birthdays.map((b, i) => (
+                    <li key={`b-${i}`} className="flex items-center gap-2 text-sm text-foreground">
+                      <span>🎂</span>
+                      <span>{b.name}</span>
+                    </li>
+                  ))}
+                  {anniversaries.workAnniversaries.map((w, i) => (
+                    <li key={`w-${i}`} className="flex items-center gap-2 text-sm text-foreground">
+                      <span>🎉</span>
+                      <span>{w.name}</span>
+                      {w.years > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {t("dayDetail.workAnnivYears", { years: w.years })}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
           {/* Events */}
           <section>
             <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">

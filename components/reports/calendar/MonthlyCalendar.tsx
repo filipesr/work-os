@@ -10,6 +10,7 @@ import {
   isoToDisplay,
   type ClientDemands,
   type ClientOption,
+  type DayAnniversaries,
   type MonthDay,
   type MonthEvent,
   type ProjectOption,
@@ -23,6 +24,7 @@ interface MonthlyCalendarProps {
   days: MonthDay[];
   eventsByDay: Record<string, MonthEvent[]>;
   demandsByDay: Record<string, ClientDemands[]>;
+  anniversariesByDay: Record<string, DayAnniversaries>;
   clients: ClientOption[];
   projects: ProjectOption[];
   templates: TemplateOption[];
@@ -32,6 +34,7 @@ export function MonthlyCalendar({
   days,
   eventsByDay,
   demandsByDay,
+  anniversariesByDay,
   clients,
   projects,
   templates,
@@ -82,6 +85,7 @@ export function MonthlyCalendar({
           const clients = demandsByDay[day.iso] ?? [];
           const shownClients = clients.slice(0, MAX_CLIENTS);
           const extraClients = clients.length - shownClients.length;
+          const anniv = anniversariesByDay[day.iso];
 
           return (
             <div
@@ -130,6 +134,40 @@ export function MonthlyCalendar({
                 ))}
               </div>
 
+              {/* Anniversaries (birthdays + contract) */}
+              {anniv && (anniv.birthdays.length > 0 || anniv.workAnniversaries.length > 0) && (
+                <div className="mt-1 space-y-1">
+                  {anniv.birthdays.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDetailIso(day.iso)}
+                      className="flex w-full items-center gap-1 rounded border border-pink-200 bg-pink-50 px-1.5 py-0.5 text-[11px] text-pink-700 hover:border-pink-400 transition-colors dark:border-pink-800/60 dark:bg-pink-950/40 dark:text-pink-200"
+                    >
+                      <span>🎂</span>
+                      <span className="truncate">
+                        {anniv.birthdays.length === 1
+                          ? anniv.birthdays[0].name
+                          : t("birthdaysCount", { count: anniv.birthdays.length })}
+                      </span>
+                    </button>
+                  )}
+                  {anniv.workAnniversaries.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDetailIso(day.iso)}
+                      className="flex w-full items-center gap-1 rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-700 hover:border-amber-400 transition-colors dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200"
+                    >
+                      <span>🎉</span>
+                      <span className="truncate">
+                        {anniv.workAnniversaries.length === 1
+                          ? anniv.workAnniversaries[0].name
+                          : t("workAnnivCount", { count: anniv.workAnniversaries.length })}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Client demands */}
               {shownClients.length > 0 && (
                 <div className="mt-1 space-y-1">
@@ -175,6 +213,7 @@ export function MonthlyCalendar({
           dateLabel={isoToDisplay(detailIso)}
           events={eventsByDay[detailIso] ?? []}
           clients={demandsByDay[detailIso] ?? []}
+          anniversaries={anniversariesByDay[detailIso] ?? null}
           onClose={() => setDetailIso(null)}
           onCreateForEvent={(event) => {
             setDetailIso(null);

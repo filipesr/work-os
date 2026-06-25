@@ -41,6 +41,11 @@ export interface ClientOption {
   name: string;
 }
 
+export interface DayAnniversaries {
+  birthdays: { name: string }[];
+  workAnniversaries: { name: string; years: number }[];
+}
+
 export interface TemplateOption {
   id: string;
   name: string;
