@@ -73,6 +73,15 @@
     "lastSeen": "Visto",
     "neverAccessed": "Nunca accedió",
     "noTeam": "Sin equipo",
+    "filters": {
+      "button": "Filtros",
+      "title": "Filtrar usuarios",
+      "status": "Estado",
+      "teams": "Equipos",
+      "selectAll": "Marcar todas",
+      "clear": "Desmarcar todas",
+      "close": "Cerrar"
+    },
     "noUsers": "No se encontraron usuarios",
     "loading": "Cargando usuarios...",
     "updatedAgo": "Actualizado",

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import LiveActivityFilters from "./live-activity-filters";
 import { getActiveWorkLogs, getOnlineUsers, getOfflineUsers } from "@/lib/actions/activity";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,12 +39,20 @@ type UserWithStatus = {
   activeLog?: ActiveLogData[0];
 };
 
+const DEFAULT_HIDDEN_TEAMS = ["HR", "Finance", "Reception", "General Services", "Manager"];
+
 export default function LiveActivityPage() {
   const [activeLogs, setActiveLogs] = useState<ActiveLogData>([]);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUserData>([]);
   const [offlineUsers, setOfflineUsers] = useState<OfflineUserData>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
+  // Filters (status + teams). HR/Finance/Reception/General Services/Manager
+  // start hidden by default.
+  const [showOnline, setShowOnline] = useState(true);
+  const [showOffline, setShowOffline] = useState(true);
+  const [hiddenTeams, setHiddenTeams] = useState<Set<string>>(new Set(DEFAULT_HIDDEN_TEAMS));
 
   const t = useTranslations("reports.liveActivity");
   const locale = useLocale();
@@ -101,6 +110,26 @@ export default function LiveActivityPage() {
     return (a.name || a.email || "").localeCompare(b.name || b.email || "");
   });
 
+  // Distinct team names present (for the filter modal).
+  const teamNames = [...new Set(allUsers.flatMap((u) => u.teams.map((tm) => tm.name)))].sort(
+    (a, b) => a.localeCompare(b)
+  );
+
+  // Apply status + team filters.
+  const filteredUsers = allUsers.filter((u) => {
+    const statusOk = (u.isOnline && showOnline) || (!u.isOnline && showOffline);
+    const teamOk = u.teams.length === 0 || u.teams.some((tm) => !hiddenTeams.has(tm.name));
+    return statusOk && teamOk;
+  });
+
+  const toggleTeam = (name: string) =>
+    setHiddenTeams((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -136,12 +165,25 @@ export default function LiveActivityPage() {
           </div>
           <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <RefreshCw className="h-4 w-4 animate-spin" />
-          <span>
-            {t("updatedAgo")}{" "}
-            {formatDistanceToNow(lastUpdated, { addSuffix: true, locale: dateLocale })}
-          </span>
+        <div className="flex items-center gap-3">
+          <LiveActivityFilters
+            teamNames={teamNames}
+            showOnline={showOnline}
+            showOffline={showOffline}
+            hiddenTeams={hiddenTeams}
+            onToggleOnline={() => setShowOnline((v) => !v)}
+            onToggleOffline={() => setShowOffline((v) => !v)}
+            onToggleTeam={toggleTeam}
+            onSelectAllTeams={() => setHiddenTeams(new Set())}
+            onClearTeams={() => setHiddenTeams(new Set(teamNames))}
+          />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <RefreshCw className="h-4 w-4 animate-spin" />
+            <span>
+              {t("updatedAgo")}{" "}
+              {formatDistanceToNow(lastUpdated, { addSuffix: true, locale: dateLocale })}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -150,7 +192,7 @@ export default function LiveActivityPage() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Activity className="h-5 w-5" />
-            {t("allUsers")} ({allUsers.length})
+            {t("allUsers")} ({filteredUsers.length})
           </CardTitle>
           <p className="text-sm text-muted-foreground hidden">
             <span className="text-green-600 font-medium">{t("online")}</span> |
@@ -163,14 +205,14 @@ export default function LiveActivityPage() {
               <RefreshCw className="h-8 w-8 animate-spin mb-2" />
               <p>{t("loading")}</p>
             </div>
-          ) : allUsers.length === 0 ? (
+          ) : filteredUsers.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-muted-foreground py-12">
               <Activity className="h-12 w-12 mb-4 opacity-20" />
               <p className="text-lg font-medium">{t("noUsers")}</p>
             </div>
           ) : (
             <div className="flex flex-wrap justify-center gap-4">
-              {allUsers.map((user) => {
+              {filteredUsers.map((user) => {
                 // Calculate duration for users actively working
                 let duration, durationMinutes, durationHours, remainingMinutes;
                 if (user.activeLog) {
