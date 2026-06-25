@@ -8,6 +8,20 @@ import { CompleteTaskButton } from "@/components/tasks/CompleteTaskButton";
 import { ArtifactsList } from "@/components/tasks/ArtifactsList";
 import { getTranslations } from "next-intl/server";
 
+function formatDate(value: Date | string): string {
+  const d = new Date(value);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+
+function formatDateTime(value: Date | string): string {
+  const d = new Date(value);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${formatDate(d)} ${hh}:${min}`;
+}
+
 export default async function TaskDetailPage({ params }: { params: Promise<{ taskId: string }> }) {
   const t = await getTranslations("admin.tasks.detail");
   const { taskId } = await params;
@@ -104,7 +118,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
               <div>
                 <p className="text-sm font-semibold text-muted-foreground">{t("dueDate")}</p>
                 <p className="mt-1 text-sm text-foreground font-medium">
-                  {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : t("noDueDate")}
+                  {task.dueDate ? formatDate(task.dueDate) : t("noDueDate")}
                 </p>
               </div>
             </div>
@@ -172,11 +186,11 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                       </div>
                       <div className="ml-4 text-right text-sm text-muted-foreground">
                         <p>
-                          {t("entered")} {new Date(log.enteredAt).toLocaleString()}
+                          {t("entered")} {formatDateTime(log.enteredAt)}
                         </p>
                         {log.exitedAt && (
                           <p>
-                            {t("exited")} {new Date(log.exitedAt).toLocaleString()}
+                            {t("exited")} {formatDateTime(log.exitedAt)}
                           </p>
                         )}
                       </div>
@@ -208,7 +222,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {t("by")} {comment.user.name || comment.user.email} •{" "}
-                          {new Date(comment.createdAt).toLocaleString()}
+                          {formatDateTime(comment.createdAt)}
                         </p>
                       </div>
                     </div>

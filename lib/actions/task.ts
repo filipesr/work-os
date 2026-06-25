@@ -1622,7 +1622,9 @@ export async function revertTaskStage(taskId: string, revertToStageId: string, c
         });
       }
 
-      // 4c. Create new stage log entry for re-entering this stage
+      // 4c. Create new stage log entry for re-entering this stage.
+      // The stage is now in progress again, so status stays null (StageLogStatus
+      // only has COMPLETED/REVERTED; null = in progress).
       await tx.taskStageLog.create({
         data: {
           taskId,
@@ -1630,7 +1632,6 @@ export async function revertTaskStage(taskId: string, revertToStageId: string, c
           userId: currentUserId,
           enteredAt: new Date(),
           exitedAt: null,
-          status: "REVERTED_TO",
         },
       });
 
