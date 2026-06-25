@@ -33,7 +33,10 @@ export default function LiveActivityFilters({
   const activeCount = (showOnline ? 0 : 1) + (showOffline ? 0 : 1) + hiddenTeams.size;
 
   const checkbox = (checked: boolean, label: string, onChange: () => void) => (
-    <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-muted/60">
+    <label
+      key={label}
+      className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-muted/60"
+    >
       <input
         type="checkbox"
         checked={checked}
