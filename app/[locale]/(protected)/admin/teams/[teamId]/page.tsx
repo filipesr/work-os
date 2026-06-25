@@ -6,6 +6,15 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { EditTeamHeader } from "./edit-team-header";
+import ManageTeamMembers from "./manage-members-button";
+
+async function getAllUsers() {
+  await requireAdmin();
+  return prisma.user.findMany({
+    select: { id: true, name: true, email: true, role: true },
+    orderBy: [{ name: "asc" }, { email: "asc" }],
+  });
+}
 
 async function getTeam(teamId: string) {
   await requireAdmin();
@@ -53,10 +62,28 @@ async function deleteTeam(formData: FormData) {
   revalidatePath("/admin/teams");
 }
 
+async function setTeamMembers(formData: FormData) {
+  "use server";
+  await requireAdmin();
+  const id = formData.get("id") as string;
+  if (!id) return;
+  const userIds = formData.getAll("userIds").map(String);
+
+  await prisma.team.update({
+    where: { id },
+    data: { members: { set: userIds.map((userId) => ({ id: userId })) } },
+  });
+
+  revalidatePath(`/admin/teams/${id}`);
+  revalidatePath("/admin/teams");
+  revalidatePath("/dashboard");
+}
+
 export default async function TeamDetailPage({ params }: { params: Promise<{ teamId: string }> }) {
   const { teamId } = await params;
-  const [team, t, tRoles] = await Promise.all([
+  const [team, allUsers, t, tRoles] = await Promise.all([
     getTeam(teamId),
+    getAllUsers(),
     getTranslations("admin.teams.detail"),
     getTranslations("admin.users.roles"),
   ]);
@@ -106,7 +133,16 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ tea
 
       {/* Members Table */}
       <div className="mt-6">
-        <h2 className="text-xl font-bold text-foreground mb-4">{t("membersTable")}</h2>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <h2 className="text-xl font-bold text-foreground">{t("membersTable")}</h2>
+          <ManageTeamMembers
+            teamId={team.id}
+            teamName={team.name}
+            users={allUsers}
+            currentMemberIds={team.members.map((member) => member.id)}
+            setMembers={setTeamMembers}
+          />
+        </div>
         <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
