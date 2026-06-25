@@ -156,6 +156,7 @@ model WorkflowTemplate {
   id          String          @id @default(cuid())
   name        String          @unique
   description String?
+  createdAt   DateTime        @default(now())
   stages      TemplateStage[]
 }
 

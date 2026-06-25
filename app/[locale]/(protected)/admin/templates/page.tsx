@@ -2,6 +2,13 @@ import Link from "next/link";
 import { getWorkflowTemplates, createWorkflowTemplate } from "@/lib/actions/template";
 import { getTranslations } from "next-intl/server";
 
+function formatDate(value: Date | string): string {
+  const date = new Date(value);
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}/${date.getFullYear()}`;
+}
+
 export default async function TemplatesPage() {
   const templates = await getWorkflowTemplates();
   const t = await getTranslations("admin.workflows");
@@ -10,9 +17,7 @@ export default async function TemplatesPage() {
     <div className="container mx-auto p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">{t("title")}</h1>
-        <p className="text-muted-foreground">
-          {t("subtitle")}
-        </p>
+        <p className="text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {/* Create New Template Form */}
@@ -33,7 +38,10 @@ export default async function TemplatesPage() {
             />
           </div>
           <div>
-            <label htmlFor="description" className="block text-sm font-semibold text-foreground mb-2">
+            <label
+              htmlFor="description"
+              className="block text-sm font-semibold text-foreground mb-2"
+            >
               {t("descriptionLabel")}
             </label>
             <textarea
@@ -59,9 +67,7 @@ export default async function TemplatesPage() {
           <h2 className="text-xl font-bold text-foreground">{t("listTitle")}</h2>
         </div>
         {templates.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">
-            {t("noTemplates")}
-          </div>
+          <div className="p-8 text-center text-muted-foreground">{t("noTemplates")}</div>
         ) : (
           <div className="divide-y divide-border">
             {templates.map((template: any) => (
@@ -72,16 +78,16 @@ export default async function TemplatesPage() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-primary mb-1">
-                      {template.name}
-                    </h3>
+                    <h3 className="text-lg font-semibold text-primary mb-1">{template.name}</h3>
                     <p className="text-muted-foreground text-sm mb-2">
                       {template.description || t("noDescription")}
                     </p>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="font-medium">{t("stagesCount", { count: template._count.stages })}</span>
+                      <span className="font-medium">
+                        {t("stagesCount", { count: template._count.stages })}
+                      </span>
                       <span>•</span>
-                      <span>{t("created", { date: new Date(template.createdAt).toLocaleDateString() })}</span>
+                      <span>{t("created", { date: formatDate(template.createdAt) })}</span>
                     </div>
                   </div>
                   <div className="ml-4">
