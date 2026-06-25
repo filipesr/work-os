@@ -6,19 +6,16 @@ declare module "next-auth" {
     user: {
       id: string;
       role: UserRole;
-      teamId: string | null;
     } & DefaultSession["user"];
   }
 
   interface User {
     role: UserRole;
-    teamId: string | null;
   }
 }
 
 declare module "@auth/core/adapters" {
   interface AdapterUser {
     role: UserRole;
-    teamId: string | null;
   }
 }

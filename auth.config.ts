@@ -20,7 +20,6 @@ export const authConfig = {
       if (session.user) {
         session.user.id = user.id;
         session.user.role = user.role;
-        session.user.teamId = user.teamId;
       }
       return session;
     },

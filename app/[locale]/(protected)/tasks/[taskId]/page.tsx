@@ -35,7 +35,6 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
           name: true,
           email: true,
           image: true,
-          teamId: true,
         },
       },
       activeStages: {
@@ -50,7 +49,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
             },
           },
           assignee: {
-            select: { id: true, name: true, email: true, image: true, teamId: true },
+            select: { id: true, name: true, email: true, image: true },
           },
         },
         orderBy: {

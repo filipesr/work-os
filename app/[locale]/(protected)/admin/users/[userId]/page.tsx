@@ -13,7 +13,7 @@ async function getUser(userId: string) {
   return await prisma.user.findUnique({
     where: { id: userId },
     include: {
-      team: true,
+      teams: { select: { id: true, name: true }, orderBy: { name: "asc" } },
       activeStages: {
         where: { status: "ACTIVE" },
         include: {
@@ -48,8 +48,18 @@ async function updateUser(formData: FormData) {
   await requireAdmin();
   const id = formData.get("id") as string;
   const role = formData.get("role") as UserRole;
-  const newTeamId = formData.get("teamId") as string | null;
+  const teamIds = formData.getAll("teamIds").map(String);
+  const birthdayRaw = formData.get("birthday") as string | null;
+  const admissionRaw = formData.get("admissionDate") as string | null;
   if (!id || !role) return;
+
+  const current = await prisma.user.findUnique({
+    where: { id },
+    select: { teams: { select: { id: true } } },
+  });
+  const currentIds = new Set(current?.teams.map((tm) => tm.id) ?? []);
+  const teamsChanged =
+    currentIds.size !== teamIds.length || teamIds.some((tid) => !currentIds.has(tid));
 
   const activeStages = await prisma.taskActiveStage.findMany({
     where: {
@@ -59,7 +69,7 @@ async function updateUser(formData: FormData) {
     select: { id: true },
   });
 
-  if (activeStages.length > 0) {
+  if (teamsChanged && activeStages.length > 0) {
     await prisma.taskActiveStage.updateMany({
       where: {
         assigneeId: id,
@@ -99,7 +109,9 @@ async function updateUser(formData: FormData) {
     where: { id },
     data: {
       role,
-      teamId: newTeamId || null,
+      teams: { set: teamIds.map((tid) => ({ id: tid })) },
+      birthday: birthdayRaw ? new Date(birthdayRaw) : null,
+      admissionDate: admissionRaw ? new Date(admissionRaw) : null,
     },
   });
 
@@ -161,8 +173,10 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
                 <span className="px-3 py-1 inline-flex text-xs font-bold rounded-full bg-primary/10 text-primary border border-primary/20">
                   {tRoles(user.role.toLowerCase())}
                 </span>
-                {user.team && (
-                  <span className="text-sm text-muted-foreground">{user.team.name}</span>
+                {user.teams.length > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    {user.teams.map((tm) => tm.name).join(", ")}
+                  </span>
                 )}
               </div>
               {user.lastSeenAt && (
@@ -179,7 +193,11 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                teamId: user.teamId,
+                teams: user.teams,
+                birthday: user.birthday ? user.birthday.toISOString().slice(0, 10) : null,
+                admissionDate: user.admissionDate
+                  ? user.admissionDate.toISOString().slice(0, 10)
+                  : null,
               }}
               teams={teams}
               updateUser={updateUser}

@@ -839,7 +839,7 @@ export async function completeStageAndAdvance(taskId: string, stageId: string) {
     // 2. Check permissions
     const userWithRole = await prisma.user.findUnique({
       where: { id: currentUserId },
-      select: { role: true, teamId: true },
+      select: { role: true },
     });
 
     const isAdmin = userWithRole?.role === "ADMIN";
@@ -1164,13 +1164,14 @@ export async function getMyAllStages(filters?: {
 /**
  * Get team backlog (active stages not assigned)
  */
-export async function getTeamBacklog(teamId: string) {
+export async function getTeamBacklog(teamIds: string[]) {
+  if (teamIds.length === 0) return [];
   return await prisma.taskActiveStage.findMany({
     where: {
       assigneeId: null,
       status: "ACTIVE",
       stage: {
-        defaultTeamId: teamId,
+        defaultTeamId: { in: teamIds },
       },
     },
     include: {
@@ -1467,11 +1468,12 @@ export async function advanceTaskStage(taskId: string, nextStageId: string) {
     // 1. ✅ TEAM VALIDATION: Get user's team and verify next stage belongs to same team
     const userWithTeam = await prisma.user.findUnique({
       where: { id: currentUserId },
-      select: { teamId: true, team: { select: { name: true } } },
+      select: { teams: { select: { id: true, name: true } } },
     });
+    const userTeamIds = userWithTeam?.teams.map((tm) => tm.id) ?? [];
 
     // Admin/Manager can bypass team requirement
-    if (!isAdminOrManager && !userWithTeam?.teamId) {
+    if (!isAdminOrManager && userTeamIds.length === 0) {
       return {
         error: "Você não está atribuído a nenhum time. Contate o administrador.",
       };
@@ -1494,11 +1496,13 @@ export async function advanceTaskStage(taskId: string, nextStageId: string) {
     // ✅ Admin/Manager can bypass team validation
     if (
       !isAdminOrManager &&
-      userWithTeam?.teamId &&
-      nextStage.defaultTeamId !== userWithTeam.teamId
+      userTeamIds.length > 0 &&
+      nextStage.defaultTeamId &&
+      !userTeamIds.includes(nextStage.defaultTeamId)
     ) {
+      const userTeamNames = userWithTeam?.teams.map((tm) => tm.name).join(", ");
       return {
-        error: `Você não pode avançar para a etapa "${nextStage.name}" porque ela pertence ao time "${nextStage.defaultTeam?.name}". Você faz parte do time "${userWithTeam.team?.name}".`,
+        error: `Você não pode avançar para a etapa "${nextStage.name}" porque ela pertence ao time "${nextStage.defaultTeam?.name}". Você faz parte do(s) time(s) "${userTeamNames}".`,
       };
     }
 

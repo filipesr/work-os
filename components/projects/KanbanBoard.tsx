@@ -7,8 +7,10 @@ import { KanbanFilters, FilterState } from "./KanbanFilters";
 import { useTranslations } from "next-intl";
 
 type TaskWithRelations = Task & {
-  assignee: Pick<User, "id" | "name" | "email" | "image" | "teamId"> | null;
-  currentStage: (TemplateStage & { defaultTeam: Team | null; template: { id: string; name: string } }) | null;
+  assignee: Pick<User, "id" | "name" | "email" | "image"> | null;
+  currentStage:
+    | (TemplateStage & { defaultTeam: Team | null; template: { id: string; name: string } })
+    | null;
   currentStageId: string | null;
   project: Project & { client: Client };
 };
@@ -27,7 +29,7 @@ interface KanbanBoardProps {
   tasks: TaskWithRelations[];
   stages: StageInfo[];
   currentUserId: string;
-  currentUserTeamId: string | null;
+  currentUserTeamIds: string[];
 }
 
 export function KanbanBoard({
@@ -35,7 +37,7 @@ export function KanbanBoard({
   tasks,
   stages,
   currentUserId,
-  currentUserTeamId,
+  currentUserTeamIds,
 }: KanbanBoardProps) {
   const t = useTranslations("projects");
   const [filters, setFilters] = useState<FilterState>({
@@ -54,8 +56,9 @@ export function KanbanBoard({
       }
 
       // Filter: By Team
-      if (filters.byTeam && currentUserTeamId) {
-        if (task.currentStage?.defaultTeam?.id !== currentUserTeamId) {
+      if (filters.byTeam && currentUserTeamIds.length > 0) {
+        const stageTeamId = task.currentStage?.defaultTeam?.id;
+        if (!stageTeamId || !currentUserTeamIds.includes(stageTeamId)) {
           return false;
         }
       }
@@ -72,7 +75,7 @@ export function KanbanBoard({
 
       return true;
     });
-  }, [tasks, filters, currentUserId, currentUserTeamId]);
+  }, [tasks, filters, currentUserId, currentUserTeamIds]);
 
   // Group tasks by stage
   const tasksByStage = useMemo(() => {
@@ -97,10 +100,10 @@ export function KanbanBoard({
 
   // Get all unique assignees for filter dropdown
   const assignees = useMemo(() => {
-    const uniqueAssignees = new Map<string, User>();
+    const uniqueAssignees = new Map<string, NonNullable<TaskWithRelations["assignee"]>>();
     tasks.forEach((task) => {
       if (task.assignee) {
-        uniqueAssignees.set(task.assignee.id, task.assignee as User);
+        uniqueAssignees.set(task.assignee.id, task.assignee);
       }
     });
     return Array.from(uniqueAssignees.values());
@@ -113,7 +116,7 @@ export function KanbanBoard({
         filters={filters}
         onFiltersChange={setFilters}
         assignees={assignees}
-        hasTeam={!!currentUserTeamId}
+        hasTeam={currentUserTeamIds.length > 0}
       />
 
       {/* Kanban Board */}
@@ -122,22 +125,16 @@ export function KanbanBoard({
           const stageTasks = tasksByStage.get(stage.id) || [];
 
           return (
-            <div
-              key={stage.id}
-              className="flex-shrink-0 w-80 bg-muted/30 rounded-lg p-4"
-            >
+            <div key={stage.id} className="flex-shrink-0 w-80 bg-muted/30 rounded-lg p-4">
               {/* Column Header */}
               <div className="mb-4">
                 <h3 className="font-semibold text-lg">{stage.name}</h3>
                 <div className="flex items-center justify-between mt-1">
-                  <p className="text-sm text-muted-foreground">
-                    {stage.templateName}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{stage.templateName}</p>
                   <span className="text-xs text-muted-foreground">
                     {stageTasks.length === 1
                       ? t("taskCount", { count: stageTasks.length })
-                      : t("tasksCount", { count: stageTasks.length })
-                    }
+                      : t("tasksCount", { count: stageTasks.length })}
                   </span>
                 </div>
                 {stage.defaultTeam && (
@@ -154,9 +151,7 @@ export function KanbanBoard({
                     {t("noTasks")}
                   </div>
                 ) : (
-                  stageTasks.map((task) => (
-                    <TaskCard key={task.id} task={task} />
-                  ))
+                  stageTasks.map((task) => <TaskCard key={task.id} task={task} />)
                 )}
               </div>
             </div>
@@ -165,9 +160,7 @@ export function KanbanBoard({
 
         {stages.length === 0 && (
           <div className="flex items-center justify-center w-full py-12">
-            <p className="text-muted-foreground">
-              {t("noStages")}
-            </p>
+            <p className="text-muted-foreground">{t("noStages")}</p>
           </div>
         )}
       </div>

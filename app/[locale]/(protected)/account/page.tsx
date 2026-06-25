@@ -20,7 +20,7 @@ export default async function AccountPage() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
-      team: { select: { name: true } },
+      teams: { select: { name: true }, orderBy: { name: "asc" } },
     },
   });
 
@@ -41,9 +41,7 @@ export default async function AccountPage() {
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle className="text-2xl">{t("title")}</CardTitle>
-          <CardDescription>
-            {t("subtitle")}
-          </CardDescription>
+          <CardDescription>{t("subtitle")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* User Avatar */}
@@ -104,7 +102,7 @@ export default async function AccountPage() {
                   {t("fields.team")}
                 </dt>
                 <dd className="text-base font-semibold text-foreground">
-                  {user.team?.name || t("noTeam")}
+                  {user.teams.length > 0 ? user.teams.map((tm) => tm.name).join(", ") : t("noTeam")}
                 </dd>
               </div>
 
@@ -122,7 +120,8 @@ export default async function AccountPage() {
             {/* Google Sync Notice */}
             <div className="bg-muted/50 border border-border rounded-lg p-4 mt-6">
               <p className="text-sm text-muted-foreground">
-                <span className="font-semibold">{t("googleSyncNote.label")}</span> {t("googleSyncNote.message")}
+                <span className="font-semibold">{t("googleSyncNote.label")}</span>{" "}
+                {t("googleSyncNote.message")}
               </p>
             </div>
           </div>

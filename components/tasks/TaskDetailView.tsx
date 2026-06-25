@@ -50,7 +50,7 @@ import { useTranslations, useLocale } from "next-intl";
 
 type TaskWithRelations = Task & {
   project: Project & { client: Client };
-  assignee: Pick<User, "id" | "name" | "email" | "image" | "teamId"> | null;
+  assignee: Pick<User, "id" | "name" | "email" | "image"> | null;
   currentStage:
     | (TemplateStage & { defaultTeam: Team | null; template: { id: string; name: string } })
     | null;

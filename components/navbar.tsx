@@ -19,9 +19,9 @@ export async function Navbar() {
   // Buscar teamId atualizado do banco
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { teamId: true },
+    select: { teams: { select: { id: true } } },
   });
-  const hasTeam = !!currentUser?.teamId;
+  const hasTeam = (currentUser?.teams.length ?? 0) > 0;
   const isAdminOrManager = userRole === UserRole.ADMIN || userRole === UserRole.MANAGER;
 
   return (

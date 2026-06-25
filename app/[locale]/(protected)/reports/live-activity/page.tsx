@@ -32,7 +32,7 @@ type UserWithStatus = {
   email: string | null;
   image: string | null;
   role: string;
-  team: { name: string } | null;
+  teams: { name: string }[];
   lastSeenAt: Date | null;
   isOnline: boolean;
   activeLog?: ActiveLogData[0];
@@ -107,10 +107,7 @@ export default function LiveActivityPage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <Link
-              href="/reports"
-              className="text-muted-foreground hover:text-foreground"
-            >
+            <Link href="/reports" className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <h1 className="text-3xl font-bold">{t("title")}</h1>
@@ -128,26 +125,16 @@ export default function LiveActivityPage() {
                 <DialogHeader>
                   <DialogTitle>{t("help.title")}</DialogTitle>
                   <DialogDescription className="space-y-3 pt-4">
-                    <span>
-                      {t("help.online")}
-                    </span>
-                    <span>
-                      {t("help.offline")}
-                    </span>
-                    <span>
-                      {t("help.working")}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      💡 {t("help.autoUpdate")}
-                    </span>
+                    <span>{t("help.online")}</span>
+                    <span>{t("help.offline")}</span>
+                    <span>{t("help.working")}</span>
+                    <span className="text-xs text-muted-foreground">💡 {t("help.autoUpdate")}</span>
                   </DialogDescription>
                 </DialogHeader>
               </DialogContent>
             </Dialog>
           </div>
-          <p className="text-muted-foreground">
-            {t("subtitle")}
-          </p>
+          <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <RefreshCw className="h-4 w-4 animate-spin" />
@@ -197,9 +184,10 @@ export default function LiveActivityPage() {
                   <div
                     className={`
                       relative overflow-hidden rounded-xl transition-all w-52
-                      ${user.isOnline
-                        ? "border-2 border-green-500 shadow-lg shadow-green-500/20 hover:shadow-xl"
-                        : "border-2 border-gray-300 grayscale opacity-60"
+                      ${
+                        user.isOnline
+                          ? "border-2 border-green-500 shadow-lg shadow-green-500/20 hover:shadow-xl"
+                          : "border-2 border-gray-300 grayscale opacity-60"
                       }
                       ${user.activeLog ? "cursor-pointer" : ""}
                     `}
@@ -208,9 +196,10 @@ export default function LiveActivityPage() {
                     <div
                       className={`
                         h-24 relative
-                        ${user.isOnline
-                          ? "bg-gradient-to-br from-green-400 to-green-600"
-                          : "bg-gradient-to-br from-gray-300 to-gray-400"
+                        ${
+                          user.isOnline
+                            ? "bg-gradient-to-br from-green-400 to-green-600"
+                            : "bg-gradient-to-br from-gray-300 to-gray-400"
                         }
                       `}
                     >
@@ -224,9 +213,10 @@ export default function LiveActivityPage() {
                             {user.activeLog && (
                               <span className="text-gray-600 text-[0.5rem]">
                                 {user.activeLog.task.project.name}
-                                {durationHours !== undefined && (
-                                  durationHours > 0 ? ` - ${durationHours}h ${remainingMinutes}min`: ` - ${durationMinutes}min`
-                                )}
+                                {durationHours !== undefined &&
+                                  (durationHours > 0
+                                    ? ` - ${durationHours}h ${remainingMinutes}min`
+                                    : ` - ${durationMinutes}min`)}
                               </span>
                             )}
                           </span>
@@ -237,7 +227,9 @@ export default function LiveActivityPage() {
                     {/* Avatar grande centralizado (sobrepõe o header) */}
                     <div className="flex justify-center -mt-12 mb-4">
                       <div className="relative">
-                        <Avatar className={`h-24 w-24 border-4 border-background shadow-xl ${!user.isOnline ? "grayscale" : ""}`}>
+                        <Avatar
+                          className={`h-24 w-24 border-4 border-background shadow-xl ${!user.isOnline ? "grayscale" : ""}`}
+                        >
                           <AvatarImage src={getProxiedImageUrl(user.image) || undefined} />
                           <AvatarFallback className="text-2xl">
                             {user.name?.charAt(0).toUpperCase() || "?"}
@@ -257,13 +249,19 @@ export default function LiveActivityPage() {
                     {/* Conteúdo empilhado verticalmente */}
                     <div className="px-4 pb-4 text-center">
                       {/* Nome */}
-                      <h3 className={`font-bold text-lg truncate ${!user.isOnline ? "text-gray-600" : ""}`}>
+                      <h3
+                        className={`font-bold text-lg truncate ${!user.isOnline ? "text-gray-600" : ""}`}
+                      >
                         {user.name || user.email}
                       </h3>
 
                       {/* Equipe */}
-                      <p className={`text-xs pb-3 ${!user.isOnline ? "text-gray-500" : "text-muted-foreground"}`}>
-                        {user.team?.name || t("noTeam")}
+                      <p
+                        className={`text-xs pb-3 ${!user.isOnline ? "text-gray-500" : "text-muted-foreground"}`}
+                      >
+                        {user.teams.length > 0
+                          ? user.teams.map((tm) => tm.name).join(", ")
+                          : t("noTeam")}
                       </p>
 
                       <div className="pt-2 border-t text-xs text-muted-foreground">

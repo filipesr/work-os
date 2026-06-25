@@ -21,7 +21,7 @@ type UserWithStatus = {
   email: string | null;
   image: string | null;
   role: string;
-  team: { name: string } | null;
+  teams: { name: string }[];
   lastSeenAt: Date | null;
   isOnline: boolean;
   activeLog?: ActiveLogData[0];

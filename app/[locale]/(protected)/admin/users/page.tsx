@@ -13,7 +13,7 @@ async function getUsers(page: number, pageSize: number) {
   await requireAdmin();
   const [items, total] = await Promise.all([
     prisma.user.findMany({
-      include: { team: true },
+      include: { teams: { select: { id: true, name: true }, orderBy: { name: "asc" } } },
       orderBy: { email: "asc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -35,8 +35,20 @@ async function updateUser(formData: FormData) {
   await requireAdmin();
   const id = formData.get("id") as string;
   const role = formData.get("role") as UserRole;
-  const newTeamId = formData.get("teamId") as string | null;
+  const teamIds = formData.getAll("teamIds").map(String);
+  const birthdayRaw = formData.get("birthday") as string | null;
+  const admissionRaw = formData.get("admissionDate") as string | null;
   if (!id || !role) return;
+
+  // Detect whether the team set actually changed (to avoid unassigning stages
+  // when only role/dates are edited).
+  const current = await prisma.user.findUnique({
+    where: { id },
+    select: { teams: { select: { id: true } } },
+  });
+  const currentIds = new Set(current?.teams.map((tm) => tm.id) ?? []);
+  const teamsChanged =
+    currentIds.size !== teamIds.length || teamIds.some((tid) => !currentIds.has(tid));
 
   // ✅ VALIDATION: Check if user has active stages when changing teams
   const activeStages = await prisma.taskActiveStage.findMany({
@@ -48,7 +60,7 @@ async function updateUser(formData: FormData) {
   });
 
   // If changing team and has active stages, automatically unassign them
-  if (activeStages.length > 0) {
+  if (teamsChanged && activeStages.length > 0) {
     await prisma.taskActiveStage.updateMany({
       where: {
         assigneeId: id,
@@ -90,7 +102,9 @@ async function updateUser(formData: FormData) {
     where: { id },
     data: {
       role,
-      teamId: newTeamId || null,
+      teams: { set: teamIds.map((tid) => ({ id: tid })) },
+      birthday: birthdayRaw ? new Date(birthdayRaw) : null,
+      admissionDate: admissionRaw ? new Date(admissionRaw) : null,
     },
   });
 
@@ -165,13 +179,29 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                     {t(`roles.${user.role.toLowerCase()}`)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4">
                   <div className="text-sm text-muted-foreground">
-                    {user.team?.name || t("noTeam")}
+                    {user.teams.length > 0
+                      ? user.teams.map((tm) => tm.name).join(", ")
+                      : t("noTeam")}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <EditUserButton user={user} teams={teams} updateUser={updateUser} />
+                  <EditUserButton
+                    user={{
+                      id: user.id,
+                      name: user.name,
+                      email: user.email,
+                      role: user.role,
+                      teams: user.teams,
+                      birthday: user.birthday ? user.birthday.toISOString().slice(0, 10) : null,
+                      admissionDate: user.admissionDate
+                        ? user.admissionDate.toISOString().slice(0, 10)
+                        : null,
+                    }}
+                    teams={teams}
+                    updateUser={updateUser}
+                  />
                 </td>
               </tr>
             ))}

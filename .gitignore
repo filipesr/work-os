@@ -35,3 +35,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Planilha de equipe (contém dados sensíveis: senhas, documentos)
+docs/goon - EQUIPE.xlsx

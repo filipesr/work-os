@@ -12,7 +12,7 @@ import {
   hasRole,
   hasAnyRole,
   getUserRole,
-  getUserTeamId,
+  getUserTeamIds,
   requireAuth,
   requireRole,
   requireAnyRole,
@@ -73,21 +73,14 @@ describe("getUserRole", () => {
   });
 });
 
-describe("getUserTeamId", () => {
+describe("getUserTeamIds", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns the team ID", async () => {
-    mockAuth.mockResolvedValue({
-      user: { id: "1", teamId: "team-1" },
-    } as any);
-    expect(await getUserTeamId()).toBe("team-1");
-  });
-
-  it("returns null when not authenticated", async () => {
+  it("returns [] when not authenticated", async () => {
     mockAuth.mockResolvedValue(null as any);
-    expect(await getUserTeamId()).toBeNull();
+    expect(await getUserTeamIds()).toEqual([]);
   });
 });
 

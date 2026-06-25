@@ -51,7 +51,7 @@ export default async function CalendarPage({ searchParams }: PageProps) {
     prisma.team.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.project.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.user.findMany({
-      where: params.team ? { teamId: params.team } : undefined,
+      where: params.team ? { teams: { some: { id: params.team } } } : undefined,
       select: { id: true, name: true, email: true },
       orderBy: [{ name: "asc" }, { email: "asc" }],
     }),

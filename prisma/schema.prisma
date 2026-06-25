@@ -106,10 +106,11 @@ model User {
   sessions      Session[]
 
   // Our custom fields
-  role       UserRole  @default(MEMBER)
-  teamId     String?
-  team       Team?     @relation(fields: [teamId], references: [id], onUpdate: NoAction, onDelete: SetNull)
-  lastSeenAt DateTime? // Track last activity for online presence
+  role          UserRole  @default(MEMBER)
+  teams         Team[]    @relation("UserTeams")
+  birthday      DateTime? // Date of birth (for birthday calendar)
+  admissionDate DateTime? // Contract / admission date
+  lastSeenAt    DateTime? // Track last activity for online presence
 
   // Relations
   assignedTasks   Task[]            @relation("Assignee")
@@ -124,7 +125,7 @@ model User {
 model Team {
   id            String          @id @default(cuid())
   name          String          @unique
-  members       User[]
+  members       User[]          @relation("UserTeams")
   defaultStages TemplateStage[] // Stages this team is default for
 }
 

@@ -1,5 +1,6 @@
 import { auth as nextAuth, signIn, signOut } from "@/auth";
 import { UserRole } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
 /**
  * Get the current server-side session
@@ -40,10 +41,14 @@ export async function getUserRole(): Promise<UserRole | null> {
   return session.user.role || null;
 }
 
-export async function getUserTeamId(): Promise<string | null> {
+export async function getUserTeamIds(): Promise<string[]> {
   const session = await auth();
-  if (!session?.user) return null;
-  return session.user.teamId || null;
+  if (!session?.user?.id) return [];
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { teams: { select: { id: true } } },
+  });
+  return user?.teams.map((t) => t.id) ?? [];
 }
 
 export async function requireAuth() {

@@ -30,7 +30,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               name: true,
               email: true,
               image: true,
-              teamId: true,
             },
           },
           activeStages: {
@@ -66,11 +65,17 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     notFound();
   }
 
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { teams: { select: { id: true } } },
+  });
+  const currentUserTeamIds = currentUser?.teams.map((team) => team.id) ?? [];
+
   // Add computed properties for backward compatibility
   const project = {
     ...projectData,
     tasks: projectData.tasks.map((task) => {
-      const currentActiveStage = task.activeStages.find(as => as.status === "ACTIVE");
+      const currentActiveStage = task.activeStages.find((as) => as.status === "ACTIVE");
       return {
         ...task,
         currentStage: currentActiveStage ? currentActiveStage.stage : null,
@@ -145,9 +150,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     <div className="container mx-auto py-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">{project.name}</h1>
-        <p className="text-muted-foreground">
-          Cliente: {project.client.name}
-        </p>
+        <p className="text-muted-foreground">Cliente: {project.client.name}</p>
       </div>
 
       <KanbanBoard
@@ -155,7 +158,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         tasks={project.tasks}
         stages={allStages}
         currentUserId={session.user.id!}
-        currentUserTeamId={session.user.teamId}
+        currentUserTeamIds={currentUserTeamIds}
       />
     </div>
   );

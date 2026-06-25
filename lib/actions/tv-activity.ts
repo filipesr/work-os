@@ -71,7 +71,7 @@ export async function getTVOnlineUsers() {
         email: true,
         image: true,
         role: true,
-        team: {
+        teams: {
           select: {
             name: true,
           },
@@ -112,7 +112,7 @@ export async function getTVOfflineUsers() {
         email: true,
         image: true,
         role: true,
-        team: {
+        teams: {
           select: {
             name: true,
           },

@@ -18,10 +18,7 @@ async function getCurrentUser() {
  * Start working on a task.
  * This action is "intelligent" - it automatically stops any other task the user is currently working on.
  */
-export async function startWorkOnTask(
-  taskId: string,
-  currentStageId: string
-) {
+export async function startWorkOnTask(taskId: string, currentStageId: string) {
   const user = await requireMemberOrHigher();
   const userId = user.id as string;
 
@@ -75,10 +72,7 @@ export async function startWorkOnTask(
   } catch (error) {
     console.error("Error starting work on task:", error);
     return {
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to start work on task",
+      error: error instanceof Error ? error.message : "Failed to start work on task",
     };
   }
 }
@@ -154,8 +148,7 @@ export async function stopWorkOnTask(activeLogId: string, taskId: string, descri
   } catch (error) {
     console.error("Error stopping work on task:", error);
     return {
-      error:
-        error instanceof Error ? error.message : "Failed to stop work on task",
+      error: error instanceof Error ? error.message : "Failed to stop work on task",
     };
   }
 }
@@ -238,7 +231,7 @@ export async function getOnlineUsers() {
         email: true,
         image: true,
         role: true,
-        team: {
+        teams: {
           select: {
             name: true,
           },
@@ -290,7 +283,7 @@ export async function getOfflineUsers() {
         email: true,
         image: true,
         role: true,
-        team: {
+        teams: {
           select: {
             name: true,
           },

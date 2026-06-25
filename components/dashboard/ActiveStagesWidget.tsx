@@ -62,8 +62,7 @@ async function ActiveStageRow({
     task.dueDate &&
     !isOverdue &&
     new Date(task.dueDate).getTime() - Date.now() < 2 * 24 * 60 * 60 * 1000; // 2 days
-  const isNew =
-    Date.now() - new Date(task.createdAt).getTime() < 24 * 60 * 60 * 1000; // 24 hours
+  const isNew = Date.now() - new Date(task.createdAt).getTime() < 24 * 60 * 60 * 1000; // 24 hours
   const isBlocked = activeStage.status === "BLOCKED";
 
   // Priority styles
@@ -133,9 +132,7 @@ async function ActiveStageRow({
         </div>
       </td>
       <td className="px-4 py-3">
-        <span className="text-sm text-muted-foreground">
-          {task.project.name}
-        </span>
+        <span className="text-sm text-muted-foreground">{task.project.name}</span>
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
@@ -180,11 +177,7 @@ async function ActiveStageRow({
       </td>
       {showClaimButton && (
         <td className="px-4 py-3">
-          <ClaimActiveStageButton
-            taskId={task.id}
-            stageId={stage.id}
-            isBlocked={isBlocked}
-          />
+          <ClaimActiveStageButton taskId={task.id} stageId={stage.id} isBlocked={isBlocked} />
         </td>
       )}
       {showUnassignButton && (
@@ -192,11 +185,7 @@ async function ActiveStageRow({
           <UnassignActiveStageButton
             taskId={task.id}
             stageId={stage.id}
-            currentAssignee={
-              activeStage.assignee?.name ||
-              activeStage.assignee?.email ||
-              null
-            }
+            currentAssignee={activeStage.assignee?.name || activeStage.assignee?.email || null}
           />
         </td>
       )}
@@ -213,9 +202,7 @@ export async function MyActiveStagesWidget() {
     <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
       <div className="bg-primary/5 px-6 py-4 border-b-2 border-border flex justify-between items-start">
         <div>
-          <h2 className="text-xl font-bold text-foreground">
-            {t("myActiveStages.title")}
-          </h2>
+          <h2 className="text-xl font-bold text-foreground">{t("myActiveStages.title")}</h2>
           <p className="text-sm text-muted-foreground mt-1">
             {myActiveStages.length === 1
               ? t("myActiveStages.stageCount", { count: myActiveStages.length })
@@ -231,9 +218,7 @@ export async function MyActiveStagesWidget() {
 
       {myActiveStages.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-sm text-muted-foreground">
-            {t("emptyStates.noActiveStages")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("emptyStates.noActiveStages")}</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -280,16 +265,14 @@ export async function MyActiveStagesWidget() {
 }
 
 // Team Backlog Widget
-export async function TeamBacklogWidget({ teamId }: { teamId: string }) {
+export async function TeamBacklogWidget({ teamIds }: { teamIds: string[] }) {
   const t = await getTranslations("dashboard");
-  const teamBacklogStages = await getTeamBacklog(teamId);
+  const teamBacklogStages = await getTeamBacklog(teamIds);
 
   return (
     <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
       <div className="bg-primary/5 px-6 py-4 border-b-2 border-border">
-        <h2 className="text-xl font-bold text-foreground">
-          {t("teamBacklog.title")}
-        </h2>
+        <h2 className="text-xl font-bold text-foreground">{t("teamBacklog.title")}</h2>
         <p className="text-sm text-muted-foreground mt-1">
           {teamBacklogStages.length === 1
             ? t("teamBacklog.stageCount", { count: teamBacklogStages.length })
@@ -299,9 +282,7 @@ export async function TeamBacklogWidget({ teamId }: { teamId: string }) {
 
       {teamBacklogStages.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-sm text-muted-foreground">
-            {t("emptyStates.teamBacklogClean")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("emptyStates.teamBacklogClean")}</p>
         </div>
       ) : (
         <div className="overflow-x-auto">

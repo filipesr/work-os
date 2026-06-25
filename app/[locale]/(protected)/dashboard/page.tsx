@@ -43,12 +43,12 @@ export default async function DashboardPage() {
   // Resolve problema de sessão desatualizada quando admin adiciona usuário ao time
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { teamId: true },
+    select: { teams: { select: { id: true } } },
   });
-  const teamId = currentUser?.teamId;
+  const teamIds = currentUser?.teams.map((team) => team.id) ?? [];
 
   // Validação: usuário sem team atribuído
-  if (!teamId) {
+  if (teamIds.length === 0) {
     const tNoTeam = await getTranslations("dashboard.noTeam");
     return (
       <div className="container mx-auto py-6 px-4">
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
 
         {/* Widget 2: Team Backlog */}
         <Suspense fallback={<TableSkeleton rows={3} />}>
-          <TeamBacklogWidget teamId={teamId} />
+          <TeamBacklogWidget teamIds={teamIds} />
         </Suspense>
       </div>
     </div>
