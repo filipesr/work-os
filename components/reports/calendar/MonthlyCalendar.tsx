@@ -65,12 +65,8 @@ export function MonthlyCalendar({
           {t("legend.demands")}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm border border-pink-300 bg-pink-100" />
-          🎂 {t("legend.birthday")}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-sm border border-amber-300 bg-amber-100" />
-          🎉 {t("legend.workAnniversary")}
+          {t("legend.anniversaries")}
         </span>
       </div>
 
@@ -94,11 +90,21 @@ export function MonthlyCalendar({
           const shownClients = clients.slice(0, MAX_CLIENTS);
           const extraClients = clients.length - shownClients.length;
           const anniv = anniversariesByDay[day.iso];
+          // Combined birthday + company anniversary names (deduped), first name only.
+          const annivNames = anniv
+            ? [
+                ...new Set([
+                  ...anniv.birthdays.map((b) => b.name),
+                  ...anniv.workAnniversaries.map((w) => w.name),
+                ]),
+              ]
+            : [];
+          const annivFirstNames = annivNames.map((n) => n.split(/\s+/)[0]);
 
           return (
             <div
               key={day.iso}
-              className={`min-h-[112px] border-border p-1.5 ${
+              className={`flex min-h-[112px] flex-col border-border p-1.5 ${
                 index % 7 !== 6 ? "border-r" : ""
               } ${index < 35 ? "border-b" : ""} ${day.inMonth ? "bg-card" : "bg-muted/30"}`}
             >
@@ -142,40 +148,6 @@ export function MonthlyCalendar({
                 ))}
               </div>
 
-              {/* Anniversaries (birthdays + contract) */}
-              {anniv && (anniv.birthdays.length > 0 || anniv.workAnniversaries.length > 0) && (
-                <div className="mt-1 space-y-1">
-                  {anniv.birthdays.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setDetailIso(day.iso)}
-                      className="flex w-full items-center gap-1 rounded border border-pink-200 bg-pink-50 px-1.5 py-0.5 text-[11px] text-pink-700 hover:border-pink-400 transition-colors dark:border-pink-800/60 dark:bg-pink-950/40 dark:text-pink-200"
-                    >
-                      <span>🎂</span>
-                      <span className="truncate">
-                        {anniv.birthdays.length === 1
-                          ? anniv.birthdays[0].name
-                          : t("birthdaysCount", { count: anniv.birthdays.length })}
-                      </span>
-                    </button>
-                  )}
-                  {anniv.workAnniversaries.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setDetailIso(day.iso)}
-                      className="flex w-full items-center gap-1 rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-700 hover:border-amber-400 transition-colors dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200"
-                    >
-                      <span>🎉</span>
-                      <span className="truncate">
-                        {anniv.workAnniversaries.length === 1
-                          ? anniv.workAnniversaries[0].name
-                          : t("workAnnivCount", { count: anniv.workAnniversaries.length })}
-                      </span>
-                    </button>
-                  )}
-                </div>
-              )}
-
               {/* Client demands */}
               {shownClients.length > 0 && (
                 <div className="mt-1 space-y-1">
@@ -209,6 +181,18 @@ export function MonthlyCalendar({
                     </button>
                   )}
                 </div>
+              )}
+
+              {/* Anniversaries — discrete footer line (amber, first names, truncated) */}
+              {annivFirstNames.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setDetailIso(day.iso)}
+                  title={annivNames.join(", ")}
+                  className="-mx-1.5 -mb-1.5 mt-auto block truncate border-t border-border bg-amber-50/60 px-1.5 py-1 text-left text-[10px] text-amber-700 transition-colors hover:bg-amber-100/80 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50"
+                >
+                  {annivFirstNames.join(", ")}
+                </button>
               )}
             </div>
           );
