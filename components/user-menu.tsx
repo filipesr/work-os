@@ -108,6 +108,7 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
           <DropdownMenuSeparator />
           <DropdownMenuLabel>{tAdmin("nav.overview")}</DropdownMenuLabel>
           <DropdownMenuItem href="/admin">{t("nav.adminDashboard")}</DropdownMenuItem>
+          <DropdownMenuItem href="/dashboard">{t("nav.dashboard")}</DropdownMenuItem>
           <DropdownMenuItem href="/admin/clients">{tAdmin("nav.clients")}</DropdownMenuItem>
           <DropdownMenuItem href="/admin/tasks">{tAdmin("nav.tasks")}</DropdownMenuItem>
         </>

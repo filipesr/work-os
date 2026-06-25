@@ -8,15 +8,16 @@
     "signOut": "Sair",
     "taskFlow": "Apresentação",
     "help": "Central de Ajuda",
-    "calendarMonthly": "Eventos & Demandas",
+    "calendarMonthly": "Eventos",
+    "clients": "Clientes",
     "myAccount": "Minha Conta",
     "settings": "Configurações",
     "adminDashboard": "Admin Dashboard",
-    "productivity": "Produtividade",
+    "productivity": "Horas",
     "performance": "Gargalos",
     "liveActivity": "Atividade ao Vivo",
     "calendar": "Calendário",
-    "teamProductivity": "Produtividade por Equipe"
+    "teamProductivity": "Produtividade"
   },
   "buttons": {
     "save": "Salvar",

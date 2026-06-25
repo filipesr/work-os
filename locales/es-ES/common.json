@@ -8,15 +8,16 @@
     "signOut": "Cerrar Sesión",
     "taskFlow": "Presentación",
     "help": "Centro de Ayuda",
-    "calendarMonthly": "Eventos y Demandas",
+    "calendarMonthly": "Eventos",
+    "clients": "Clientes",
     "myAccount": "Mi Cuenta",
     "settings": "Configuración",
     "adminDashboard": "Panel de Administración",
-    "productivity": "Productividad",
+    "productivity": "Horas",
     "performance": "Cuellos de Botella",
     "liveActivity": "Actividad en Vivo",
     "calendar": "Calendario",
-    "teamProductivity": "Productividad por Equipo"
+    "teamProductivity": "Productividad"
   },
   "buttons": {
     "save": "Guardar",

@@ -42,13 +42,23 @@ export async function Navbar() {
               </Link>
             )}
 
-            {/* Tarefas: Para admin/manager vai para /admin/tasks, para outros vai para /dashboard */}
+            {/* Eventos & Demandas (calendário mensal): admin/manager */}
             {isAdminOrManager && (
               <Link
-                href="/admin/tasks"
+                href="/reports/calendar/monthly"
                 className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
               >
-                {t("tasks")}
+                {t("calendarMonthly")}
+              </Link>
+            )}
+
+            {/* Clientes: admin/manager */}
+            {isAdminOrManager && (
+              <Link
+                href="/admin/clients"
+                className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
+              >
+                {t("clients")}
               </Link>
             )}
           </div>
