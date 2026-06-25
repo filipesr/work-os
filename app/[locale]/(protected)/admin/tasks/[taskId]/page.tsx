@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getTaskById, getPreviousStages } from "@/lib/actions/task";
 import { AdvanceStageButton } from "@/components/tasks/AdvanceStageButton";
 import { RevertStageButton } from "@/components/tasks/RevertStageButton";
-import { UnassignTaskButton } from "@/components/tasks/UnassignTaskButton";
+import { UnassignActiveStageButton } from "@/components/tasks/UnassignActiveStageButton";
 import { CompleteTaskButton } from "@/components/tasks/CompleteTaskButton";
 import { ArtifactsList } from "@/components/tasks/ArtifactsList";
 import { getTranslations } from "next-intl/server";
@@ -132,10 +132,13 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                 <AdvanceStageButton taskId={task.id} currentStageId={task.currentStageId} />
                 <RevertStageButton taskId={task.id} previousStages={previousStages} />
                 <CompleteTaskButton taskId={task.id} taskStatus={task.status} />
-                <UnassignTaskButton
-                  taskId={task.id}
-                  currentAssignee={task.assignee?.name || task.assignee?.email || null}
-                />
+                {task.currentStageId && (
+                  <UnassignActiveStageButton
+                    taskId={task.id}
+                    stageId={task.currentStageId}
+                    currentAssignee={task.assignee?.name || task.assignee?.email || null}
+                  />
+                )}
               </div>
             </div>
 
