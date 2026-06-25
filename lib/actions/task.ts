@@ -986,6 +986,9 @@ export async function getMyActiveStages() {
       status: "ACTIVE",
     },
     include: {
+      assignee: {
+        select: { id: true, name: true, email: true },
+      },
       task: {
         include: {
           project: {
