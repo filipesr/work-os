@@ -243,6 +243,7 @@
       "totalTasks": "Total de Tareas",
       "tasksByStatus": "Tareas por Estado",
       "tasksTable": "Tareas",
+      "createTask": "+ Crear Tarea",
       "taskTitle": "Título",
       "taskStatus": "Estado",
       "taskPriority": "Prioridad",

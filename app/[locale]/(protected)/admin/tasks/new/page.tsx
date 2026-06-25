@@ -3,8 +3,13 @@ import { getProjectsForSelect, getTemplatesForSelect } from "@/lib/actions/task"
 import { CreateTaskForm } from "@/components/tasks/CreateTaskForm";
 import { getTranslations } from "next-intl/server";
 
-export default async function NewTaskPage() {
+export default async function NewTaskPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ projectId?: string }>;
+}) {
   const t = await getTranslations("admin.tasks.new");
+  const { projectId } = await searchParams;
 
   const [projects, templates] = await Promise.all([
     getProjectsForSelect(),
@@ -33,14 +38,12 @@ export default async function NewTaskPage() {
           {t("backToTasks")}
         </Link>
         <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t("subtitle")}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {/* Form */}
       <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-        <CreateTaskForm projects={projects} templates={templates} />
+        <CreateTaskForm projects={projects} templates={templates} defaultProjectId={projectId} />
       </div>
 
       {/* Help Text */}

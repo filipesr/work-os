@@ -29,12 +29,17 @@ interface Template {
 interface CreateTaskFormProps {
   projects: Project[];
   templates: Template[];
+  defaultProjectId?: string;
 }
 
 // Define types for stage preview
 type StagePreviewItem = Awaited<ReturnType<typeof getTemplateStagePreview>>[0];
 
-export function CreateTaskForm({ projects: initialProjects, templates }: CreateTaskFormProps) {
+export function CreateTaskForm({
+  projects: initialProjects,
+  templates,
+  defaultProjectId,
+}: CreateTaskFormProps) {
   const t = useTranslations("tasks");
   const tPriority = useTranslations("tasks.priority");
   const router = useRouter();
@@ -124,6 +129,7 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
           id="projectId"
           name="projectId"
           required
+          defaultValue={defaultProjectId}
           className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
         >
           <option value="">{t("create.projectPlaceholder")}</option>
@@ -174,22 +180,38 @@ export function CreateTaskForm({ projects: initialProjects, templates }: CreateT
 
         {/* Dynamic Stage Preview */}
         <div className="mt-4 p-4 bg-muted/30 rounded-lg border-2 border-border">
-          <h4 className="text-sm font-semibold text-foreground mb-3">{t("create.stagePreviewTitle")}</h4>
+          <h4 className="text-sm font-semibold text-foreground mb-3">
+            {t("create.stagePreviewTitle")}
+          </h4>
 
           {isPreviewLoading && (
             <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               {t("create.stagePreviewLoading")}
             </div>
           )}
 
           {!isPreviewLoading && stagePreview.length === 0 && (
-            <div className="text-sm text-muted-foreground">
-              {t("create.stagePreviewEmpty")}
-            </div>
+            <div className="text-sm text-muted-foreground">{t("create.stagePreviewEmpty")}</div>
           )}
 
           {!isPreviewLoading && stagePreview.length > 0 && (

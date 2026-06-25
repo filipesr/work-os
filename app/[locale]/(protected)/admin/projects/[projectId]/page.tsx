@@ -153,7 +153,15 @@ export default async function ProjectDetailPage({
 
       {/* Tasks Table */}
       <div className="mt-6">
-        <h2 className="text-xl font-bold text-foreground mb-4">{t("tasksTable")}</h2>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <h2 className="text-xl font-bold text-foreground">{t("tasksTable")}</h2>
+          <Link
+            href={`/admin/tasks/new?projectId=${project.id}`}
+            className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            {t("createTask")}
+          </Link>
+        </div>
         <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
