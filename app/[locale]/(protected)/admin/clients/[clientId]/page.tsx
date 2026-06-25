@@ -56,6 +56,36 @@ async function deleteClient(formData: FormData) {
   revalidatePath("/admin/clients");
 }
 
+async function createClientProject(formData: FormData) {
+  "use server";
+  await requireManagerOrAdmin();
+  const clientId = formData.get("clientId") as string;
+  const name = formData.get("name") as string;
+  if (!clientId || !name?.trim()) return;
+
+  await prisma.project.create({
+    data: { name: name.trim(), clientId },
+  });
+
+  revalidatePath(`/admin/clients/${clientId}`);
+}
+
+async function setProjectStatus(formData: FormData) {
+  "use server";
+  await requireManagerOrAdmin();
+  const id = formData.get("id") as string;
+  const clientId = formData.get("clientId") as string;
+  const status = formData.get("status") as string;
+  if (!id || (status !== "ACTIVE" && status !== "INACTIVE")) return;
+
+  await prisma.project.update({
+    where: { id },
+    data: { status: status as "ACTIVE" | "INACTIVE" },
+  });
+
+  revalidatePath(`/admin/clients/${clientId}`);
+}
+
 export default async function ClientDetailPage({
   params,
 }: {
@@ -121,12 +151,37 @@ export default async function ClientDetailPage({
       {/* Projects Table */}
       <div className="mt-6">
         <h2 className="text-xl font-bold text-foreground mb-4">{t("projectsTable")}</h2>
+
+        {/* Create project */}
+        <form
+          action={createClientProject}
+          className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center"
+        >
+          <input type="hidden" name="clientId" value={client.id} />
+          <input
+            type="text"
+            name="name"
+            required
+            placeholder={t("projectNamePlaceholder")}
+            className="h-11 flex-1 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all"
+          />
+          <button
+            type="submit"
+            className="h-11 rounded-lg bg-primary px-6 font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
+          >
+            {t("createProjectButton")}
+          </button>
+        </form>
+
         <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
                   {t("projectName")}
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
+                  {t("statusColumn")}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
                   {t("taskCount")}
@@ -137,32 +192,66 @@ export default async function ClientDetailPage({
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
-              {client.projects.map((project) => (
-                <tr key={project.id} className="hover:bg-accent transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Link
-                      href={`/admin/projects/${project.id}`}
-                      className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-                    >
-                      {project.name}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-muted-foreground">{project._count.tasks}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <Link
-                      href={`/projects/${project.id}`}
-                      className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-                    >
-                      {t("viewKanban")}
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+              {client.projects.map((project) => {
+                const isActive = project.status === "ACTIVE";
+                return (
+                  <tr
+                    key={project.id}
+                    className={`hover:bg-accent transition-colors ${isActive ? "" : "opacity-60"}`}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Link
+                        href={`/admin/projects/${project.id}`}
+                        className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                      >
+                        {project.name}
+                      </Link>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2.5 py-0.5 text-xs font-bold rounded-full border ${
+                          isActive
+                            ? "bg-green-100 text-green-800 border-green-200"
+                            : "bg-muted text-muted-foreground border-border"
+                        }`}
+                      >
+                        {isActive ? t("statusActive") : t("statusInactive")}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-muted-foreground">{project._count.tasks}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="inline-flex items-center gap-4">
+                        <Link
+                          href={`/projects/${project.id}`}
+                          className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                        >
+                          {t("viewKanban")}
+                        </Link>
+                        <form action={setProjectStatus}>
+                          <input type="hidden" name="id" value={project.id} />
+                          <input type="hidden" name="clientId" value={client.id} />
+                          <input
+                            type="hidden"
+                            name="status"
+                            value={isActive ? "INACTIVE" : "ACTIVE"}
+                          />
+                          <button
+                            type="submit"
+                            className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {isActive ? t("deactivate") : t("activate")}
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {client.projects.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-muted-foreground">
                     {t("noProjects")}
                   </td>
                 </tr>

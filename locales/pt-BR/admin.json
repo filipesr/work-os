@@ -196,7 +196,15 @@
       "taskCount": "Tarefas",
       "projectActions": "Ações",
       "viewKanban": "Ver Kanban",
-      "noProjects": "Nenhum projeto associado a este cliente."
+      "noProjects": "Nenhum projeto associado a este cliente.",
+      "createProjectTitle": "Adicionar projeto",
+      "projectNamePlaceholder": "Nome do projeto",
+      "createProjectButton": "Criar",
+      "statusColumn": "Status",
+      "statusActive": "Ativo",
+      "statusInactive": "Inativo",
+      "deactivate": "Desativar",
+      "activate": "Ativar"
     }
   },
   "projects": {

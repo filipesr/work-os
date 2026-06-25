@@ -209,8 +209,9 @@ export async function getProjectsForSelect(): Promise<
 > {
   await getCurrentUser();
 
-  // Return all projects - access control can be added later if needed
+  // Only active projects can receive new demands.
   return prisma.project.findMany({
+    where: { status: "ACTIVE" },
     select: {
       id: true,
       name: true,

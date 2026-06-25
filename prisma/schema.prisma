@@ -54,6 +54,11 @@ enum ActiveStageStatus {
   COMPLETED // Work finished on this stage
 }
 
+enum ProjectStatus {
+  ACTIVE   // Project is active and can receive new demands
+  INACTIVE // Project is deactivated (archived)
+}
+
 // --- 1. Auth & Team Models ---
 
 model Account {
@@ -135,11 +140,12 @@ model Client {
 }
 
 model Project {
-  id          String @id @default(cuid())
+  id          String        @id @default(cuid())
   name        String
   description String?
+  status      ProjectStatus @default(ACTIVE)
   clientId    String
-  client      Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client      Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   tasks       Task[]
 }
 

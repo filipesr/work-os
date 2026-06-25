@@ -7,10 +7,10 @@ export default function ProjectNotFound() {
         <h2 className="text-2xl font-bold text-foreground">404</h2>
         <p className="text-sm text-muted-foreground">Projeto não encontrado.</p>
         <Link
-          href="/admin/projects"
+          href="/admin/clients"
           className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
         >
-          Voltar para Projetos
+          Voltar para Clientes
         </Link>
       </div>
     </div>

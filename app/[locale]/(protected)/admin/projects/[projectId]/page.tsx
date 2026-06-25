@@ -106,7 +106,7 @@ export default async function ProjectDetailPage({
   return (
     <div className="container mx-auto p-8">
       <Link
-        href="/admin/projects"
+        href={`/admin/clients/${project.clientId}`}
         className="inline-flex items-center text-primary hover:text-primary/80 mb-6 font-semibold transition-colors"
       >
         <svg

@@ -177,26 +177,32 @@
         },
         {
           "title": "Passo 2 — Criar um projeto",
+          "intro": "Os projetos são gerenciados dentro do cliente — não há mais uma tela separada de projetos.",
           "steps": [
             {
               "n": "1",
-              "title": "Abra Administração → Projetos",
-              "body": ["Na rota /admin/projects, preencha os campos do projeto:"],
-              "bullets": [
-                "Nome do projeto.",
-                "Selecionar Cliente — vincula o projeto a um cliente existente."
+              "title": "Abra o cliente e adicione o projeto",
+              "body": [
+                "Em Administração → Clientes, clique no cliente. No detalhe dele, use o formulário “Adicionar projeto” (basta o nome) para criar um projeto vinculado àquele cliente."
               ],
               "image": "hierarquia-03-criar-projeto.png",
-              "caption": "Formulário de projeto."
+              "caption": "Adicionar projeto no detalhe do cliente."
             },
             {
               "n": "2",
+              "title": "Ative ou desative um projeto",
+              "body": [
+                "Cada projeto tem um status (Ativo/Inativo). Desative um projeto para que ele pare de aparecer na criação de demandas — sem precisar excluí-lo. Reative quando quiser."
+              ],
+              "image": "hierarquia-04-status-projeto.png",
+              "caption": "Status do projeto (ativar/desativar)."
+            },
+            {
+              "n": "3",
               "title": "Atalho: criar na hora",
               "body": [
-                "No formulário de demanda você também pode criar um projeto novo sem sair da tela, pelo botão “Novo Projeto”."
-              ],
-              "image": "hierarquia-04-quick-projeto.png",
-              "caption": "Criação rápida de projeto."
+                "Na criação de demandas (tela de tarefas ou calendário de eventos), você também pode criar um projeto na hora — pelo botão “Novo Projeto”, ao lado do cliente — sem sair da tela."
+              ]
             }
           ]
         },

@@ -177,26 +177,32 @@
         },
         {
           "title": "Paso 2 — Crear un proyecto",
+          "intro": "Los proyectos se gestionan dentro del cliente — ya no hay una pantalla separada de proyectos.",
           "steps": [
             {
               "n": "1",
-              "title": "Abre Administración → Proyectos",
-              "body": ["En la ruta /admin/projects, completa los campos del proyecto:"],
-              "bullets": [
-                "Nombre del proyecto.",
-                "Seleccionar Cliente — vincula el proyecto a un cliente existente."
+              "title": "Abre el cliente y agrega el proyecto",
+              "body": [
+                "En Administración → Clientes, haz clic en el cliente. En su detalle, usa el formulario “Agregar proyecto” (solo el nombre) para crear un proyecto vinculado a ese cliente."
               ],
               "image": "hierarquia-03-criar-projeto.png",
-              "caption": "Formulario de proyecto."
+              "caption": "Agregar proyecto en el detalle del cliente."
             },
             {
               "n": "2",
+              "title": "Activa o desactiva un proyecto",
+              "body": [
+                "Cada proyecto tiene un estado (Activo/Inactivo). Desactiva un proyecto para que deje de aparecer en la creación de demandas — sin tener que eliminarlo. Reactívalo cuando quieras."
+              ],
+              "image": "hierarquia-04-status-projeto.png",
+              "caption": "Estado del proyecto (activar/desactivar)."
+            },
+            {
+              "n": "3",
               "title": "Atajo: crear al instante",
               "body": [
-                "En el formulario de demanda también puedes crear un proyecto nuevo sin salir de la pantalla, con el botón “Nuevo Proyecto”."
-              ],
-              "image": "hierarquia-04-quick-projeto.png",
-              "caption": "Creación rápida de proyecto."
+                "En la creación de demandas (pantalla de tareas o calendario de eventos), también puedes crear un proyecto al instante — con el botón “Nuevo Proyecto”, junto al cliente — sin salir de la pantalla."
+              ]
             }
           ]
         },

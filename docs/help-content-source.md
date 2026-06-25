@@ -19,6 +19,7 @@ WorkflowTemplate 1──N TemplateStage ──N StageDependency (define pré-req
 TemplateStage N──1 Team (time padrão da etapa)
 
 Client 1──N Project 1──N Task (Demanda)
+Project.status: ACTIVE | INACTIVE   (INACTIVE = não recebe novas demandas)
 Task 1──N TaskActiveStage (etapas ativas; many-to-many Task↔Stage → habilita paralelismo)
 TaskActiveStage.status: ACTIVE | BLOCKED | COMPLETED
 Task.status: BACKLOG | IN_PROGRESS | PAUSED | COMPLETED | CANCELLED
@@ -61,18 +62,20 @@ Arquivo: `prisma/schema.prisma`.
 
 ## Guia 2 — Cliente → Projeto → Demanda
 
-**Rotas:** `/admin/clients`, `/admin/projects`, `/admin/tasks/new` (sob `[locale]/(protected)/admin/`).
-**i18n:** `admin.json` (`admin.clients`, `admin.projects`, `admin.tasks.new`), `tasks.json` (`tasks.create`, `tasks.priority`), `quickCreate.json`.
+**Rotas:** `/admin/clients` (+ `/admin/clients/[clientId]`), `/admin/tasks/new` (sob `[locale]/(protected)/admin/`).
+A tela de lista de projetos (`/admin/projects`) foi **removida** — a gestão de projetos vive no detalhe do cliente. O detalhe de um projeto continua em `/admin/projects/[projectId]`.
+**i18n:** `admin.json` (`admin.clients`, `admin.clients.detail`, `admin.tasks.new`), `tasks.json` (`tasks.create`, `tasks.priority`), `quickCreate.json`.
 
 ### Cliente (`/admin/clients`)
 
 Form inline: `Nome do cliente *` → `Criar`. Detalhe permite Descrição, Email, Telefone.
 Quick-create (`QuickCreateClient`): Nome\*, Email, Telefone, Descrição.
 
-### Projeto (`/admin/projects`)
+### Projeto (no detalhe do cliente — `/admin/clients/[clientId]`)
 
-Form inline: `Nome do projeto *` + `Selecionar Cliente *` → `Criar`.
-Quick-create (`QuickCreateProject`): Cliente*, Nome*, Descrição. Pode ser criado direto do form de tarefa.
+Form `Adicionar projeto` (`Nome` → `Criar`, cliente implícito). Cada projeto tem `status` (`ProjectStatus: ACTIVE | INACTIVE`) com botão Ativar/Desativar.
+Projetos **INACTIVE** não aparecem na criação de demandas (`getProjectsForSelect` filtra `status: ACTIVE`).
+Quick-create (`QuickCreateProject` / botão "Novo Projeto" por cliente no modal de criação em lote): Cliente*, Nome*. Pode ser criado direto do form de tarefa ou do calendário de eventos.
 
 ### Demanda / Tarefa (`/admin/tasks/new`, componente `CreateTaskForm`)
 

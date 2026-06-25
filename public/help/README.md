@@ -19,8 +19,8 @@ Enquanto o arquivo não existir, a página mostra um placeholder com o nome espe
 
 - `hierarquia-01-clientes.png` — Lista de clientes
 - `hierarquia-02-criar-cliente.png` — Formulário de cliente
-- `hierarquia-03-criar-projeto.png` — Formulário de projeto
-- `hierarquia-04-quick-projeto.png` — Criação rápida de projeto
+- `hierarquia-03-criar-projeto.png` — Adicionar projeto no detalhe do cliente
+- `hierarquia-04-status-projeto.png` — Status do projeto (ativar/desativar)
 - `hierarquia-05-criar-demanda.png` — Formulário "Criar Nova Tarefa"
 - `hierarquia-06-demanda-criada.png` — Demanda criada com a 1ª etapa ativa
 

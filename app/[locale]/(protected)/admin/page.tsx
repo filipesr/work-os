@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma"
-import { TaskStatus } from "@prisma/client"
-import Link from "next/link"
-import { getTranslations } from "next-intl/server"
+import { prisma } from "@/lib/prisma";
+import { TaskStatus } from "@prisma/client";
+import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 // StatCard Component
 function StatCard({ title, value }: { title: string; value: number }) {
@@ -11,16 +11,22 @@ function StatCard({ title, value }: { title: string; value: number }) {
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
           {title}
         </h3>
-        <p className="text-4xl font-bold text-primary">
-          {value.toLocaleString()}
-        </p>
+        <p className="text-4xl font-bold text-primary">{value.toLocaleString()}</p>
       </div>
     </div>
-  )
+  );
 }
 
 // Navigation Card Component
-function NavCard({ href, title, description }: { href: string; title: string; description: string }) {
+function NavCard({
+  href,
+  title,
+  description,
+}: {
+  href: string;
+  title: string;
+  description: string;
+}) {
   return (
     <Link
       href={href}
@@ -29,39 +35,31 @@ function NavCard({ href, title, description }: { href: string; title: string; de
       <h3 className="text-lg font-bold text-foreground mb-2">{title}</h3>
       <p className="text-sm text-muted-foreground">{description}</p>
     </Link>
-  )
+  );
 }
 
 export default async function AdminDashboardPage() {
   const t = await getTranslations("admin.dashboard");
 
   // Fetch system statistics in parallel
-  const [
-    userCount,
-    clientCount,
-    projectCount,
-    templateCount,
-    activeTaskCount
-  ] = await Promise.all([
+  const [userCount, clientCount, projectCount, templateCount, activeTaskCount] = await Promise.all([
     prisma.user.count(),
     prisma.client.count(),
     prisma.project.count(),
     prisma.workflowTemplate.count(),
     prisma.task.count({
       where: {
-        status: { in: [TaskStatus.BACKLOG, TaskStatus.IN_PROGRESS, TaskStatus.PAUSED] }
-      }
-    })
-  ])
+        status: { in: [TaskStatus.BACKLOG, TaskStatus.IN_PROGRESS, TaskStatus.PAUSED] },
+      },
+    }),
+  ]);
 
   return (
     <div>
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t("subtitle")}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {/* Statistics Grid */}
@@ -76,9 +74,7 @@ export default async function AdminDashboardPage() {
       {/* Navigation Hub */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-4">{t("nav.title")}</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          {t("nav.subtitle")}
-        </p>
+        <p className="text-sm text-muted-foreground mb-6">{t("nav.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -98,11 +94,6 @@ export default async function AdminDashboardPage() {
           description={t("nav.clients.description")}
         />
         <NavCard
-          href="/admin/projects"
-          title={t("nav.projects.title")}
-          description={t("nav.projects.description")}
-        />
-        <NavCard
           href="/admin/templates"
           title={t("nav.templates.title")}
           description={t("nav.templates.description")}
@@ -114,5 +105,5 @@ export default async function AdminDashboardPage() {
         />
       </div>
     </div>
-  )
+  );
 }

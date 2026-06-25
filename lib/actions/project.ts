@@ -42,7 +42,7 @@ export async function createProject(data: CreateProjectData) {
       },
     });
 
-    revalidatePath("/admin/projects");
+    revalidatePath("/admin/clients");
     revalidatePath("/admin/tasks/new");
     revalidatePath("/projects");
 

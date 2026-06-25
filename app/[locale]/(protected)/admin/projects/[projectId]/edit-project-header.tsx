@@ -170,7 +170,7 @@ export function EditProjectHeader({
               <form
                 action={async (formData: FormData) => {
                   await deleteProject(formData);
-                  router.push("/admin/projects");
+                  router.push(`/admin/clients/${project.clientId}`);
                 }}
               >
                 <input type="hidden" name="id" value={project.id} />

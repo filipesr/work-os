@@ -33,7 +33,6 @@ export async function createClient(data: CreateClientData) {
     });
 
     revalidatePath("/admin/clients");
-    revalidatePath("/admin/projects");
     revalidatePath("/admin/tasks/new");
 
     return { client };
