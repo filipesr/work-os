@@ -49,6 +49,9 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
               template: true,
             },
           },
+          assignee: {
+            select: { id: true, name: true, email: true, image: true, teamId: true },
+          },
         },
         orderBy: {
           stage: { order: "asc" },
@@ -130,9 +133,13 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
   }
 
   // Add computed properties for backward compatibility
-  const currentActiveStage = taskData.activeStages.find(as => as.status === "ACTIVE");
+  const currentActiveStage = taskData.activeStages.find((as) => as.status === "ACTIVE");
+  const currentStageAssignee =
+    currentActiveStage?.assignee?.name || currentActiveStage?.assignee?.email || null;
   const task = {
     ...taskData,
+    // Reflect the current stage's assignee as the task responsible (matches getTaskById)
+    assignee: currentActiveStage?.assignee ?? taskData.assignee,
     currentStage: currentActiveStage ? currentActiveStage.stage : null,
     currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
   };
@@ -175,6 +182,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
         activeLog={activeLog}
         allTemplateStages={allTemplateStages}
         canPerformActions={canPerformActions}
+        currentStageAssignee={currentStageAssignee}
       />
     </div>
   );

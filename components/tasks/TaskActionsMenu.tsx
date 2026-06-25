@@ -15,6 +15,7 @@ import { AdvanceStageButton } from "./AdvanceStageButton";
 import { RevertStageButton } from "./RevertStageButton";
 import { CompleteTaskButton } from "./CompleteTaskButton";
 import { UnassignTaskButton } from "./UnassignTaskButton";
+import { UnassignActiveStageButton } from "./UnassignActiveStageButton";
 import { LogTimeButton } from "./LogTimeButton";
 import { useTranslations } from "next-intl";
 
@@ -23,6 +24,8 @@ interface TaskActionsMenuProps {
   currentStageId: string | null;
   taskStatus: string;
   currentAssignee: string | null;
+  /** Assignee of the current active stage (for stage-level "Liberar Etapa"). */
+  currentStageAssignee?: string | null;
   previousStages: TemplateStage[];
 }
 
@@ -31,12 +34,14 @@ export function TaskActionsMenu({
   currentStageId,
   taskStatus,
   currentAssignee,
+  currentStageAssignee,
   previousStages,
 }: TaskActionsMenuProps) {
   const [showAdvance, setShowAdvance] = useState(false);
   const [showRevert, setShowRevert] = useState(false);
   const [showComplete, setShowComplete] = useState(false);
   const [showUnassign, setShowUnassign] = useState(false);
+  const [showUnassignStage, setShowUnassignStage] = useState(false);
   const [showLogTime, setShowLogTime] = useState(false);
   const t = useTranslations("tasks.actions");
 
@@ -60,6 +65,12 @@ export function TaskActionsMenu({
                 <DropdownMenuItem onClick={() => setShowRevert(true)}>
                   <Undo2 className="h-4 w-4 mr-2" />
                   {t("revertStage")}
+                </DropdownMenuItem>
+              )}
+              {currentStageAssignee && (
+                <DropdownMenuItem onClick={() => setShowUnassignStage(true)}>
+                  <UserMinus className="h-4 w-4 mr-2" />
+                  {t("unassignStage")}
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
@@ -110,11 +121,16 @@ export function TaskActionsMenu({
           onOpenChange={setShowUnassign}
         />
       )}
-      <LogTimeButton
-        taskId={taskId}
-        open={showLogTime}
-        onOpenChange={setShowLogTime}
-      />
+      {currentStageId && currentStageAssignee && (
+        <UnassignActiveStageButton
+          taskId={taskId}
+          stageId={currentStageId}
+          currentAssignee={currentStageAssignee}
+          open={showUnassignStage}
+          onOpenChange={setShowUnassignStage}
+        />
+      )}
+      <LogTimeButton taskId={taskId} open={showLogTime} onOpenChange={setShowLogTime} />
     </>
   );
 }

@@ -148,6 +148,7 @@
     "completeTask": "Concluir Tarefa",
     "reopenTask": "Reabrir Tarefa",
     "unassignTask": "Liberar Tarefa",
+    "unassignStage": "Liberar Etapa",
     "logTime": "Registrar Tempo"
   },
   "create": {

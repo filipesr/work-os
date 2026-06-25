@@ -3,13 +3,35 @@
 import { useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Task, User, Project, Client, TemplateStage, Team, TaskComment, TaskArtifact, TaskStageLog, TimeLog, UserRole } from "@prisma/client";
+import {
+  Task,
+  User,
+  Project,
+  Client,
+  TemplateStage,
+  Team,
+  TaskComment,
+  TaskArtifact,
+  TaskStageLog,
+  TimeLog,
+  UserRole,
+} from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, User as UserIcon, AlertCircle, MessageSquare, Paperclip, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  User as UserIcon,
+  AlertCircle,
+  MessageSquare,
+  Paperclip,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+} from "lucide-react";
 import { CommentsList } from "./CommentsList";
 import { ArtifactsList } from "./ArtifactsList";
 import { AddCommentForm } from "./AddCommentForm";
@@ -29,7 +51,9 @@ import { useTranslations, useLocale } from "next-intl";
 type TaskWithRelations = Task & {
   project: Project & { client: Client };
   assignee: Pick<User, "id" | "name" | "email" | "image" | "teamId"> | null;
-  currentStage: (TemplateStage & { defaultTeam: Team | null; template: { id: string; name: string } }) | null;
+  currentStage:
+    | (TemplateStage & { defaultTeam: Team | null; template: { id: string; name: string } })
+    | null;
   currentStageId: string | null;
   comments: (TaskComment & { user: Pick<User, "id" | "name" | "email" | "image"> })[];
   artifacts: (TaskArtifact & { user: Pick<User, "id" | "name" | "email" | "image"> })[];
@@ -61,6 +85,7 @@ interface TaskDetailViewProps {
   activeLog: ActiveLog | null;
   allTemplateStages: (TemplateStage & { defaultTeam: { id: string; name: string } | null })[];
   canPerformActions: boolean;
+  currentStageAssignee?: string | null;
 }
 
 export function TaskDetailView({
@@ -72,10 +97,12 @@ export function TaskDetailView({
   activeLog,
   allTemplateStages,
   canPerformActions,
+  currentStageAssignee,
 }: TaskDetailViewProps) {
   const [showArtifactForm, setShowArtifactForm] = useState(false);
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
-  const canViewTimeLogs = currentUserRole === UserRole.ADMIN || currentUserRole === UserRole.MANAGER;
+  const canViewTimeLogs =
+    currentUserRole === UserRole.ADMIN || currentUserRole === UserRole.MANAGER;
   const totalHours = task.timeLogs.reduce((sum, log) => sum + log.hoursSpent, 0);
 
   const t = useTranslations("tasks");
@@ -180,9 +207,7 @@ export function TaskDetailView({
                         {task.assignee.name?.charAt(0).toUpperCase() || "?"}
                       </AvatarFallback>
                     </Avatar>
-                    <p className="text-sm truncate">
-                      {task.assignee.name || task.assignee.email}
-                    </p>
+                    <p className="text-sm truncate">{task.assignee.name || task.assignee.email}</p>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -196,7 +221,9 @@ export function TaskDetailView({
                   {tDetail("dueDate")}
                 </p>
                 {task.dueDate ? (
-                  <div className={`flex items-center gap-2 text-sm ${isOverdue ? "text-destructive" : ""}`}>
+                  <div
+                    className={`flex items-center gap-2 text-sm ${isOverdue ? "text-destructive" : ""}`}
+                  >
                     {isOverdue ? (
                       <AlertCircle className="h-4 w-4" />
                     ) : (
@@ -222,9 +249,7 @@ export function TaskDetailView({
                   <p className="text-xs font-medium text-muted-foreground mb-2">
                     {tDetail("description")}
                   </p>
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                    {task.description}
-                  </p>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{task.description}</p>
                 </div>
               </>
             )}
@@ -243,10 +268,7 @@ export function TaskDetailView({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <CommentsList
-              comments={task.comments}
-              currentUserId={currentUserId}
-            />
+            <CommentsList comments={task.comments} currentUserId={currentUserId} />
 
             <Separator />
 
@@ -281,6 +303,7 @@ export function TaskDetailView({
                 currentStageId={task.currentStageId}
                 taskStatus={task.status}
                 currentAssignee={task.assignee?.name || task.assignee?.email || null}
+                currentStageAssignee={currentStageAssignee}
                 previousStages={previousStages}
               />
             </CardContent>
