@@ -329,6 +329,33 @@
         "PAUSED": "Pausada",
         "COMPLETED": "Completada",
         "CANCELLED": "Cancelada"
+      },
+      "filters": {
+        "quick": {
+          "pending": "Pendientes",
+          "overdue": "Atrasadas",
+          "completed": "Completadas",
+          "week": "De esta semana"
+        },
+        "status": { "label": "Estado", "all": "Todos los estados" },
+        "priority": { "label": "Prioridad", "all": "Todas las prioridades" },
+        "assignment": {
+          "label": "Asignación",
+          "all": "Todas",
+          "assigned": "Asignadas",
+          "unassigned": "Sin asignación"
+        },
+        "client": { "label": "Cliente", "all": "Todos los clientes" },
+        "team": { "label": "Equipo", "all": "Todos los equipos" },
+        "sort": {
+          "label": "Ordenar por",
+          "recent": "Más recientes",
+          "dueDate": "Fecha de vencimiento",
+          "priority": "Prioridad"
+        },
+        "clearAll": "Limpiar filtros",
+        "noResults": "No se encontraron tareas",
+        "noResultsMessage": "Ajusta o limpia los filtros para ver más resultados."
       }
     },
     "detail": {

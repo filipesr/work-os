@@ -8,9 +8,35 @@ interface PaginationProps {
   totalPages: number;
   total: number;
   pageSize: number;
+  /** Current query params to preserve across page navigation (e.g. filters). */
+  params?: Record<string, string | string[] | undefined>;
 }
 
-export async function Pagination({ basePath, page, totalPages, total, pageSize }: PaginationProps) {
+function buildHref(
+  basePath: string,
+  params: PaginationProps["params"],
+  targetPage: number
+): string {
+  const sp = new URLSearchParams();
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      if (key === "page" || value === undefined) continue;
+      const single = Array.isArray(value) ? value[0] : value;
+      if (single) sp.set(key, single);
+    }
+  }
+  sp.set("page", String(targetPage));
+  return `${basePath}?${sp.toString()}`;
+}
+
+export async function Pagination({
+  basePath,
+  page,
+  totalPages,
+  total,
+  pageSize,
+  params,
+}: PaginationProps) {
   const t = await getTranslations("common.pagination");
 
   if (total === 0 || totalPages <= 1) return null;
@@ -18,8 +44,8 @@ export async function Pagination({ basePath, page, totalPages, total, pageSize }
   const from = (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
 
-  const prevHref = `${basePath}?page=${Math.max(1, page - 1)}`;
-  const nextHref = `${basePath}?page=${Math.min(totalPages, page + 1)}`;
+  const prevHref = buildHref(basePath, params, Math.max(1, page - 1));
+  const nextHref = buildHref(basePath, params, Math.min(totalPages, page + 1));
   const hasPrev = page > 1;
   const hasNext = page < totalPages;
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
+import { Prisma, type ActiveStageStatus } from "@prisma/client";
 import { auth } from "@/auth";
 import { requireMemberOrHigher, getSessionUser } from "@/lib/permissions";
 import { createTaskSchema } from "@/lib/validations";
@@ -270,18 +271,117 @@ export async function getTaskById(taskId: string) {
   };
 }
 
+export type TaskListFilters = {
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  assignment?: "assigned" | "unassigned";
+  clientId?: string;
+  teamId?: string;
+  quick?: "pending" | "overdue" | "completed" | "week";
+};
+
+export type TaskListSort = "recent" | "dueDate" | "priority";
+
 /**
- * Get all tasks (with optional filtering)
+ * Returns the Monday→Sunday range (local time) that contains `now`.
  */
-export async function getTasks(options?: { page?: number; pageSize?: number }) {
+function getWeekRange(now: Date): { start: Date; end: Date } {
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  const diffToMonday = (start.getDay() + 6) % 7; // 0 = Monday
+  start.setDate(start.getDate() - diffToMonday);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+const OPEN_STAGE_STATUSES: ActiveStageStatus[] = ["ACTIVE", "BLOCKED"];
+
+/**
+ * Teams list for filter dropdowns. Manager+ can read (mirrors getClients).
+ */
+export async function getTeamsForFilter() {
+  await requireMemberOrHigher();
+  return prisma.team.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+}
+
+/**
+ * Get all tasks (with optional filtering and sorting)
+ */
+export async function getTasks(options?: {
+  page?: number;
+  pageSize?: number;
+  filters?: TaskListFilters;
+  sort?: TaskListSort;
+}) {
   await getCurrentUser();
 
   const { DEFAULT_PAGE_SIZE, paginate } = await import("@/lib/pagination");
   const page = options?.page && options.page > 0 ? options.page : 1;
   const pageSize = options?.pageSize ?? DEFAULT_PAGE_SIZE;
+  const filters = options?.filters ?? {};
+  const sort = options?.sort ?? "recent";
+
+  const and: Prisma.TaskWhereInput[] = [];
+
+  if (filters.status) and.push({ status: filters.status });
+  if (filters.priority) and.push({ priority: filters.priority });
+  if (filters.clientId) and.push({ project: { clientId: filters.clientId } });
+  if (filters.teamId) {
+    and.push({
+      activeStages: {
+        some: { status: { in: OPEN_STAGE_STATUSES }, stage: { defaultTeamId: filters.teamId } },
+      },
+    });
+  }
+
+  if (filters.assignment === "assigned") {
+    and.push({
+      OR: [
+        { assigneeId: { not: null } },
+        {
+          activeStages: {
+            some: { status: { in: OPEN_STAGE_STATUSES }, assigneeId: { not: null } },
+          },
+        },
+      ],
+    });
+  } else if (filters.assignment === "unassigned") {
+    and.push({
+      assigneeId: null,
+      activeStages: { none: { status: { in: OPEN_STAGE_STATUSES }, assigneeId: { not: null } } },
+    });
+  }
+
+  if (filters.quick === "pending") {
+    and.push({ status: { in: ["BACKLOG", "IN_PROGRESS", "PAUSED"] } });
+  } else if (filters.quick === "completed") {
+    and.push({ status: "COMPLETED" });
+  } else if (filters.quick === "overdue") {
+    and.push({ dueDate: { lt: new Date() }, status: { notIn: ["COMPLETED", "CANCELLED"] } });
+  } else if (filters.quick === "week") {
+    const { start, end } = getWeekRange(new Date());
+    and.push({ dueDate: { gte: start, lte: end } });
+  }
+
+  const where: Prisma.TaskWhereInput = and.length ? { AND: and } : {};
+
+  let orderBy: Prisma.TaskOrderByWithRelationInput[];
+  if (sort === "dueDate") {
+    orderBy = [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }];
+  } else if (sort === "priority") {
+    orderBy = [{ priority: "desc" }, { createdAt: "desc" }];
+  } else {
+    orderBy = [{ createdAt: "desc" }];
+  }
 
   const [tasks, total] = await Promise.all([
     prisma.task.findMany({
+      where,
       include: {
         project: {
           include: { client: true },
@@ -302,11 +402,11 @@ export async function getTasks(options?: { page?: number; pageSize?: number }) {
           orderBy: { stage: { order: "asc" } },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    prisma.task.count(),
+    prisma.task.count({ where }),
   ]);
 
   const items = tasks.map((task) => {
