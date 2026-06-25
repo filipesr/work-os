@@ -302,7 +302,6 @@ export function TaskDetailView({
                 taskId={task.id}
                 currentStageId={task.currentStageId}
                 taskStatus={task.status}
-                currentAssignee={task.assignee?.name || task.assignee?.email || null}
                 currentStageAssignee={currentStageAssignee}
                 previousStages={previousStages}
               />

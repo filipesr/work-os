@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { AdvanceStageButton } from "./AdvanceStageButton";
 import { RevertStageButton } from "./RevertStageButton";
 import { CompleteTaskButton } from "./CompleteTaskButton";
-import { UnassignTaskButton } from "./UnassignTaskButton";
 import { UnassignActiveStageButton } from "./UnassignActiveStageButton";
 import { LogTimeButton } from "./LogTimeButton";
 import { useTranslations } from "next-intl";
@@ -23,7 +22,6 @@ interface TaskActionsMenuProps {
   taskId: string;
   currentStageId: string | null;
   taskStatus: string;
-  currentAssignee: string | null;
   /** Assignee of the current active stage (for stage-level "Liberar Etapa"). */
   currentStageAssignee?: string | null;
   previousStages: TemplateStage[];
@@ -33,14 +31,12 @@ export function TaskActionsMenu({
   taskId,
   currentStageId,
   taskStatus,
-  currentAssignee,
   currentStageAssignee,
   previousStages,
 }: TaskActionsMenuProps) {
   const [showAdvance, setShowAdvance] = useState(false);
   const [showRevert, setShowRevert] = useState(false);
   const [showComplete, setShowComplete] = useState(false);
-  const [showUnassign, setShowUnassign] = useState(false);
   const [showUnassignStage, setShowUnassignStage] = useState(false);
   const [showLogTime, setShowLogTime] = useState(false);
   const t = useTranslations("tasks.actions");
@@ -80,12 +76,6 @@ export function TaskActionsMenu({
             <XCircle className="h-4 w-4 mr-2" />
             {taskStatus === "COMPLETED" ? t("reopenTask") : t("completeTask")}
           </DropdownMenuItem>
-          {currentAssignee && (
-            <DropdownMenuItem onClick={() => setShowUnassign(true)}>
-              <UserMinus className="h-4 w-4 mr-2" />
-              {t("unassignTask")}
-            </DropdownMenuItem>
-          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setShowLogTime(true)}>
             <Clock className="h-4 w-4 mr-2" />
@@ -113,14 +103,6 @@ export function TaskActionsMenu({
         open={showComplete}
         onOpenChange={setShowComplete}
       />
-      {currentAssignee && (
-        <UnassignTaskButton
-          taskId={taskId}
-          currentAssignee={currentAssignee}
-          open={showUnassign}
-          onOpenChange={setShowUnassign}
-        />
-      )}
       {currentStageId && currentStageAssignee && (
         <UnassignActiveStageButton
           taskId={taskId}
