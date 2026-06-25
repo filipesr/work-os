@@ -1413,11 +1413,22 @@ export async function getPreviousStages(taskId: string) {
   await getCurrentUser();
 
   try {
-    // Get all unique stages this task has been through
+    // The current position is defined by the lowest-order active/blocked stage.
+    const activeStages = await prisma.taskActiveStage.findMany({
+      where: { taskId, status: { in: ["ACTIVE", "BLOCKED"] } },
+      include: { stage: { select: { order: true } } },
+    });
+
+    // No active stage (e.g. completed task) → nothing to revert to.
+    if (activeStages.length === 0) return [];
+
+    const currentMinOrder = Math.min(...activeStages.map((as) => as.stage.order));
+
+    // Stages this task has actually visited (closed logs).
     const stageLogs = await prisma.taskStageLog.findMany({
       where: {
         taskId: taskId,
-        exitedAt: { not: null }, // Only completed stages
+        exitedAt: { not: null },
       },
       include: {
         stage: true,
@@ -1425,10 +1436,12 @@ export async function getPreviousStages(taskId: string) {
       orderBy: { exitedAt: "desc" },
     });
 
-    // Get unique stages (in case task went through same stage multiple times)
+    // Unique stages, but only genuine PREVIOUS ones (order strictly below the
+    // current position). This prevents "reverting forward" and infinite reverts
+    // at the first stage.
     const uniqueStages = Array.from(
       new Map(stageLogs.map((log) => [log.stage.id, log.stage])).values()
-    );
+    ).filter((stage) => stage.order < currentMinOrder);
 
     return uniqueStages;
   } catch (error) {
@@ -1542,6 +1555,13 @@ export async function revertTaskStage(taskId: string, revertToStageId: string, c
 
     if (currentActiveStages.length === 0) {
       return { error: "Não há etapas ativas para reverter" };
+    }
+
+    // Guard: only allow reverting to a genuine PREVIOUS stage (lower order than
+    // the current position). Prevents reverting forward / infinite reverts.
+    const currentMinOrder = Math.min(...currentActiveStages.map((as) => as.stage.order));
+    if (targetStage.order >= currentMinOrder) {
+      return { error: "Só é possível reverter para uma etapa anterior." };
     }
 
     // 3. Check permissions - must be admin, manager, or assignee of at least one active stage
