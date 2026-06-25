@@ -64,6 +64,14 @@ export function MonthlyCalendar({
           <span className="h-3 w-3 rounded-sm border border-blue-300 bg-blue-100" />
           {t("legend.demands")}
         </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded-sm border border-pink-300 bg-pink-100" />
+          🎂 {t("legend.birthday")}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded-sm border border-amber-300 bg-amber-100" />
+          🎉 {t("legend.workAnniversary")}
+        </span>
       </div>
 
       {/* Weekday header */}

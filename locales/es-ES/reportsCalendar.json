@@ -64,7 +64,9 @@
     "legend": {
       "holiday": "Feriado",
       "commercial": "Fecha conmemorativa",
-      "demands": "Cliente con demandas"
+      "demands": "Cliente con demandas",
+      "birthday": "Cumpleaños",
+      "workAnniversary": "Aniversario de empresa"
     },
     "moreClients": "+{count} cliente(s)",
     "birthdaysCount": "{count} cumpleaños",
