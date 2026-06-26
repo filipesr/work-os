@@ -8,7 +8,7 @@ vi.mock("@/lib/permissions", () => ({
   requireMemberOrHigher: vi.fn(),
 }));
 
-import { isValidStageAssignee, parseStageAssignments } from "@/lib/actions/stage-assignment";
+import { isValidStageAssignee, parseStageAssignments } from "@/lib/stage-assignment-helpers";
 
 const stageWithTeam = {
   id: "s1",

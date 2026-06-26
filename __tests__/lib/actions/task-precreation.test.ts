@@ -8,7 +8,7 @@ vi.mock("@/lib/permissions", () => ({
   requireMemberOrHigher: vi.fn(),
 }));
 
-import { createTaskStages } from "@/lib/actions/stage-assignment";
+import { createTaskStages } from "@/lib/stage-assignment-helpers";
 
 function makeTx(stages: any[]) {
   return {

@@ -11,7 +11,7 @@ import {
   createTaskStages,
   parseStageAssignments,
   isValidStageAssignee,
-} from "@/lib/actions/stage-assignment";
+} from "@/lib/stage-assignment-helpers";
 import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
 // Re-export types for backward compatibility
