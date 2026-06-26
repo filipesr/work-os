@@ -18,18 +18,22 @@ function makeTx(stages: any[]) {
   } as any;
 }
 
+// Reverse-wired template (mirrors the real "LP" bug): the lowest-order stage
+// HAS a dependency, while a LATER stage has none. The lowest-order stage must
+// still be the one that starts ACTIVE — order is the source of truth, not deps.
+// `tx.templateStage.findMany` returns rows already sorted by order asc.
 const stages = [
   {
     id: "s1",
     order: 1,
-    dependencies: [],
+    dependencies: [{ id: "d1" }],
     defaultTeamId: "t1",
     defaultTeam: { members: [{ id: "u1" }] },
   },
   {
     id: "s2",
     order: 2,
-    dependencies: [{ id: "d1" }],
+    dependencies: [],
     defaultTeamId: "t1",
     defaultTeam: { members: [{ id: "u1" }] },
   },
@@ -38,7 +42,7 @@ const stages = [
 describe("createTaskStages", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("cria a etapa sem dependência como ACTIVE e a dependente como INACTIVE", async () => {
+  it("inicia a etapa de menor ordem como ACTIVE mesmo que uma posterior não tenha dependência", async () => {
     const tx = makeTx(stages);
     await createTaskStages(tx, { taskId: "task1", templateId: "tmpl1", userId: "creator" });
 
@@ -49,7 +53,7 @@ describe("createTaskStages", () => {
     ]);
   });
 
-  it("loga apenas as etapas ACTIVE iniciais", async () => {
+  it("loga apenas a etapa ACTIVE inicial (menor ordem)", async () => {
     const tx = makeTx(stages);
     await createTaskStages(tx, { taskId: "task1", templateId: "tmpl1", userId: "creator" });
     expect(tx.taskStageLog.create).toHaveBeenCalledTimes(1);

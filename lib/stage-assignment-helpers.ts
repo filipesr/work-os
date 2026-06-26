@@ -33,9 +33,12 @@ export function parseStageAssignments(formData: FormData): Record<string, string
 }
 
 /** Pre-creates ALL template stages for a task as TaskActiveStage rows.
- * Stages with no dependencies start ACTIVE; the rest start INACTIVE.
+ * The lowest-order stage starts ACTIVE (the workflow entry point, matching the
+ * legacy createTask behaviour); the rest start INACTIVE. We key off `order`
+ * rather than "no dependencies" because some templates wire their dependency
+ * graph independently of order — `order` is the source of truth for the start.
  * Assignments are applied only when valid (assignee ∈ stage.defaultTeam).
- * A TaskStageLog is opened only for the initial ACTIVE stages.
+ * A TaskStageLog is opened only for the initial ACTIVE stage.
  * Runs inside a caller-provided transaction; not a Server Action. */
 export async function createTaskStages(
   tx: Prisma.TransactionClient,
@@ -49,7 +52,6 @@ export async function createTaskStages(
     select: {
       id: true,
       defaultTeamId: true,
-      dependencies: { select: { id: true } },
       defaultTeam: { select: { members: { select: { id: true } } } },
     },
   });
@@ -58,8 +60,11 @@ export async function createTaskStages(
     throw new Error("Template is misconfigured; no stages found.");
   }
 
+  // Lowest order (first after the asc sort) is the entry point.
+  const startStageId = stages[0].id;
+
   for (const stage of stages) {
-    const isStart = stage.dependencies.length === 0;
+    const isStart = stage.id === startStageId;
     const requested = assignments[stage.id];
     const assigneeId = requested && isValidStageAssignee(stage, requested) ? requested : null;
 
