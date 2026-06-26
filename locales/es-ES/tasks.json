@@ -50,7 +50,8 @@
     "advanceModal": {
       "loading": "Cargando próximas etapas...",
       "activatedTitle": "Etapas que se activarán:",
-      "blockedTitle": "Etapas que quedarán bloqueadas:"
+      "blockedTitle": "Etapas que quedarán bloqueadas:",
+      "orderLabel": "orden {order}"
     }
   },
   "comments": {

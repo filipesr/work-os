@@ -15,12 +15,6 @@ import toast from "react-hot-toast";
 type Member = { id: string; name: string | null; email: string | null };
 type MembersByStage = Record<string, Member[]>;
 
-interface Stage {
-  id: string;
-  name: string;
-  order: number;
-}
-
 interface AdvanceStageButtonProps {
   taskId: string;
   currentStageId: string | null;
@@ -47,10 +41,6 @@ export function AdvanceStageButton({
   };
 
   const [isPending, startTransition] = useTransition();
-  const [previewResult, setPreviewResult] = useState<{
-    activated: Stage[];
-    blocked: Stage[];
-  } | null>(null);
 
   // Pre-confirm preview state
   const [previewData, setPreviewData] = useState<{
@@ -142,12 +132,6 @@ export function AdvanceStageButton({
       if (result?.error) {
         toast.error(result.error);
       } else if (result?.success) {
-        // Store result for preview
-        setPreviewResult({
-          activated: result.activated || [],
-          blocked: result.blocked || [],
-        });
-
         // Show success toast with summary
         const activatedCount = result.activated?.length || 0;
         const blockedCount = result.blocked?.length || 0;
@@ -270,7 +254,7 @@ export function AdvanceStageButton({
                           className="flex items-center justify-between gap-2 text-xs text-green-700"
                         >
                           <span>
-                            • {stage.name} (ordem {stage.order})
+                            • {stage.name} ({t("advanceModal.orderLabel", { order: stage.order })})
                           </span>
                           <StageAssigneeSelect
                             stageId={stage.id}
@@ -297,7 +281,7 @@ export function AdvanceStageButton({
                           className="flex items-center justify-between gap-2 text-xs text-yellow-700"
                         >
                           <span>
-                            • {stage.name} (ordem {stage.order})
+                            • {stage.name} ({t("advanceModal.orderLabel", { order: stage.order })})
                           </span>
                           <StageAssigneeSelect
                             stageId={stage.id}
@@ -306,42 +290,6 @@ export function AdvanceStageButton({
                             value={assignments[stage.id] ?? ""}
                             onChange={(userId) => handleAssignmentChange(stage.id, userId)}
                           />
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Show post-confirm preview if available (legacy — currently unreachable
-                because modal closes before re-render, kept for future use) */}
-            {previewResult && !previewData && (
-              <div className="mb-6 space-y-3">
-                {previewResult.activated.length > 0 && (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm font-semibold text-green-800 mb-2">
-                      ✓ Etapas que serão ativadas:
-                    </p>
-                    <ul className="text-xs text-green-700 space-y-1">
-                      {previewResult.activated.map((stage: Stage) => (
-                        <li key={stage.id}>
-                          • {stage.name} (ordem {stage.order})
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {previewResult.blocked.length > 0 && (
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm font-semibold text-yellow-800 mb-2">
-                      🔒 Etapas que serão bloqueadas:
-                    </p>
-                    <ul className="text-xs text-yellow-700 space-y-1">
-                      {previewResult.blocked.map((stage: Stage) => (
-                        <li key={stage.id}>
-                          • {stage.name} (ordem {stage.order})
                         </li>
                       ))}
                     </ul>
