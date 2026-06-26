@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { requireAnyRole } from "@/lib/auth";
-import { UserRole } from "@prisma/client";
+import { Prisma, UserRole } from "@prisma/client";
 import { formatISODate } from "@/lib/dates";
 
 // ========== Productivity Report (TimeLog Aggregations) ==========
@@ -49,7 +49,7 @@ export async function getHoursByUser(filters: ProductivityFilters = {}) {
   // Require MANAGER or ADMIN role
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: any = {};
+  const where: Prisma.TimeLogWhereInput = {};
 
   if (filters.startDate || filters.endDate) {
     where.logDate = {};
@@ -83,7 +83,7 @@ export async function getHoursByUser(filters: ProductivityFilters = {}) {
   });
 
   // Group by user
-  const grouped = timeLogs.reduce((acc: any, log) => {
+  const grouped = timeLogs.reduce((acc: Record<string, HoursByUser>, log) => {
     const userId = log.userId;
     if (!acc[userId]) {
       acc[userId] = {
@@ -106,7 +106,7 @@ export async function getHoursByUser(filters: ProductivityFilters = {}) {
 export async function getHoursByProject(filters: ProductivityFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: any = {};
+  const where: Prisma.TimeLogWhereInput = {};
 
   if (filters.startDate || filters.endDate) {
     where.logDate = {};
@@ -142,7 +142,7 @@ export async function getHoursByProject(filters: ProductivityFilters = {}) {
   });
 
   // Group by project
-  const grouped = timeLogs.reduce((acc: any, log) => {
+  const grouped = timeLogs.reduce((acc: Record<string, HoursByProject>, log) => {
     const projectId = log.task.projectId;
     if (!acc[projectId]) {
       acc[projectId] = {
@@ -165,7 +165,7 @@ export async function getHoursByProject(filters: ProductivityFilters = {}) {
 export async function getHoursByClient(filters: ProductivityFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: any = {};
+  const where: Prisma.TimeLogWhereInput = {};
 
   if (filters.startDate || filters.endDate) {
     where.logDate = {};
@@ -205,7 +205,7 @@ export async function getHoursByClient(filters: ProductivityFilters = {}) {
   });
 
   // Group by client
-  const grouped = timeLogs.reduce((acc: any, log) => {
+  const grouped = timeLogs.reduce((acc: Record<string, HoursByClient>, log) => {
     const clientId = log.task.project.clientId;
     if (!acc[clientId]) {
       acc[clientId] = {
@@ -227,7 +227,7 @@ export async function getHoursByClient(filters: ProductivityFilters = {}) {
 export async function getHoursByStage(filters: ProductivityFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: any = {};
+  const where: Prisma.TimeLogWhereInput = {};
 
   if (filters.startDate || filters.endDate) {
     where.logDate = {};
@@ -262,7 +262,7 @@ export async function getHoursByStage(filters: ProductivityFilters = {}) {
   });
 
   // Group by stage
-  const grouped = timeLogs.reduce((acc: any, log) => {
+  const grouped = timeLogs.reduce((acc: Record<string, HoursByStage>, log) => {
     if (!log.stage) return acc;
 
     const stageId = log.stage.id;
@@ -321,7 +321,7 @@ export interface LeadTimeMetrics {
 export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: any = {
+  const where: Prisma.TaskStageLogWhereInput = {
     exitedAt: { not: null }, // Only completed stages
   };
 
@@ -359,7 +359,16 @@ export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
   });
 
   // Calculate duration for each log and group by stage
-  const stageData: any = {};
+  const stageData: Record<
+    string,
+    {
+      stageId: string;
+      stageName: string;
+      templateName: string;
+      totalDurationHours: number;
+      count: number;
+    }
+  > = {};
 
   stageLogs.forEach((log) => {
     if (!log.exitedAt) return;
@@ -383,7 +392,7 @@ export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
   });
 
   // Calculate averages
-  const results: AverageTimePerStage[] = Object.values(stageData).map((data: any) => ({
+  const results: AverageTimePerStage[] = Object.values(stageData).map((data) => ({
     stageId: data.stageId,
     stageName: data.stageName,
     templateName: data.templateName,
@@ -403,7 +412,7 @@ export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
 export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: any = {
+  const where: Prisma.TaskStageLogWhereInput = {
     exitedAt: { not: null },
     status: { not: null }, // Only logs with status set
   };
@@ -436,7 +445,16 @@ export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
   });
 
   // Group by stage and count completed vs reverted
-  const stageData: any = {};
+  const stageData: Record<
+    string,
+    {
+      stageId: string;
+      stageName: string;
+      templateName: string;
+      completed: number;
+      reverted: number;
+    }
+  > = {};
 
   stageLogs.forEach((log) => {
     const stageId = log.stageId;
@@ -458,7 +476,7 @@ export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
   });
 
   // Calculate rework rate
-  const results: ReworkRateByStage[] = Object.values(stageData).map((data: any) => {
+  const results: ReworkRateByStage[] = Object.values(stageData).map((data) => {
     const total = data.completed + data.reverted;
     return {
       stageId: data.stageId,
@@ -480,7 +498,7 @@ export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
 export async function getLeadTimeMetrics(filters: PerformanceFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: any = {
+  const where: Prisma.TaskWhereInput = {
     completedAt: { not: null }, // Only completed tasks
   };
 

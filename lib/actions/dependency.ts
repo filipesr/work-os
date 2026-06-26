@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
+import { stageDependenciesSchema } from "@/lib/validations";
 
 // ========== StageDependency Actions ==========
 
@@ -17,6 +18,16 @@ export async function updateStageDependencies(
 ) {
   await requireAdmin();
 
+  const parsed = stageDependenciesSchema.safeParse({
+    stageId,
+    templateId,
+    newDependsOnStageIds,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
   try {
     // Get current dependencies
     const currentDependencies = await prisma.stageDependency.findMany({
@@ -29,9 +40,7 @@ export async function updateStageDependencies(
     );
 
     // Calculate what to add and what to remove
-    const toAdd = newDependsOnStageIds.filter(
-      (id: string) => !currentDependencyIds.includes(id)
-    );
+    const toAdd = newDependsOnStageIds.filter((id: string) => !currentDependencyIds.includes(id));
     const toRemove = currentDependencyIds.filter(
       (id: string) => !newDependsOnStageIds.includes(id)
     );
@@ -68,10 +77,7 @@ export async function updateStageDependencies(
  * Get all possible dependency stages for a given stage
  * (excludes the stage itself)
  */
-export async function getAvailableDependencyStages(
-  stageId: string,
-  templateId: string
-) {
+export async function getAvailableDependencyStages(stageId: string, templateId: string) {
   await requireAdmin();
 
   return prisma.templateStage.findMany({

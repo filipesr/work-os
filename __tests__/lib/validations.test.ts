@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { createTaskSchema, createClientSchema, createProjectSchema } from "@/lib/validations";
+import {
+  createTaskSchema,
+  createClientSchema,
+  createProjectSchema,
+  workflowTemplateSchema,
+  templateStageSchema,
+  stageDependenciesSchema,
+} from "@/lib/validations";
 
 describe("createTaskSchema", () => {
   it("accepts valid task data", () => {
@@ -134,6 +141,84 @@ describe("createProjectSchema", () => {
     const result = createProjectSchema.safeParse({
       name: "Project",
       clientId: "",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("workflowTemplateSchema", () => {
+  it("accepts valid data and defaults description", () => {
+    const result = workflowTemplateSchema.safeParse({ name: "Onboarding" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.description).toBe("");
+    }
+  });
+
+  it("rejects empty name", () => {
+    const result = workflowTemplateSchema.safeParse({ name: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing name", () => {
+    const result = workflowTemplateSchema.safeParse({ description: "x" });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("templateStageSchema", () => {
+  it("accepts valid data and coerces order from string", () => {
+    const result = templateStageSchema.safeParse({
+      name: "Design",
+      order: "2",
+      defaultTeamId: "team-1",
+      dependencies: ["stage-a", "stage-b"],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.order).toBe(2);
+    }
+  });
+
+  it("defaults dependencies to an empty array", () => {
+    const result = templateStageSchema.safeParse({ name: "QC", order: 0 });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.dependencies).toEqual([]);
+    }
+  });
+
+  it("rejects empty name", () => {
+    const result = templateStageSchema.safeParse({ name: "", order: 1 });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-numeric order", () => {
+    const result = templateStageSchema.safeParse({ name: "Design", order: "abc" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a missing order", () => {
+    const result = templateStageSchema.safeParse({ name: "Design" });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("stageDependenciesSchema", () => {
+  it("accepts valid ids and an empty dependency list", () => {
+    const result = stageDependenciesSchema.safeParse({
+      stageId: "stage-1",
+      templateId: "tmpl-1",
+      newDependsOnStageIds: [],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an empty stageId", () => {
+    const result = stageDependenciesSchema.safeParse({
+      stageId: "",
+      templateId: "tmpl-1",
+      newDependsOnStageIds: [],
     });
     expect(result.success).toBe(false);
   });

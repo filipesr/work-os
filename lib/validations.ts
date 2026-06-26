@@ -21,3 +21,23 @@ export const createProjectSchema = z.object({
   description: z.string().max(2000).optional(),
   clientId: z.string().min(1, "Cliente é obrigatório"),
 });
+
+export const workflowTemplateSchema = z.object({
+  name: z.string().min(1, "Template name is required").max(200),
+  description: z.string().max(2000).optional().default(""),
+});
+
+export const templateStageSchema = z.object({
+  name: z.string().min(1, "Stage name is required").max(200),
+  order: z.coerce
+    .number({ error: "Valid order number is required" })
+    .int("Valid order number is required"),
+  defaultTeamId: z.string().optional(),
+  dependencies: z.array(z.string()).optional().default([]),
+});
+
+export const stageDependenciesSchema = z.object({
+  stageId: z.string().min(1, "Stage is required"),
+  templateId: z.string().min(1, "Template is required"),
+  newDependsOnStageIds: z.array(z.string()),
+});

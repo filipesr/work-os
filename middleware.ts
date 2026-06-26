@@ -1,15 +1,13 @@
 import createMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { locales, defaultLocale } from "./lib/i18n";
+import { isProtectedPath } from "./lib/routes";
 
 const intlMiddleware = createMiddleware({
   locales,
   defaultLocale,
   localePrefix: "as-needed",
 });
-
-// Protected route patterns (without locale prefix)
-const protectedPaths = ["/dashboard", "/tasks", "/admin", "/reports", "/account"];
 
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -20,12 +18,7 @@ export default function middleware(request: NextRequest) {
     pathname
   );
 
-  // Check if it's a protected route
-  const isProtectedRoute = protectedPaths.some((path) =>
-    pathnameWithoutLocale.startsWith(path)
-  );
-
-  if (isProtectedRoute) {
+  if (isProtectedPath(pathnameWithoutLocale)) {
     // Check for NextAuth session cookie (database sessions)
     const sessionCookie =
       request.cookies.get("authjs.session-token") ||
@@ -42,7 +35,5 @@ export default function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!api|_next|_vercel|.*\\..*).*)",
-  ],
+  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
 };

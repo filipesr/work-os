@@ -4,23 +4,28 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
+import { workflowTemplateSchema } from "@/lib/validations";
 
 // ========== WorkflowTemplate Actions ==========
 
 export async function createWorkflowTemplate(formData: FormData) {
   await requireAdmin();
 
-  const name = formData.get("name") as string;
-  const description = formData.get("description") as string;
+  const parsed = workflowTemplateSchema.safeParse({
+    name: formData.get("name") ?? "",
+    description: formData.get("description") ?? undefined,
+  });
 
-  if (!name) {
-    throw new Error("Template name is required");
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Invalid input");
   }
+
+  const { name, description } = parsed.data;
 
   const template = await prisma.workflowTemplate.create({
     data: {
       name,
-      description: description || "",
+      description,
     },
   });
 
@@ -28,25 +33,26 @@ export async function createWorkflowTemplate(formData: FormData) {
   redirect(`/admin/templates/${template.id}`);
 }
 
-export async function updateWorkflowTemplate(
-  templateId: string,
-  formData: FormData
-) {
+export async function updateWorkflowTemplate(templateId: string, formData: FormData) {
   await requireAdmin();
 
-  const name = formData.get("name") as string;
-  const description = formData.get("description") as string;
+  const parsed = workflowTemplateSchema.safeParse({
+    name: formData.get("name") ?? "",
+    description: formData.get("description") ?? undefined,
+  });
 
-  if (!name) {
-    return { error: "Template name is required" };
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
+
+  const { name, description } = parsed.data;
 
   try {
     await prisma.workflowTemplate.update({
       where: { id: templateId },
       data: {
         name,
-        description: description || "",
+        description,
       },
     });
 
