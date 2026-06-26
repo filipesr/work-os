@@ -390,6 +390,13 @@
       "noCurrentStage": "Nenhuma etapa atual atribuída",
       "template": "Template:",
       "team": "Equipe:",
+      "allStages": "Todas as etapas",
+      "stageStatus": {
+        "ACTIVE": "Ativa",
+        "INACTIVE": "Pendente",
+        "BLOCKED": "Bloqueada",
+        "COMPLETED": "Concluída"
+      },
       "stageHistory": "Histórico de Etapas",
       "noStageHistory": "Ainda não há histórico de etapas",
       "enteredBy": "Iniciado por",

@@ -296,6 +296,20 @@ export async function getTaskById(taskId: string) {
 
   if (!task) return null;
 
+  // Full stage pipeline (every stage, all statuses incl. INACTIVE) so the
+  // detail page can show each stage's status and its responsible — including
+  // people pre-assigned to upcoming stages at creation time.
+  const stagePipeline = await prisma.taskActiveStage.findMany({
+    where: { taskId },
+    include: {
+      stage: {
+        select: { id: true, name: true, order: true, defaultTeam: { select: { name: true } } },
+      },
+      assignee: { select: { id: true, name: true, email: true } },
+    },
+    orderBy: { stage: { order: "asc" } },
+  });
+
   // Add computed properties for backward compatibility
   const currentActiveStage = task.activeStages.find((as) => as.status === "ACTIVE");
 
@@ -305,6 +319,7 @@ export async function getTaskById(taskId: string) {
     currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
     // Override assignee with the assignee from the active stage
     assignee: currentActiveStage?.assignee || task.assignee,
+    stagePipeline,
   };
 }
 

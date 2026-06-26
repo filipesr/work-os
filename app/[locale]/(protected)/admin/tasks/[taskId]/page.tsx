@@ -168,6 +168,58 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
             )}
           </div>
 
+          {/* All stages pipeline (status + responsible per stage) */}
+          <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-6">
+            <h2 className="text-xl font-bold text-foreground mb-4">{t("allStages")}</h2>
+            <div className="space-y-2">
+              {task.stagePipeline.map((ps) => {
+                const responsible = ps.assignee?.name || ps.assignee?.email || null;
+                const statusClass =
+                  ps.status === "ACTIVE"
+                    ? "bg-primary/10 text-primary border-primary/20"
+                    : ps.status === "COMPLETED"
+                      ? "bg-green-100 text-green-800 border-green-200"
+                      : ps.status === "BLOCKED"
+                        ? "bg-orange-100 text-orange-800 border-orange-200"
+                        : "bg-muted text-muted-foreground border-border";
+                return (
+                  <div
+                    key={ps.id}
+                    className="flex items-center gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2"
+                  >
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-foreground">
+                      {ps.stage.order}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {ps.stage.name}
+                      </p>
+                      {ps.stage.defaultTeam && (
+                        <p className="truncate text-xs text-muted-foreground">
+                          {ps.stage.defaultTeam.name}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <span
+                        className={`inline-block rounded-full border px-2 py-0.5 text-xs font-bold ${statusClass}`}
+                      >
+                        {t(`stageStatus.${ps.status}`)}
+                      </span>
+                      <p className="mt-0.5 text-xs">
+                        {responsible ? (
+                          <span className="font-medium text-foreground">{responsible}</span>
+                        ) : (
+                          <span className="text-muted-foreground">{t("unassigned")}</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Stage History */}
           <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-6">
             <h2 className="text-xl font-bold text-foreground mb-4">{t("stageHistory")}</h2>
