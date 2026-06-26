@@ -12,7 +12,7 @@ type Member = { id: string; name: string | null; email: string | null };
  * **Controlled mode** (Task 10 — advance modal): provide both `value` and
  *   `onChange`. The `name` attribute is omitted; state is managed by the parent.
  *
- * Renders disabled when the stage has no team (nothing to assign to).
+ * Renders a "no team" text span when the stage has no team (nothing to assign to).
  */
 export function StageAssigneeSelect({
   stageId,

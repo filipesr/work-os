@@ -14,6 +14,8 @@ export type PreviewStage = {
   order: number;
   defaultTeamId: string | null;
   defaultTeam: { name: string } | null;
+  /** Responsible already assigned to this (pre-created) stage, if any. */
+  assigneeId: string | null;
 };
 
 /**
@@ -52,7 +54,7 @@ export async function previewNextStages(
     // Skip stages already active or completed (no-regress guard)
     const existing = await prisma.taskActiveStage.findUnique({
       where: { taskId_stageId: { taskId, stageId: stage.id } },
-      select: { status: true },
+      select: { status: true, assigneeId: true },
     });
     if (existing?.status === "ACTIVE" || existing?.status === "COMPLETED") {
       continue;
@@ -90,6 +92,7 @@ export async function previewNextStages(
       order: stage.order,
       defaultTeamId: stage.defaultTeamId,
       defaultTeam: stage.defaultTeam,
+      assigneeId: existing?.assigneeId ?? null,
     };
 
     if (allOtherComplete) {

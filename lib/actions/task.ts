@@ -890,7 +890,8 @@ export async function completeStageAndAdvance(
 
     // Atribuição opcional das próximas etapas (frente A), validada por equipe.
     if (assignments && Object.keys(assignments).length > 0) {
-      const nextStages = [...activated, ...blocked]; // cada item tem id + defaultTeam? carregamos membros
+      // activated/blocked items carry no team membership — re-query per stage.
+      const nextStages = [...activated, ...blocked];
       for (const next of nextStages) {
         const requested = assignments[next.id];
         if (!requested) continue;
@@ -953,42 +954,6 @@ export async function completeStageAndAdvance(
   } catch (error) {
     console.error("Error completing stage:", error);
     return { error: "Erro ao completar etapa" };
-  }
-}
-
-/**
- * Get blocked dependencies for a stage (shows what's preventing activation)
- */
-export async function getBlockedDependencies(taskId: string, stageId: string) {
-  try {
-    const dependencies = await prisma.stageDependency.findMany({
-      where: { stageId },
-      include: {
-        dependsOn: true,
-      },
-    });
-
-    const waitingFor = [];
-
-    for (const dep of dependencies) {
-      const activeStage = await prisma.taskActiveStage.findFirst({
-        where: {
-          taskId,
-          stageId: dep.dependsOnStageId,
-        },
-      });
-
-      waitingFor.push({
-        stage: dep.dependsOn,
-        status: activeStage?.status || "NOT_STARTED",
-        isComplete: activeStage?.status === "COMPLETED",
-      });
-    }
-
-    return { waitingFor };
-  } catch (error) {
-    console.error("Error getting blocked dependencies:", error);
-    return { waitingFor: [] };
   }
 }
 

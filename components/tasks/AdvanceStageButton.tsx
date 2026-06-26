@@ -83,8 +83,18 @@ export function AdvanceStageButton({
           newMembersByStage[stageId] = members;
         }
 
+        // Pre-fill with each stage's already-assigned responsible (set at
+        // creation), but only when that user is still in the stage's team.
+        const initialAssignments: Record<string, string> = {};
+        for (const s of allStages) {
+          if (!s.assigneeId) continue;
+          const inTeam = newMembersByStage[s.id]?.some((m) => m.id === s.assigneeId);
+          if (inTeam) initialAssignments[s.id] = s.assigneeId;
+        }
+
         setPreviewData(result);
         setMembersByStage(newMembersByStage);
+        setAssignments(initialAssignments);
       } catch {
         // fail silently — the user can still confirm without assignments
       } finally {
