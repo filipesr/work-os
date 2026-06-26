@@ -1014,6 +1014,10 @@ export async function getMyAllStages(filters?: {
 
   if (filters?.status) {
     where.status = filters.status;
+  } else {
+    // Exclude INACTIVE stages by default; callers must pass status: "INACTIVE"
+    // explicitly to see pre-created-but-not-yet-reached stages.
+    where.status = { not: "INACTIVE" };
   }
 
   if (filters?.startDate || filters?.endDate) {
