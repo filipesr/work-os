@@ -7,6 +7,7 @@ import { Prisma, type ActiveStageStatus } from "@prisma/client";
 import { auth } from "@/auth";
 import { requireMemberOrHigher, getSessionUser } from "@/lib/permissions";
 import { createTaskSchema } from "@/lib/validations";
+import { createTaskStages, parseStageAssignments } from "@/lib/actions/stage-assignment";
 import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
 // Re-export types for backward compatibility
@@ -63,51 +64,27 @@ export async function createTask(formData: FormData) {
   // Convert dueDate string to Date if provided
   const dueDate = dueDateStr ? new Date(dueDateStr) : null;
 
+  const assignments = parseStageAssignments(formData);
+
   // Execute task creation within a transaction
   const task = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    // 1. Find the first stage of the selected template
-    // The first stage is the one with the lowest order number
-    const firstStage = await tx.templateStage.findFirst({
-      where: { templateId },
-      orderBy: { order: "asc" },
-    });
-
-    if (!firstStage) {
-      throw new Error("Template is misconfigured; no stages found.");
-    }
-
-    // 2. Create the main Task record
     const newTask = await tx.task.create({
       data: {
         title,
         description: description || null,
         priority: priority || "MEDIUM",
         dueDate,
-        status: "BACKLOG", // Initial status
+        status: "BACKLOG",
         projectId,
-        assigneeId: null, // Not assigned initially
+        assigneeId: null,
       },
     });
 
-    // 3. Create the first active stage (fork/join system)
-    await tx.taskActiveStage.create({
-      data: {
-        taskId: newTask.id,
-        stageId: firstStage.id,
-        status: "ACTIVE",
-        assigneeId: null, // Not assigned - goes to team backlog
-      },
-    });
-
-    // 4. Create the first log entry in the task's history
-    await tx.taskStageLog.create({
-      data: {
-        taskId: newTask.id,
-        stageId: firstStage.id,
-        enteredAt: new Date(),
-        exitedAt: null, // Still in this stage
-        userId: userId, // The user who created the task
-      },
+    await createTaskStages(tx, {
+      taskId: newTask.id,
+      templateId,
+      userId,
+      assignments,
     });
 
     return newTask;
@@ -146,12 +123,6 @@ export async function createTasksBatch(input: {
   const dueDate = input.dueDate ? new Date(input.dueDate) : null;
   if (!dueDate || Number.isNaN(dueDate.getTime())) throw new Error("Data de vencimento inválida.");
 
-  const firstStage = await prisma.templateStage.findFirst({
-    where: { templateId: input.templateId },
-    orderBy: { order: "asc" },
-  });
-  if (!firstStage) throw new Error("Template sem etapas configuradas.");
-
   const projects = await prisma.project.findMany({
     where: { id: { in: projectIds } },
     select: { id: true },
@@ -172,18 +143,7 @@ export async function createTasksBatch(input: {
           assigneeId: null,
         },
       });
-      await tx.taskActiveStage.create({
-        data: { taskId: task.id, stageId: firstStage.id, status: "ACTIVE", assigneeId: null },
-      });
-      await tx.taskStageLog.create({
-        data: {
-          taskId: task.id,
-          stageId: firstStage.id,
-          enteredAt: new Date(),
-          exitedAt: null,
-          userId,
-        },
-      });
+      await createTaskStages(tx, { taskId: task.id, templateId: input.templateId, userId });
     }
   });
 
