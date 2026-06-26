@@ -3,8 +3,13 @@
   "subtitle": "Análisis de tiempo dedicado por usuario, proyecto, cliente y etapa del flujo",
   "filters": {
     "title": "Filtros",
-    "startDate": "Fecha Inicio",
-    "endDate": "Fecha Fin",
+    "month": "Mes",
+    "team": "Equipo",
+    "client": "Cliente",
+    "project": "Proyecto",
+    "allTeams": "Todos los equipos",
+    "allClients": "Todos los clientes",
+    "allProjects": "Todos los proyectos",
     "filter": "Filtrar",
     "clear": "Limpiar"
   },

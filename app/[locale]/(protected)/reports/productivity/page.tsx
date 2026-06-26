@@ -10,6 +10,8 @@ import {
   getHoursByStage,
   type ProductivityFilters,
 } from "@/lib/actions/reporting";
+import { getTeamsForFilter, getProjectsForSelect } from "@/lib/actions/task";
+import { getClients } from "@/lib/actions/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Clock, Users, Briefcase, Building2, Workflow } from "lucide-react";
 import { getTranslations } from "next-intl/server";
@@ -227,16 +229,32 @@ export default async function ProductivityReportPage({
   const params = await searchParams;
 
   // Parse filter parameters
-  const startDateStr = params.startDate as string | undefined;
-  const endDateStr = params.endDate as string | undefined;
+  const monthStr = typeof params.month === "string" ? params.month : undefined;
+  const teamId = typeof params.teamId === "string" && params.teamId ? params.teamId : undefined;
+  const clientId =
+    typeof params.clientId === "string" && params.clientId ? params.clientId : undefined;
+  const projectId =
+    typeof params.projectId === "string" && params.projectId ? params.projectId : undefined;
+
+  // Month (YYYY-MM) → first/last day of that month (UTC, to avoid TZ drift).
+  let startDate: Date | undefined;
+  let endDate: Date | undefined;
+  if (monthStr && /^\d{4}-\d{2}$/.test(monthStr)) {
+    const [year, month] = monthStr.split("-").map(Number);
+    startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+    endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+  }
 
   // Stable reference so cache() dedupes loadHoursByUser across sections.
-  const filters: ProductivityFilters = {
-    startDate: startDateStr ? new Date(startDateStr) : undefined,
-    endDate: endDateStr ? new Date(endDateStr) : undefined,
-  };
+  const filters: ProductivityFilters = { startDate, endDate, teamId, clientId, projectId };
 
-  const t = await getTranslations("reportsProductivity");
+  const [t, teams, clients, projects] = await Promise.all([
+    getTranslations("reportsProductivity"),
+    getTeamsForFilter(),
+    getClients(),
+    getProjectsForSelect(),
+  ]);
+  const hasFilters = Boolean(monthStr || teamId || clientId || projectId);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -259,30 +277,72 @@ export default async function ProductivityReportPage({
           <CardTitle className="text-lg">{t("filters.title")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form method="GET" className="flex gap-4 items-end">
-            <div className="flex-1">
-              <label htmlFor="startDate" className="text-sm font-medium block mb-2">
-                {t("filters.startDate")}
+          <form method="GET" className="flex flex-wrap gap-4 items-end">
+            <div className="min-w-[150px]">
+              <label htmlFor="month" className="text-sm font-medium block mb-2">
+                {t("filters.month")}
               </label>
               <input
-                type="date"
-                id="startDate"
-                name="startDate"
-                defaultValue={startDateStr}
+                type="month"
+                id="month"
+                name="month"
+                defaultValue={monthStr}
                 className="w-full px-3 py-2 border rounded-md"
               />
             </div>
-            <div className="flex-1">
-              <label htmlFor="endDate" className="text-sm font-medium block mb-2">
-                {t("filters.endDate")}
+            <div className="min-w-[160px] flex-1">
+              <label htmlFor="teamId" className="text-sm font-medium block mb-2">
+                {t("filters.team")}
               </label>
-              <input
-                type="date"
-                id="endDate"
-                name="endDate"
-                defaultValue={endDateStr}
+              <select
+                id="teamId"
+                name="teamId"
+                defaultValue={teamId ?? ""}
                 className="w-full px-3 py-2 border rounded-md"
-              />
+              >
+                <option value="">{t("filters.allTeams")}</option>
+                {teams.map((tm) => (
+                  <option key={tm.id} value={tm.id}>
+                    {tm.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-[160px] flex-1">
+              <label htmlFor="clientId" className="text-sm font-medium block mb-2">
+                {t("filters.client")}
+              </label>
+              <select
+                id="clientId"
+                name="clientId"
+                defaultValue={clientId ?? ""}
+                className="w-full px-3 py-2 border rounded-md"
+              >
+                <option value="">{t("filters.allClients")}</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-[180px] flex-1">
+              <label htmlFor="projectId" className="text-sm font-medium block mb-2">
+                {t("filters.project")}
+              </label>
+              <select
+                id="projectId"
+                name="projectId"
+                defaultValue={projectId ?? ""}
+                className="w-full px-3 py-2 border rounded-md"
+              >
+                <option value="">{t("filters.allProjects")}</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.client.name} - {p.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <button
               type="submit"
@@ -290,7 +350,7 @@ export default async function ProductivityReportPage({
             >
               {t("filters.filter")}
             </button>
-            {(startDateStr || endDateStr) && (
+            {hasFilters && (
               <Link
                 href="/reports/productivity"
                 className="px-4 py-2 border rounded-md hover:bg-muted"
@@ -311,12 +371,18 @@ export default async function ProductivityReportPage({
         <Suspense fallback={<CardSkeleton />}>
           <HoursByUserSection filters={filters} t={t} />
         </Suspense>
-        <Suspense fallback={<CardSkeleton />}>
-          <HoursByProjectSection filters={filters} t={t} />
-        </Suspense>
-        <Suspense fallback={<CardSkeleton />}>
-          <HoursByClientSection filters={filters} t={t} />
-        </Suspense>
+        {/* Hide the per-project breakdown when a single project is already filtered. */}
+        {!projectId && (
+          <Suspense fallback={<CardSkeleton />}>
+            <HoursByProjectSection filters={filters} t={t} />
+          </Suspense>
+        )}
+        {/* Hide the per-client breakdown when a single client is already filtered. */}
+        {!clientId && (
+          <Suspense fallback={<CardSkeleton />}>
+            <HoursByClientSection filters={filters} t={t} />
+          </Suspense>
+        )}
         <Suspense fallback={<CardSkeleton />}>
           <HoursByStageSection filters={filters} t={t} />
         </Suspense>

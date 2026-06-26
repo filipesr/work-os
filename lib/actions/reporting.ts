@@ -13,6 +13,36 @@ export interface ProductivityFilters {
   projectId?: string;
   userId?: string;
   clientId?: string;
+  teamId?: string;
+}
+
+/**
+ * Shared TimeLog where-clause builder for the productivity report. Combines the
+ * date range with user / team (the stage's defaultTeam) / project / client
+ * filters so every breakdown applies the same criteria.
+ */
+function buildTimeLogWhere(filters: ProductivityFilters): Prisma.TimeLogWhereInput {
+  const where: Prisma.TimeLogWhereInput = {};
+
+  if (filters.startDate || filters.endDate) {
+    const logDate: Prisma.DateTimeFilter = {};
+    if (filters.startDate) logDate.gte = filters.startDate;
+    if (filters.endDate) logDate.lte = filters.endDate;
+    where.logDate = logDate;
+  }
+
+  if (filters.userId) where.userId = filters.userId;
+
+  // Team filter targets the stage the time was logged against.
+  if (filters.teamId) where.stage = { defaultTeamId: filters.teamId };
+
+  // Project / client both constrain the parent task.
+  const taskFilter: Prisma.TaskWhereInput = {};
+  if (filters.projectId) taskFilter.projectId = filters.projectId;
+  if (filters.clientId) taskFilter.project = { clientId: filters.clientId };
+  if (Object.keys(taskFilter).length > 0) where.task = taskFilter;
+
+  return where;
 }
 
 export interface HoursByUser {
@@ -49,25 +79,7 @@ export async function getHoursByUser(filters: ProductivityFilters = {}) {
   // Require MANAGER or ADMIN role
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: Prisma.TimeLogWhereInput = {};
-
-  if (filters.startDate || filters.endDate) {
-    where.logDate = {};
-    if (filters.startDate) {
-      where.logDate.gte = filters.startDate;
-    }
-    if (filters.endDate) {
-      where.logDate.lte = filters.endDate;
-    }
-  }
-
-  if (filters.projectId) {
-    where.task = { projectId: filters.projectId };
-  }
-
-  if (filters.userId) {
-    where.userId = filters.userId;
-  }
+  const where = buildTimeLogWhere(filters);
 
   const timeLogs = await prisma.timeLog.findMany({
     where,
@@ -106,25 +118,7 @@ export async function getHoursByUser(filters: ProductivityFilters = {}) {
 export async function getHoursByProject(filters: ProductivityFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: Prisma.TimeLogWhereInput = {};
-
-  if (filters.startDate || filters.endDate) {
-    where.logDate = {};
-    if (filters.startDate) {
-      where.logDate.gte = filters.startDate;
-    }
-    if (filters.endDate) {
-      where.logDate.lte = filters.endDate;
-    }
-  }
-
-  if (filters.projectId) {
-    where.task = { projectId: filters.projectId };
-  }
-
-  if (filters.userId) {
-    where.userId = filters.userId;
-  }
+  const where = buildTimeLogWhere(filters);
 
   const timeLogs = await prisma.timeLog.findMany({
     where,
@@ -165,29 +159,7 @@ export async function getHoursByProject(filters: ProductivityFilters = {}) {
 export async function getHoursByClient(filters: ProductivityFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: Prisma.TimeLogWhereInput = {};
-
-  if (filters.startDate || filters.endDate) {
-    where.logDate = {};
-    if (filters.startDate) {
-      where.logDate.gte = filters.startDate;
-    }
-    if (filters.endDate) {
-      where.logDate.lte = filters.endDate;
-    }
-  }
-
-  if (filters.clientId) {
-    where.task = {
-      project: {
-        clientId: filters.clientId,
-      },
-    };
-  }
-
-  if (filters.userId) {
-    where.userId = filters.userId;
-  }
+  const where = buildTimeLogWhere(filters);
 
   const timeLogs = await prisma.timeLog.findMany({
     where,
@@ -227,25 +199,7 @@ export async function getHoursByClient(filters: ProductivityFilters = {}) {
 export async function getHoursByStage(filters: ProductivityFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: Prisma.TimeLogWhereInput = {};
-
-  if (filters.startDate || filters.endDate) {
-    where.logDate = {};
-    if (filters.startDate) {
-      where.logDate.gte = filters.startDate;
-    }
-    if (filters.endDate) {
-      where.logDate.lte = filters.endDate;
-    }
-  }
-
-  if (filters.projectId) {
-    where.task = { projectId: filters.projectId };
-  }
-
-  if (filters.userId) {
-    where.userId = filters.userId;
-  }
+  const where = buildTimeLogWhere(filters);
 
   const timeLogs = await prisma.timeLog.findMany({
     where: {
