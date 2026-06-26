@@ -260,43 +260,6 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
             )}
           </div>
 
-          {/* Time tracking (registered time logs + open/running activities) */}
-          <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-6">
-            <h2 className="text-xl font-bold text-foreground mb-4">{t("timeLogs")}</h2>
-
-            {timeTracking.openActivities.length > 0 && (
-              <div className="space-y-2 mb-4">
-                {timeTracking.openActivities.map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-center gap-3 rounded-lg border border-green-300 bg-green-50 dark:bg-green-950/20 px-3 py-2"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={getProxiedImageUrl(a.user.image) || undefined} />
-                      <AvatarFallback className="text-xs">
-                        {a.user.name?.charAt(0).toUpperCase() || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {a.user.name || a.user.email}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("timeStartedAt")} {formatDateTime(a.startedAt)}
-                      </p>
-                    </div>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-xs font-bold text-green-800">
-                      <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                      {t("timeRunning")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <TimeLogsList timeLogs={timeTracking.timeLogs} />
-          </div>
-
           {/* Comments */}
           {task.comments.length > 0 && (
             <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
@@ -329,9 +292,9 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
           )}
         </div>
 
-        {/* Artifacts Sidebar */}
+        {/* Artifacts + time tracking sidebar */}
         <div className="lg:col-span-1">
-          <div className="sticky top-24">
+          <div className="sticky top-24 space-y-6">
             <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
               <h2 className="text-xl font-bold text-foreground mb-4">{t("artifacts")}</h2>
               {task.artifacts.length > 0 ? (
@@ -339,6 +302,43 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
               ) : (
                 <p className="text-sm text-muted-foreground">{t("noArtifacts")}</p>
               )}
+            </div>
+
+            {/* Time tracking (registered time logs + open/running activities) */}
+            <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+              <h2 className="text-xl font-bold text-foreground mb-4">{t("timeLogs")}</h2>
+
+              {timeTracking.openActivities.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {timeTracking.openActivities.map((a) => (
+                    <div
+                      key={a.id}
+                      className="flex items-center gap-3 rounded-lg border border-green-300 bg-green-50 dark:bg-green-950/20 px-3 py-2"
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={getProxiedImageUrl(a.user.image) || undefined} />
+                        <AvatarFallback className="text-xs">
+                          {a.user.name?.charAt(0).toUpperCase() || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {a.user.name || a.user.email}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t("timeStartedAt")} {formatDateTime(a.startedAt)}
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-xs font-bold text-green-800">
+                        <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                        {t("timeRunning")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <TimeLogsList timeLogs={timeTracking.timeLogs} />
             </div>
           </div>
         </div>
