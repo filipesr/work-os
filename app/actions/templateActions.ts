@@ -15,7 +15,7 @@ export async function getTemplateListWithCount() {
         select: { stages: true },
       },
     },
-    orderBy: { name: 'asc' },
+    orderBy: { name: "asc" },
   });
 }
 
@@ -27,12 +27,19 @@ export async function getTemplateStagePreview(templateId: string) {
   if (!templateId) return [];
 
   return prisma.templateStage.findMany({
-    where: { templateId: templateId },
+    where: { templateId },
+    orderBy: { order: "asc" },
     select: {
       id: true,
       name: true,
       order: true,
+      defaultTeam: {
+        select: {
+          id: true,
+          name: true,
+          members: { select: { id: true, name: true, email: true }, orderBy: { name: "asc" } },
+        },
+      },
     },
-    orderBy: { order: 'asc' },
   });
 }

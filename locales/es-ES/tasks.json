@@ -169,6 +169,11 @@
     "priorityLabel": "Prioridad *",
     "dueDateLabel": "Fecha de Vencimiento",
     "createButton": "Crear Tarea",
-    "cancelButton": "Cancelar"
+    "cancelButton": "Cancelar",
+    "assign": {
+      "unassigned": "Sin responsable",
+      "noTeam": "Sin equipo",
+      "ariaLabel": "Responsable de la etapa (equipo {team})"
+    }
   }
 }

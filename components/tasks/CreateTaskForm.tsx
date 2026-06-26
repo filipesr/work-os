@@ -6,6 +6,7 @@ import { createTask } from "@/lib/actions/task";
 import { getTemplateStagePreview } from "@/app/actions/templateActions";
 import { getClients } from "@/lib/actions/client";
 import { QuickCreateProject } from "@/components/quick-create/QuickCreateProject";
+import { StageAssigneeSelect } from "@/components/ui/StageAssigneeSelect";
 import { useTranslations } from "next-intl";
 
 interface Project {
@@ -215,10 +216,27 @@ export function CreateTaskForm({
           )}
 
           {!isPreviewLoading && stagePreview.length > 0 && (
-            <ol className="list-decimal list-inside space-y-2">
+            <ol className="space-y-2">
               {stagePreview.map((stage, index) => (
-                <li key={stage.id} className="text-sm text-foreground font-medium">
-                  {stage.name}
+                <li
+                  key={stage.id}
+                  className="flex items-center justify-between gap-3 rounded-md bg-background/60 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <span className="text-sm font-medium text-foreground">
+                      {index + 1}. {stage.name}
+                    </span>
+                    {stage.defaultTeam && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {stage.defaultTeam.name}
+                      </span>
+                    )}
+                  </div>
+                  <StageAssigneeSelect
+                    stageId={stage.id}
+                    teamName={stage.defaultTeam?.name ?? null}
+                    members={stage.defaultTeam?.members ?? []}
+                  />
                 </li>
               ))}
             </ol>
