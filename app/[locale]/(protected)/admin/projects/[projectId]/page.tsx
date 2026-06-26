@@ -5,6 +5,7 @@ import { requireManagerOrAdmin } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { EditProjectHeader } from "./edit-project-header";
+import { ProjectArtifactsTable } from "@/components/admin/ProjectArtifactsTable";
 
 async function getProject(projectId: string) {
   await requireManagerOrAdmin();
@@ -15,6 +16,10 @@ async function getProject(projectId: string) {
       tasks: {
         include: {
           assignee: { select: { id: true, name: true, email: true } },
+          artifacts: {
+            include: { user: { select: { name: true, email: true } } },
+            orderBy: { createdAt: "desc" },
+          },
         },
         orderBy: { createdAt: "desc" },
       },
@@ -88,6 +93,20 @@ export default async function ProjectDetailPage({
     {} as Record<string, number>
   );
 
+  // All artifacts across the project's tasks (flattened for the searchable table).
+  const artifacts = project.tasks.flatMap((task) =>
+    task.artifacts.map((a) => ({
+      id: a.id,
+      title: a.title,
+      url: a.url,
+      type: a.type,
+      createdAt: a.createdAt.toISOString(),
+      taskId: task.id,
+      taskTitle: task.title,
+      userName: a.user.name || a.user.email || "—",
+    }))
+  );
+
   const statusColors: Record<string, string> = {
     BACKLOG: "bg-gray-100 text-gray-800 border-gray-200",
     IN_PROGRESS: "bg-blue-100 text-blue-800 border-blue-200",
@@ -138,7 +157,7 @@ export default async function ProjectDetailPage({
       />
 
       {/* Info Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
         <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
           <p className="text-sm text-muted-foreground">{t("totalTasks")}</p>
           <p className="text-3xl font-bold text-foreground mt-1">{project.tasks.length}</p>
@@ -149,6 +168,11 @@ export default async function ProjectDetailPage({
             <p className="text-3xl font-bold text-foreground mt-1">{statusCounts[status] || 0}</p>
           </div>
         ))}
+        {/* Artifacts total, next to "Concluída" */}
+        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+          <p className="text-sm text-muted-foreground">{t("artifacts")}</p>
+          <p className="text-3xl font-bold text-foreground mt-1">{artifacts.length}</p>
+        </div>
       </div>
 
       {/* Tasks Table */}
@@ -230,6 +254,12 @@ export default async function ProjectDetailPage({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Artifacts Table (searchable) */}
+      <div className="mt-6">
+        <h2 className="text-xl font-bold text-foreground mb-4">{t("artifactsTable")}</h2>
+        <ProjectArtifactsTable artifacts={artifacts} />
       </div>
     </div>
   );

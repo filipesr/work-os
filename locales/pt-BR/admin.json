@@ -261,6 +261,23 @@
       "unassigned": "Não atribuído",
       "noDueDate": "Sem data",
       "noTasks": "Nenhuma tarefa neste projeto.",
+      "artifacts": "Artefatos",
+      "artifactsTable": "Artefatos",
+      "searchArtifacts": "Buscar artefato…",
+      "artifactTitle": "Título",
+      "artifactType": "Tipo",
+      "artifactTask": "Tarefa",
+      "artifactUser": "Adicionado por",
+      "artifactDate": "Data",
+      "noArtifacts": "Nenhum artefato neste projeto.",
+      "noArtifactsMatch": "Nenhum artefato encontrado.",
+      "artifactTypes": {
+        "DOCUMENT": "Documento",
+        "IMAGE": "Imagem",
+        "VIDEO": "Vídeo",
+        "FIGMA": "Figma",
+        "OTHER": "Outro"
+      },
       "status": {
         "BACKLOG": "Backlog",
         "IN_PROGRESS": "Em Progresso",
