@@ -23,6 +23,7 @@ export type ActiveStageWithDetails = {
     createdAt: Date;
     project: {
       name: string;
+      client: { name: string };
     };
   };
   stage: {
@@ -132,7 +133,10 @@ async function ActiveStageRow({
         </div>
       </td>
       <td className="px-4 py-3">
-        <span className="text-sm text-muted-foreground">{task.project.name}</span>
+        <div className="flex flex-col">
+          <span className="text-sm text-foreground">{task.project.name}</span>
+          <span className="text-xs text-muted-foreground">{task.project.client.name}</span>
+        </div>
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">

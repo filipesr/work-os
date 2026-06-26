@@ -1063,6 +1063,7 @@ export async function getMyAllStages(filters?: {
           project: {
             select: {
               name: true,
+              client: { select: { name: true } },
             },
           },
           timeLogs: {
@@ -1132,6 +1133,7 @@ export async function getMyAllStages(filters?: {
       createdAt: s.task.createdAt,
       project: {
         name: s.task.project.name,
+        client: { name: s.task.project.client.name },
       },
     },
     stage: {

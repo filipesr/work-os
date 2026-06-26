@@ -38,7 +38,7 @@
   },
   "table": {
     "task": "Tarea",
-    "project": "Proyecto",
+    "project": "Cliente/Proyecto",
     "currentStage": "Etapa Actual",
     "priority": "Prioridad",
     "status": "Estado",

@@ -19,6 +19,7 @@ export type ActiveStageWithDetails = {
     createdAt: Date;
     project: {
       name: string;
+      client: { name: string };
     };
   };
   stage: {

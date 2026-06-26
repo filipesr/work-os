@@ -39,27 +39,48 @@ export function MyStagesTable({ stages, showAssignee, onRowClick }: MyStagesTabl
       <table className="w-full">
         <thead className="bg-muted/30">
           <tr>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+            >
               {t("table.task")}
             </th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+            >
               {t("table.project")}
             </th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+            >
               {t("table.stage")}
             </th>
             {showAssignee && (
-              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+              >
                 {t("table.assignee")}
               </th>
             )}
-            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+            >
               {t("table.priority")}
             </th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+            >
               {t("table.status")}
             </th>
-            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <th
+              scope="col"
+              className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+            >
               {t("table.dueDate")}
             </th>
           </tr>
@@ -69,7 +90,9 @@ export function MyStagesTable({ stages, showAssignee, onRowClick }: MyStagesTabl
             const task = activeStage.task;
             const stage = activeStage.stage;
             const isOverdue =
-              task.dueDate && new Date(task.dueDate) < new Date() && activeStage.status !== "COMPLETED";
+              task.dueDate &&
+              new Date(task.dueDate) < new Date() &&
+              activeStage.status !== "COMPLETED";
             const isDueSoon =
               task.dueDate &&
               !isOverdue &&
@@ -89,16 +112,31 @@ export function MyStagesTable({ stages, showAssignee, onRowClick }: MyStagesTabl
               >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    {isOverdue && <span title="Overdue" className="text-base">🔥</span>}
-                    {isDueSoon && !isOverdue && <span title="Due soon" className="text-base">⚠️</span>}
-                    {isBlocked && <span title="Blocked" className="text-base">🔒</span>}
-                    <span className="text-sm font-medium text-foreground">
-                      {task.title}
-                    </span>
+                    {isOverdue && (
+                      <span title="Overdue" className="text-base">
+                        🔥
+                      </span>
+                    )}
+                    {isDueSoon && !isOverdue && (
+                      <span title="Due soon" className="text-base">
+                        ⚠️
+                      </span>
+                    )}
+                    {isBlocked && (
+                      <span title="Blocked" className="text-base">
+                        🔒
+                      </span>
+                    )}
+                    <span className="text-sm font-medium text-foreground">{task.title}</span>
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-sm text-muted-foreground">{task.project.name}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-foreground">{task.project.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {task.project.client.name}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">

@@ -27,7 +27,7 @@
   },
   "table": {
     "task": "Tarea",
-    "project": "Proyecto",
+    "project": "Cliente/Proyecto",
     "stage": "Etapa",
     "assignee": "Responsable",
     "priority": "Prioridad",
