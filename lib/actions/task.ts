@@ -1025,7 +1025,7 @@ export async function getMyActiveStages() {
  * Get all stages assigned to current user with optional filters and stats
  */
 export async function getMyAllStages(filters?: {
-  status?: "ACTIVE" | "BLOCKED" | "COMPLETED" | null;
+  status?: "INACTIVE" | "ACTIVE" | "BLOCKED" | "COMPLETED" | null;
   startDate?: string | null;
   endDate?: string | null;
   onlyMine?: boolean;
@@ -1110,7 +1110,7 @@ export async function getMyAllStages(filters?: {
   // Compute stats
   const now = new Date();
   let totalHoursLogged = 0;
-  const byStatus = { ACTIVE: 0, BLOCKED: 0, COMPLETED: 0 };
+  const byStatus = { INACTIVE: 0, ACTIVE: 0, BLOCKED: 0, COMPLETED: 0 };
   const byPriority = { LOW: 0, MEDIUM: 0, HIGH: 0, URGENT: 0 };
   let overdue = 0;
 

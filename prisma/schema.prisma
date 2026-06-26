@@ -49,8 +49,9 @@ enum StageLogStatus {
 }
 
 enum ActiveStageStatus {
+  INACTIVE  // Pre-created but not yet reached (no predecessor completed)
   ACTIVE    // Ready to work - all dependencies met
-  BLOCKED   // Created but waiting for dependencies to complete
+  BLOCKED   // Reached but waiting for remaining dependencies to complete
   COMPLETED // Work finished on this stage
 }
 

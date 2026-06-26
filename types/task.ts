@@ -1,6 +1,6 @@
 export type ActiveStageWithDetails = {
   id: string;
-  status: "ACTIVE" | "BLOCKED" | "COMPLETED";
+  status: "INACTIVE" | "ACTIVE" | "BLOCKED" | "COMPLETED";
   taskId: string;
   stageId: string;
   assigneeId: string | null;
@@ -41,6 +41,7 @@ export type MyAllStagesResult = {
   stats: {
     total: number;
     byStatus: {
+      INACTIVE: number;
       ACTIVE: number;
       BLOCKED: number;
       COMPLETED: number;
