@@ -13,20 +13,10 @@ import {
 } from "@/lib/actions/reporting";
 import { getTeamsForFilter, getProjectsForSelect } from "@/lib/actions/task";
 import { getClients } from "@/lib/actions/client";
-import { currentMonthSaoPaulo, monthRangeSaoPaulo } from "@/lib/dates";
+import { currentMonthSaoPaulo, monthRangeSaoPaulo, formatMonthLabel } from "@/lib/dates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Clock, Users, Briefcase, Building2, Workflow } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
-
-/** Localized "month year" label for a "YYYY-MM" value. */
-function monthLabel(ym: string, locale: string): string {
-  const [y, m] = ym.split("-").map(Number);
-  return new Intl.DateTimeFormat(locale, {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(y, m - 1, 1)));
-}
 
 // Dedupe the user query across the summary banner and the "Hours by User" card
 // (both need it, in different layout positions) so it runs once per request.
@@ -306,7 +296,7 @@ export default async function ProductivityReportPage({
               >
                 {months.map((m) => (
                   <option key={m} value={m}>
-                    {monthLabel(m, locale)}
+                    {formatMonthLabel(m, locale)}
                   </option>
                 ))}
               </select>

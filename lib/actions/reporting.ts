@@ -257,6 +257,69 @@ export interface PerformanceFilters {
   endDate?: Date;
   templateId?: string;
   projectId?: string;
+  clientId?: string;
+  teamId?: string;
+}
+
+/** Shared where for stage-log-based performance metrics (avg time, rework):
+ * date range + team (stage.defaultTeam) + project/client (parent task). */
+function buildStageLogWhere(filters: PerformanceFilters): Prisma.TaskStageLogWhereInput {
+  const where: Prisma.TaskStageLogWhereInput = { exitedAt: { not: null } };
+
+  if (filters.startDate || filters.endDate) {
+    const enteredAt: Prisma.DateTimeFilter = {};
+    if (filters.startDate) enteredAt.gte = filters.startDate;
+    if (filters.endDate) enteredAt.lte = filters.endDate;
+    where.enteredAt = enteredAt;
+  }
+
+  const stageFilter: Prisma.TemplateStageWhereInput = {};
+  if (filters.templateId) stageFilter.templateId = filters.templateId;
+  if (filters.teamId) stageFilter.defaultTeamId = filters.teamId;
+  if (Object.keys(stageFilter).length > 0) where.stage = stageFilter;
+
+  const taskFilter: Prisma.TaskWhereInput = {};
+  if (filters.projectId) taskFilter.projectId = filters.projectId;
+  if (filters.clientId) taskFilter.project = { clientId: filters.clientId };
+  if (Object.keys(taskFilter).length > 0) where.task = taskFilter;
+
+  return where;
+}
+
+/** Task where for lead-time metrics (completed tasks), with the same filters.
+ * Team applies to tasks that actually entered a stage owned by that team. */
+function buildLeadTimeWhere(filters: PerformanceFilters): Prisma.TaskWhereInput {
+  const where: Prisma.TaskWhereInput = {};
+
+  if (filters.startDate || filters.endDate) {
+    const completedAt: Prisma.DateTimeFilter = {};
+    if (filters.startDate) completedAt.gte = filters.startDate;
+    if (filters.endDate) completedAt.lte = filters.endDate;
+    where.completedAt = completedAt;
+  } else {
+    where.completedAt = { not: null };
+  }
+
+  if (filters.projectId) where.projectId = filters.projectId;
+  if (filters.clientId) where.project = { clientId: filters.clientId };
+  if (filters.teamId) where.stageLogs = { some: { stage: { defaultTeamId: filters.teamId } } };
+
+  return where;
+}
+
+/**
+ * Months (SP-local "YYYY-MM", newest first) with stage activity, always
+ * including the current month. Powers the month dropdown on the performance
+ * report (mirrors getAvailableTimeLogMonths for the productivity report).
+ */
+export async function getAvailablePerformanceMonths(): Promise<string[]> {
+  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+
+  const logs = await prisma.taskStageLog.findMany({ select: { enteredAt: true } });
+  const months = new Set<string>(logs.map((l) => monthKeySaoPaulo(l.enteredAt)));
+  months.add(currentMonthSaoPaulo());
+
+  return Array.from(months).sort((a, b) => (a < b ? 1 : -1));
 }
 
 export interface AverageTimePerStage {
@@ -290,31 +353,7 @@ export interface LeadTimeMetrics {
 export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: Prisma.TaskStageLogWhereInput = {
-    exitedAt: { not: null }, // Only completed stages
-  };
-
-  if (filters.startDate || filters.endDate) {
-    where.enteredAt = {};
-    if (filters.startDate) {
-      where.enteredAt.gte = filters.startDate;
-    }
-    if (filters.endDate) {
-      where.enteredAt.lte = filters.endDate;
-    }
-  }
-
-  if (filters.templateId) {
-    where.stage = {
-      templateId: filters.templateId,
-    };
-  }
-
-  if (filters.projectId) {
-    where.task = {
-      projectId: filters.projectId,
-    };
-  }
+  const where = buildStageLogWhere(filters);
 
   const stageLogs = await prisma.taskStageLog.findMany({
     where,
@@ -382,25 +421,9 @@ export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
   const where: Prisma.TaskStageLogWhereInput = {
-    exitedAt: { not: null },
+    ...buildStageLogWhere(filters),
     status: { not: null }, // Only logs with status set
   };
-
-  if (filters.startDate || filters.endDate) {
-    where.enteredAt = {};
-    if (filters.startDate) {
-      where.enteredAt.gte = filters.startDate;
-    }
-    if (filters.endDate) {
-      where.enteredAt.lte = filters.endDate;
-    }
-  }
-
-  if (filters.templateId) {
-    where.stage = {
-      templateId: filters.templateId,
-    };
-  }
 
   const stageLogs = await prisma.taskStageLog.findMany({
     where,
@@ -467,23 +490,7 @@ export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
 export async function getLeadTimeMetrics(filters: PerformanceFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
 
-  const where: Prisma.TaskWhereInput = {
-    completedAt: { not: null }, // Only completed tasks
-  };
-
-  if (filters.startDate || filters.endDate) {
-    where.completedAt = {};
-    if (filters.startDate) {
-      where.completedAt.gte = filters.startDate;
-    }
-    if (filters.endDate) {
-      where.completedAt.lte = filters.endDate;
-    }
-  }
-
-  if (filters.projectId) {
-    where.projectId = filters.projectId;
-  }
+  const where = buildLeadTimeWhere(filters);
 
   const tasks = await prisma.task.findMany({
     where,

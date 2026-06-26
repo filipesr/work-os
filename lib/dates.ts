@@ -137,6 +137,16 @@ export function currentMonthSaoPaulo(ref: Date = new Date()): string {
   return formatISODate(nowInSaoPaulo(ref)).slice(0, 7);
 }
 
+/** Localized "month year" label for a "YYYY-MM" value (e.g. "junho de 2026"). */
+export function formatMonthLabel(ym: string, locale: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  return new Intl.DateTimeFormat(locale, {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(y, m - 1, 1)));
+}
+
 /** The SP-local month ("YYYY-MM") that contains the real instant `instant`. */
 export function monthKeySaoPaulo(instant: Date): string {
   return formatISODate(nowInSaoPaulo(instant)).slice(0, 7);

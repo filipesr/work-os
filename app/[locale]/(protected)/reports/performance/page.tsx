@@ -7,11 +7,15 @@ import {
   getAverageTimePerStage,
   getReworkRateByStage,
   getLeadTimeMetrics,
+  getAvailablePerformanceMonths,
   type PerformanceFilters,
 } from "@/lib/actions/reporting";
+import { getTeamsForFilter, getProjectsForSelect } from "@/lib/actions/task";
+import { getClients } from "@/lib/actions/client";
+import { currentMonthSaoPaulo, monthRangeSaoPaulo, formatMonthLabel } from "@/lib/dates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, TrendingDown, AlertTriangle, Timer, Activity } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 // Dedupe queries shared across two layout positions each (alert + table) so they
 // run once per request while still streaming in their own Suspense boundaries.
@@ -335,16 +339,29 @@ export default async function PerformanceReportPage({
   const params = await searchParams;
 
   // Parse filter parameters
-  const startDateStr = params.startDate as string | undefined;
-  const endDateStr = params.endDate as string | undefined;
+  const rawMonth = typeof params.month === "string" ? params.month : undefined;
+  const teamId = typeof params.teamId === "string" && params.teamId ? params.teamId : undefined;
+  const clientId =
+    typeof params.clientId === "string" && params.clientId ? params.clientId : undefined;
+  const projectId =
+    typeof params.projectId === "string" && params.projectId ? params.projectId : undefined;
+
+  // Default to the current month (SP) even when no data exists yet.
+  const monthStr = rawMonth && /^\d{4}-\d{2}$/.test(rawMonth) ? rawMonth : currentMonthSaoPaulo();
+  const { start: startDate, end: endDate } = monthRangeSaoPaulo(monthStr);
 
   // Stable reference so cache() dedupes the shared queries across sections.
-  const filters: PerformanceFilters = {
-    startDate: startDateStr ? new Date(startDateStr) : undefined,
-    endDate: endDateStr ? new Date(endDateStr) : undefined,
-  };
+  const filters: PerformanceFilters = { startDate, endDate, teamId, clientId, projectId };
 
-  const t = await getTranslations("reportsPerformance");
+  const [t, locale, months, teams, clients, projects] = await Promise.all([
+    getTranslations("reportsPerformance"),
+    getLocale(),
+    getAvailablePerformanceMonths(),
+    getTeamsForFilter(),
+    getClients(),
+    getProjectsForSelect(),
+  ]);
+  const hasFilters = Boolean(rawMonth || teamId || clientId || projectId);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -367,41 +384,100 @@ export default async function PerformanceReportPage({
           <CardTitle className="text-lg">{t("filters.title")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form method="GET" className="flex gap-4 items-end">
-            <div className="flex-1">
-              <label htmlFor="startDate" className="text-sm font-medium block mb-2">
-                {t("filters.startDate")}
+          {/* key remounts the uncontrolled selects when the active filters change
+              (incl. "Limpar"), so their displayed values reset to the new defaults. */}
+          <form
+            method="GET"
+            key={`${monthStr}|${teamId ?? ""}|${clientId ?? ""}|${projectId ?? ""}`}
+            className="flex flex-wrap gap-4 items-end"
+          >
+            <div className="min-w-[160px]">
+              <label htmlFor="month" className="block text-sm font-semibold text-foreground mb-2">
+                {t("filters.month")}
               </label>
-              <input
-                type="date"
-                id="startDate"
-                name="startDate"
-                defaultValue={startDateStr}
-                className="w-full px-3 py-2 border rounded-md"
-              />
+              <select
+                id="month"
+                name="month"
+                defaultValue={monthStr}
+                className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
+              >
+                {months.map((m) => (
+                  <option key={m} value={m}>
+                    {formatMonthLabel(m, locale)}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="flex-1">
-              <label htmlFor="endDate" className="text-sm font-medium block mb-2">
-                {t("filters.endDate")}
+            <div className="min-w-[160px] flex-1">
+              <label htmlFor="teamId" className="block text-sm font-semibold text-foreground mb-2">
+                {t("filters.team")}
               </label>
-              <input
-                type="date"
-                id="endDate"
-                name="endDate"
-                defaultValue={endDateStr}
-                className="w-full px-3 py-2 border rounded-md"
-              />
+              <select
+                id="teamId"
+                name="teamId"
+                defaultValue={teamId ?? ""}
+                className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
+              >
+                <option value="">{t("filters.allTeams")}</option>
+                {teams.map((tm) => (
+                  <option key={tm.id} value={tm.id}>
+                    {tm.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-[160px] flex-1">
+              <label
+                htmlFor="clientId"
+                className="block text-sm font-semibold text-foreground mb-2"
+              >
+                {t("filters.client")}
+              </label>
+              <select
+                id="clientId"
+                name="clientId"
+                defaultValue={clientId ?? ""}
+                className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
+              >
+                <option value="">{t("filters.allClients")}</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-[180px] flex-1">
+              <label
+                htmlFor="projectId"
+                className="block text-sm font-semibold text-foreground mb-2"
+              >
+                {t("filters.project")}
+              </label>
+              <select
+                id="projectId"
+                name="projectId"
+                defaultValue={projectId ?? ""}
+                className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
+              >
+                <option value="">{t("filters.allProjects")}</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.client.name} - {p.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+              className="h-11 px-6 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md"
             >
               {t("filters.filter")}
             </button>
-            {(startDateStr || endDateStr) && (
+            {hasFilters && (
               <Link
                 href="/reports/performance"
-                className="px-4 py-2 border rounded-md hover:bg-muted"
+                className="h-11 inline-flex items-center px-6 border-2 border-input-border rounded-lg hover:bg-muted transition-all duration-200"
               >
                 {t("filters.clear")}
               </Link>

@@ -3,8 +3,13 @@
   "subtitle": "Análisis de flujo de trabajo, identificación de cuellos de botella y tasa de retrabajo",
   "filters": {
     "title": "Filtros",
-    "startDate": "Fecha Inicio",
-    "endDate": "Fecha Fin",
+    "month": "Mes",
+    "team": "Equipo",
+    "client": "Cliente",
+    "project": "Proyecto",
+    "allTeams": "Todos los equipos",
+    "allClients": "Todos los clientes",
+    "allProjects": "Todos los proyectos",
     "filter": "Filtrar",
     "clear": "Limpiar"
   },
