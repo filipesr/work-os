@@ -47,6 +47,13 @@
   "monthly": {
     "title": "Calendário de Eventos & Demandas",
     "subtitle": "Feriados e datas comemorativas de AR, BR e PY, com as demandas de cada cliente por dia",
+    "status": {
+      "BACKLOG": "Backlog",
+      "IN_PROGRESS": "Em Progresso",
+      "PAUSED": "Pausada",
+      "COMPLETED": "Concluída",
+      "CANCELLED": "Cancelada"
+    },
     "nav": {
       "prev": "Mês anterior",
       "next": "Próximo mês",

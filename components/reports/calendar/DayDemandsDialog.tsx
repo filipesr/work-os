@@ -29,6 +29,7 @@ interface DayDemandsDialogProps {
 
 export function DayDemandsDialog({ clientName, dateLabel, tasks, onClose }: DayDemandsDialogProps) {
   const t = useTranslations("reportsCalendar.monthly.dayDemands");
+  const tStatus = useTranslations("reportsCalendar.monthly.status");
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -62,7 +63,7 @@ export function DayDemandsDialog({ clientName, dateLabel, tasks, onClose }: DayD
                   <span
                     className={`shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full border ${STATUS_CLASS[task.status]}`}
                   >
-                    {task.status}
+                    {tStatus(task.status)}
                   </span>
                 </div>
                 <Link

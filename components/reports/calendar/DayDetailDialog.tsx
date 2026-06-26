@@ -171,7 +171,7 @@ export function DayDetailDialog({
                             <span
                               className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_CLASS[task.status]}`}
                             >
-                              {task.status}
+                              {t(`status.${task.status}`)}
                             </span>
                           </div>
                           <Link
