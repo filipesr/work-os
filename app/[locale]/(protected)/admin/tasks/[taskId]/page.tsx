@@ -36,9 +36,9 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
 
   return (
     <div className="container mx-auto p-8">
-      {/* Back link */}
+      {/* Back link — returns to the parent project */}
       <Link
-        href="/admin/tasks"
+        href={`/admin/projects/${task.project.id}`}
         className="inline-flex items-center text-primary hover:text-primary/80 mb-6 font-semibold transition-colors"
       >
         <svg
@@ -52,7 +52,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
         >
           <path d="M15 19l-7-7 7-7" />
         </svg>
-        {t("backToTasks")}
+        {t("backToProject")}
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

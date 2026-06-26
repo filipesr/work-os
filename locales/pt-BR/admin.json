@@ -378,6 +378,7 @@
     },
     "detail": {
       "backToTasks": "Voltar para Tarefas",
+      "backToProject": "Voltar para o Projeto",
       "noDescription": "Sem descrição",
       "project": "Projeto",
       "priority": "Prioridade",
