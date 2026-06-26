@@ -6,6 +6,8 @@ import {
   mondayOfWeek,
   formatISODate,
   shiftWeek,
+  monthRangeSaoPaulo,
+  monthKeySaoPaulo,
 } from "@/lib/dates";
 
 describe("parseWeekParam", () => {
@@ -102,5 +104,29 @@ describe("shiftWeek", () => {
   it("shifts backward by 2 weeks", () => {
     const monday = parseWeekParam("2026-06-15");
     expect(formatISODate(shiftWeek(monday, -2))).toBe("2026-06-01");
+  });
+});
+
+describe("monthRangeSaoPaulo", () => {
+  it("covers the SP-local month as real UTC instants (UTC-3)", () => {
+    const { start, end } = monthRangeSaoPaulo("2026-06");
+    // SP midnight Jun 1 == 03:00Z; last ms before SP midnight Jul 1 == 02:59:59.999Z Jul 1
+    expect(start.toISOString()).toBe("2026-06-01T03:00:00.000Z");
+    expect(end.toISOString()).toBe("2026-07-01T02:59:59.999Z");
+  });
+
+  it("handles the December → January rollover", () => {
+    const { start, end } = monthRangeSaoPaulo("2026-12");
+    expect(start.toISOString()).toBe("2026-12-01T03:00:00.000Z");
+    expect(end.toISOString()).toBe("2027-01-01T02:59:59.999Z");
+  });
+});
+
+describe("monthKeySaoPaulo", () => {
+  it("buckets an instant into its SP-local month", () => {
+    // 02:00Z on Jul 1 is still 23:00 of Jun 30 in SP → June
+    expect(monthKeySaoPaulo(new Date("2026-07-01T02:00:00.000Z"))).toBe("2026-06");
+    // 03:00Z on Jul 1 is 00:00 of Jul 1 in SP → July
+    expect(monthKeySaoPaulo(new Date("2026-07-01T03:00:00.000Z"))).toBe("2026-07");
   });
 });

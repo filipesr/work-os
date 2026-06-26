@@ -131,3 +131,28 @@ export function monthRangeFromFirst(first: Date): MonthRange {
 export function shiftMonth(first: Date, deltaMonths: number): Date {
   return new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + deltaMonths, 1));
 }
+
+/** Current SP-local month as "YYYY-MM". */
+export function currentMonthSaoPaulo(ref: Date = new Date()): string {
+  return formatISODate(nowInSaoPaulo(ref)).slice(0, 7);
+}
+
+/** The SP-local month ("YYYY-MM") that contains the real instant `instant`. */
+export function monthKeySaoPaulo(instant: Date): string {
+  return formatISODate(nowInSaoPaulo(instant)).slice(0, 7);
+}
+
+/**
+ * Real UTC [start, end] instants covering the SP-local month "YYYY-MM"
+ * (e.g. "2026-06" → 2026-06-01T03:00:00Z … 2026-07-01T02:59:59.999Z).
+ * Suitable for filtering timestamp columns by a São Paulo calendar month.
+ */
+export function monthRangeSaoPaulo(monthStr: string): { start: Date; end: Date } {
+  const first = parseMonthParam(monthStr); // SP-local first-of-month (UTC fields = SP calendar)
+  const next = shiftMonth(first, 1);
+  // A SP-local Date's fields are the SP calendar; the real instant is field-time − SP_OFFSET.
+  return {
+    start: new Date(first.getTime() - SP_OFFSET_MS),
+    end: new Date(next.getTime() - SP_OFFSET_MS - 1),
+  };
+}

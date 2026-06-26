@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { requireAnyRole } from "@/lib/auth";
 import { Prisma, UserRole } from "@prisma/client";
-import { formatISODate } from "@/lib/dates";
+import { formatISODate, currentMonthSaoPaulo, monthKeySaoPaulo } from "@/lib/dates";
 
 // ========== Productivity Report (TimeLog Aggregations) ==========
 
@@ -70,6 +70,21 @@ export interface HoursByStage {
   stageName: string;
   templateName: string;
   totalHours: number;
+}
+
+/**
+ * Months (SP-local "YYYY-MM", newest first) that have time logs, always
+ * including the current month so it can be the default selection even with no
+ * records yet. Powers the month dropdown on the productivity report.
+ */
+export async function getAvailableTimeLogMonths(): Promise<string[]> {
+  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+
+  const logs = await prisma.timeLog.findMany({ select: { logDate: true } });
+  const months = new Set<string>(logs.map((l) => monthKeySaoPaulo(l.logDate)));
+  months.add(currentMonthSaoPaulo());
+
+  return Array.from(months).sort((a, b) => (a < b ? 1 : -1)); // desc (newest first)
 }
 
 /**

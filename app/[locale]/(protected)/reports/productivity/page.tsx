@@ -8,13 +8,25 @@ import {
   getHoursByProject,
   getHoursByClient,
   getHoursByStage,
+  getAvailableTimeLogMonths,
   type ProductivityFilters,
 } from "@/lib/actions/reporting";
 import { getTeamsForFilter, getProjectsForSelect } from "@/lib/actions/task";
 import { getClients } from "@/lib/actions/client";
+import { currentMonthSaoPaulo, monthRangeSaoPaulo } from "@/lib/dates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Clock, Users, Briefcase, Building2, Workflow } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+
+/** Localized "month year" label for a "YYYY-MM" value. */
+function monthLabel(ym: string, locale: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  return new Intl.DateTimeFormat(locale, {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(y, m - 1, 1)));
+}
 
 // Dedupe the user query across the summary banner and the "Hours by User" card
 // (both need it, in different layout positions) so it runs once per request.
@@ -229,32 +241,30 @@ export default async function ProductivityReportPage({
   const params = await searchParams;
 
   // Parse filter parameters
-  const monthStr = typeof params.month === "string" ? params.month : undefined;
+  const rawMonth = typeof params.month === "string" ? params.month : undefined;
   const teamId = typeof params.teamId === "string" && params.teamId ? params.teamId : undefined;
   const clientId =
     typeof params.clientId === "string" && params.clientId ? params.clientId : undefined;
   const projectId =
     typeof params.projectId === "string" && params.projectId ? params.projectId : undefined;
 
-  // Month (YYYY-MM) → first/last day of that month (UTC, to avoid TZ drift).
-  let startDate: Date | undefined;
-  let endDate: Date | undefined;
-  if (monthStr && /^\d{4}-\d{2}$/.test(monthStr)) {
-    const [year, month] = monthStr.split("-").map(Number);
-    startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-    endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
-  }
+  // Default to the current month (SP) even when no logs exist yet.
+  const monthStr = rawMonth && /^\d{4}-\d{2}$/.test(rawMonth) ? rawMonth : currentMonthSaoPaulo();
+  const { start: startDate, end: endDate } = monthRangeSaoPaulo(monthStr);
 
   // Stable reference so cache() dedupes loadHoursByUser across sections.
   const filters: ProductivityFilters = { startDate, endDate, teamId, clientId, projectId };
 
-  const [t, teams, clients, projects] = await Promise.all([
+  const [t, locale, months, teams, clients, projects] = await Promise.all([
     getTranslations("reportsProductivity"),
+    getLocale(),
+    getAvailableTimeLogMonths(),
     getTeamsForFilter(),
     getClients(),
     getProjectsForSelect(),
   ]);
-  const hasFilters = Boolean(monthStr || teamId || clientId || projectId);
+  // "Limpar" is meaningful only when a non-default filter is active.
+  const hasFilters = Boolean(rawMonth || teamId || clientId || projectId);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -277,18 +287,29 @@ export default async function ProductivityReportPage({
           <CardTitle className="text-lg">{t("filters.title")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form method="GET" className="flex flex-wrap gap-4 items-end">
-            <div className="min-w-[150px]">
+          {/* key remounts the uncontrolled selects when the active filters change
+              (incl. "Limpar"), so their displayed values reset to the new defaults. */}
+          <form
+            method="GET"
+            key={`${monthStr}|${teamId ?? ""}|${clientId ?? ""}|${projectId ?? ""}`}
+            className="flex flex-wrap gap-4 items-end"
+          >
+            <div className="min-w-[160px]">
               <label htmlFor="month" className="block text-sm font-semibold text-foreground mb-2">
                 {t("filters.month")}
               </label>
-              <input
-                type="month"
+              <select
                 id="month"
                 name="month"
                 defaultValue={monthStr}
                 className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
-              />
+              >
+                {months.map((m) => (
+                  <option key={m} value={m}>
+                    {monthLabel(m, locale)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="min-w-[160px] flex-1">
               <label htmlFor="teamId" className="block text-sm font-semibold text-foreground mb-2">
