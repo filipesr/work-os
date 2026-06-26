@@ -1,9 +1,19 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { completeStageAndAdvance } from "@/lib/actions/task";
+import {
+  previewNextStages,
+  getTeamMembers,
+  type PreviewStage,
+} from "@/lib/actions/stage-assignment";
+import { StageAssigneeSelect } from "@/components/ui/StageAssigneeSelect";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
+
+type Member = { id: string; name: string | null; email: string | null };
+type MembersByStage = Record<string, Member[]>;
 
 interface Stage {
   id: string;
@@ -24,6 +34,8 @@ export function AdvanceStageButton({
   open: controlledOpen,
   onOpenChange,
 }: AdvanceStageButtonProps) {
+  const t = useTranslations("tasks.stages");
+
   const [internalOpen, setInternalOpen] = useState(false);
   const showConfirm = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setShowConfirm = (value: boolean) => {
@@ -33,11 +45,79 @@ export function AdvanceStageButton({
       setInternalOpen(value);
     }
   };
+
   const [isPending, startTransition] = useTransition();
   const [previewResult, setPreviewResult] = useState<{
     activated: Stage[];
     blocked: Stage[];
   } | null>(null);
+
+  // Pre-confirm preview state
+  const [previewData, setPreviewData] = useState<{
+    activated: PreviewStage[];
+    blocked: PreviewStage[];
+  } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [membersByStage, setMembersByStage] = useState<MembersByStage>({});
+  const [assignments, setAssignments] = useState<Record<string, string>>({});
+
+  // Load next-stage preview when the modal opens
+  useEffect(() => {
+    if (!showConfirm || !currentStageId) return;
+
+    let cancelled = false;
+    setPreviewLoading(true);
+    setPreviewData(null);
+    setAssignments({});
+    setMembersByStage({});
+
+    (async () => {
+      try {
+        const result = await previewNextStages(taskId, currentStageId);
+        if (cancelled) return;
+
+        const allStages = [...result.activated, ...result.blocked];
+        const stagesWithTeam = allStages.filter((s) => s.defaultTeamId !== null);
+
+        const memberResults = await Promise.all(
+          stagesWithTeam.map(async (s) => ({
+            stageId: s.id,
+            members: await getTeamMembers(s.defaultTeamId as string),
+          }))
+        );
+
+        if (cancelled) return;
+
+        const newMembersByStage: MembersByStage = {};
+        for (const { stageId, members } of memberResults) {
+          newMembersByStage[stageId] = members;
+        }
+
+        setPreviewData(result);
+        setMembersByStage(newMembersByStage);
+      } catch {
+        // fail silently — the user can still confirm without assignments
+      } finally {
+        if (!cancelled) setPreviewLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showConfirm, taskId, currentStageId]);
+
+  const handleAssignmentChange = (stageId: string, userId: string) => {
+    setAssignments((prev) => {
+      const next = { ...prev };
+      if (userId) {
+        next[stageId] = userId;
+      } else {
+        delete next[stageId];
+      }
+      return next;
+    });
+  };
 
   // Don't show button if there's no current stage
   if (!currentStageId) {
@@ -53,7 +133,11 @@ export function AdvanceStageButton({
 
   const handleComplete = async () => {
     startTransition(async () => {
-      const result = await completeStageAndAdvance(taskId, currentStageId);
+      const result = await completeStageAndAdvance(
+        taskId,
+        currentStageId,
+        Object.keys(assignments).length > 0 ? assignments : undefined
+      );
 
       if (result?.error) {
         toast.error(result.error);
@@ -165,8 +249,74 @@ export function AdvanceStageButton({
               </p>
             </div>
 
-            {/* Show preview if available */}
-            {previewResult && (
+            {/* Pre-confirm preview of next stages + optional assignee selects */}
+            {previewLoading && (
+              <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t("advanceModal.loading")}
+              </div>
+            )}
+            {previewData && (
+              <div className="mb-6 space-y-3">
+                {previewData.activated.length > 0 && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm font-semibold text-green-800 mb-2">
+                      ✓ {t("advanceModal.activatedTitle")}
+                    </p>
+                    <ul className="space-y-2">
+                      {previewData.activated.map((stage) => (
+                        <li
+                          key={stage.id}
+                          className="flex items-center justify-between gap-2 text-xs text-green-700"
+                        >
+                          <span>
+                            • {stage.name} (ordem {stage.order})
+                          </span>
+                          <StageAssigneeSelect
+                            stageId={stage.id}
+                            teamName={stage.defaultTeam?.name ?? null}
+                            members={membersByStage[stage.id] ?? []}
+                            value={assignments[stage.id] ?? ""}
+                            onChange={(userId) => handleAssignmentChange(stage.id, userId)}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {previewData.blocked.length > 0 && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm font-semibold text-yellow-800 mb-2">
+                      🔒 {t("advanceModal.blockedTitle")}
+                    </p>
+                    <ul className="space-y-2">
+                      {previewData.blocked.map((stage) => (
+                        <li
+                          key={stage.id}
+                          className="flex items-center justify-between gap-2 text-xs text-yellow-700"
+                        >
+                          <span>
+                            • {stage.name} (ordem {stage.order})
+                          </span>
+                          <StageAssigneeSelect
+                            stageId={stage.id}
+                            teamName={stage.defaultTeam?.name ?? null}
+                            members={membersByStage[stage.id] ?? []}
+                            value={assignments[stage.id] ?? ""}
+                            onChange={(userId) => handleAssignmentChange(stage.id, userId)}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Show post-confirm preview if available (legacy — currently unreachable
+                because modal closes before re-render, kept for future use) */}
+            {previewResult && !previewData && (
               <div className="mb-6 space-y-3">
                 {previewResult.activated.length > 0 && (
                   <div className="p-3 bg-green-50 border border-green-200 rounded-lg">

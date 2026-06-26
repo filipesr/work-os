@@ -46,7 +46,12 @@
     "dependencies": "Dependencias",
     "noDependencies": "Sin dependencias",
     "blockedBy": "Bloqueada por",
-    "completeAndAdvance": "Completar y Avanzar"
+    "completeAndAdvance": "Completar y Avanzar",
+    "advanceModal": {
+      "loading": "Cargando próximas etapas...",
+      "activatedTitle": "Etapas que se activarán:",
+      "blockedTitle": "Etapas que quedarán bloqueadas:"
+    }
   },
   "comments": {
     "title": "Comentarios",
