@@ -24,6 +24,10 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - **Relatório `/reports/productivity`:** filtros de **mês** (select dos meses com
   registro, padrão mês atual), **equipe**, **cliente** e **projeto**; cards de Projeto/
   Cliente ocultados quando o respectivo filtro está ativo.
+- **Relatório `/reports/performance`:** mesmos filtros de produtividade (mês + equipe +
+  cliente + projeto), com idêntico padrão de UX.
+- **Tela `/admin/projects/{id}`:** card "Artefatos" com o total ao lado de "Concluída" e
+  **tabela de artefatos pesquisável** (título/link, tipo, tarefa, autor, data).
 - Documentação: plano em `docs/superpowers/plans/2026-06-26-stage-precreation-and-assignment.md`
   e auditoria em `docs/nextjs-best-practices-audit.md`.
 
@@ -40,6 +44,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Link "voltar" da tarefa retorna ao **projeto** (`/admin/projects/{id}`).
 - Avatares de comentários/artefatos/tempos passam pelo proxy de imagem (corrige imagem
   quebrada de fotos do Google).
+- Status da demanda nos modais do dia do calendário mensal agora é **traduzido** (antes
+  mostrava o enum cru, ex.: `IN_PROGRESS`).
 - Type-safety: removidos os `any` das Server Actions; validação Zod em stage/template/
   dependency; correção do módulo `"use server"` (helpers síncronos movidos para fora).
 
