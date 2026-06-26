@@ -64,7 +64,7 @@ export async function createTask(formData: FormData) {
   const dueDate = dueDateStr ? new Date(dueDateStr) : null;
 
   // Execute task creation within a transaction
-  const task = await prisma.$transaction(async (tx: any) => {
+  const task = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // 1. Find the first stage of the selected template
     // The first stage is the one with the lowest order number
     const firstStage = await tx.templateStage.findFirst({
@@ -159,7 +159,7 @@ export async function createTasksBatch(input: {
   const validIds = projects.map((p) => p.id);
   if (validIds.length === 0) throw new Error("Nenhum projeto válido selecionado.");
 
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const projectId of validIds) {
       const task = await tx.task.create({
         data: {
@@ -520,29 +520,30 @@ export async function unassignTask(taskId: string) {
   const currentUserId = currentUser.id as string;
 
   try {
-    // Get task with assignee info
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        assignee: true,
-        project: {
-          include: {
-            client: true,
+    // Fetch task + current user's role in parallel (independent queries)
+    const [task, userWithRole] = await Promise.all([
+      prisma.task.findUnique({
+        where: { id: taskId },
+        include: {
+          assignee: true,
+          project: {
+            include: {
+              client: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.user.findUnique({
+        where: { id: currentUserId },
+        select: { role: true },
+      }),
+    ]);
 
     if (!task) {
       return { error: "Tarefa não encontrada" };
     }
 
     // Check permissions: must be admin, manager, or the assignee themselves
-    const userWithRole = await prisma.user.findUnique({
-      where: { id: currentUserId },
-      select: { role: true },
-    });
-
     const isAdmin = userWithRole?.role === "ADMIN";
     const isManager = userWithRole?.role === "MANAGER";
     const isAssignee = task.assigneeId === currentUserId;
@@ -594,24 +595,25 @@ export async function completeTask(taskId: string) {
   const currentUserId = currentUser.id as string;
 
   try {
-    // Get task with assignee info
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        assignee: true,
-      },
-    });
+    // Fetch task + current user's role in parallel (independent queries)
+    const [task, userWithRole] = await Promise.all([
+      prisma.task.findUnique({
+        where: { id: taskId },
+        include: {
+          assignee: true,
+        },
+      }),
+      prisma.user.findUnique({
+        where: { id: currentUserId },
+        select: { role: true },
+      }),
+    ]);
 
     if (!task) {
       return { error: "Tarefa não encontrada" };
     }
 
     // Check permissions: must be admin, manager, or the assignee
-    const userWithRole = await prisma.user.findUnique({
-      where: { id: currentUserId },
-      select: { role: true },
-    });
-
     const isAdmin = userWithRole?.role === "ADMIN";
     const isManager = userWithRole?.role === "MANAGER";
     const isAssignee = task.assigneeId === currentUserId;
@@ -695,8 +697,9 @@ export async function activateNextStages(taskId: string, completedStageId: strin
       },
     });
 
-    const activated: any[] = [];
-    const blocked: any[] = [];
+    type DependentStage = (typeof dependentStages)[number]["stage"];
+    const activated: DependentStage[] = [];
+    const blocked: DependentStage[] = [];
 
     // 3. For each dependent stage, check if ALL its dependencies are complete
     for (const dep of dependentStages) {
@@ -801,32 +804,38 @@ export async function completeStageAndAdvance(taskId: string, stageId: string) {
   const currentUserId = currentUser.id as string;
 
   try {
-    // 1. Get current active stage
-    const activeStage = await prisma.taskActiveStage.findUnique({
-      where: {
-        taskId_stageId: {
-          taskId,
-          stageId,
-        },
-      },
-      include: {
-        stage: {
-          include: {
-            template: true,
-            defaultTeam: true,
+    // 1. Get current active stage + current user's role in parallel
+    const [activeStage, userWithRole] = await Promise.all([
+      prisma.taskActiveStage.findUnique({
+        where: {
+          taskId_stageId: {
+            taskId,
+            stageId,
           },
         },
-        task: {
-          include: {
-            project: {
-              include: {
-                client: true,
+        include: {
+          stage: {
+            include: {
+              template: true,
+              defaultTeam: true,
+            },
+          },
+          task: {
+            include: {
+              project: {
+                include: {
+                  client: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      }),
+      prisma.user.findUnique({
+        where: { id: currentUserId },
+        select: { role: true },
+      }),
+    ]);
 
     if (!activeStage) {
       return { error: "Etapa ativa não encontrada" };
@@ -837,11 +846,6 @@ export async function completeStageAndAdvance(taskId: string, stageId: string) {
     }
 
     // 2. Check permissions
-    const userWithRole = await prisma.user.findUnique({
-      where: { id: currentUserId },
-      select: { role: true },
-    });
-
     const isAdmin = userWithRole?.role === "ADMIN";
     const isManager = userWithRole?.role === "MANAGER";
     const isAssignee = activeStage.assigneeId === currentUserId;
@@ -1311,29 +1315,31 @@ export async function unassignActiveStage(taskId: string, stageId: string) {
   const currentUserId = currentUser.id as string;
 
   try {
-    const activeStage = await prisma.taskActiveStage.findUnique({
-      where: {
-        taskId_stageId: {
-          taskId,
-          stageId,
+    // Fetch active stage + current user's role in parallel (independent queries)
+    const [activeStage, userWithRole] = await Promise.all([
+      prisma.taskActiveStage.findUnique({
+        where: {
+          taskId_stageId: {
+            taskId,
+            stageId,
+          },
         },
-      },
-      include: {
-        stage: true,
-        assignee: true,
-      },
-    });
+        include: {
+          stage: true,
+          assignee: true,
+        },
+      }),
+      prisma.user.findUnique({
+        where: { id: currentUserId },
+        select: { role: true },
+      }),
+    ]);
 
     if (!activeStage) {
       return { error: "Etapa ativa não encontrada" };
     }
 
     // Check permissions
-    const userWithRole = await prisma.user.findUnique({
-      where: { id: currentUserId },
-      select: { role: true },
-    });
-
     const isAdmin = userWithRole?.role === "ADMIN";
     const isManager = userWithRole?.role === "MANAGER";
     const isAssignee = activeStage.assigneeId === currentUserId;
@@ -1533,29 +1539,34 @@ export async function revertTaskStage(taskId: string, revertToStageId: string, c
   }
 
   try {
-    // 1. Get the target stage to revert to
-    const targetStage = await prisma.templateStage.findUnique({
-      where: { id: revertToStageId },
-      include: {
-        template: true,
-        defaultTeam: true,
-      },
-    });
+    // 1-3. Fetch target stage, current active stages, and user role in parallel
+    // (independent reads — validations applied afterwards).
+    const [targetStage, currentActiveStages, userWithRole] = await Promise.all([
+      prisma.templateStage.findUnique({
+        where: { id: revertToStageId },
+        include: {
+          template: true,
+          defaultTeam: true,
+        },
+      }),
+      prisma.taskActiveStage.findMany({
+        where: {
+          taskId,
+          status: { in: ["ACTIVE", "BLOCKED"] },
+        },
+        include: {
+          stage: true,
+        },
+      }),
+      prisma.user.findUnique({
+        where: { id: currentUserId },
+        select: { role: true, name: true },
+      }),
+    ]);
 
     if (!targetStage) {
       return { error: "Etapa de destino não encontrada" };
     }
-
-    // 2. Get all current active stages
-    const currentActiveStages = await prisma.taskActiveStage.findMany({
-      where: {
-        taskId,
-        status: { in: ["ACTIVE", "BLOCKED"] },
-      },
-      include: {
-        stage: true,
-      },
-    });
 
     if (currentActiveStages.length === 0) {
       return { error: "Não há etapas ativas para reverter" };
@@ -1568,12 +1579,7 @@ export async function revertTaskStage(taskId: string, revertToStageId: string, c
       return { error: "Só é possível reverter para uma etapa anterior." };
     }
 
-    // 3. Check permissions - must be admin, manager, or assignee of at least one active stage
-    const userWithRole = await prisma.user.findUnique({
-      where: { id: currentUserId },
-      select: { role: true, name: true },
-    });
-
+    // Check permissions - must be admin, manager, or assignee of at least one active stage
     const isAdmin = userWithRole?.role === "ADMIN";
     const isManager = userWithRole?.role === "MANAGER";
     const isAssignee = currentActiveStages.some((as) => as.assigneeId === currentUserId);
@@ -1583,7 +1589,7 @@ export async function revertTaskStage(taskId: string, revertToStageId: string, c
     }
 
     // 4. Execute reversion in a transaction
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 4a. Mark all current active/blocked stages as COMPLETED
       for (const activeStage of currentActiveStages) {
         await tx.taskActiveStage.update({

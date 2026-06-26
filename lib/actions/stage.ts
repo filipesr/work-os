@@ -4,22 +4,23 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
+import { templateStageSchema } from "@/lib/validations";
 
 export async function createTemplateStage(templateId: string, formData: FormData) {
   await requireAdmin();
 
-  const name = formData.get("name") as string;
-  const order = parseInt(formData.get("order") as string);
-  const defaultTeamId = formData.get("defaultTeamId") as string;
-  const dependencies = formData.getAll("dependencies[]") as string[];
+  const parsed = templateStageSchema.safeParse({
+    name: formData.get("name") ?? "",
+    order: formData.get("order") ?? undefined,
+    defaultTeamId: (formData.get("defaultTeamId") as string) || undefined,
+    dependencies: formData.getAll("dependencies[]"),
+  });
 
-  if (!name) {
-    return { error: "Stage name is required" };
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  if (isNaN(order)) {
-    return { error: "Valid order number is required" };
-  }
+  const { name, order, defaultTeamId, dependencies } = parsed.data;
 
   try {
     const newStage = await prisma.templateStage.create({
@@ -53,18 +54,18 @@ export async function createTemplateStage(templateId: string, formData: FormData
 export async function updateTemplateStage(stageId: string, templateId: string, formData: FormData) {
   await requireAdmin();
 
-  const name = formData.get("name") as string;
-  const order = parseInt(formData.get("order") as string);
-  const defaultTeamId = formData.get("defaultTeamId") as string;
-  const dependencies = formData.getAll("dependencies[]") as string[];
+  const parsed = templateStageSchema.safeParse({
+    name: formData.get("name") ?? "",
+    order: formData.get("order") ?? undefined,
+    defaultTeamId: (formData.get("defaultTeamId") as string) || undefined,
+    dependencies: formData.getAll("dependencies[]"),
+  });
 
-  if (!name) {
-    return { error: "Stage name is required" };
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  if (isNaN(order)) {
-    return { error: "Valid order number is required" };
-  }
+  const { name, order, defaultTeamId, dependencies } = parsed.data;
 
   try {
     await prisma.templateStage.update({

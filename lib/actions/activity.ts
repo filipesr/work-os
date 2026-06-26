@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { requireMemberOrHigher, requireManagerOrAdmin } from "@/lib/permissions";
 
@@ -27,7 +28,7 @@ export async function startWorkOnTask(taskId: string, currentStageId: string) {
   }
 
   try {
-    const result = await prisma.$transaction(async (tx: any) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Find and stop any *previous* active log for this user
       const previousActiveLog = await tx.activityLog.findFirst({
         where: {
@@ -112,7 +113,7 @@ export async function stopWorkOnTask(activeLogId: string, taskId: string, descri
     const endedAt = new Date();
 
     // Stop the activity log and create TimeLog entry in a transaction
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Stop the activity log
       await tx.activityLog.update({
         where: { id: activeLogId },
