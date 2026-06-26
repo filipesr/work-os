@@ -2,6 +2,7 @@
 
 import { TimeLog, User, TemplateStage } from "@prisma/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -35,7 +36,7 @@ export function TimeLogsList({ timeLogs }: TimeLogsListProps) {
           {/* Header: User + Date */}
           <div className="flex items-start gap-3 mb-2">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={log.user.image || undefined} />
+              <AvatarImage src={getProxiedImageUrl(log.user.image) || undefined} />
               <AvatarFallback className="text-xs">
                 {log.user.name?.charAt(0).toUpperCase() || "?"}
               </AvatarFallback>
@@ -68,9 +69,7 @@ export function TimeLogsList({ timeLogs }: TimeLogsListProps) {
 
           {/* Description */}
           {log.description && (
-            <p className="text-sm text-foreground leading-relaxed">
-              {log.description}
-            </p>
+            <p className="text-sm text-foreground leading-relaxed">{log.description}</p>
           )}
         </div>
       ))}

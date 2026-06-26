@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getTaskById, getPreviousStages } from "@/lib/actions/task";
+import { getTaskById, getPreviousStages, getTaskTimeTracking } from "@/lib/actions/task";
 import { AdvanceStageButton } from "@/components/tasks/AdvanceStageButton";
 import { RevertStageButton } from "@/components/tasks/RevertStageButton";
 import { UnassignActiveStageButton } from "@/components/tasks/UnassignActiveStageButton";
 import { CompleteTaskButton } from "@/components/tasks/CompleteTaskButton";
 import { ArtifactsList } from "@/components/tasks/ArtifactsList";
+import { TimeLogsList } from "@/components/tasks/TimeLogsList";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { getTranslations } from "next-intl/server";
 
 function formatDate(value: Date | string): string {
@@ -25,9 +28,10 @@ function formatDateTime(value: Date | string): string {
 export default async function TaskDetailPage({ params }: { params: Promise<{ taskId: string }> }) {
   const t = await getTranslations("admin.tasks.detail");
   const { taskId } = await params;
-  const [task, previousStages] = await Promise.all([
+  const [task, previousStages, timeTracking] = await Promise.all([
     getTaskById(taskId),
     getPreviousStages(taskId),
+    getTaskTimeTracking(taskId),
   ]);
 
   if (!task) {
@@ -254,6 +258,43 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Time tracking (registered time logs + open/running activities) */}
+          <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-6">
+            <h2 className="text-xl font-bold text-foreground mb-4">{t("timeLogs")}</h2>
+
+            {timeTracking.openActivities.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {timeTracking.openActivities.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center gap-3 rounded-lg border border-green-300 bg-green-50 dark:bg-green-950/20 px-3 py-2"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={getProxiedImageUrl(a.user.image) || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {a.user.name?.charAt(0).toUpperCase() || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {a.user.name || a.user.email}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("timeStartedAt")} {formatDateTime(a.startedAt)}
+                      </p>
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-xs font-bold text-green-800">
+                      <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                      {t("timeRunning")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <TimeLogsList timeLogs={timeTracking.timeLogs} />
           </div>
 
           {/* Comments */}

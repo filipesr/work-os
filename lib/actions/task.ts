@@ -323,6 +323,35 @@ export async function getTaskById(taskId: string) {
   };
 }
 
+/**
+ * Time tracking for a task: finalized manual time logs plus any OPEN activity
+ * logs (work started but not yet stopped). Open activities are not yet TimeLogs,
+ * so there is no double counting.
+ */
+export async function getTaskTimeTracking(taskId: string) {
+  await getCurrentUser();
+
+  const [timeLogs, openActivities] = await Promise.all([
+    prisma.timeLog.findMany({
+      where: { taskId },
+      include: {
+        user: { select: { id: true, name: true, email: true, image: true } },
+        stage: { select: { id: true, name: true, order: true } },
+      },
+      orderBy: { logDate: "desc" },
+    }),
+    prisma.activityLog.findMany({
+      where: { taskId, endedAt: null },
+      include: {
+        user: { select: { id: true, name: true, email: true, image: true } },
+      },
+      orderBy: { startedAt: "asc" },
+    }),
+  ]);
+
+  return { timeLogs, openActivities };
+}
+
 export type TaskListFilters = {
   status?: TaskStatus;
   priority?: TaskPriority;

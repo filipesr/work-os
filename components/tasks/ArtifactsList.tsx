@@ -2,6 +2,7 @@
 
 import { TaskArtifact, User } from "@prisma/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { ExternalLink, FileText, Image, Video, Figma, File } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -72,7 +73,7 @@ export function ArtifactsList({ artifacts }: ArtifactsListProps) {
                 {/* User */}
                 <div className="flex items-center gap-1">
                   <Avatar className="h-4 w-4">
-                    <AvatarImage src={artifact.user.image || undefined} />
+                    <AvatarImage src={getProxiedImageUrl(artifact.user.image) || undefined} />
                     <AvatarFallback className="text-[8px]">
                       {artifact.user.name?.charAt(0).toUpperCase() || "?"}
                     </AvatarFallback>

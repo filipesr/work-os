@@ -397,6 +397,9 @@
         "BLOCKED": "Bloqueada",
         "COMPLETED": "Concluída"
       },
+      "timeLogs": "Tempos Registrados",
+      "timeRunning": "Em andamento",
+      "timeStartedAt": "Iniciado em",
       "stageHistory": "Histórico de Etapas",
       "noStageHistory": "Ainda não há histórico de etapas",
       "enteredBy": "Iniciado por",
