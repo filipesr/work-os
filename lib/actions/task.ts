@@ -1561,82 +1561,43 @@ export async function revertTaskStage(taskId: string, revertToStageId: string, c
 
     // 4. Execute reversion in a transaction
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 4a. Mark all current active/blocked stages as COMPLETED
+      // 4a. Fechar logs abertos das etapas que estavam em andamento e marcá-las como REVERTED.
       for (const activeStage of currentActiveStages) {
-        await tx.taskActiveStage.update({
-          where: { id: activeStage.id },
-          data: {
-            status: "COMPLETED",
-            completedAt: new Date(),
-          },
-        });
-
-        // Close the stage log
         const openLog = await tx.taskStageLog.findFirst({
-          where: {
-            taskId,
-            stageId: activeStage.stageId,
-            exitedAt: null,
-          },
+          where: { taskId, stageId: activeStage.stageId, exitedAt: null },
         });
-
         if (openLog) {
           await tx.taskStageLog.update({
             where: { id: openLog.id },
-            data: {
-              exitedAt: new Date(),
-              status: "REVERTED",
-            },
+            data: { exitedAt: new Date(), status: "REVERTED" },
           });
         }
       }
 
-      // 4b. Check if target stage already has an active entry (shouldn't happen, but check)
-      const existingTargetStage = await tx.taskActiveStage.findUnique({
-        where: {
-          taskId_stageId: {
-            taskId,
-            stageId: revertToStageId,
-          },
-        },
+      // 4b. Resetar TODAS as etapas a partir da alvo (inclusive posteriores) para INACTIVE.
+      await tx.taskActiveStage.updateMany({
+        where: { taskId, stage: { order: { gt: targetStage.order } } },
+        data: { status: "INACTIVE", completedAt: null },
       });
 
-      if (existingTargetStage) {
-        // Reactivate existing entry
-        await tx.taskActiveStage.update({
-          where: { id: existingTargetStage.id },
-          data: {
-            status: "ACTIVE",
-            assigneeId: null, // Return to backlog
-            completedAt: null,
-          },
-        });
-      } else {
-        // Create new active stage entry
-        await tx.taskActiveStage.create({
-          data: {
-            taskId,
-            stageId: revertToStageId,
-            status: "ACTIVE",
-            assigneeId: null, // Return to backlog
-          },
-        });
-      }
+      // 4c. Reativar a etapa-alvo (volta ao backlog: assignee preservado pode confundir → limpa).
+      await tx.taskActiveStage.update({
+        where: { taskId_stageId: { taskId, stageId: revertToStageId } },
+        data: { status: "ACTIVE", assigneeId: null, completedAt: null },
+      });
 
-      // 4c. Create new stage log entry for re-entering this stage.
-      // The stage is now in progress again, so status stays null (StageLogStatus
-      // only has COMPLETED/REVERTED; null = in progress).
+      // 4d. Novo log de entrada na etapa-alvo (em andamento → status null).
       await tx.taskStageLog.create({
         data: {
           taskId,
           stageId: revertToStageId,
-          userId: currentUserId,
           enteredAt: new Date(),
           exitedAt: null,
+          userId: currentUserId,
         },
       });
 
-      // 4d. Add comment explaining the reversion
+      // 4e. Add comment explaining the reversion
       const userName = userWithRole?.name || user.email;
       const stageNames = currentActiveStages.map((as) => as.stage.name).join(", ");
 
@@ -1648,7 +1609,7 @@ export async function revertTaskStage(taskId: string, revertToStageId: string, c
         },
       });
 
-      // 4e. Update task status to BACKLOG (since returned to backlog)
+      // 4f. Update task status to BACKLOG (since returned to backlog)
       await tx.task.update({
         where: { id: taskId },
         data: {
