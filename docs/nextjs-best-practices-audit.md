@@ -173,3 +173,38 @@ seção "Fora de escopo / próximos passos" — **não são** itens de boas prá
 features adiadas: SLA por etapa (`expectedDuration`), drag-and-drop para reagendar,
 exportação CSV/PDF, notificação de "tarefa atrasada" e relatório individual por
 colaborador (página dedicada).
+
+---
+
+## Follow-ups da feature de pré-criação de etapas (do code review)
+
+Registrados aqui (versionado) a partir do review multi-agente da feature.
+
+### Resolvidos (2026-06-26)
+
+- Build quebrado: módulo `"use server"` exportava funções síncronas → helpers movidos
+  para `lib/stage-assignment-helpers.ts`. **Lição:** o gate de verificação deve incluir
+  `pnpm build`, não só `tsc` + testes.
+- Bug da etapa inicial errada (template com dependências invertidas) → inicia a de menor
+  ordem.
+- Modal de avanço pré-preenche o responsável já definido na criação.
+- `getBlockedDependencies` (dead code) removido; JSDoc do `StageAssigneeSelect` e
+  comentário rascunho corrigidos.
+
+### Abertos (menores, não bloqueantes)
+
+- **`previewNextStages` duplica a predição de `activateNextStages`** (ativa/bloqueia) —
+  duas implementações para manter em sincronia. Considerar extrair um predicado comum.
+- **N+1** em `previewNextStages` ao abrir o modal (uma leitura por etapa/pré-requisito) —
+  ok na escala atual; fazer bulk-fetch se crescer.
+- Migração adiciona `INACTIVE` no fim do enum (sem `BEFORE 'ACTIVE'`) — ordem do enum no
+  banco difere do schema; **inerte** (ninguém ordena por status).
+- `createTasksBatch` lança erro de template inválido em inglês (mensagem do helper) —
+  inconsistência de i18n num caminho de erro raro.
+- Toasts de sucesso em `AdvanceStageButton` ainda hardcoded em PT (pré-existente).
+
+### Verificação pendente
+
+- **Smoke manual** (`pnpm dev` + login Google): criar demanda (ver pipeline + seletores),
+  avançar etapa, conferir tempos em andamento e que `INACTIVE` não vaza em dashboard/
+  "minhas etapas". O automatizado (tsc/build/testes/lint) está verde.

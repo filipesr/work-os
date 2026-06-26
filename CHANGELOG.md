@@ -5,6 +5,44 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [2.1.0] - 2026-06-26
+
+### 🚀 Adicionado
+
+#### Pré-criação de etapas + atribuição de responsável
+
+- **Pré-criação:** ao criar uma demanda, **todas** as etapas já nascem como
+  `TaskActiveStage` — a de menor ordem como `ACTIVE`, as demais com o novo status
+  `INACTIVE`. A criação de etapas passou a existir num único lugar (`createTaskStages`).
+- **Atribuição de responsável por etapa** usando o `assigneeId` já existente, validado
+  no servidor contra a equipe (`defaultTeam`) da etapa:
+  - **Na criação:** card de pré-visualização com seletor de responsável por etapa.
+  - **Na conclusão:** modal de avanço permite atribuir as próximas etapas (e
+    pré-preenche quem já foi definido na criação).
+- **Tela `/admin/tasks/{id}`:** seção "Todas as etapas" (status + responsável de cada
+  etapa) e card "Tempos Registrados" (lançamentos + atividades **em andamento**).
+- **Relatório `/reports/productivity`:** filtros de **mês** (select dos meses com
+  registro, padrão mês atual), **equipe**, **cliente** e **projeto**; cards de Projeto/
+  Cliente ocultados quando o respectivo filtro está ativo.
+- Documentação: plano em `docs/superpowers/plans/2026-06-26-stage-precreation-and-assignment.md`
+  e auditoria em `docs/nextjs-best-practices-audit.md`.
+
+### 🛠️ Modificado
+
+- `activateNextStages` deixou de **criar** etapas e passou a **transicionar**
+  (`INACTIVE`→`ACTIVE`/`BLOCKED`) preservando o `assigneeId`.
+- Reversão de etapa reseta as etapas posteriores para `INACTIVE`.
+- Coluna "Projeto" da lista de etapas e do backlog da equipe virou **"Cliente/Projeto"**.
+- Streaming (Suspense) por widget nos relatórios de produtividade e performance.
+
+### 🐛 Corrigido
+
+- Link "voltar" da tarefa retorna ao **projeto** (`/admin/projects/{id}`).
+- Avatares de comentários/artefatos/tempos passam pelo proxy de imagem (corrige imagem
+  quebrada de fotos do Google).
+- Type-safety: removidos os `any` das Server Actions; validação Zod em stage/template/
+  dependency; correção do módulo `"use server"` (helpers síncronos movidos para fora).
+
 ## [2.0.0] - 2024-11-06
 
 ### 🚀 Adicionado (Breaking Changes)
