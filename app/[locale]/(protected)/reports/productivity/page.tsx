@@ -279,7 +279,7 @@ export default async function ProductivityReportPage({
         <CardContent>
           <form method="GET" className="flex flex-wrap gap-4 items-end">
             <div className="min-w-[150px]">
-              <label htmlFor="month" className="text-sm font-medium block mb-2">
+              <label htmlFor="month" className="block text-sm font-semibold text-foreground mb-2">
                 {t("filters.month")}
               </label>
               <input
@@ -287,18 +287,18 @@ export default async function ProductivityReportPage({
                 id="month"
                 name="month"
                 defaultValue={monthStr}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
               />
             </div>
             <div className="min-w-[160px] flex-1">
-              <label htmlFor="teamId" className="text-sm font-medium block mb-2">
+              <label htmlFor="teamId" className="block text-sm font-semibold text-foreground mb-2">
                 {t("filters.team")}
               </label>
               <select
                 id="teamId"
                 name="teamId"
                 defaultValue={teamId ?? ""}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
               >
                 <option value="">{t("filters.allTeams")}</option>
                 {teams.map((tm) => (
@@ -309,14 +309,17 @@ export default async function ProductivityReportPage({
               </select>
             </div>
             <div className="min-w-[160px] flex-1">
-              <label htmlFor="clientId" className="text-sm font-medium block mb-2">
+              <label
+                htmlFor="clientId"
+                className="block text-sm font-semibold text-foreground mb-2"
+              >
                 {t("filters.client")}
               </label>
               <select
                 id="clientId"
                 name="clientId"
                 defaultValue={clientId ?? ""}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
               >
                 <option value="">{t("filters.allClients")}</option>
                 {clients.map((c) => (
@@ -327,14 +330,17 @@ export default async function ProductivityReportPage({
               </select>
             </div>
             <div className="min-w-[180px] flex-1">
-              <label htmlFor="projectId" className="text-sm font-medium block mb-2">
+              <label
+                htmlFor="projectId"
+                className="block text-sm font-semibold text-foreground mb-2"
+              >
                 {t("filters.project")}
               </label>
               <select
                 id="projectId"
                 name="projectId"
                 defaultValue={projectId ?? ""}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
               >
                 <option value="">{t("filters.allProjects")}</option>
                 {projects.map((p) => (
@@ -346,14 +352,14 @@ export default async function ProductivityReportPage({
             </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+              className="h-11 px-6 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md"
             >
               {t("filters.filter")}
             </button>
             {hasFilters && (
               <Link
                 href="/reports/productivity"
-                className="px-4 py-2 border rounded-md hover:bg-muted"
+                className="h-11 inline-flex items-center px-6 border-2 border-input-border rounded-lg hover:bg-muted transition-all duration-200"
               >
                 {t("filters.clear")}
               </Link>
