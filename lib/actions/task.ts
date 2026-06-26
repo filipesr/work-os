@@ -7,7 +7,11 @@ import { Prisma, type ActiveStageStatus } from "@prisma/client";
 import { auth } from "@/auth";
 import { requireMemberOrHigher, getSessionUser } from "@/lib/permissions";
 import { createTaskSchema } from "@/lib/validations";
-import { createTaskStages, parseStageAssignments } from "@/lib/actions/stage-assignment";
+import {
+  createTaskStages,
+  parseStageAssignments,
+  isValidStageAssignee,
+} from "@/lib/actions/stage-assignment";
 import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
 // Re-export types for backward compatibility
@@ -739,7 +743,11 @@ async function checkAllDependenciesComplete(taskId: string, stageId: string): Pr
 /**
  * Complete current stage and activate next stages (replaces advanceTaskStage)
  */
-export async function completeStageAndAdvance(taskId: string, stageId: string) {
+export async function completeStageAndAdvance(
+  taskId: string,
+  stageId: string,
+  assignments?: Record<string, string>
+) {
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser.id as string;
 
@@ -835,6 +843,29 @@ export async function completeStageAndAdvance(taskId: string, stageId: string) {
 
     // 5. Activate next stages (fork/join logic)
     const { activated, blocked } = await activateNextStages(taskId, stageId);
+
+    // Atribuição opcional das próximas etapas (frente A), validada por equipe.
+    if (assignments && Object.keys(assignments).length > 0) {
+      const nextStages = [...activated, ...blocked]; // cada item tem id + defaultTeam? carregamos membros
+      for (const next of nextStages) {
+        const requested = assignments[next.id];
+        if (!requested) continue;
+        const stageTeam = await prisma.templateStage.findUnique({
+          where: { id: next.id },
+          select: {
+            id: true,
+            defaultTeamId: true,
+            defaultTeam: { select: { members: { select: { id: true } } } },
+          },
+        });
+        if (stageTeam && isValidStageAssignee(stageTeam, requested)) {
+          await prisma.taskActiveStage.update({
+            where: { taskId_stageId: { taskId, stageId: next.id } },
+            data: { assigneeId: requested },
+          });
+        }
+      }
+    }
 
     // 6. Add comment if admin/manager moved without being assignee
     if ((isAdmin || isManager) && !isAssignee) {
