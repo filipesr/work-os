@@ -661,61 +661,31 @@ export async function activateNextStages(taskId: string, completedStageId: strin
     const activated: DependentStage[] = [];
     const blocked: DependentStage[] = [];
 
-    // 3. For each dependent stage, check if ALL its dependencies are complete
+    // 3. Para cada dependente, transicionar a linha PRÉ-CRIADA (nunca criar do zero).
     for (const dep of dependentStages) {
       const stage = dep.stage;
+      const allDepsComplete = await checkAllDependenciesComplete(taskId, stage.id);
+      const nextStatus: ActiveStageStatus = allDepsComplete ? "ACTIVE" : "BLOCKED";
 
-      // Check if this stage is already active or completed
       const existing = await prisma.taskActiveStage.findUnique({
-        where: {
-          taskId_stageId: {
-            taskId,
-            stageId: stage.id,
-          },
-        },
+        where: { taskId_stageId: { taskId, stageId: stage.id } },
       });
 
-      if (existing) {
-        // Stage already exists - check if it was blocked and can now be unblocked
-        if (existing.status === "BLOCKED") {
-          // Check all dependencies
-          const allDepsComplete = await checkAllDependenciesComplete(taskId, stage.id);
-          if (allDepsComplete) {
-            // Unblock it
-            await prisma.taskActiveStage.update({
-              where: { id: existing.id },
-              data: { status: "ACTIVE" },
-            });
-            activated.push(stage);
-          }
-        }
+      // Já trabalhada/finalizada: não regredir.
+      if (existing && (existing.status === "ACTIVE" || existing.status === "COMPLETED")) {
         continue;
       }
 
-      // Check if ALL dependencies are complete
-      const allDepsComplete = await checkAllDependenciesComplete(taskId, stage.id);
+      // Transição preservando assigneeId (NÃO incluir assigneeId no data).
+      // upsert cobre tarefas legadas sem a linha pré-criada (backfill tolerante).
+      await prisma.taskActiveStage.upsert({
+        where: { taskId_stageId: { taskId, stageId: stage.id } },
+        update: { status: nextStatus },
+        create: { taskId, stageId: stage.id, status: nextStatus },
+      });
 
-      if (allDepsComplete) {
-        // Create as ACTIVE
-        await prisma.taskActiveStage.create({
-          data: {
-            taskId,
-            stageId: stage.id,
-            status: "ACTIVE",
-          },
-        });
-        activated.push(stage);
-      } else {
-        // Create as BLOCKED
-        await prisma.taskActiveStage.create({
-          data: {
-            taskId,
-            stageId: stage.id,
-            status: "BLOCKED",
-          },
-        });
-        blocked.push(stage);
-      }
+      if (nextStatus === "ACTIVE") activated.push(stage);
+      else blocked.push(stage);
     }
 
     return { activated, blocked };
