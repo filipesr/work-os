@@ -664,15 +664,25 @@ export async function activateNextStages(taskId: string, completedStageId: strin
     // 3. Para cada dependente, transicionar a linha PRÉ-CRIADA (nunca criar do zero).
     for (const dep of dependentStages) {
       const stage = dep.stage;
-      const allDepsComplete = await checkAllDependenciesComplete(taskId, stage.id);
-      const nextStatus: ActiveStageStatus = allDepsComplete ? "ACTIVE" : "BLOCKED";
 
+      // 3a. Fetch existing row first — avoid the dependency query for stages
+      //     already ACTIVE or COMPLETED (no-regress guard).
       const existing = await prisma.taskActiveStage.findUnique({
         where: { taskId_stageId: { taskId, stageId: stage.id } },
       });
 
       // Já trabalhada/finalizada: não regredir.
       if (existing && (existing.status === "ACTIVE" || existing.status === "COMPLETED")) {
+        continue;
+      }
+
+      // 3b. Only now compute dependency status (skipped for ACTIVE/COMPLETED above).
+      const allDepsComplete = await checkAllDependenciesComplete(taskId, stage.id);
+      const nextStatus: ActiveStageStatus = allDepsComplete ? "ACTIVE" : "BLOCKED";
+
+      // 3c. BLOCKED→BLOCKED: already blocked and still partially unmet — skip the
+      //     no-op write so the stage does NOT appear in the returned `blocked` array.
+      if (existing && existing.status === "BLOCKED" && !allDepsComplete) {
         continue;
       }
 
