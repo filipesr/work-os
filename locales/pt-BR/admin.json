@@ -120,6 +120,17 @@
       "description": "Descrição",
       "noDescription": "Sem descrição",
       "noTimeLogs": "Nenhum registro de tempo recente."
+    },
+    "filters": {
+      "button": "Filtrar",
+      "title": "Filtrar usuários",
+      "search": "Buscar",
+      "searchPlaceholder": "Nome ou email…",
+      "roleLabel": "Papel",
+      "teamLabel": "Equipe",
+      "all": "Todos",
+      "apply": "Aplicar",
+      "clear": "Limpar"
     }
   },
   "teams": {
@@ -372,16 +383,28 @@
           "completed": "Concluídos",
           "week": "Desta semana"
         },
-        "status": { "label": "Status", "all": "Todos os status" },
-        "priority": { "label": "Prioridade", "all": "Todas as prioridades" },
+        "status": {
+          "label": "Status",
+          "all": "Todos os status"
+        },
+        "priority": {
+          "label": "Prioridade",
+          "all": "Todas as prioridades"
+        },
         "assignment": {
           "label": "Atribuição",
           "all": "Todas",
           "assigned": "Atribuídas",
           "unassigned": "Sem atribuição"
         },
-        "client": { "label": "Cliente", "all": "Todos os clientes" },
-        "team": { "label": "Equipe", "all": "Todas as equipes" },
+        "client": {
+          "label": "Cliente",
+          "all": "Todos os clientes"
+        },
+        "team": {
+          "label": "Equipe",
+          "all": "Todas as equipes"
+        },
         "sort": {
           "label": "Ordenar por",
           "recent": "Mais recentes",
