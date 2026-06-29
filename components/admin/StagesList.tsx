@@ -10,6 +10,7 @@ interface Stage {
   id: string;
   name: string;
   order: number;
+  expectedDurationHours: number | null;
   defaultTeamId: string | null;
   defaultTeam: { id: string; name: string } | null;
   dependencies: Array<{
@@ -102,7 +103,7 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                 }}
                 className="space-y-4"
               >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label
                       htmlFor={`edit-name-${stage.id}`}
@@ -156,6 +157,23 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                         </option>
                       ))}
                     </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor={`edit-sla-${stage.id}`}
+                      className="block text-sm font-semibold text-foreground mb-2"
+                    >
+                      {t("slaLabel")}
+                    </label>
+                    <input
+                      type="number"
+                      id={`edit-sla-${stage.id}`}
+                      name="expectedDurationHours"
+                      min="0"
+                      defaultValue={stage.expectedDurationHours ?? ""}
+                      placeholder={t("slaPlaceholder")}
+                      className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
+                    />
                   </div>
                 </div>
 

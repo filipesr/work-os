@@ -10,6 +10,7 @@ vi.mock("@/lib/prisma", () => ({
     taskActiveStage: {
       updateMany: vi.fn().mockResolvedValue({}),
       findUnique: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
       update: vi.fn().mockResolvedValue({}),
       upsert: vi.fn().mockResolvedValue({}),
       findFirst: vi.fn(),
@@ -19,17 +20,23 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {},
 }));
 
+// Readiness is now derived from each dependent stage's own `dependencies`
+// (already loaded by the dependents query) checked against the set of COMPLETED
+// stages (one taskActiveStage.findMany before the loop) — see
+// areAllPrerequisitesComplete. The mocks below provide those two inputs.
+
 describe("activateNextStages preserva assignee ao ativar", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("faz upsert de status sem incluir assigneeId no data", async () => {
     const prisma = (await import("@/lib/prisma")).default as any;
 
-    // First findMany call: dependents of s1
-    // Second findMany call (inside checkAllDependenciesComplete): no deps → allDepsComplete = true
-    prisma.stageDependency.findMany
-      .mockResolvedValueOnce([{ stage: { id: "s2", dependencies: [], defaultTeam: null } }])
-      .mockResolvedValue([]);
+    // Dependents of s1: s2 with no remaining prerequisites → ACTIVE.
+    prisma.stageDependency.findMany.mockResolvedValue([
+      { stage: { id: "s2", dependencies: [], defaultTeam: null } },
+    ]);
+    // Completed stages for the task (s1 was just completed).
+    prisma.taskActiveStage.findMany.mockResolvedValue([{ stageId: "s1" }]);
 
     // Pre-created row for s2 exists and is INACTIVE (has an assigneeId pre-set)
     prisma.taskActiveStage.findUnique.mockResolvedValue({
@@ -51,9 +58,10 @@ describe("activateNextStages preserva assignee ao ativar", () => {
   it("não regride etapa já ACTIVE", async () => {
     const prisma = (await import("@/lib/prisma")).default as any;
 
-    prisma.stageDependency.findMany
-      .mockResolvedValueOnce([{ stage: { id: "s2", dependencies: [], defaultTeam: null } }])
-      .mockResolvedValue([]);
+    prisma.stageDependency.findMany.mockResolvedValue([
+      { stage: { id: "s2", dependencies: [], defaultTeam: null } },
+    ]);
+    prisma.taskActiveStage.findMany.mockResolvedValue([{ stageId: "s1" }]);
 
     // Row is already ACTIVE — must NOT be overwritten
     prisma.taskActiveStage.findUnique.mockResolvedValue({
@@ -72,12 +80,13 @@ describe("activateNextStages preserva assignee ao ativar", () => {
   it("não regride etapa já COMPLETED", async () => {
     const prisma = (await import("@/lib/prisma")).default as any;
 
-    // First findMany: dependents of s1. Second findMany: NOT called (guard fires first).
-    prisma.stageDependency.findMany.mockResolvedValueOnce([
+    // Dependents of s1.
+    prisma.stageDependency.findMany.mockResolvedValue([
       { stage: { id: "s2", dependencies: [], defaultTeam: null } },
     ]);
+    prisma.taskActiveStage.findMany.mockResolvedValue([{ stageId: "s1" }]);
 
-    // Row is already COMPLETED — must be skipped before any dep query
+    // Row is already COMPLETED — must be skipped
     prisma.taskActiveStage.findUnique.mockResolvedValue({
       id: "as2",
       status: "COMPLETED",
@@ -89,18 +98,25 @@ describe("activateNextStages preserva assignee ao ativar", () => {
 
     // No upsert for a COMPLETED stage
     expect(prisma.taskActiveStage.upsert).not.toHaveBeenCalled();
-    // Dep query must NOT have run (findMany called exactly once — the outer call)
+    // Only the outer dependents query runs (readiness no longer queries deps).
     expect(prisma.stageDependency.findMany).toHaveBeenCalledTimes(1);
   });
 
   it("INACTIVE com deps incompletas → upsert BLOCKED e aparece em blocked", async () => {
     const prisma = (await import("@/lib/prisma")).default as any;
 
-    // Outer findMany: s2 depends on s1 (and also on s_other, still incomplete).
-    // Inner findMany (checkAllDependenciesComplete for s2): returns one unmet dep.
-    prisma.stageDependency.findMany
-      .mockResolvedValueOnce([{ stage: { id: "s2", dependencies: [], defaultTeam: null } }])
-      .mockResolvedValue([{ dependsOnStageId: "s_other" }]);
+    // s2 depends on s1 (just completed) AND s_other (still incomplete).
+    prisma.stageDependency.findMany.mockResolvedValue([
+      {
+        stage: {
+          id: "s2",
+          dependencies: [{ dependsOnStageId: "s1" }, { dependsOnStageId: "s_other" }],
+          defaultTeam: null,
+        },
+      },
+    ]);
+    // Only s1 is complete — s_other is not.
+    prisma.taskActiveStage.findMany.mockResolvedValue([{ stageId: "s1" }]);
 
     // s2 row is INACTIVE — eligible for transition
     prisma.taskActiveStage.findUnique.mockResolvedValue({
@@ -108,9 +124,6 @@ describe("activateNextStages preserva assignee ao ativar", () => {
       status: "INACTIVE",
       assigneeId: "u1",
     });
-
-    // s_other has NOT been completed → allDepsComplete = false
-    prisma.taskActiveStage.findFirst.mockResolvedValue(null);
 
     const { activateNextStages } = await import("@/lib/actions/task");
     const result = await activateNextStages("task1", "s1");
@@ -128,10 +141,17 @@ describe("activateNextStages preserva assignee ao ativar", () => {
   it("BLOCKED→BLOCKED: sem mudança de estado — upsert NÃO chamado, não aparece em blocked", async () => {
     const prisma = (await import("@/lib/prisma")).default as any;
 
-    // Outer findMany: s2. Inner findMany: s2 still has an unmet dep.
-    prisma.stageDependency.findMany
-      .mockResolvedValueOnce([{ stage: { id: "s2", dependencies: [], defaultTeam: null } }])
-      .mockResolvedValue([{ dependsOnStageId: "s_other" }]);
+    // s2 still has an unmet dep (s_other).
+    prisma.stageDependency.findMany.mockResolvedValue([
+      {
+        stage: {
+          id: "s2",
+          dependencies: [{ dependsOnStageId: "s1" }, { dependsOnStageId: "s_other" }],
+          defaultTeam: null,
+        },
+      },
+    ]);
+    prisma.taskActiveStage.findMany.mockResolvedValue([{ stageId: "s1" }]);
 
     // s2 is already BLOCKED
     prisma.taskActiveStage.findUnique.mockResolvedValue({
@@ -139,9 +159,6 @@ describe("activateNextStages preserva assignee ao ativar", () => {
       status: "BLOCKED",
       assigneeId: null,
     });
-
-    // s_other still not complete → allDepsComplete = false
-    prisma.taskActiveStage.findFirst.mockResolvedValue(null);
 
     const { activateNextStages } = await import("@/lib/actions/task");
     const result = await activateNextStages("task1", "s1");
@@ -156,10 +173,11 @@ describe("activateNextStages preserva assignee ao ativar", () => {
   it("sem linha pré-criada (null) → upsert com create sem assigneeId", async () => {
     const prisma = (await import("@/lib/prisma")).default as any;
 
-    // Outer findMany: s2. Inner findMany: no deps → allDepsComplete = true.
-    prisma.stageDependency.findMany
-      .mockResolvedValueOnce([{ stage: { id: "s2", dependencies: [], defaultTeam: null } }])
-      .mockResolvedValue([]);
+    // s2 has no remaining prerequisites → ACTIVE.
+    prisma.stageDependency.findMany.mockResolvedValue([
+      { stage: { id: "s2", dependencies: [], defaultTeam: null } },
+    ]);
+    prisma.taskActiveStage.findMany.mockResolvedValue([{ stageId: "s1" }]);
 
     // No pre-created row for this legacy task
     prisma.taskActiveStage.findUnique.mockResolvedValue(null);

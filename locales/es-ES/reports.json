@@ -61,6 +61,11 @@
       "feature1": "Throughput por equipo con comparativo de período",
       "feature2": "Carga actual con clasificación en plazo / atención / atrasada",
       "feature3": "Tiempo promedio por etapa para identificar cuellos de botella"
+    },
+    "userReport": {
+      "title": "Informe por Colaborador",
+      "description": "Productividad individual: horas, etapas completadas y puntualidad.",
+      "pickerPlaceholder": "Selecciona un colaborador"
     }
   },
   "liveActivity": {
@@ -101,5 +106,20 @@
     "filterByUser": "Filtrar por Usuario",
     "filterByProject": "Filtrar por Proyecto",
     "filterByDate": "Filtrar por Fecha"
+  },
+  "export": {
+    "csv": "Exportar CSV",
+    "pdf": "Exportar PDF"
+  },
+  "userReport": {
+    "back": "Volver a Informes",
+    "subtitle": "Productividad · {month}",
+    "totalHours": "Horas registradas",
+    "stagesCompleted": "Etapas completadas",
+    "onTimeRate": "En plazo",
+    "hoursByStage": "Horas por etapa",
+    "stageHeader": "Etapa",
+    "hoursHeader": "Horas",
+    "noData": "Sin datos en el período."
   }
 }

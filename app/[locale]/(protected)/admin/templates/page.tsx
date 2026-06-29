@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getWorkflowTemplates, createWorkflowTemplate } from "@/lib/actions/template";
 import { getTranslations } from "next-intl/server";
+
+export const metadata: Metadata = {
+  title: "Templates",
+};
 
 function formatDate(value: Date | string): string {
   const date = new Date(value);

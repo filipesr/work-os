@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  title: "Equipes",
+};
 import { requireAdmin } from "@/lib/permissions";
 import { DeleteTeamButton } from "./delete-team-button";
 import { getTranslations } from "next-intl/server";

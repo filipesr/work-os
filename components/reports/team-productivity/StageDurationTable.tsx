@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import type { StageDurationRow } from "@/lib/actions/reporting";
+import { ExportButtons } from "@/components/reports/ExportButtons";
 
 interface StageDurationTableProps {
   rows: StageDurationRow[];
@@ -7,6 +8,23 @@ interface StageDurationTableProps {
 
 export async function StageDurationTable({ rows }: StageDurationTableProps) {
   const t = await getTranslations("reportsTeam.stageDuration");
+
+  const exportRows = rows.map((r) => ({
+    stage: r.stageName,
+    template: r.templateName,
+    avgHours: Number(r.avgDurationHours.toFixed(2)),
+    slaHours: r.expectedDurationHours ?? "",
+    slaStatus: r.expectedDurationHours === null ? "" : r.withinSla ? t("onSla") : t("overSla"),
+    samples: r.sampleSize,
+  }));
+  const exportColumns = [
+    { key: "stage" as const, header: t("columns.stage") },
+    { key: "template" as const, header: t("columns.template") },
+    { key: "avgHours" as const, header: t("columns.avgDuration") },
+    { key: "slaHours" as const, header: t("columns.sla") },
+    { key: "slaStatus" as const, header: "SLA" },
+    { key: "samples" as const, header: t("columns.sampleSize") },
+  ];
 
   const formatDuration = (hours: number): string => {
     if (hours >= 1) {
@@ -29,9 +47,17 @@ export async function StageDurationTable({ rows }: StageDurationTableProps) {
 
   return (
     <div className="bg-card border-2 border-border rounded-xl overflow-hidden">
-      <div className="p-6 pb-3">
-        <h2 className="text-lg font-bold text-foreground">{t("title")}</h2>
-        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
+      <div className="p-6 pb-3 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">{t("title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
+        </div>
+        <ExportButtons
+          filename="stage-duration"
+          title={t("title")}
+          columns={exportColumns}
+          rows={exportRows}
+        />
       </div>
       <table className="min-w-full">
         <thead className="bg-muted">
@@ -46,6 +72,9 @@ export async function StageDurationTable({ rows }: StageDurationTableProps) {
               {t("columns.avgDuration")}
             </th>
             <th className="px-6 py-3 text-right text-xs font-bold text-foreground uppercase">
+              {t("columns.sla")}
+            </th>
+            <th className="px-6 py-3 text-right text-xs font-bold text-foreground uppercase">
               {t("columns.sampleSize")}
             </th>
           </tr>
@@ -57,6 +86,21 @@ export async function StageDurationTable({ rows }: StageDurationTableProps) {
               <td className="px-6 py-3 text-sm text-muted-foreground">{row.templateName}</td>
               <td className="px-6 py-3 text-sm text-right font-bold tabular-nums text-foreground">
                 {formatDuration(row.avgDurationHours)}
+              </td>
+              <td className="px-6 py-3 text-sm text-right tabular-nums">
+                {row.expectedDurationHours === null ? (
+                  <span className="text-muted-foreground">{t("noSla")}</span>
+                ) : (
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold ${
+                      row.withinSla
+                        ? "bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300"
+                        : "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300"
+                    }`}
+                  >
+                    {row.expectedDurationHours}h · {row.withinSla ? t("onSla") : t("overSla")}
+                  </span>
+                )}
               </td>
               <td className="px-6 py-3 text-sm text-right tabular-nums text-muted-foreground">
                 {row.sampleSize}

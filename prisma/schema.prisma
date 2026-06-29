@@ -169,6 +169,10 @@ model TemplateStage {
   templateId String
   template   WorkflowTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
+  // SLA: expected time-in-stage in hours. Null = no SLA defined. Used by the
+  // performance report to flag stages whose average duration exceeds the target.
+  expectedDurationHours Int?
+
   defaultTeamId String? // The team auto-assigned (e.g., "QC")
   defaultTeam   Team?   @relation(fields: [defaultTeamId], references: [id], onUpdate: NoAction, onDelete: SetNull)
 

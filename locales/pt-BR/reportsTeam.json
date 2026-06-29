@@ -42,10 +42,14 @@
       "stage": "Etapa",
       "template": "Template",
       "avgDuration": "Tempo médio",
-      "sampleSize": "Amostras"
+      "sampleSize": "Amostras",
+      "sla": "SLA (h)"
     },
     "hoursShort": "{hours}h",
     "minutesShort": "{minutes}min",
-    "empty": "Amostra insuficiente: aguarde mais tarefas serem concluídas"
+    "empty": "Amostra insuficiente: aguarde mais tarefas serem concluídas",
+    "onSla": "No prazo",
+    "overSla": "Acima",
+    "noSla": "—"
   }
 }

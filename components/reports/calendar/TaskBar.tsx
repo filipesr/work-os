@@ -7,9 +7,11 @@ interface TaskBarProps {
   task: CalendarTask;
   weekStart: Date;
   isNoDueDateLane?: boolean;
+  /** When true the bar does not set its own grid column (a draggable wrapper positions it). */
+  disablePositioning?: boolean;
 }
 
-function spanForDueDate(dueDate: Date, weekStart: Date): { start: number; end: number } {
+export function spanForDueDate(dueDate: Date, weekStart: Date): { start: number; end: number } {
   const range = weekRangeFromMonday(weekStart);
   const today = todayInSaoPaulo();
   const dueDay = todayInSaoPaulo(dueDate);
@@ -43,7 +45,12 @@ function spanForDueDate(dueDate: Date, weekStart: Date): { start: number; end: n
   return { start: startCol, end: endCol + 1 };
 }
 
-export async function TaskBar({ task, weekStart, isNoDueDateLane = false }: TaskBarProps) {
+export async function TaskBar({
+  task,
+  weekStart,
+  isNoDueDateLane = false,
+  disablePositioning = false,
+}: TaskBarProps) {
   const t = await getTranslations("reportsCalendar.bar");
 
   const isCompleted = task.status === "COMPLETED";
@@ -92,7 +99,7 @@ export async function TaskBar({ task, weekStart, isNoDueDateLane = false }: Task
       aria-label={ariaLabel}
       className={`group block border rounded-md px-2.5 py-1.5 mx-0.5 text-xs leading-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors overflow-hidden ${toneClasses}`}
       style={
-        isNoDueDateLane
+        isNoDueDateLane || disablePositioning
           ? undefined
           : ({ gridColumnStart: span.start, gridColumnEnd: span.end } as React.CSSProperties)
       }

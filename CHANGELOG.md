@@ -5,6 +5,55 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [2.2.0] - 2026-06-29
+
+### 🚀 Adicionado
+
+#### Produto
+
+- **SLA por etapa:** novo campo `expectedDurationHours` em `TemplateStage` (editável
+  nos forms de criação/edição de etapa). O relatório de produtividade por equipe passa
+  a sinalizar etapas **No prazo/Acima** do SLA com base na duração média real.
+- **Drag-and-drop no calendário:** barras de tarefa no Gantt semanal podem ser
+  arrastadas para outro dia, reagendando `dueDate` (ação `rescheduleTask`, via `@dnd-kit/core`).
+- **Exportação CSV/PDF** em relatórios (produtividade, performance, produtividade por
+  equipe) — geração no cliente com `papaparse` e `jspdf`/`jspdf-autotable`.
+- **Relatório individual por colaborador** (`/reports/user/[userId]`): horas totais,
+  horas por etapa, etapas concluídas e % no prazo; seletor de colaborador no índice de relatórios.
+
+### 🔒 Isolamento entre projetos + frescor de dados (ambiente dev)
+
+- **Porta dedicada:** `pnpm dev` agora roda em **`localhost:3100`** (era 3000). Vários
+  projetos na mesma origem `localhost:3000` compartilhavam cookies, `localStorage` e
+  **Service Workers** — um SW de outro projeto (PWA) chegava a "sequestrar" a porta e
+  servir o app errado. Origem própria por projeto elimina a colisão.
+- **Cookies/armazenamento namespaced:** cookie de sessão `workos.session-token`
+  (`auth.config.ts` + `middleware.ts`), cookie de idioma `workos.NEXT_LOCALE` (next-intl)
+  e chave `workos:preferred-locale` no `localStorage`. Assim o app ignora estado deixado
+  por outros projetos mesmo na mesma origem. **Troca o cookie de sessão → desloga 1 vez.**
+- **Limpeza de Service Worker:** `ServiceWorkerCleanup` (layout raiz) desregistra qualquer
+  SW e apaga o Cache Storage da origem ao carregar (o app não usa SW).
+- **Navegação sempre fresca:** `experimental.staleTimes: { dynamic: 0, static: 0 }` (página
+  e layout/menu refazem fetch ao navegar) + `RefreshOnFocus` (revalida ao voltar o foco/aba
+  e em restauração de bfcache via `pageshow`). Resolve "tarefas excluídas/menu desatualizado
+  até dar hard refresh".
+
+### 🛠️ Modificado / Qualidade
+
+- **Segurança (CSP):** `Content-Security-Policy` agora é gerada por requisição no
+  middleware com **nonce** + `strict-dynamic` (sem `unsafe-inline` em scripts).
+- **Tempo real:** páginas TV e live-activity migradas de polling para **SSE**
+  (`/api/tv/stream`, `/api/live-activity/stream`) com fallback automático a polling.
+- **Performance:** corrigido N+1 de `getTranslations()` por linha no dashboard e N+1 de
+  leitura em `previewNextStages` (bulk-fetch + predicado `areAllPrerequisitesComplete`
+  compartilhado com `activateNextStages`).
+- **Hardening:** validação Zod em todas as funções de `reporting.ts`; metadata/título em
+  8 páginas (`account`, `reports`, `admin/*`); `dynamic = "force-dynamic"` explícito nas rotas protegidas.
+- **i18n:** mensagens de erro de `createTasksBatch` e toasts de `AdvanceStageButton`
+  movidos para os catálogos (`errors`, `toasts`).
+- **Cloudinary removido** por completo (pacote, envs obrigatórias, hosts e `addFileArtifact` morto).
+- **Testes:** novos testes de componente para `KanbanBoard` e `TaskDetailView` (Vitest).
+
 ## [2.1.0] - 2026-06-26
 
 ### 🚀 Adicionado

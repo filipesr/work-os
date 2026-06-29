@@ -42,10 +42,14 @@
       "stage": "Etapa",
       "template": "Plantilla",
       "avgDuration": "Tiempo promedio",
-      "sampleSize": "Muestras"
+      "sampleSize": "Muestras",
+      "sla": "SLA (h)"
     },
     "hoursShort": "{hours}h",
     "minutesShort": "{minutes}min",
-    "empty": "Muestra insuficiente: espera más tareas completadas"
+    "empty": "Muestra insuficiente: espera más tareas completadas",
+    "onSla": "En plazo",
+    "overSla": "Excedido",
+    "noSla": "—"
   }
 }

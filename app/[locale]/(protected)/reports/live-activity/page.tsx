@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import LiveActivityFilters from "./live-activity-filters";
 import { getActiveWorkLogs, getOnlineUsers, getOfflineUsers } from "@/lib/actions/activity";
+import { useLiveSnapshot } from "@/lib/hooks/useLiveSnapshot";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Activity, Clock, RefreshCw, Info } from "lucide-react";
@@ -26,6 +27,12 @@ type ActiveLogData = Awaited<ReturnType<typeof getActiveWorkLogs>>;
 type OnlineUserData = Awaited<ReturnType<typeof getOnlineUsers>>;
 type OfflineUserData = Awaited<ReturnType<typeof getOfflineUsers>>;
 
+type LiveData = {
+  activeLogs: ActiveLogData;
+  onlineUsers: OnlineUserData;
+  offlineUsers: OfflineUserData;
+};
+
 // Combined user type with status
 type UserWithStatus = {
   id: string;
@@ -42,12 +49,6 @@ type UserWithStatus = {
 const DEFAULT_HIDDEN_TEAMS = ["HR", "Finance", "Reception", "General Services", "Manager"];
 
 export default function LiveActivityPage() {
-  const [activeLogs, setActiveLogs] = useState<ActiveLogData>([]);
-  const [onlineUsers, setOnlineUsers] = useState<OnlineUserData>([]);
-  const [offlineUsers, setOfflineUsers] = useState<OfflineUserData>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-
   // Filters (status + teams). HR/Finance/Reception/General Services/Manager
   // start hidden by default.
   const [showOnline, setShowOnline] = useState(true);
@@ -58,34 +59,26 @@ export default function LiveActivityPage() {
   const locale = useLocale();
   const dateLocale = locale === "es-ES" ? es : ptBR;
 
-  const fetchData = async () => {
-    try {
-      const [activeData, onlineData, offlineData] = await Promise.all([
-        getActiveWorkLogs(),
-        getOnlineUsers(),
-        getOfflineUsers(),
-      ]);
-      setActiveLogs(activeData);
-      setOnlineUsers(onlineData);
-      setOfflineUsers(offlineData);
-      setLastUpdated(new Date());
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // Fetch immediately on mount
-    fetchData();
-
-    // Set up the 10-second polling
-    const intervalId = setInterval(fetchData, 10000);
-
-    // Clean up the interval on unmount
-    return () => clearInterval(intervalId);
+  const fetchFallback = useCallback(async (): Promise<LiveData> => {
+    const [activeLogs, onlineUsers, offlineUsers] = await Promise.all([
+      getActiveWorkLogs(),
+      getOnlineUsers(),
+      getOfflineUsers(),
+    ]);
+    return { activeLogs, onlineUsers, offlineUsers };
   }, []);
+
+  // Live snapshots via SSE (/api/live-activity/stream), with polling fallback.
+  const { data, updatedAt } = useLiveSnapshot<LiveData>({
+    streamUrl: "/api/live-activity/stream",
+    fallback: fetchFallback,
+  });
+
+  const activeLogs = data?.activeLogs ?? [];
+  const onlineUsers = data?.onlineUsers ?? [];
+  const offlineUsers = data?.offlineUsers ?? [];
+  const isLoading = data === null;
+  const lastUpdated = updatedAt ?? new Date();
 
   // Combine all users into a single list with status
   const allUsers: UserWithStatus[] = [

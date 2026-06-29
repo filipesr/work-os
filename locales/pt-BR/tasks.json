@@ -52,6 +52,12 @@
       "activatedTitle": "Etapas que serão ativadas:",
       "blockedTitle": "Etapas que serão bloqueadas:",
       "orderLabel": "ordem {order}"
+    },
+    "toasts": {
+      "completedWithActivatedBlocked": "Etapa concluída! {activated} etapa(s) ativada(s), {blocked} etapa(s) bloqueada(s)",
+      "completedWithActivated": "Etapa concluída! {activated} etapa(s) ativada(s)",
+      "completedWithBlocked": "Etapa concluída! {blocked} etapa(s) criada(s) como bloqueadas",
+      "completed": "Etapa concluída com sucesso!"
     }
   },
   "comments": {

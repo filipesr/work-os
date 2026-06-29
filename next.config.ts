@@ -7,6 +7,8 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
+// Static security headers. Content-Security-Policy is intentionally NOT here —
+// it is built per-request with a fresh nonce in middleware.ts (see buildCsp).
 const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
@@ -14,33 +16,24 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-  {
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https://lh3.googleusercontent.com https://res.cloudinary.com",
-      "font-src 'self'",
-      "connect-src 'self'",
-      "frame-ancestors 'none'",
-    ].join("; "),
-  },
 ];
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Don't reuse the client-side Router Cache across navigations: dynamic pages
+  // AND layouts (e.g. the role-aware navbar) refetch on every navigation, so
+  // soft navigation never shows stale data (deleted tasks, outdated menu). The
+  // server is already dynamic; this aligns the client with it. Freshness is
+  // worth more than the small extra refetch on an internal ops tool.
+  experimental: {
+    staleTimes: { dynamic: 0, static: 0 },
+  },
   images: {
     remotePatterns: [
       {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
         pathname: "/**",
       },
     ],

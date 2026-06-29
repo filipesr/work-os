@@ -9,6 +9,7 @@ import { parseWeekParam, weekRangeFromMonday } from "@/lib/dates";
 import { WeekNavigator } from "./WeekNavigator";
 import { CalendarFiltersBar } from "./CalendarFiltersBar";
 import { CalendarGrid } from "@/components/reports/calendar/CalendarGrid";
+import { CalendarDndContext } from "@/components/reports/calendar/CalendarDndContext";
 
 export const metadata: Metadata = {
   title: "Calendário de Tarefas",
@@ -33,7 +34,9 @@ export default async function CalendarPage({ searchParams }: PageProps) {
 
   const params = await searchParams;
   const weekStart = parseWeekParam(params.week);
-  const { end: weekEnd } = weekRangeFromMonday(weekStart);
+  const { end: weekEnd, days } = weekRangeFromMonday(weekStart);
+  // ISO date per day column, consumed by the drag-and-drop reschedule handler.
+  const dayDates = days.map((d) => d.toISOString());
 
   const showCompleted = params.showCompleted === "1";
 
@@ -85,7 +88,9 @@ export default async function CalendarPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      <CalendarGrid buckets={buckets} weekStart={weekStart} />
+      <CalendarDndContext dayDates={dayDates}>
+        <CalendarGrid buckets={buckets} weekStart={weekStart} />
+      </CalendarDndContext>
     </div>
   );
 }

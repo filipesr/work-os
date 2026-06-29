@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
-const ALLOWED_HOSTS = new Set(["lh3.googleusercontent.com", "res.cloudinary.com"]);
+const ALLOWED_HOSTS = new Set(["lh3.googleusercontent.com"]);
 
 export async function GET(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";

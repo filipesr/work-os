@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { TaskStatus } from "@prisma/client";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Administração",
+};
 import { getTranslations } from "next-intl/server";
 
 // StatCard Component

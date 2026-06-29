@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getMyActiveStages, getTeamBacklog } from "@/lib/actions/task";
+
+// The translator returned by getTranslations("dashboard"), passed down so each
+// row reuses the parent's single instance instead of awaiting its own (N+1).
+type DashboardTranslator = Awaited<ReturnType<typeof getTranslations<"dashboard">>>;
+
 import { ClaimActiveStageButton } from "@/components/tasks/ClaimActiveStageButton";
 import { UnassignActiveStageButton } from "@/components/tasks/UnassignActiveStageButton";
 import { TaskPriority, TaskStatus, ActiveStageStatus } from "@prisma/client";
@@ -46,16 +51,17 @@ export type ActiveStageWithDetails = {
 };
 
 // Reusable table row component
-async function ActiveStageRow({
+function ActiveStageRow({
   activeStage,
+  t,
   showClaimButton = false,
   showUnassignButton = false,
 }: {
   activeStage: ActiveStageWithDetails;
+  t: DashboardTranslator;
   showClaimButton?: boolean;
   showUnassignButton?: boolean;
 }) {
-  const t = await getTranslations("dashboard");
   const task = activeStage.task;
   const stage = activeStage.stage;
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
@@ -257,6 +263,7 @@ export async function MyActiveStagesWidget() {
                 <ActiveStageRow
                   key={activeStage.id}
                   activeStage={activeStage}
+                  t={t}
                   showUnassignButton={true}
                 />
               ))}
@@ -321,6 +328,7 @@ export async function TeamBacklogWidget({ teamIds }: { teamIds: string[] }) {
                 <ActiveStageRow
                   key={activeStage.id}
                   activeStage={activeStage}
+                  t={t}
                   showClaimButton={true}
                 />
               ))}

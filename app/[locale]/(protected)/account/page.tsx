@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+
+export const metadata: Metadata = {
+  title: "Conta",
+};
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

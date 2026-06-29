@@ -1,9 +1,17 @@
 "use server";
 
+import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireAnyRole } from "@/lib/auth";
 import { Prisma, UserRole } from "@prisma/client";
 import { formatISODate, currentMonthSaoPaulo, monthKeySaoPaulo } from "@/lib/dates";
+import {
+  productivityFiltersSchema,
+  performanceFiltersSchema,
+  calendarFiltersSchema,
+  startEndRangeSchema,
+  periodRangeSchema,
+} from "@/lib/validations";
 
 // ========== Productivity Report (TimeLog Aggregations) ==========
 
@@ -93,6 +101,7 @@ export async function getAvailableTimeLogMonths(): Promise<string[]> {
 export async function getHoursByUser(filters: ProductivityFilters = {}) {
   // Require MANAGER or ADMIN role
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  filters = productivityFiltersSchema.parse(filters);
 
   const where = buildTimeLogWhere(filters);
 
@@ -132,6 +141,7 @@ export async function getHoursByUser(filters: ProductivityFilters = {}) {
  */
 export async function getHoursByProject(filters: ProductivityFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  filters = productivityFiltersSchema.parse(filters);
 
   const where = buildTimeLogWhere(filters);
 
@@ -173,6 +183,7 @@ export async function getHoursByProject(filters: ProductivityFilters = {}) {
  */
 export async function getHoursByClient(filters: ProductivityFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  filters = productivityFiltersSchema.parse(filters);
 
   const where = buildTimeLogWhere(filters);
 
@@ -213,6 +224,7 @@ export async function getHoursByClient(filters: ProductivityFilters = {}) {
  */
 export async function getHoursByStage(filters: ProductivityFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  filters = productivityFiltersSchema.parse(filters);
 
   const where = buildTimeLogWhere(filters);
 
@@ -352,6 +364,7 @@ export interface LeadTimeMetrics {
  */
 export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  filters = performanceFiltersSchema.parse(filters);
 
   const where = buildStageLogWhere(filters);
 
@@ -419,6 +432,7 @@ export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
  */
 export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  filters = performanceFiltersSchema.parse(filters);
 
   const where: Prisma.TaskStageLogWhereInput = {
     ...buildStageLogWhere(filters),
@@ -489,6 +503,7 @@ export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
  */
 export async function getLeadTimeMetrics(filters: PerformanceFilters = {}) {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  filters = performanceFiltersSchema.parse(filters);
 
   const where = buildLeadTimeWhere(filters);
 
@@ -572,6 +587,7 @@ export interface CalendarBuckets {
 
 export async function getCalendarTasks(filters: CalendarFilters): Promise<CalendarBuckets> {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  filters = calendarFiltersSchema.parse(filters);
 
   const { weekStart, weekEnd, teamId, projectId, userId, showCompleted } = filters;
 
@@ -713,6 +729,7 @@ export async function getMonthlyCalendarDemands(range: {
   end: Date;
 }): Promise<Record<string, MonthlyClientDemands[]>> {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  range = startEndRangeSchema.parse(range);
 
   const tasks = await prisma.task.findMany({
     where: {
@@ -793,6 +810,7 @@ export interface TeamThroughputRow {
 
 export async function getTeamThroughput(range: PeriodRange): Promise<TeamThroughputRow[]> {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  range = periodRangeSchema.parse(range);
 
   const spanMs = range.to.getTime() - range.from.getTime();
   const prevFrom = new Date(range.from.getTime() - spanMs);
@@ -915,10 +933,15 @@ export interface StageDurationRow {
   templateName: string;
   avgDurationHours: number;
   sampleSize: number;
+  /** SLA target in hours (null = no SLA defined for this stage). */
+  expectedDurationHours: number | null;
+  /** Whether the average duration is within the SLA target (null when no SLA). */
+  withinSla: boolean | null;
 }
 
 export async function getStageDuration(range: PeriodRange): Promise<StageDurationRow[]> {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  range = periodRangeSchema.parse(range);
 
   const MIN_SAMPLE = 3;
 
@@ -931,7 +954,10 @@ export async function getStageDuration(range: PeriodRange): Promise<StageDuratio
     include: { stage: { include: { template: true } } },
   });
 
-  const grouped = new Map<string, { name: string; template: string; durations: number[] }>();
+  const grouped = new Map<
+    string,
+    { name: string; template: string; expected: number | null; durations: number[] }
+  >();
 
   for (const log of logs) {
     if (!log.exitedAt) continue;
@@ -942,6 +968,7 @@ export async function getStageDuration(range: PeriodRange): Promise<StageDuratio
       grouped.set(key, {
         name: log.stage.name,
         template: log.stage.template.name,
+        expected: log.stage.expectedDurationHours ?? null,
         durations: [],
       });
     }
@@ -953,12 +980,15 @@ export async function getStageDuration(range: PeriodRange): Promise<StageDuratio
     .map(([id, v]) => {
       const sum = v.durations.reduce((a, b) => a + b, 0);
       const avgMs = sum / v.durations.length;
+      const avgDurationHours = avgMs / (1000 * 60 * 60);
       return {
         stageId: id,
         stageName: v.name,
         templateName: v.template,
-        avgDurationHours: avgMs / (1000 * 60 * 60),
+        avgDurationHours,
         sampleSize: v.durations.length,
+        expectedDurationHours: v.expected,
+        withinSla: v.expected === null ? null : avgDurationHours <= v.expected,
       };
     })
     .sort((a, b) => b.avgDurationHours - a.avgDurationHours);
@@ -972,6 +1002,7 @@ export interface OnTimeRateResult {
 
 export async function getOnTimeRate(range: PeriodRange): Promise<OnTimeRateResult> {
   await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  range = periodRangeSchema.parse(range);
 
   const spanMs = range.to.getTime() - range.from.getTime();
   const prevFrom = new Date(range.from.getTime() - spanMs);
@@ -1042,5 +1073,81 @@ export async function getOnTimeRate(range: PeriodRange): Promise<OnTimeRateResul
     overall,
     previousPercentage: previous.percentage,
     byTeam,
+  };
+}
+
+// ========== Individual Collaborator Report ==========
+
+export interface UserProductivityReport {
+  user: { id: string; name: string | null; email: string | null } | null;
+  totalHours: number;
+  stagesCompleted: number;
+  onTime: { onTime: number; total: number; percentage: number };
+  hoursByStage: { stageId: string; stageName: string; totalHours: number }[];
+}
+
+/**
+ * Per-collaborator productivity for the dedicated report page: total hours
+ * logged, hours broken down by stage, stages completed, and on-time completion
+ * rate — all scoped to one user within a period. Manager/Admin only.
+ */
+export async function getUserProductivityReport(
+  userId: string,
+  range: PeriodRange
+): Promise<UserProductivityReport> {
+  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  const uid = z.string().min(1).parse(userId);
+  range = periodRangeSchema.parse(range);
+
+  const [user, timeLogs, completedLogs] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: uid },
+      select: { id: true, name: true, email: true },
+    }),
+    prisma.timeLog.findMany({
+      where: { userId: uid, logDate: { gte: range.from, lte: range.to } },
+      select: { hoursSpent: true, stageId: true, stage: { select: { name: true } } },
+    }),
+    // Stages this user completed in the period, with the parent task's dates for
+    // the on-time calculation.
+    prisma.taskStageLog.findMany({
+      where: {
+        userId: uid,
+        status: "COMPLETED",
+        exitedAt: { gte: range.from, lte: range.to },
+      },
+      select: { exitedAt: true, task: { select: { dueDate: true } } },
+    }),
+  ]);
+
+  let totalHours = 0;
+  const byStage = new Map<string, { stageName: string; totalHours: number }>();
+  for (const log of timeLogs) {
+    totalHours += log.hoursSpent;
+    const key = log.stageId ?? "__none__";
+    const entry = byStage.get(key) ?? { stageName: log.stage?.name ?? "—", totalHours: 0 };
+    entry.totalHours += log.hoursSpent;
+    byStage.set(key, entry);
+  }
+
+  let onTimeCount = 0;
+  for (const log of completedLogs) {
+    const due = log.task.dueDate;
+    if (due && log.exitedAt && log.exitedAt <= due) onTimeCount++;
+  }
+  const total = completedLogs.length;
+
+  return {
+    user,
+    totalHours,
+    stagesCompleted: total,
+    onTime: {
+      onTime: onTimeCount,
+      total,
+      percentage: total === 0 ? 0 : (onTimeCount / total) * 100,
+    },
+    hoursByStage: Array.from(byStage.entries())
+      .map(([stageId, v]) => ({ stageId, stageName: v.stageName, totalHours: v.totalHours }))
+      .sort((a, b) => b.totalHours - a.totalHours),
   };
 }

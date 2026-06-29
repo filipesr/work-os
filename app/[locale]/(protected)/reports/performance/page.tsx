@@ -16,6 +16,7 @@ import { currentMonthSaoPaulo, monthRangeSaoPaulo, formatMonthLabel } from "@/li
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, TrendingDown, AlertTriangle, Timer, Activity } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
+import { ExportButtons } from "@/components/reports/ExportButtons";
 
 // Dedupe queries shared across two layout positions each (alert + table) so they
 // run once per request while still streaming in their own Suspense boundaries.
@@ -166,12 +167,32 @@ async function BottlenecksSection({ filters, t }: { filters: PerformanceFilters;
 async function AvgTimeSection({ filters, t }: { filters: PerformanceFilters; t: T }) {
   const averageTimePerStage = await loadAvgTime(filters);
 
+  const exportRows = averageTimePerStage.map((s) => ({
+    stage: s.stageName,
+    template: s.templateName,
+    days: Number(s.averageDurationDays.toFixed(1)),
+    count: s.count,
+  }));
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <Timer className="h-5 w-5" />
-          <CardTitle>{t("avgTimePerStage.title")}</CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Timer className="h-5 w-5" />
+            <CardTitle>{t("avgTimePerStage.title")}</CardTitle>
+          </div>
+          <ExportButtons
+            filename="avg-time-per-stage"
+            title={t("avgTimePerStage.title")}
+            columns={[
+              { key: "stage", header: t("avgTimePerStage.stageHeader") },
+              { key: "template", header: "Template" },
+              { key: "days", header: t("avgTimePerStage.timeHeader") },
+              { key: "count", header: "x" },
+            ]}
+            rows={exportRows}
+          />
         </div>
       </CardHeader>
       <CardContent>

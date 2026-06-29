@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   getTVActiveWorkLogs,
   getTVOnlineUsers,
@@ -8,12 +8,18 @@ import {
 } from "@/lib/actions/tv-activity";
 import { RefreshCw } from "lucide-react";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
-import { logger } from "@/lib/logger";
+import { useLiveSnapshot } from "@/lib/hooks/useLiveSnapshot";
 import { useTranslations } from "next-intl";
 
 type ActiveLogData = Awaited<ReturnType<typeof getTVActiveWorkLogs>>;
 type OnlineUserData = Awaited<ReturnType<typeof getTVOnlineUsers>>;
 type OfflineUserData = Awaited<ReturnType<typeof getTVOfflineUsers>>;
+
+type TVData = {
+  activeLogs: ActiveLogData;
+  onlineUsers: OnlineUserData;
+  offlineUsers: OfflineUserData;
+};
 
 type UserWithStatus = {
   id: string;
@@ -28,39 +34,34 @@ type UserWithStatus = {
 };
 
 export default function TVLiveActivityPage() {
-  const [activeLogs, setActiveLogs] = useState<ActiveLogData>([]);
-  const [onlineUsers, setOnlineUsers] = useState<OnlineUserData>([]);
-  const [offlineUsers, setOfflineUsers] = useState<OfflineUserData>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [clock, setClock] = useState(new Date());
 
   const t = useTranslations("reports.liveActivity");
 
-  const fetchData = async () => {
-    try {
-      const [activeData, onlineData, offlineData] = await Promise.all([
-        getTVActiveWorkLogs(),
-        getTVOnlineUsers(),
-        getTVOfflineUsers(),
-      ]);
-      setActiveLogs(activeData);
-      setOnlineUsers(onlineData);
-      setOfflineUsers(offlineData);
-      setIsLoading(false);
-    } catch (error) {
-      logger.error("Error fetching TV data:", error);
-      setIsLoading(false);
-    }
-  };
+  const fetchFallback = useCallback(async (): Promise<TVData> => {
+    const [activeLogs, onlineUsers, offlineUsers] = await Promise.all([
+      getTVActiveWorkLogs(),
+      getTVOnlineUsers(),
+      getTVOfflineUsers(),
+    ]);
+    return { activeLogs, onlineUsers, offlineUsers };
+  }, []);
 
+  // Live snapshots via SSE (/api/tv/stream), with polling fallback.
+  const { data } = useLiveSnapshot<TVData>({
+    streamUrl: "/api/tv/stream",
+    fallback: fetchFallback,
+  });
+
+  const activeLogs = data?.activeLogs ?? [];
+  const onlineUsers = data?.onlineUsers ?? [];
+  const offlineUsers = data?.offlineUsers ?? [];
+  const isLoading = data === null;
+
+  // Wall clock ticks independently of the data stream.
   useEffect(() => {
-    fetchData();
-    const dataInterval = setInterval(fetchData, 10000);
     const clockInterval = setInterval(() => setClock(new Date()), 1000);
-    return () => {
-      clearInterval(dataInterval);
-      clearInterval(clockInterval);
-    };
+    return () => clearInterval(clockInterval);
   }, []);
 
   const allUsers: UserWithStatus[] = [

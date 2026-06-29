@@ -1,7 +1,9 @@
 import { getTranslations } from "next-intl/server";
 import type { CalendarBuckets, CalendarTask } from "@/lib/actions/reporting";
 import { weekRangeFromMonday, todayInSaoPaulo } from "@/lib/dates";
-import { TaskBar } from "./TaskBar";
+import { TaskBar, spanForDueDate } from "./TaskBar";
+import { DraggableBar } from "./DraggableBar";
+import { DayDropZones } from "./DayDropZones";
 
 interface CalendarGridProps {
   buckets: CalendarBuckets;
@@ -116,7 +118,9 @@ export async function CalendarGrid({ buckets, weekStart }: CalendarGridProps) {
           <div className="relative px-2 py-2 flex flex-wrap gap-1.5">
             {buckets.noDueDate.map((task: CalendarTask) => (
               <div key={task.id} className="basis-[calc(25%-0.4rem)] min-w-[200px] grow max-w-sm">
-                <TaskBar task={task} weekStart={weekStart} isNoDueDateLane />
+                <DraggableBar taskId={task.id}>
+                  <TaskBar task={task} weekStart={weekStart} isNoDueDateLane />
+                </DraggableBar>
               </div>
             ))}
           </div>
@@ -132,6 +136,7 @@ export async function CalendarGrid({ buckets, weekStart }: CalendarGridProps) {
           zebra={idx % 2 === 1}
         >
           <DayBackdrop days={range.days} todayIdx={todayIdx} />
+          <DayDropZones />
           <div
             className="relative grid gap-y-1 py-1.5 px-1 items-start"
             style={{
@@ -139,9 +144,16 @@ export async function CalendarGrid({ buckets, weekStart }: CalendarGridProps) {
               gridAutoRows: "min-content",
             }}
           >
-            {bucket.tasks.map((task) => (
-              <TaskBar key={task.id} task={task} weekStart={weekStart} />
-            ))}
+            {bucket.tasks.map((task) => {
+              const span = task.dueDate
+                ? spanForDueDate(task.dueDate, weekStart)
+                : { start: 1, end: 8 };
+              return (
+                <DraggableBar key={task.id} taskId={task.id} gridColumn={span}>
+                  <TaskBar task={task} weekStart={weekStart} disablePositioning />
+                </DraggableBar>
+              );
+            })}
           </div>
         </LaneShell>
       ))}

@@ -13,6 +13,7 @@ export async function createTemplateStage(templateId: string, formData: FormData
     name: formData.get("name") ?? "",
     order: formData.get("order") ?? undefined,
     defaultTeamId: (formData.get("defaultTeamId") as string) || undefined,
+    expectedDurationHours: formData.get("expectedDurationHours") ?? undefined,
     dependencies: formData.getAll("dependencies[]"),
   });
 
@@ -20,7 +21,7 @@ export async function createTemplateStage(templateId: string, formData: FormData
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const { name, order, defaultTeamId, dependencies } = parsed.data;
+  const { name, order, defaultTeamId, expectedDurationHours, dependencies } = parsed.data;
 
   try {
     const newStage = await prisma.templateStage.create({
@@ -29,6 +30,7 @@ export async function createTemplateStage(templateId: string, formData: FormData
         order,
         templateId,
         defaultTeamId: defaultTeamId || null,
+        expectedDurationHours: expectedDurationHours ?? null,
       },
     });
 
@@ -58,6 +60,7 @@ export async function updateTemplateStage(stageId: string, templateId: string, f
     name: formData.get("name") ?? "",
     order: formData.get("order") ?? undefined,
     defaultTeamId: (formData.get("defaultTeamId") as string) || undefined,
+    expectedDurationHours: formData.get("expectedDurationHours") ?? undefined,
     dependencies: formData.getAll("dependencies[]"),
   });
 
@@ -65,7 +68,7 @@ export async function updateTemplateStage(stageId: string, templateId: string, f
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const { name, order, defaultTeamId, dependencies } = parsed.data;
+  const { name, order, defaultTeamId, expectedDurationHours, dependencies } = parsed.data;
 
   try {
     await prisma.templateStage.update({
@@ -74,6 +77,7 @@ export async function updateTemplateStage(stageId: string, templateId: string, f
         name,
         order,
         defaultTeamId: defaultTeamId || null,
+        expectedDurationHours: expectedDurationHours ?? null,
       },
     });
 

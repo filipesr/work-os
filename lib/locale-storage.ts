@@ -2,7 +2,8 @@
 
 import { LocaleType, defaultLocale } from "./i18n";
 
-const LOCALE_STORAGE_KEY = "preferred-locale";
+// Namespaced so it doesn't collide with other projects sharing localhost:3000.
+const LOCALE_STORAGE_KEY = "workos:preferred-locale";
 
 /**
  * Gets the preferred locale from localStorage

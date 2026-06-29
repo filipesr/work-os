@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   getTasks,
@@ -10,6 +11,10 @@ import { getTranslations } from "next-intl/server";
 import { Pagination } from "@/components/ui/pagination";
 import { TaskFilters } from "@/components/tasks/TaskFilters";
 import { parsePage } from "@/lib/pagination";
+
+export const metadata: Metadata = {
+  title: "Demandas",
+};
 
 type SearchParams = { [key: string]: string | string[] | undefined };
 

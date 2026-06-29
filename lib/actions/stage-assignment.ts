@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { requireMemberOrHigher } from "@/lib/permissions";
+import { areAllPrerequisitesComplete } from "@/lib/stage-assignment-helpers";
 
 // Client-callable Server Actions only. Pure/server-only helpers
 // (isValidStageAssignee, parseStageAssignments, createTaskStages) live in
@@ -44,41 +45,50 @@ export async function previewNextStages(
       },
     },
   });
+  const candidateStages = dependentRows.map((r) => r.stage);
+  const candidateIds = candidateStages.map((s) => s.id);
+
+  // Bulk-load everything the loop needs in three queries instead of O(stages ×
+  // prerequisites) point reads (the previous N+1).
+  const [existingRows, prereqRows, completedRows] = await Promise.all([
+    prisma.taskActiveStage.findMany({
+      where: { taskId, stageId: { in: candidateIds } },
+      select: { stageId: true, status: true, assigneeId: true },
+    }),
+    prisma.stageDependency.findMany({
+      where: { stageId: { in: candidateIds } },
+      select: { stageId: true, dependsOnStageId: true },
+    }),
+    prisma.taskActiveStage.findMany({
+      where: { taskId, status: "COMPLETED" },
+      select: { stageId: true },
+    }),
+  ]);
+
+  const existingByStage = new Map(existingRows.map((e) => [e.stageId, e]));
+  const prereqsByStage = new Map<string, string[]>();
+  for (const p of prereqRows) {
+    const arr = prereqsByStage.get(p.stageId);
+    if (arr) arr.push(p.dependsOnStageId);
+    else prereqsByStage.set(p.stageId, [p.dependsOnStageId]);
+  }
+  // Treat completedStageId as completed ("will be completed" on confirm).
+  const completedSet = new Set(completedRows.map((c) => c.stageId));
+  completedSet.add(completedStageId);
 
   const activated: PreviewStage[] = [];
   const blocked: PreviewStage[] = [];
 
-  for (const row of dependentRows) {
-    const stage = row.stage;
+  for (const stage of candidateStages) {
+    const existing = existingByStage.get(stage.id);
 
     // Skip stages already active or completed (no-regress guard)
-    const existing = await prisma.taskActiveStage.findUnique({
-      where: { taskId_stageId: { taskId, stageId: stage.id } },
-      select: { status: true, assigneeId: true },
-    });
     if (existing?.status === "ACTIVE" || existing?.status === "COMPLETED") {
       continue;
     }
 
-    // Check all OTHER prerequisites of this stage (excluding completedStageId,
-    // which we are treating as "will be completed")
-    const allPrereqs = await prisma.stageDependency.findMany({
-      where: { stageId: stage.id },
-      select: { dependsOnStageId: true },
-    });
-    const otherPrereqs = allPrereqs.filter((p) => p.dependsOnStageId !== completedStageId);
-
-    let allOtherComplete = true;
-    for (const prereq of otherPrereqs) {
-      const done = await prisma.taskActiveStage.findFirst({
-        where: { taskId, stageId: prereq.dependsOnStageId, status: "COMPLETED" },
-        select: { id: true },
-      });
-      if (!done) {
-        allOtherComplete = false;
-        break;
-      }
-    }
+    const prereqs = prereqsByStage.get(stage.id) ?? [];
+    const allOtherComplete = areAllPrerequisitesComplete(prereqs, completedSet);
 
     // Skip already-blocked stages that remain partially unmet (no-op, matches
     // the behaviour in activateNextStages)

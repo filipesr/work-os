@@ -17,6 +17,7 @@ import { currentMonthSaoPaulo, monthRangeSaoPaulo, formatMonthLabel } from "@/li
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Clock, Users, Briefcase, Building2, Workflow } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
+import { ExportButtons } from "@/components/reports/ExportButtons";
 
 // Dedupe the user query across the summary banner and the "Hours by User" card
 // (both need it, in different layout positions) so it runs once per request.
@@ -73,12 +74,30 @@ async function SummarySection({ filters, t }: { filters: ProductivityFilters; t:
 async function HoursByUserSection({ filters, t }: { filters: ProductivityFilters; t: T }) {
   const hoursByUser = await loadHoursByUser(filters);
 
+  const exportRows = hoursByUser.map((u) => ({
+    user: u.userName || u.userEmail || "",
+    hours: Number(u.totalHours.toFixed(1)),
+  }));
+
   return (
     <Card className="border-l-4 border-l-sky-500 dark:border-l-sky-400">
       <CardHeader className="bg-gradient-to-r from-sky-50 to-transparent dark:from-sky-950 dark:to-transparent">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-          <CardTitle className="text-sky-900 dark:text-sky-100">{t("hoursByUser.title")}</CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+            <CardTitle className="text-sky-900 dark:text-sky-100">
+              {t("hoursByUser.title")}
+            </CardTitle>
+          </div>
+          <ExportButtons
+            filename="hours-by-user"
+            title={t("hoursByUser.title")}
+            columns={[
+              { key: "user", header: t("hoursByUser.userHeader") },
+              { key: "hours", header: t("hoursByUser.hoursHeader") },
+            ]}
+            rows={exportRows}
+          />
         </div>
       </CardHeader>
       <CardContent>

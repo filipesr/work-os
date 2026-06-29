@@ -19,6 +19,21 @@ export function isValidStageAssignee(stage: StageWithTeam, assigneeId: string): 
   return stage.defaultTeam.members.some((m) => m.id === assigneeId);
 }
 
+/**
+ * Shared predicate for "is this stage ready to activate?": true when every
+ * prerequisite stage id is present in `completedStageIds`. No prerequisites
+ * means the stage is always ready. Pure — callers build the completed set once
+ * (avoiding the per-prerequisite N+1) and decide how to treat the stage being
+ * completed: the mutating path (activateNextStages) has already written it as
+ * COMPLETED, while the read-only preview adds it to the set explicitly.
+ */
+export function areAllPrerequisitesComplete(
+  prerequisiteStageIds: readonly string[],
+  completedStageIds: ReadonlySet<string>
+): boolean {
+  return prerequisiteStageIds.every((id) => completedStageIds.has(id));
+}
+
 /** Reads `assignee:<stageId>` form fields into a { stageId: assigneeId } map,
  * skipping empty values (= "no assignment"). */
 export function parseStageAssignments(formData: FormData): Record<string, string> {

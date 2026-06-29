@@ -61,6 +61,11 @@
       "feature1": "Throughput por equipe com comparativo de período",
       "feature2": "Carga atual com classificação no prazo / atenção / atrasada",
       "feature3": "Tempo médio por etapa pra identificar gargalos"
+    },
+    "userReport": {
+      "title": "Relatório por Colaborador",
+      "description": "Produtividade individual: horas, etapas concluídas e pontualidade.",
+      "pickerPlaceholder": "Selecione um colaborador"
     }
   },
   "liveActivity": {
@@ -101,5 +106,20 @@
     "filterByUser": "Filtrar por Usuário",
     "filterByProject": "Filtrar por Projeto",
     "filterByDate": "Filtrar por Data"
+  },
+  "export": {
+    "csv": "Exportar CSV",
+    "pdf": "Exportar PDF"
+  },
+  "userReport": {
+    "back": "Voltar para Relatórios",
+    "subtitle": "Produtividade · {month}",
+    "totalHours": "Horas registradas",
+    "stagesCompleted": "Etapas concluídas",
+    "onTimeRate": "No prazo",
+    "hoursByStage": "Horas por etapa",
+    "stageHeader": "Etapa",
+    "hoursHeader": "Horas",
+    "noData": "Sem dados no período."
   }
 }

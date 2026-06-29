@@ -148,19 +148,22 @@ export function AdvanceStageButton({
 
         if (activatedCount > 0 && blockedCount > 0) {
           toast.success(
-            `Etapa concluída! ${activatedCount} etapa(s) ativada(s), ${blockedCount} etapa(s) bloqueada(s)`,
+            t("toasts.completedWithActivatedBlocked", {
+              activated: activatedCount,
+              blocked: blockedCount,
+            }),
             { duration: 5000 }
           );
         } else if (activatedCount > 0) {
-          toast.success(`Etapa concluída! ${activatedCount} etapa(s) ativada(s)`, {
+          toast.success(t("toasts.completedWithActivated", { activated: activatedCount }), {
             duration: 4000,
           });
         } else if (blockedCount > 0) {
-          toast.success(`Etapa concluída! ${blockedCount} etapa(s) criada(s) como bloqueadas`, {
+          toast.success(t("toasts.completedWithBlocked", { blocked: blockedCount }), {
             duration: 4000,
           });
         } else {
-          toast.success("Etapa concluída com sucesso!");
+          toast.success(t("toasts.completed"));
         }
 
         setShowConfirm(false);

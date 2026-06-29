@@ -151,28 +151,31 @@ de task (seguindo `__tests__/lib/actions/task-auth.test.ts` e `reporting.test.ts
   schemas em `validations.test.ts` (+10).
 - Tier 3 — `loading.tsx`/`error.tsx` de topo + `lib/routes.ts` (fonte única de rotas).
 
-## Backlog — NÃO implementado (registro)
+## Backlog — status
 
-Itens conscientemente deixados de fora, com motivo. Nada aqui é bloqueante para o piloto.
+Atualizado em 2026-06-29 (release 2.2.0): a maior parte foi implementada.
 
-| #   | Item                             | Tier | Por que não foi feito                                                                                                                                | Gatilho para retomar                                         |
-| --- | -------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| 1   | Migrar `<img>` → `next/image`    | 2.2  | Avatares de 40px via proxy (CORS já resolvido); help-images com `onError`/dimensão desconhecida. Churn de 13+ arquivos por ganho de LCP desprezível. | Surgir imagem grande crítica de LCP (capa/banner/upload HD). |
-| 2   | CSP com nonce/hash               | 3    | `unsafe-inline`/`unsafe-eval` necessários hoje; endurecer é arriscado (quebra inline scripts).                                                       | Hardening de segurança pós-piloto + smoke completo.          |
-| 3   | Metadata/OG por página           | 3    | App interno atrás de auth não é indexado; SEO/OG ≈ zero valor.                                                                                       | Abrir qualquer rota pública/marketing.                       |
-| 4   | `revalidate`/`dynamic` explícito | 3    | Tudo já é dinâmico (auth + `searchParams`); declarar só arrisca staleness.                                                                           | Gargalo de performance medido.                               |
-| 5   | Polling → SSE/WebSocket          | 3    | Polling de 10s funciona na escala do piloto.                                                                                                         | Muitos clientes simultâneos no live-activity/TV.             |
-| 6   | Decidir destino do `cloudinary`  | 3    | SDK não importado, mas envs obrigatórias + hosts liberados (intenção de uso).                                                                        | Wirar uploads via SDK **ou** tornar as envs opcionais.       |
-| 7   | Validação Zod em `reporting.ts`  | 1.2  | Filtros já tipados e gated por `requireAnyRole`; são ~10 funções — lote próprio.                                                                     | Quando hardenizar superfícies read-only.                     |
-| 8   | Testes de componentes pesados    | 2.3  | Foco foi auth/lógica das actions; Kanban/TaskDetailView ficam para depois.                                                                           | Refator ou bug em Kanban/TaskDetailView.                     |
+| #   | Item                             | Tier | Status                                                                                                         |
+| --- | -------------------------------- | ---- | -------------------------------------------------------------------------------------------------------------- |
+| 1   | Migrar `<img>` → `next/image`    | 2.2  | ✅ N/A — não há `<img>` cru relevante (avatares via Radix/proxy). Item considerado satisfeito.                 |
+| 2   | CSP com nonce/hash               | 3    | ✅ Feito — CSP por requisição no `middleware.ts` com nonce + `strict-dynamic`, sem `unsafe-inline` em scripts. |
+| 3   | Metadata/OG por página           | 3    | ✅ Feito — `metadata` em `account`, `reports` e `admin/*` (8 páginas).                                         |
+| 4   | `revalidate`/`dynamic` explícito | 3    | ✅ Feito — `dynamic = "force-dynamic"` no layout `(protected)`.                                                |
+| 5   | Polling → SSE/WebSocket          | 3    | ✅ Feito — TV e live-activity via SSE (`/api/tv/stream`, `/api/live-activity/stream`) com fallback a polling.  |
+| 6   | Decidir destino do `cloudinary`  | 3    | ✅ Feito — **removido** por completo (pacote, envs, hosts, `addFileArtifact`).                                 |
+| 7   | Validação Zod em `reporting.ts`  | 1.2  | ✅ Feito — schemas em `lib/validations.ts`, `.parse()` em todas as funções com input.                          |
+| 8   | Testes de componentes pesados    | 2.3  | ✅ Feito — `KanbanBoard` e `TaskDetailView` (Vitest).                                                          |
 
-### Backlog de produto (fora deste levantamento)
+### Backlog de produto (release 2.2.0)
 
 Do spec `docs/superpowers/specs/2026-06-19-calendar-and-team-productivity-design.md`,
-seção "Fora de escopo / próximos passos" — **não são** itens de boas práticas, são
-features adiadas: SLA por etapa (`expectedDuration`), drag-and-drop para reagendar,
-exportação CSV/PDF, notificação de "tarefa atrasada" e relatório individual por
-colaborador (página dedicada).
+seção "Fora de escopo / próximos passos":
+
+- ✅ **SLA por etapa** (`expectedDurationHours`) + métrica No prazo/Acima na produtividade por equipe.
+- ✅ **Drag-and-drop para reagendar** no calendário (Gantt) via `@dnd-kit/core`.
+- ✅ **Exportação CSV/PDF** (produtividade, performance, produtividade por equipe).
+- ✅ **Relatório individual por colaborador** (`/reports/user/[userId]`).
+- ⏳ **Notificação de "tarefa atrasada"** — adiada (requer infra de e-mail/cron; decisão do usuário).
 
 ---
 
@@ -191,20 +194,23 @@ Registrados aqui (versionado) a partir do review multi-agente da feature.
 - `getBlockedDependencies` (dead code) removido; JSDoc do `StageAssigneeSelect` e
   comentário rascunho corrigidos.
 
-### Abertos (menores, não bloqueantes)
+### Resolvidos (2026-06-29)
 
-- **`previewNextStages` duplica a predição de `activateNextStages`** (ativa/bloqueia) —
-  duas implementações para manter em sincronia. Considerar extrair um predicado comum.
-- **N+1** em `previewNextStages` ao abrir o modal (uma leitura por etapa/pré-requisito) —
-  ok na escala atual; fazer bulk-fetch se crescer.
-- Migração adiciona `INACTIVE` no fim do enum (sem `BEFORE 'ACTIVE'`) — ordem do enum no
-  banco difere do schema; **inerte** (ninguém ordena por status).
-- `createTasksBatch` lança erro de template inválido em inglês (mensagem do helper) —
-  inconsistência de i18n num caminho de erro raro.
-- Toasts de sucesso em `AdvanceStageButton` ainda hardcoded em PT (pré-existente).
+- **`previewNextStages` × `activateNextStages`:** predicado comum extraído
+  (`areAllPrerequisitesComplete` em `lib/stage-assignment-helpers.ts`); ambos os call-sites o usam.
+- **N+1 em `previewNextStages`:** substituído por bulk-fetch (existentes + pré-requisitos +
+  COMPLETED em 3 queries, checagem em memória).
+- **`createTasksBatch`:** mensagens de erro movidas para `errors.batchCreate` (pt/es).
+- **Toasts de `AdvanceStageButton`:** movidos para `tasks.stages.toasts` (pt/es).
+
+### Abertos / inertes
+
+- Migração adiciona `INACTIVE` no fim do enum — **inerte** (confirmado: nenhuma query
+  ordena por status; todas as superfícies de dashboard/"minhas etapas" já excluem `INACTIVE`).
 
 ### Verificação pendente
 
-- **Smoke manual** (`pnpm dev` + login Google): criar demanda (ver pipeline + seletores),
-  avançar etapa, conferir tempos em andamento e que `INACTIVE` não vaza em dashboard/
-  "minhas etapas". O automatizado (tsc/build/testes/lint) está verde.
+- **Smoke manual** (`pnpm dev` + login Google): criar demanda, avançar etapa, reagendar no
+  calendário (DnD), exportar CSV/PDF, abrir relatório individual, conferir SLA na
+  produtividade por equipe. Automatizado (tsc/build/testes/lint) está verde; CSP-nonce e
+  SSE foram validados em runtime via `curl`.

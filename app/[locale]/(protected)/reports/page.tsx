@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAnyRole } from "@/lib/auth";
 import { UserRole } from "@prisma/client";
+
+export const metadata: Metadata = {
+  title: "Relatórios",
+};
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTranslations } from "next-intl/server";
+import prisma from "@/lib/prisma";
+import { UserReportPicker } from "@/components/reports/UserReportPicker";
 
 export default async function ReportsIndexPage() {
   // Check authorization
@@ -14,6 +21,15 @@ export default async function ReportsIndexPage() {
   }
 
   const t = await getTranslations("reports.index");
+
+  const collaborators = await prisma.user.findMany({
+    select: { id: true, name: true, email: true },
+    orderBy: [{ name: "asc" }, { email: "asc" }],
+  });
+  const collaboratorOptions = collaborators.map((u) => ({
+    id: u.id,
+    name: u.name ?? u.email ?? u.id,
+  }));
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -373,6 +389,22 @@ export default async function ReportsIndexPage() {
           </Card>
         </Link>
       </div>
+
+      {/* Individual collaborator report */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("userReport.title")}</CardTitle>
+          <CardDescription>{t("userReport.description")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="max-w-sm">
+            <UserReportPicker
+              users={collaboratorOptions}
+              placeholder={t("userReport.pickerPlaceholder")}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Info Card */}
       <Card className="bg-muted/50">

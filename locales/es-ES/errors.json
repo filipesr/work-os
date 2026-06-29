@@ -35,5 +35,12 @@
   "general": {
     "somethingWentWrong": "Algo salió mal",
     "tryAgain": "Inténtalo de nuevo"
+  },
+  "batchCreate": {
+    "titleRequired": "El título es obligatorio.",
+    "templateRequired": "Selecciona una plantilla de flujo de trabajo.",
+    "projectRequired": "Selecciona al menos un proyecto.",
+    "invalidDueDate": "Fecha de vencimiento inválida.",
+    "noValidProject": "Ningún proyecto válido seleccionado."
   }
 }

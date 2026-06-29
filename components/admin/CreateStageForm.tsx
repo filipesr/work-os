@@ -73,7 +73,7 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
         }}
         className="space-y-4"
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label htmlFor="name" className="block text-sm font-semibold text-foreground mb-2">
               {t("nameLabel")}
@@ -120,6 +120,22 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label
+              htmlFor="expectedDurationHours"
+              className="block text-sm font-semibold text-foreground mb-2"
+            >
+              {t("slaLabel")}
+            </label>
+            <input
+              type="number"
+              id="expectedDurationHours"
+              name="expectedDurationHours"
+              min="0"
+              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
+              placeholder={t("slaPlaceholder")}
+            />
           </div>
         </div>
 

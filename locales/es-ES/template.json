@@ -29,7 +29,10 @@
     "create": "Crear Etapa",
     "cancel": "Cancelar",
     "successMessage": "¡Etapa creada con éxito!",
-    "errorMessage": "Error al crear etapa"
+    "errorMessage": "Error al crear etapa",
+    "slaLabel": "SLA (horas)",
+    "slaPlaceholder": "ej: 24",
+    "slaHelp": "Tiempo objetivo en la etapa. Deja vacío para sin SLA."
   },
   "stagesList": {
     "empty": "Aún no hay etapas. Crea tu primera etapa arriba.",
@@ -49,7 +52,10 @@
     "deleteConfirmMessage": "¿Está seguro de que desea eliminar la etapa \"{stageName}\"? Esto también eliminará todas las dependencias. Esta acción no se puede deshacer.",
     "deleteConfirmButton": "Eliminar Etapa",
     "successMessage": "¡Etapa actualizada con éxito!",
-    "errorMessage": "Error al actualizar etapa"
+    "errorMessage": "Error al actualizar etapa",
+    "slaLabel": "SLA (horas)",
+    "slaPlaceholder": "ej: 24",
+    "slaHelp": "Tiempo objetivo en la etapa. Deja vacío para sin SLA."
   },
   "dependencies": {
     "noStagesAvailable": "Ninguna etapa disponible para dependencia",

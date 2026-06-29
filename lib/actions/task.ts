@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { Prisma, type ActiveStageStatus } from "@prisma/client";
 import { auth } from "@/auth";
@@ -11,6 +12,7 @@ import {
   createTaskStages,
   parseStageAssignments,
   isValidStageAssignee,
+  areAllPrerequisitesComplete,
 } from "@/lib/stage-assignment-helpers";
 import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
@@ -116,23 +118,24 @@ export async function createTasksBatch(input: {
 }): Promise<{ created: number }> {
   const user = await requireMemberOrHigher();
   const userId = user.id as string;
+  const t = await getTranslations("errors.batchCreate");
 
   const title = input.title?.trim();
   const projectIds = Array.from(new Set(input.projectIds ?? []));
 
-  if (!title) throw new Error("O título é obrigatório.");
-  if (!input.templateId) throw new Error("Selecione um template de fluxo de trabalho.");
-  if (projectIds.length === 0) throw new Error("Selecione ao menos um projeto.");
+  if (!title) throw new Error(t("titleRequired"));
+  if (!input.templateId) throw new Error(t("templateRequired"));
+  if (projectIds.length === 0) throw new Error(t("projectRequired"));
 
   const dueDate = input.dueDate ? new Date(input.dueDate) : null;
-  if (!dueDate || Number.isNaN(dueDate.getTime())) throw new Error("Data de vencimento inválida.");
+  if (!dueDate || Number.isNaN(dueDate.getTime())) throw new Error(t("invalidDueDate"));
 
   const projects = await prisma.project.findMany({
     where: { id: { in: projectIds } },
     select: { id: true },
   });
   const validIds = projects.map((p) => p.id);
-  if (validIds.length === 0) throw new Error("Nenhum projeto válido selecionado.");
+  if (validIds.length === 0) throw new Error(t("noValidProject"));
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const projectId of validIds) {
@@ -705,6 +708,15 @@ export async function activateNextStages(taskId: string, completedStageId: strin
       },
     });
 
+    // Completed stages for this task — loaded once and reused for every
+    // dependent stage's readiness check (completedStageId was marked COMPLETED
+    // in step 1, so it is already included here).
+    const completedRows = await prisma.taskActiveStage.findMany({
+      where: { taskId, status: "COMPLETED" },
+      select: { stageId: true },
+    });
+    const completedSet = new Set(completedRows.map((c) => c.stageId));
+
     type DependentStage = (typeof dependentStages)[number]["stage"];
     const activated: DependentStage[] = [];
     const blocked: DependentStage[] = [];
@@ -725,7 +737,10 @@ export async function activateNextStages(taskId: string, completedStageId: strin
       }
 
       // 3b. Only now compute dependency status (skipped for ACTIVE/COMPLETED above).
-      const allDepsComplete = await checkAllDependenciesComplete(taskId, stage.id);
+      const allDepsComplete = areAllPrerequisitesComplete(
+        stage.dependencies.map((d) => d.dependsOnStageId),
+        completedSet
+      );
       const nextStatus: ActiveStageStatus = allDepsComplete ? "ACTIVE" : "BLOCKED";
 
       // 3c. BLOCKED→BLOCKED: already blocked and still partially unmet — skip the
@@ -751,37 +766,6 @@ export async function activateNextStages(taskId: string, completedStageId: strin
     console.error("Error activating next stages:", error);
     throw error;
   }
-}
-
-/**
- * Helper: Check if all dependencies of a stage are completed
- */
-async function checkAllDependenciesComplete(taskId: string, stageId: string): Promise<boolean> {
-  const dependencies = await prisma.stageDependency.findMany({
-    where: { stageId },
-    include: { dependsOn: true },
-  });
-
-  if (dependencies.length === 0) {
-    return true; // No dependencies = can activate
-  }
-
-  // Check if all dependency stages have been completed
-  for (const dep of dependencies) {
-    const completedStage = await prisma.taskActiveStage.findFirst({
-      where: {
-        taskId,
-        stageId: dep.dependsOnStageId,
-        status: "COMPLETED",
-      },
-    });
-
-    if (!completedStage) {
-      return false; // At least one dependency not complete
-    }
-  }
-
-  return true; // All dependencies complete
 }
 
 /**
@@ -1744,21 +1728,6 @@ export async function addLinkArtifact(
       error: error instanceof Error ? error.message : "Failed to add artifact",
     };
   }
-}
-
-/**
- * Add a file artifact to a task (from Cloudinary upload).
- * This is called AFTER the client has already uploaded the file to Cloudinary.
- */
-export async function addFileArtifact(
-  taskId: string,
-  title: string,
-  url: string,
-  type: "DOCUMENT" | "IMAGE" | "VIDEO" | "FIGMA" | "OTHER"
-) {
-  // This function is identical to addLinkArtifact
-  // The difference is semantic: it's called after a Cloudinary upload
-  return addLinkArtifact(taskId, title, url, type);
 }
 
 // ========== Time Logging (for BI/Reporting) ==========

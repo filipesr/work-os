@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  title: "Usuários",
+};
 import { UserRole } from "@prisma/client";
 import EditUserButton from "./edit-user-button";
 import { requireAdmin } from "@/lib/permissions";

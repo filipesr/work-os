@@ -128,5 +128,9 @@
       "projectCreated": "Projeto criado",
       "projectError": "Não foi possível criar o projeto"
     }
+  },
+  "dnd": {
+    "rescheduled": "Tarefa reagendada",
+    "error": "Falha ao reagendar"
   }
 }
