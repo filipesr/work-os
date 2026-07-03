@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NAS PoC — formato de link local (Windows / macOS)</title>
+    <style>
+      body { font: 15px/1.5 system-ui, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 16px; color: #111; }
+      h1 { font-size: 20px; }
+      .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin: 16px 0; }
+      label { font-weight: 600; }
+      code, .path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .path { display: block; background: #f5f5f5; border-radius: 8px; padding: 12px; margin: 8px 0; word-break: break-all; }
+      button { font: inherit; padding: 6px 12px; border-radius: 8px; border: 1px solid #bbb; background: #fff; cursor: pointer; }
+      button.active { background: #111; color: #fff; border-color: #111; }
+      .muted { color: #666; }
+      input { font: inherit; padding: 6px 8px; border: 1px solid #ccc; border-radius: 8px; width: 100%; box-sizing: border-box; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Formato de link local do NAS — detectar SO + override</h1>
+    <p class="muted">
+      Espelha o padrão de tema/locale: detecta o SO, permite trocar, persiste em
+      <code>localStorage["workos:link-format"]</code>. Abra esta página no Windows e no macOS e copie o
+      caminho no Explorer/Finder — deve abrir a pasta.
+    </p>
+
+    <div class="card">
+      <p>SO detectado: <b id="detected"></b> · preferência salva: <b id="stored"></b></p>
+      <label>Formato:</label>
+      <button id="btn-smb" data-fmt="smb">macOS/Linux — smb://</button>
+      <button id="btn-unc" data-fmt="unc">Windows — \\UNC</button>
+      <button id="btn-reset" title="Voltar ao padrão do SO">reset</button>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div><label>Host (IP do NAS)</label><input id="host" value="192.168.0.10" /></div>
+        <div><label>Share</label><input id="share" value="WorkOS-PoC" /></div>
+      </div>
+      <label style="display:block;margin-top:12px">nasPath (relativo, como o agente devolve)</label>
+      <input id="relpath" value="Construcoes Acai/Campanhas/2026_07_BlackFriday/videos/2026_07_BlackFriday_Video_AberturaDaLoja_v03.mov" />
+
+      <p style="margin-top:16px"><label>Link do arquivo</label></p>
+      <span class="path" id="file-link"></span>
+      <button data-copy="file-link">Copiar caminho do arquivo</button>
+
+      <p style="margin-top:16px"><label>Abrir pasta no NAS</label></p>
+      <span class="path" id="folder-link"></span>
+      <button data-copy="folder-link">Copiar caminho da pasta</button>
+    </div>
+
+    <script type="module">
+      import {
+        getPreferredLinkFormat, getStoredLinkFormat, setStoredLinkFormat,
+        detectLinkFormat, buildLocalLink, buildFolderLink,
+      } from "./link-format.js";
+
+      const $ = (id) => document.getElementById(id);
+      let format = getPreferredLinkFormat();
+
+      function render() {
+        $("detected").textContent = detectLinkFormat();
+        $("stored").textContent = getStoredLinkFormat() ?? "(nenhuma — usando detecção)";
+        for (const b of document.querySelectorAll("button[data-fmt]")) {
+          b.classList.toggle("active", b.dataset.fmt === format);
+        }
+        const opts = { host: $("host").value.trim(), share: $("share").value.trim(), relPath: $("relpath").value.trim(), format };
+        $("file-link").textContent = buildLocalLink(opts);
+        $("folder-link").textContent = buildFolderLink(opts);
+      }
+
+      for (const b of document.querySelectorAll("button[data-fmt]")) {
+        b.addEventListener("click", () => { format = b.dataset.fmt; setStoredLinkFormat(format); render(); });
+      }
+      $("btn-reset").addEventListener("click", () => {
+        localStorage.removeItem("workos:link-format");
+        format = detectLinkFormat();
+        render();
+      });
+      for (const el of ["host", "share", "relpath"]) $(el).addEventListener("input", render);
+      for (const b of document.querySelectorAll("button[data-copy]")) {
+        b.addEventListener("click", () => navigator.clipboard.writeText($(b.dataset.copy).textContent));
+      }
+      render();
+    </script>
+  </body>
+</html>

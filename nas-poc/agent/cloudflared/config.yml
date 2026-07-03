@@ -1,0 +1,15 @@
+# Cloudflare Tunnel — FILE-BASED config (alternative to the dashboard token mode in docker-compose).
+# Use this only if you run cloudflared with a credentials file instead of TUNNEL_TOKEN.
+#
+# Ingress matches by hostname + path (regex) — NOT by HTTP method. "GET only" is enforced by:
+#   (1) the agent's tunnel listener, which mounts only GET /v1/download; and
+#   (2) a Cloudflare WAF custom rule: (http.request.method ne "GET") -> Block  (see README A4.3).
+tunnel: <TUNNEL_ID>
+credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  # Only the download path reaches the agent. Everything else falls through to 404.
+  - hostname: nas-agent-download.<seu-dominio>
+    path: ^/v1/download
+    service: http://agent:8081 # compose service name; use http://localhost:8081 if cloudflared runs on the host
+  - service: http_status:404

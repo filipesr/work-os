@@ -1,0 +1,8 @@
+# PoC secrets and artifacts — never commit.
+keys/
+out/
+.env
+agent/node_modules/
+agent/dist/
+agent/package-lock.json
+*.tar
