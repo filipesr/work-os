@@ -286,6 +286,45 @@ export async function prepareArtifactUpload(input: unknown) {
   }
 }
 
+/** Dropdown data + gating flags for the upload form (active purposes, task stages, config state). */
+export async function getArtifactUploadOptions(taskId: string) {
+  try {
+    await requireMemberOrHigher();
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: {
+        id: true,
+        project: { select: { nasUploadEnabled: true } },
+        activeStages: {
+          select: { stage: { select: { id: true, name: true, defaultMediaType: true } } },
+        },
+      },
+    });
+    if (!task) return { error: "Demanda não encontrada." };
+
+    const purposes = await prisma.deliverablePurpose.findMany({
+      where: { active: true },
+      orderBy: [{ order: "asc" }, { label: "asc" }],
+      select: { id: true, label: true },
+    });
+
+    return {
+      success: true as const,
+      nasUploadEnabled: task.project.nasUploadEnabled,
+      uploadConfigured: isNasUploadConfigured(),
+      purposes,
+      stages: task.activeStages.map((s) => ({
+        id: s.stage.id,
+        name: s.stage.name,
+        defaultMediaType: s.stage.defaultMediaType,
+      })),
+    };
+  } catch (error) {
+    console.error("getArtifactUploadOptions error:", error);
+    return { error: "Erro ao carregar opções de upload." };
+  }
+}
+
 /** UX hint — the browser flags PENDING -> UPLOADING right before the PUT. Not authoritative. */
 export async function markUploading(artifactId: string) {
   try {

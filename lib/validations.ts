@@ -120,6 +120,11 @@ export const templateStageSchema = z.object({
     (v) => (v === "" || v === null || v === undefined ? undefined : v),
     z.coerce.number().int("Valid hours required").min(0).optional()
   ),
+  // Tipo de mídia sugerido para artefatos desta etapa (proveniência no NAS). Vazio -> undefined.
+  defaultMediaType: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : v),
+    artifactMediaTypeEnum.optional()
+  ),
   dependencies: z.array(z.string()).optional().default([]),
 });
 
