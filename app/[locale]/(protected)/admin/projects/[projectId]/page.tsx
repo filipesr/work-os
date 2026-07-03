@@ -7,6 +7,59 @@ import { getTranslations } from "next-intl/server";
 import { EditProjectHeader } from "./edit-project-header";
 import { ProjectArtifactsTable } from "@/components/admin/ProjectArtifactsTable";
 
+// Campaign metadata + nasUploadEnabled lock once any NAS artifact exists for the project.
+async function isProjectNasLocked(projectId: string): Promise<boolean> {
+  const count = await prisma.taskArtifact.count({
+    where: { storageKind: "NAS_UPLOAD", task: { projectId } },
+  });
+  return count > 0;
+}
+
+// Save NAS campaign metadata + the upload-enabled toggle (MANAGER+). Enabling requires the campaign
+// fields (slug/ano/mês) to be present; reviewing stamps who/when.
+async function saveNasMetadata(formData: FormData) {
+  "use server";
+  const user = await requireManagerOrAdmin();
+  const id = formData.get("id") as string;
+  if (!id) return;
+
+  const slug = ((formData.get("campaignSlug") as string) ?? "").trim();
+  const year = parseInt((formData.get("campaignYear") as string) ?? "", 10);
+  const month = parseInt((formData.get("campaignMonth") as string) ?? "", 10);
+  const enable = formData.get("nasUploadEnabled") === "on";
+
+  const locked = await isProjectNasLocked(id);
+  const data: {
+    campaignSlug?: string | null;
+    campaignYear?: number | null;
+    campaignMonth?: number | null;
+    nasUploadEnabled?: boolean;
+    nasMetadataReviewedAt?: Date | null;
+    nasMetadataReviewedById?: string | null;
+  } = {};
+
+  const validYear = Number.isInteger(year) && year >= 2000 && year <= 2100;
+  const validMonth = Number.isInteger(month) && month >= 1 && month <= 12;
+
+  if (!locked) {
+    data.campaignSlug = slug || null;
+    data.campaignYear = validYear ? year : null;
+    data.campaignMonth = validMonth ? month : null;
+  }
+
+  const complete = locked || (Boolean(slug) && validYear && validMonth);
+  if (enable && complete) {
+    data.nasUploadEnabled = true;
+    data.nasMetadataReviewedAt = new Date();
+    data.nasMetadataReviewedById = user.id as string;
+  } else {
+    data.nasUploadEnabled = false;
+  }
+
+  await prisma.project.update({ where: { id }, data });
+  revalidatePath(`/admin/projects/${id}`);
+}
+
 async function getProject(projectId: string) {
   await requireManagerOrAdmin();
   return await prisma.project.findUnique({
@@ -85,6 +138,8 @@ export default async function ProjectDetailPage({
     notFound();
   }
 
+  const nasLocked = await isProjectNasLocked(projectId);
+
   const statusCounts = project.tasks.reduce(
     (acc, task) => {
       acc[task.status] = (acc[task.status] || 0) + 1;
@@ -155,6 +210,107 @@ export default async function ProjectDetailPage({
         updateProject={updateProject}
         deleteProject={deleteProject}
       />
+
+      {/* NAS — metadados de campanha + habilitar upload */}
+      <div className="mt-6 bg-card shadow-lg rounded-xl border-2 border-border p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-foreground">Armazenamento no NAS</h2>
+          <span
+            className={`px-2.5 py-0.5 text-xs font-bold rounded-full border ${
+              project.nasUploadEnabled
+                ? "bg-green-100 text-green-800 border-green-200"
+                : "bg-muted text-muted-foreground border-border"
+            }`}
+          >
+            {project.nasUploadEnabled ? "Upload habilitado" : "Upload desabilitado"}
+          </span>
+        </div>
+        <form action={saveNasMetadata} className="space-y-4">
+          <input type="hidden" name="id" value={project.id} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label
+                htmlFor="campaignSlug"
+                className="block text-sm font-semibold text-foreground mb-2"
+              >
+                Campanha (slug)
+              </label>
+              <input
+                type="text"
+                id="campaignSlug"
+                name="campaignSlug"
+                defaultValue={project.campaignSlug ?? ""}
+                disabled={nasLocked}
+                placeholder="ex.: Black Friday"
+                className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all disabled:opacity-60"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="campaignYear"
+                className="block text-sm font-semibold text-foreground mb-2"
+              >
+                Ano de veiculação
+              </label>
+              <input
+                type="number"
+                id="campaignYear"
+                name="campaignYear"
+                min={2000}
+                max={2100}
+                defaultValue={project.campaignYear ?? ""}
+                disabled={nasLocked}
+                className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all disabled:opacity-60"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="campaignMonth"
+                className="block text-sm font-semibold text-foreground mb-2"
+              >
+                Mês de veiculação
+              </label>
+              <input
+                type="number"
+                id="campaignMonth"
+                name="campaignMonth"
+                min={1}
+                max={12}
+                defaultValue={project.campaignMonth ?? ""}
+                disabled={nasLocked}
+                className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all disabled:opacity-60"
+              />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <input
+              type="checkbox"
+              name="nasUploadEnabled"
+              defaultChecked={project.nasUploadEnabled}
+              className="h-4 w-4 rounded border-2 border-input-border"
+            />
+            Habilitar upload no NAS para este projeto (exige campanha preenchida)
+          </label>
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
+            >
+              Salvar NAS
+            </button>
+            {nasLocked && (
+              <span className="text-xs text-muted-foreground">
+                Campanha travada — já há arquivos no NAS.
+              </span>
+            )}
+            {project.nasMetadataReviewedAt && (
+              <span className="text-xs text-muted-foreground">
+                Revisado em {project.nasMetadataReviewedAt.toLocaleDateString("pt-BR")}
+              </span>
+            )}
+          </div>
+        </form>
+      </div>
 
       {/* Info Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">

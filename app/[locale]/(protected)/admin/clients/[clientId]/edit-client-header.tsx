@@ -11,12 +11,20 @@ interface EditClientHeaderProps {
     description: string | null;
     email: string | null;
     phone: string | null;
+    folderName: string | null;
   };
+  /** true once a NAS artifact exists under the client — folderName can no longer change. */
+  folderNameLocked: boolean;
   updateClient: (formData: FormData) => Promise<void>;
   deleteClient: (formData: FormData) => Promise<void>;
 }
 
-export function EditClientHeader({ client, updateClient, deleteClient }: EditClientHeaderProps) {
+export function EditClientHeader({
+  client,
+  folderNameLocked,
+  updateClient,
+  deleteClient,
+}: EditClientHeaderProps) {
   const t = useTranslations("admin.clients.detail");
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
@@ -88,6 +96,35 @@ export function EditClientHeader({ client, updateClient, deleteClient }: EditCli
               />
             </div>
           </div>
+          <div>
+            <label
+              htmlFor="folderName"
+              className="block text-sm font-semibold text-foreground mb-2"
+            >
+              Pasta no NAS
+            </label>
+            {folderNameLocked ? (
+              <>
+                <input type="hidden" name="folderName" value={client.folderName ?? ""} />
+                <p className="h-11 flex items-center rounded-lg border-2 border-input-border bg-muted px-4 text-base font-medium text-muted-foreground">
+                  {client.folderName || "—"}{" "}
+                  <span className="ml-2 text-xs">(travado — já há arquivos no NAS)</span>
+                </p>
+              </>
+            ) : (
+              <input
+                type="text"
+                id="folderName"
+                name="folderName"
+                defaultValue={client.folderName ?? ""}
+                placeholder="deixe vazio para gerar a partir do nome"
+                className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
+              />
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              Pasta-raiz do cliente no NAS. Gerada do nome se vazia; trava após o primeiro upload.
+            </p>
+          </div>
           <div className="flex gap-3">
             <button
               type="submit"
@@ -126,6 +163,9 @@ export function EditClientHeader({ client, updateClient, deleteClient }: EditCli
               {t("phoneLabel")}: {client.phone}
             </p>
           )}
+          <p className="text-sm text-muted-foreground">
+            Pasta no NAS: {client.folderName || <span className="italic">não definida</span>}
+          </p>
         </div>
         <div className="ml-4 flex gap-3">
           <button

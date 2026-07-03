@@ -1,10 +1,21 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
+import { toNasClientFolder } from "@/lib/nas/path";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { EditClientHeader } from "./edit-client-header";
+
+// folderName (pasta-raiz do cliente no NAS) trava assim que existe qualquer artefato NAS sob o
+// cliente — renomear a pasta depois divergiria dos caminhos já gravados.
+async function isClientFolderLocked(clientId: string): Promise<boolean> {
+  const count = await prisma.taskArtifact.count({
+    where: { storageKind: "NAS_UPLOAD", task: { project: { clientId } } },
+  });
+  return count > 0;
+}
 
 async function getClient(clientId: string) {
   await requireManagerOrAdmin();
@@ -27,17 +38,35 @@ async function updateClient(formData: FormData) {
   const description = formData.get("description") as string;
   const email = formData.get("email") as string;
   const phone = formData.get("phone") as string;
+  const folderNameRaw = ((formData.get("folderName") as string | null) ?? "").trim();
   if (!id || !name) return;
 
-  await prisma.client.update({
-    where: { id },
-    data: {
-      name,
-      description: description || null,
-      email: email || null,
-      phone: phone || null,
-    },
-  });
+  const data: Prisma.ClientUpdateInput = {
+    name,
+    description: description || null,
+    email: email || null,
+    phone: phone || null,
+  };
+
+  // Only touch folderName while it's still editable (no NAS artifact yet). Empty input -> derive
+  // from the client name. Always slugified to a filesystem-safe folder label.
+  if (!(await isClientFolderLocked(id))) {
+    const desired = toNasClientFolder(folderNameRaw || name);
+    data.folderName = desired || null;
+  }
+
+  try {
+    await prisma.client.update({ where: { id }, data });
+  } catch (e) {
+    // Unique collision on folderName — save everything else and leave the folder untouched.
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      const { folderName: _drop, ...rest } = data;
+      void _drop;
+      await prisma.client.update({ where: { id }, data: rest });
+    } else {
+      throw e;
+    }
+  }
 
   revalidatePath(`/admin/clients/${id}`);
   revalidatePath("/admin/clients");
@@ -101,6 +130,8 @@ export default async function ClientDetailPage({
     notFound();
   }
 
+  const folderNameLocked = await isClientFolderLocked(clientId);
+
   const totalTasks = client.projects.reduce((sum, p) => sum + p._count.tasks, 0);
 
   return (
@@ -131,7 +162,9 @@ export default async function ClientDetailPage({
           description: client.description,
           email: client.email,
           phone: client.phone,
+          folderName: client.folderName,
         }}
+        folderNameLocked={folderNameLocked}
         updateClient={updateClient}
         deleteClient={deleteClient}
       />

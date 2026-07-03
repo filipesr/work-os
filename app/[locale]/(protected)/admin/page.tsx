@@ -108,6 +108,11 @@ export default async function AdminDashboardPage() {
           title={t("nav.tasks.title")}
           description={t("nav.tasks.description")}
         />
+        <NavCard
+          href="/admin/deliverable-purposes"
+          title="Propósitos de entregável"
+          description="Tags (Banner Web, Vídeo…) que compõem o nome dos arquivos no NAS."
+        />
       </div>
     </div>
   );
