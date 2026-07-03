@@ -54,10 +54,14 @@ pnpm dev      # reinicie se já estava rodando, para carregar o .env.local
 - Barra de progresso → "finalizando" → a lista atualiza para **READY**.
 - Verifique o arquivo em `nas-poc/local-store/<Cliente>/...` com o nome versionado.
 
-### 5. Download / share
+### 5. Download
 
-- **Baixar** (interno): dispara o download token → 302 pro agente (na LAN, `?net=lan`).
-- **Share** (só `CLIENTE`): gera link público → 302 pro "túnel" local (`:8081`).
+- Na lista de artefatos, um artefato NAS **Pronto** mostra o botão **Baixar** — ele faz a corrida
+  LAN/tunnel e navega para `/api/artifacts/[id]/download?net=…` (302 pro agente; LAN direto, ou
+  túnel só para `CLIENTE` fora da LAN).
+- **Share público** (só `CLIENTE`): a action `createShareLink` já existe e o endpoint
+  `/api/artifacts/share/[token]` funciona (validado por smoke), mas o **botão de share na lista
+  ainda não foi construído** — é a cauda restante da Fase 5.
 
 ## Produção (quando o NS virar)
 

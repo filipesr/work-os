@@ -6,6 +6,16 @@ import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { ExternalLink, FileText, Image, Video, Figma, File } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DownloadArtifactButton } from "./DownloadArtifactButton";
+
+// NAS upload status -> badge label + classes.
+const nasStatus: Record<string, { label: string; cls: string }> = {
+  PENDING: { label: "Pendente", cls: "bg-muted text-muted-foreground border-border" },
+  UPLOADING: { label: "Enviando", cls: "bg-blue-100 text-blue-800 border-blue-200" },
+  READY: { label: "Pronto", cls: "bg-green-100 text-green-800 border-green-200" },
+  FAILED: { label: "Falhou", cls: "bg-red-100 text-red-800 border-red-200" },
+  EXPIRED: { label: "Expirado", cls: "bg-muted text-muted-foreground border-border" },
+};
 
 type ArtifactWithUser = TaskArtifact & {
   user: Pick<User, "id" | "name" | "email" | "image">;
@@ -55,17 +65,36 @@ export function ArtifactsList({ artifacts }: ArtifactsListProps) {
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              {/* Title and link */}
+              {/* Title + action (link vs NAS upload) */}
               <div className="flex items-start justify-between gap-2 mb-1">
-                <a
-                  href={artifact.url ?? undefined}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium hover:underline flex items-center gap-1 group"
-                >
-                  <span className="truncate">{artifact.title}</span>
-                  <ExternalLink className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
+                {artifact.storageKind === "NAS_UPLOAD" ? (
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="truncate text-sm font-medium">
+                      {artifact.fileName || artifact.title}
+                    </span>
+                    <span
+                      className={`flex-shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full border ${
+                        nasStatus[artifact.uploadStatus]?.cls ??
+                        "bg-muted text-muted-foreground border-border"
+                      }`}
+                    >
+                      {nasStatus[artifact.uploadStatus]?.label ?? artifact.uploadStatus}
+                    </span>
+                  </div>
+                ) : (
+                  <a
+                    href={artifact.url ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium hover:underline flex items-center gap-1 group"
+                  >
+                    <span className="truncate">{artifact.title}</span>
+                    <ExternalLink className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                )}
+                {artifact.storageKind === "NAS_UPLOAD" && artifact.uploadStatus === "READY" && (
+                  <DownloadArtifactButton artifactId={artifact.id} />
+                )}
               </div>
 
               {/* Metadata */}
