@@ -15,6 +15,10 @@ export interface AgentConfig {
   hashMode: HashMode;
   allowedOrigins: string[];
   tokenPublicKeysRaw: string;
+  // Cloud finalize callback (agent -> cloud). Optional: when unset the agent just stores + 201s
+  // (PoC/load-test mode). When set, after storing it POSTs to the cloud to flip PENDING -> READY.
+  cloudFinalizeUrl?: string;
+  finalizeSecret?: string;
 }
 
 function num(name: string, def: number): number {
@@ -53,6 +57,8 @@ export function loadConfig(): AgentConfig {
       .map((s) => s.trim())
       .filter(Boolean),
     tokenPublicKeysRaw,
+    cloudFinalizeUrl: process.env.CLOUD_FINALIZE_URL || undefined,
+    finalizeSecret: process.env.FINALIZE_SECRET || undefined,
   };
 }
 

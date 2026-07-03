@@ -23,6 +23,7 @@ import {
   TokenError,
   KeyStore,
 } from "./token.js";
+import { callFinalize } from "./finalize.js";
 
 function bearer(req: FastifyRequest): string | undefined {
   const h = req.headers.authorization;
@@ -144,10 +145,28 @@ async function uploadHandler(
     msHash = Date.now() - tHash;
   }
 
+  // Finalize with the cloud (flip PENDING/UPLOADING -> READY). Best-effort: the file is already
+  // stored, so a finalize failure is logged but not fatal (cloud reconcile/retry closes the loop).
+  let finalized = false;
+  if (cfg.cloudFinalizeUrl && cfg.finalizeSecret) {
+    const r = await callFinalize(
+      { url: cfg.cloudFinalizeUrl, secret: cfg.finalizeSecret, agentId: cfg.agentId },
+      { artifactId: claims.artifactId, checksum, sizeBytes: bytes }
+    );
+    finalized = r.ok;
+    if (!r.ok) {
+      req.log.error(
+        { artifactId: claims.artifactId, status: r.status, err: r.error },
+        "cloud finalize failed"
+      );
+    }
+  }
+
   return reply.code(201).send({
     checksum,
     sizeBytes: bytes,
     storedAt: new Date().toISOString(),
+    finalized,
     msWrite,
     msHash,
     hashMode: cfg.hashMode,
