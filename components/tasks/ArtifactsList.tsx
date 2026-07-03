@@ -58,7 +58,7 @@ export function ArtifactsList({ artifacts }: ArtifactsListProps) {
               {/* Title and link */}
               <div className="flex items-start justify-between gap-2 mb-1">
                 <a
-                  href={artifact.url}
+                  href={artifact.url ?? undefined}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm font-medium hover:underline flex items-center gap-1 group"

@@ -8,7 +8,7 @@ import { ExternalLink, FileText, Image, Video, Figma, File, Search } from "lucid
 export type ProjectArtifact = {
   id: string;
   title: string;
-  url: string;
+  url: string | null;
   type: "DOCUMENT" | "IMAGE" | "VIDEO" | "FIGMA" | "OTHER";
   createdAt: string; // ISO
   taskId: string;
@@ -82,7 +82,7 @@ export function ProjectArtifactsTable({ artifacts }: { artifacts: ProjectArtifac
                 <tr key={a.id} className="hover:bg-accent transition-colors">
                   <td className="px-6 py-4">
                     <a
-                      href={a.url}
+                      href={a.url ?? undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm font-semibold text-primary hover:text-primary/80 inline-flex items-center gap-1 group"

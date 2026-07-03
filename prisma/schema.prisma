@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "wasm"
 }
 
@@ -13,11 +13,11 @@ datasource db {
 
 // --- Enums (Global Types) ---
 enum UserRole {
-  ADMIN       // Can configure templates and users
-  MANAGER     // Can manage projects and see all reports
-  SUPERVISOR  // Can assign tasks and manage teams
-  MEMBER      // Can execute tasks (Designer, Dev, etc.)
-  CLIENT      // Can view project status (Portal do Cliente)
+  ADMIN // Can configure templates and users
+  MANAGER // Can manage projects and see all reports
+  SUPERVISOR // Can assign tasks and manage teams
+  MEMBER // Can execute tasks (Designer, Dev, etc.)
+  CLIENT // Can view project status (Portal do Cliente)
 }
 
 enum TaskStatus {
@@ -37,26 +37,67 @@ enum TaskPriority {
 
 enum ArtifactType {
   DOCUMENT // Google Doc, PDF
-  IMAGE    // JPG, PNG
-  VIDEO    // MP4 (link)
+  IMAGE // JPG, PNG
+  VIDEO // MP4 (link)
   FIGMA
   OTHER
 }
 
+// --- Artifact / NAS upload enums (spec 2026-07-02) ---
+
+// Tipo de mídia = pasta-folha no NAS (mapper central enum→rótulo; SOCIAL_MEDIA vira "Social Media",
+// demais em minúsculas). Substitui ArtifactType na fase 2 da migração.
+enum ArtifactMediaType {
+  VIDEOS
+  FOTOS
+  DOCUMENTOS
+  LOGOS
+  SOCIAL_MEDIA
+  OUTROS
+}
+
+// Alvo da árvore de pastas: campanha (com Ano_Mes) ou institucional.
+enum ArtifactTarget {
+  CAMPANHA
+  INSTITUCIONAL
+}
+
+// Como o artefato é armazenado: link externo (legado/atual) ou upload no NAS.
+enum ArtifactStorageKind {
+  LINK
+  NAS_UPLOAD
+}
+
+// Máquina de estados do upload (STORED é interno do agente, não entra aqui).
+enum ArtifactUploadStatus {
+  PENDING
+  UPLOADING
+  READY
+  FAILED
+  EXPIRED
+}
+
+// Sensibilidade × contexto (define quem baixa interno/externo e se gera share).
+enum SensitivityLevel {
+  INTERNO
+  CLIENTE
+  CONFIDENCIAL
+}
+
 enum StageLogStatus {
   COMPLETED // Normal stage completion (advanced to next)
-  REVERTED  // Stage was rejected/reverted
+  REVERTED // Stage was rejected/reverted
 }
 
 enum ActiveStageStatus {
-  INACTIVE  // Pre-created but not yet reached (no predecessor completed)
-  ACTIVE    // Ready to work - all dependencies met
-  BLOCKED   // Reached but waiting for remaining dependencies to complete
+  INACTIVE // Pre-created but not yet reached (no predecessor completed)
+  ACTIVE // Ready to work - all dependencies met
+  BLOCKED // Reached but waiting for remaining dependencies to complete
   COMPLETED // Work finished on this stage
 }
 
 enum ProjectStatus {
-  ACTIVE   // Project is active and can receive new demands
+  ACTIVE // Project is active and can receive new demands
   INACTIVE // Project is deactivated (archived)
 }
 
@@ -114,13 +155,20 @@ model User {
   lastSeenAt    DateTime? // Track last activity for online presence
 
   // Relations
-  assignedTasks   Task[]            @relation("Assignee")
-  activeStages    TaskActiveStage[] @relation("StageAssignee")
-  comments        TaskComment[]
-  artifacts       TaskArtifact[]
-  timeLogs        TimeLog[]
-  stageLogs       TaskStageLog[]
-  activityLogs    ActivityLog[]
+  assignedTasks Task[]            @relation("Assignee")
+  activeStages  TaskActiveStage[] @relation("StageAssignee")
+  comments      TaskComment[]
+  artifacts     TaskArtifact[]    @relation("ArtifactCreator")
+  timeLogs      TimeLog[]
+  stageLogs     TaskStageLog[]
+  activityLogs  ActivityLog[]
+
+  // Artifact / NAS relations
+  uploadedArtifacts   TaskArtifact[]      @relation("ArtifactUploader")
+  deletedArtifacts    TaskArtifact[]      @relation("ArtifactDeleter")
+  reviewedNasProjects Project[]           @relation("NasMetadataReviewer")
+  createdShareLinks   ArtifactShareLink[]
+  artifactAuditLogs   ArtifactAuditLog[]
 }
 
 model Team {
@@ -139,6 +187,10 @@ model Client {
   email       String?
   phone       String?
   projects    Project[]
+
+  // Nome da pasta-raiz do cliente na árvore do NAS. Auto-derivado do name (slug seguro);
+  // editável até existir o primeiro artefato NAS, depois trava. Colisão bloqueia (fluxo admin).
+  folderName String? @unique
 }
 
 model Project {
@@ -149,6 +201,18 @@ model Project {
   clientId    String
   client      Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   tasks       Task[]
+
+  // --- Metadados de campanha p/ árvore do NAS (spec 2026-07-02) ---
+  // Slug da campanha + mês/ano de VEICULAÇÃO (define a pasta permanente). Manuais, MANAGER+.
+  campaignSlug  String?
+  campaignYear  Int?
+  campaignMonth Int?
+
+  // Libera upload no NAS só após revisão dos metadados de campanha (default off).
+  nasUploadEnabled        Boolean   @default(false)
+  nasMetadataReviewedAt   DateTime?
+  nasMetadataReviewedById String?
+  nasMetadataReviewedBy   User?     @relation("NasMetadataReviewer", fields: [nasMetadataReviewedById], references: [id], onUpdate: NoAction, onDelete: SetNull)
 }
 
 // --- 3. Workflow Template Engine Models (The "Script") ---
@@ -163,9 +227,9 @@ model WorkflowTemplate {
 }
 
 model TemplateStage {
-  id       String @id @default(cuid())
-  name     String
-  order    Int    // The sequence (1, 2, 3...)
+  id         String           @id @default(cuid())
+  name       String
+  order      Int // The sequence (1, 2, 3...)
   templateId String
   template   WorkflowTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
@@ -176,21 +240,25 @@ model TemplateStage {
   defaultTeamId String? // The team auto-assigned (e.g., "QC")
   defaultTeam   Team?   @relation(fields: [defaultTeamId], references: [id], onUpdate: NoAction, onDelete: SetNull)
 
+  // Tipo de mídia sugerido para artefatos gerados nesta etapa (proveniência).
+  defaultMediaType ArtifactMediaType?
+
   // Relations
-  dependencies StageDependency[] @relation("DependsOn")
-  dependents   StageDependency[] @relation("Stage")
-  activeTasks  TaskActiveStage[] @relation("ActiveTasks")
-  stageLogs    TaskStageLog[]
-  timeLogs     TimeLog[]
-  activityLogs ActivityLog[]
+  dependencies   StageDependency[] @relation("DependsOn")
+  dependents     StageDependency[] @relation("Stage")
+  activeTasks    TaskActiveStage[] @relation("ActiveTasks")
+  stageLogs      TaskStageLog[]
+  timeLogs       TimeLog[]
+  activityLogs   ActivityLog[]
+  stageArtifacts TaskArtifact[]
 }
 
 // This table defines the dependencies: "Stage A must be complete before Stage B"
 model StageDependency {
   id               String        @id @default(cuid())
-  stageId          String        // The stage that has a prerequisite
+  stageId          String // The stage that has a prerequisite
   stage            TemplateStage @relation("Stage", fields: [stageId], references: [id], onDelete: Cascade)
-  dependsOnStageId String        // The prerequisite stage
+  dependsOnStageId String // The prerequisite stage
   dependsOn        TemplateStage @relation("DependsOn", fields: [dependsOnStageId], references: [id], onDelete: Cascade)
 
   @@unique([stageId, dependsOnStageId])
@@ -208,7 +276,7 @@ model Task {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   dueDate     DateTime?
-  completedAt DateTime?    // Set when final stage is completed (for lead time calculation)
+  completedAt DateTime? // Set when final stage is completed (for lead time calculation)
 
   // Relations
   projectId String
@@ -273,13 +341,104 @@ model TaskComment {
 model TaskArtifact {
   id        String       @id @default(cuid())
   title     String
-  url       String       // The URL from Cloudinary or Google Drive
-  type      ArtifactType @default(OTHER)
+  url       String? // Só para storageKind = LINK (legado/atual). NAS_UPLOAD não usa url.
+  type      ArtifactType @default(OTHER) // legado; removido na fase 2 da migração (usar mediaType)
   createdAt DateTime     @default(now())
   taskId    String
   task      Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
   userId    String
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User         @relation("ArtifactCreator", fields: [userId], references: [id], onDelete: Cascade)
+
+  // --- NAS upload (spec 2026-07-02). Nulos p/ storageKind = LINK. ---
+  storageKind  ArtifactStorageKind  @default(LINK)
+  uploadStatus ArtifactUploadStatus @default(READY)
+  mediaType    ArtifactMediaType? // NAS_UPLOAD exige (código + índice)
+  purposeId    String? // NAS_UPLOAD exige
+  purpose      DeliverablePurpose?  @relation(fields: [purposeId], references: [id], onUpdate: NoAction, onDelete: Restrict)
+  target       ArtifactTarget       @default(CAMPANHA)
+  sensitivity  SensitivityLevel     @default(INTERNO)
+
+  stageId String?
+  stage   TemplateStage? @relation(fields: [stageId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+
+  // Nome/caminho selados no prepare (imutáveis após READY). localLink é derivado (não persistido).
+  nasPath          String? @unique
+  fileName         String?
+  originalFileName String?
+  mimeType         String?
+  sizeBytes        BigInt?
+  checksum         String? // sha256 hex, preenchido pelo agente no finalize
+  version          Int?
+
+  uploadedById String?
+  uploadedBy   User?   @relation("ArtifactUploader", fields: [uploadedById], references: [id], onUpdate: NoAction, onDelete: SetNull)
+
+  readyAt      DateTime?
+  failedAt     DateTime?
+  failedReason String?
+
+  deleteRequestedAt DateTime?
+  deletedAt         DateTime?
+  deletedById       String?
+  deletedBy         User?     @relation("ArtifactDeleter", fields: [deletedById], references: [id], onUpdate: NoAction, onDelete: SetNull)
+
+  agentId String? // qual agente/NAS gravou
+
+  shareLinks ArtifactShareLink[]
+  auditLogs  ArtifactAuditLog[]
+
+  @@unique([taskId, purposeId, mediaType, version])
+  @@index([taskId])
+  @@index([uploadStatus])
+}
+
+// Propósito do entregável (tag pesquisável; compõe o nome). CRUD admin (MANAGER+).
+model DeliverablePurpose {
+  id        String         @id @default(cuid())
+  label     String
+  slug      String         @unique
+  active    Boolean        @default(true)
+  order     Int            @default(0)
+  artifacts TaskArtifact[]
+}
+
+// Link de compartilhamento externo (só CLIENTE). Token exibido só na criação:
+// nas_shr_<publicId>_<secret>; guardamos tokenHash = HMAC-SHA256(secret, SHARE_TOKEN_PEPPER).
+model ArtifactShareLink {
+  id               String       @id @default(cuid())
+  artifactId       String
+  artifact         TaskArtifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  publicId         String       @unique
+  tokenHash        String
+  passwordHash     String? // Argon2id, opcional
+  expiresAt        DateTime
+  maxDownloads     Int?
+  downloadCount    Int          @default(0)
+  lastDownloadedAt DateTime?
+  createdById      String
+  createdBy        User         @relation(fields: [createdById], references: [id], onUpdate: NoAction, onDelete: Cascade)
+  createdByIp      String?
+  revokedAt        DateTime?
+  note             String?
+  createdAt        DateTime     @default(now())
+
+  @@index([artifactId])
+}
+
+// Auditoria oficial (cloud é fonte de verdade; agente tem buffer + retry).
+model ArtifactAuditLog {
+  id          String        @id @default(cuid())
+  artifactId  String?
+  artifact    TaskArtifact? @relation(fields: [artifactId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+  actorUserId String?
+  actor       User?         @relation(fields: [actorUserId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+  eventType   String
+  ip          String?
+  userAgent   String?
+  metadata    Json?
+  createdAt   DateTime      @default(now())
+
+  @@index([artifactId])
 }
 
 // --- 5. Reporting & Analytics Log Models (Append-Only) ---
@@ -292,11 +451,11 @@ model TimeLog {
   description String?
 
   taskId  String
-  task    Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task    Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
   stageId String? // Which stage was this time spent on?
   stage   TemplateStage? @relation(fields: [stageId], references: [id], onUpdate: NoAction, onDelete: SetNull)
   userId  String
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Log for "Stage Transitions" (Bottleneck Reports)

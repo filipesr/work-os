@@ -66,9 +66,7 @@ export function ActivityFeed({ comments, artifacts }: ActivityFeedProps) {
 
   return (
     <div className="space-y-4">
-      <h3 className="font-medium text-sm text-muted-foreground">
-        Histórico de Atividades
-      </h3>
+      <h3 className="font-medium text-sm text-muted-foreground">Histórico de Atividades</h3>
 
       <div className="space-y-4">
         {activities.map((activity) => {
@@ -94,16 +92,12 @@ function CommentItem({ comment }: { comment: CommentWithUser }) {
     >
       <Avatar className="h-8 w-8">
         <AvatarImage src={getProxiedImageUrl(comment.user.image) || undefined} />
-        <AvatarFallback>
-          {comment.user.name?.charAt(0).toUpperCase() || "?"}
-        </AvatarFallback>
+        <AvatarFallback>{comment.user.name?.charAt(0).toUpperCase() || "?"}</AvatarFallback>
       </Avatar>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="font-medium text-sm">
-            {comment.user.name || comment.user.email}
-          </span>
+          <span className="font-medium text-sm">{comment.user.name || comment.user.email}</span>
           {isRevertComment && (
             <Badge variant="outline" className="text-xs">
               Reversão
@@ -116,9 +110,7 @@ function CommentItem({ comment }: { comment: CommentWithUser }) {
             })}
           </span>
         </div>
-        <p className="text-sm whitespace-pre-wrap break-words">
-          {comment.content}
-        </p>
+        <p className="text-sm whitespace-pre-wrap break-words">{comment.content}</p>
       </div>
     </div>
   );
@@ -131,16 +123,12 @@ function ArtifactItem({ artifact }: { artifact: ArtifactWithUser }) {
     <div className="flex gap-3 p-3 rounded-lg bg-muted/50">
       <Avatar className="h-8 w-8">
         <AvatarImage src={getProxiedImageUrl(artifact.user.image) || undefined} />
-        <AvatarFallback>
-          {artifact.user.name?.charAt(0).toUpperCase() || "?"}
-        </AvatarFallback>
+        <AvatarFallback>{artifact.user.name?.charAt(0).toUpperCase() || "?"}</AvatarFallback>
       </Avatar>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="font-medium text-sm">
-            {artifact.user.name || artifact.user.email}
-          </span>
+          <span className="font-medium text-sm">{artifact.user.name || artifact.user.email}</span>
           <span className="text-xs text-muted-foreground">
             adicionou um {artifactLabels[artifact.type].toLowerCase()}
           </span>
@@ -153,7 +141,7 @@ function ArtifactItem({ artifact }: { artifact: ArtifactWithUser }) {
         </div>
 
         <a
-          href={artifact.url}
+          href={artifact.url ?? undefined}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 p-2 rounded-md bg-background hover:bg-accent transition-colors border"
