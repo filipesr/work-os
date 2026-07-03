@@ -22,6 +22,7 @@ import {
   checkRole,
   requireAdmin,
   requireManagerOrAdmin,
+  requireSupervisorOrHigher,
   requireMemberOrHigher,
   getUserRole,
 } from "@/lib/permissions";
@@ -130,6 +131,29 @@ describe("requireManagerOrAdmin", () => {
     mockAuth.mockResolvedValue({ user: mockUser } as any);
 
     await expect(requireManagerOrAdmin()).rejects.toThrow("Access Denied");
+  });
+});
+
+describe("requireSupervisorOrHigher", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("allows SUPERVISOR", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1", role: "SUPERVISOR" } } as any);
+    await expect(requireSupervisorOrHigher()).resolves.toBeDefined();
+  });
+
+  it("allows MANAGER and ADMIN", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1", role: "MANAGER" } } as any);
+    await expect(requireSupervisorOrHigher()).resolves.toBeDefined();
+    mockAuth.mockResolvedValue({ user: { id: "user-2", role: "ADMIN" } } as any);
+    await expect(requireSupervisorOrHigher()).resolves.toBeDefined();
+  });
+
+  it("rejects MEMBER", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1", role: "MEMBER" } } as any);
+    await expect(requireSupervisorOrHigher()).rejects.toThrow("Access Denied");
   });
 });
 

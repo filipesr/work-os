@@ -65,6 +65,45 @@ export const createProjectSchema = z.object({
   clientId: z.string().min(1, "Cliente é obrigatório"),
 });
 
+// ========== NAS artifact upload (spec 2026-07-02) ==========
+
+const artifactMediaTypeEnum = z.enum([
+  "VIDEOS",
+  "FOTOS",
+  "DOCUMENTOS",
+  "LOGOS",
+  "SOCIAL_MEDIA",
+  "OUTROS",
+]);
+const sensitivityEnum = z.enum(["INTERNO", "CLIENTE", "CONFIDENCIAL"]);
+
+// prepareArtifactUpload — the browser sends declared metadata; the server computes the sealed
+// path/name and signs the upload token. mediaType + purposeId are required for NAS_UPLOAD.
+export const prepareArtifactUploadSchema = z.object({
+  taskId: z.string().min(1, "Demanda é obrigatória"),
+  mediaType: artifactMediaTypeEnum,
+  purposeId: z.string().min(1, "Propósito é obrigatório"),
+  target: z.enum(["CAMPANHA", "INSTITUCIONAL"]).default("CAMPANHA"),
+  sensitivity: sensitivityEnum.default("INTERNO"),
+  stageId: z.string().optional(),
+  originalFileName: z.string().min(1, "Nome do arquivo é obrigatório").max(255),
+  mimeType: z.string().min(1, "MIME é obrigatório").max(255),
+  sizeBytes: z.number().int().positive("Tamanho inválido"),
+});
+
+export const createShareLinkSchema = z.object({
+  artifactId: z.string().min(1),
+  password: z.string().min(4).max(200).optional(),
+  expiresInDays: z.number().int().min(1).max(30).default(7),
+  maxDownloads: z.number().int().positive().optional(),
+  note: z.string().max(500).optional(),
+});
+
+export const changeSensitivitySchema = z.object({
+  artifactId: z.string().min(1),
+  sensitivity: sensitivityEnum,
+});
+
 export const workflowTemplateSchema = z.object({
   name: z.string().min(1, "Template name is required").max(200),
   description: z.string().max(2000).optional().default(""),

@@ -23,13 +23,18 @@ const intlMiddleware = createMiddleware({
  */
 function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV !== "production";
+  // NAS agent (LAN) — the browser talks directly to it for the health probe and the direct upload
+  // PUT, so its origin must be allowed in connect-src. Public, non-secret; empty when unconfigured.
+  // (Internal/share downloads are 302 navigations, not connect-src, so only the LAN origin is needed.)
+  const nasLan = process.env.NEXT_PUBLIC_NAS_AGENT_URL_LAN?.replace(/\/+$/, "") ?? "";
+  const connectSrc = ["'self'", nasLan].filter(Boolean).join(" ");
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https://lh3.googleusercontent.com",
     "font-src 'self'",
-    "connect-src 'self'",
+    `connect-src ${connectSrc}`,
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",

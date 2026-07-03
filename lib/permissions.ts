@@ -55,6 +55,14 @@ export const requireManagerOrAdmin = async () => {
 };
 
 /**
+ * Check if the current user is a Supervisor or higher (Supervisor, Manager, or Admin).
+ * Used e.g. for creating/revoking external share links of CLIENTE artifacts.
+ */
+export const requireSupervisorOrHigher = async () => {
+  return checkRole([UserRole.ADMIN, UserRole.MANAGER, UserRole.SUPERVISOR]);
+};
+
+/**
  * Check if the current user is a Member or higher (Member, Supervisor, Manager, or Admin).
  */
 export const requireMemberOrHigher = async () => {
