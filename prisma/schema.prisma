@@ -43,6 +43,14 @@ enum ArtifactType {
   OTHER
 }
 
+// Escopo do artefato (spec 2026-07-06). Um artefato pertence a exatamente um dono conforme o
+// escopo: TASK⇒taskId, PROJECT⇒projectId, CLIENT⇒clientId (invariante validada em código).
+enum ArtifactScope {
+  TASK
+  PROJECT
+  CLIENT
+}
+
 // --- Artifact / NAS upload enums (spec 2026-07-02) ---
 
 // Tipo de mídia = pasta-folha no NAS (mapper central enum→rótulo; SOCIAL_MEDIA vira "Social Media",
@@ -188,6 +196,9 @@ model Client {
   phone       String?
   projects    Project[]
 
+  // Artefatos com escopo CLIENT (spec 2026-07-06). Destacados nas demandas do cliente.
+  artifacts TaskArtifact[]
+
   // Nome da pasta-raiz do cliente na árvore do NAS. Auto-derivado do name (slug seguro);
   // editável até existir o primeiro artefato NAS, depois trava. Colisão bloqueia (fluxo admin).
   folderName String? @unique
@@ -201,6 +212,9 @@ model Project {
   clientId    String
   client      Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   tasks       Task[]
+
+  // Artefatos com escopo PROJECT (spec 2026-07-06). Destacados nas demandas do projeto.
+  artifacts TaskArtifact[]
 
   // --- Metadados de campanha p/ árvore do NAS (spec 2026-07-02) ---
   // Slug da campanha + mês/ano de VEICULAÇÃO (define a pasta permanente). Manuais, MANAGER+.
@@ -348,10 +362,22 @@ model TaskArtifact {
   url       String? // Só para storageKind = LINK (legado/atual). NAS_UPLOAD não usa url.
   type      ArtifactType @default(OTHER) // legado; removido na fase 2 da migração (usar mediaType)
   createdAt DateTime     @default(now())
-  taskId    String
-  task      Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User         @relation("ArtifactCreator", fields: [userId], references: [id], onDelete: Cascade)
+
+  // --- Escopo (spec 2026-07-06). Exatamente um dono conforme o escopo (invariante em código). ---
+  // TASK⇒taskId, PROJECT⇒projectId, CLIENT⇒clientId. Artefatos legados são TASK.
+  scope ArtifactScope @default(TASK)
+
+  taskId String? // agora nulável: PROJECT/CLIENT não têm task
+  task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  clientId String?
+  client   Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("ArtifactCreator", fields: [userId], references: [id], onDelete: Cascade)
 
   // --- NAS upload (spec 2026-07-02). Nulos p/ storageKind = LINK. ---
   storageKind  ArtifactStorageKind  @default(LINK)
@@ -393,6 +419,8 @@ model TaskArtifact {
 
   @@unique([taskId, purposeId, mediaType, version])
   @@index([taskId])
+  @@index([projectId])
+  @@index([clientId])
   @@index([uploadStatus])
 }
 
