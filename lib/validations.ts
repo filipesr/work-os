@@ -91,6 +91,46 @@ export const prepareArtifactUploadSchema = z.object({
   sizeBytes: z.number().int().positive("Tamanho inválido"),
 });
 
+// ========== Scoped link artifacts (spec 2026-07-06) ==========
+// Artifacts carry a `scope` (TASK / PROJECT / CLIENT). v1 supports LINK artifacts only for the
+// PROJECT/CLIENT scopes. The invariant — enforced here in code, not in the DB — is that EXACTLY ONE
+// owner id is set and it matches the scope: TASK⇒taskId, PROJECT⇒projectId, CLIENT⇒clientId (the
+// other two must be null/absent).
+
+export const artifactScopeEnum = z.enum(["TASK", "PROJECT", "CLIENT"]);
+
+const linkArtifactTypeEnum = z.enum(["DOCUMENT", "IMAGE", "VIDEO", "FIGMA", "OTHER"]);
+
+export const scopedLinkArtifactSchema = z
+  .object({
+    scope: artifactScopeEnum,
+    taskId: z.string().min(1).nullish(),
+    projectId: z.string().min(1).nullish(),
+    clientId: z.string().min(1).nullish(),
+    title: z.string().min(1, "Título do artefato é obrigatório").max(200),
+    url: z.string().url("URL inválida"),
+    type: linkArtifactTypeEnum.default("OTHER"),
+  })
+  .refine(
+    (data) => {
+      const owners = {
+        TASK: Boolean(data.taskId),
+        PROJECT: Boolean(data.projectId),
+        CLIENT: Boolean(data.clientId),
+      };
+      const setCount = Object.values(owners).filter(Boolean).length;
+      // Exactly one owner id, and it must be the one implied by `scope`.
+      return setCount === 1 && owners[data.scope];
+    },
+    {
+      message:
+        "Exatamente um dono deve ser informado e corresponder ao escopo (TASK⇒taskId, PROJECT⇒projectId, CLIENT⇒clientId).",
+      path: ["scope"],
+    }
+  );
+
+export type ScopedLinkArtifactInput = z.infer<typeof scopedLinkArtifactSchema>;
+
 export const createShareLinkSchema = z.object({
   artifactId: z.string().min(1),
   password: z.string().min(4).max(200).optional(),
