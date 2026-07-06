@@ -624,3 +624,15 @@ git commit -m "chore(stages): backfill legacy tasks missing active-stage rows (o
 - Spec §Decisões → Tasks 1-5. §"Semântica de incluída e tarefas legadas" → Task 6. §Testes → Steps de teste em 4 e 5 + verificação manual.
 - Sem placeholders: código completo em cada step de código.
 - Consistência de tipos: `parseSelectedStages` (Set), `createTaskStages({…, selectedStageIds})`, `computeStageReadiness(args)` usados de forma idêntica em produtores/consumidores.
+
+---
+
+## Resultado da execução (2026-07-06)
+
+Todas as tasks concluídas. Suíte completa verde (199/199); typecheck limpo nos arquivos tocados.
+
+- **Task 6 (legado):** diagnóstico no DB de dev → **0 tarefas ativas sem linhas** `TaskActiveStage`
+  (6 tarefas no total). Backfill **não necessário**. Observação para deploy: rodar o mesmo
+  diagnóstico em produção antes de publicar; se houver tarefas legadas sem linhas, criar as
+  linhas faltantes (o fallback de criação do `activateNextStages` foi removido, então tarefas
+  sem linha ficariam travadas).
