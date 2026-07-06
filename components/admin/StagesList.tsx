@@ -12,6 +12,7 @@ interface Stage {
   order: number;
   expectedDurationHours: number | null;
   defaultTeamId: string | null;
+  optional: boolean;
   defaultTeam: { id: string; name: string } | null;
   dependencies: Array<{
     id: string;
@@ -174,6 +175,17 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                       placeholder={t("slaPlaceholder")}
                       className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
                     />
+                  </div>
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <input
+                        type="checkbox"
+                        name="optional"
+                        defaultChecked={stage.optional}
+                        className="h-4 w-4"
+                      />
+                      Etapa opcional
+                    </label>
                   </div>
                 </div>
 

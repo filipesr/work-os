@@ -158,6 +158,12 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
               <option value="OUTROS">Outros</option>
             </select>
           </div>
+          <div className="flex items-end">
+            <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <input type="checkbox" name="optional" className="h-4 w-4" />
+              Etapa opcional
+            </label>
+          </div>
         </div>
 
         {/* Dependencies Section */}
