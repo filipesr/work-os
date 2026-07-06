@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Prisma } from "@prisma/client";
-import { parseSelectedStages, createTaskStages } from "@/lib/stage-assignment-helpers";
+import {
+  parseSelectedStages,
+  createTaskStages,
+  computeStageReadiness,
+} from "@/lib/stage-assignment-helpers";
 
 describe("parseSelectedStages", () => {
   it("coleta só os stageIds marcados (checkbox 'stage:<id>')", () => {
@@ -70,5 +74,92 @@ describe("createTaskStages — seleção de etapas", () => {
         selectedStageIds: new Set(),
       })
     ).rejects.toThrow();
+  });
+});
+
+describe("computeStageReadiness", () => {
+  const linear = [
+    { id: "A", dependsOnIds: [] },
+    { id: "B", dependsOnIds: ["A"] },
+    { id: "C", dependsOnIds: ["B"] },
+  ];
+
+  it("pass-through: B excluída → concluir A ativa C", () => {
+    const r = computeStageReadiness({
+      stages: linear,
+      includedStageIds: new Set(["A", "C"]), // B excluída (sem linha)
+      completedStageIds: new Set(["A"]),
+      statusByStage: new Map([
+        ["A", "COMPLETED"],
+        ["C", "INACTIVE"],
+      ]),
+    });
+    expect(r.get("C")).toBe("ACTIVE");
+  });
+
+  it("cadeia normal: concluir A ativa B; C segue INACTIVE (nenhum prereq concluído)", () => {
+    const r = computeStageReadiness({
+      stages: linear,
+      includedStageIds: new Set(["A", "B", "C"]),
+      completedStageIds: new Set(["A"]),
+      statusByStage: new Map([
+        ["A", "COMPLETED"],
+        ["B", "INACTIVE"],
+        ["C", "INACTIVE"],
+      ]),
+    });
+    expect(r.get("B")).toBe("ACTIVE");
+    expect(r.has("C")).toBe(false);
+  });
+
+  it("não regride ACTIVE/COMPLETED", () => {
+    const r = computeStageReadiness({
+      stages: linear,
+      includedStageIds: new Set(["A", "B", "C"]),
+      completedStageIds: new Set(["A"]),
+      statusByStage: new Map([
+        ["A", "COMPLETED"],
+        ["B", "ACTIVE"],
+        ["C", "INACTIVE"],
+      ]),
+    });
+    expect(r.has("B")).toBe(false);
+  });
+
+  it("prereqs mistos (um excluído, um incluído pendente) → BLOCKED", () => {
+    const stages = [
+      { id: "A", dependsOnIds: [] },
+      { id: "X", dependsOnIds: [] },
+      { id: "D", dependsOnIds: ["A", "X"] },
+    ];
+    const r = computeStageReadiness({
+      stages,
+      includedStageIds: new Set(["A", "X", "D"]), // nada excluído aqui
+      completedStageIds: new Set(["A"]), // X ainda ACTIVE, não concluída
+      statusByStage: new Map([
+        ["A", "COMPLETED"],
+        ["X", "ACTIVE"],
+        ["D", "INACTIVE"],
+      ]),
+    });
+    expect(r.get("D")).toBe("BLOCKED");
+  });
+
+  it("todos os prereqs de D excluídos → ativa D ao encontrar qualquer gatilho", () => {
+    const stages = [
+      { id: "A", dependsOnIds: [] },
+      { id: "P", dependsOnIds: ["A"] },
+      { id: "D", dependsOnIds: ["P"] },
+    ];
+    const r = computeStageReadiness({
+      stages,
+      includedStageIds: new Set(["A", "D"]), // P excluída
+      completedStageIds: new Set(["A"]),
+      statusByStage: new Map([
+        ["A", "COMPLETED"],
+        ["D", "INACTIVE"],
+      ]),
+    });
+    expect(r.get("D")).toBe("ACTIVE");
   });
 });

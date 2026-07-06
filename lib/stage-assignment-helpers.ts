@@ -44,6 +44,52 @@ export function parseSelectedStages(formData: FormData): Set<string> {
   return out;
 }
 
+/**
+ * Recomputes stage readiness for a task after a stage completes. Pure — the
+ * caller loads the task's rows + the template graph and applies the result.
+ *
+ * A prerequisite is "satisfied" when it is COMPLETED **or** not included in this
+ * task (excluded stages have no row). That single rule makes the pass-through
+ * through excluded middle stages fall out naturally: if B is excluded, any stage
+ * depending on B treats B as already satisfied.
+ *
+ * Returns, for each INCLUDED stage currently INACTIVE/BLOCKED, its recomputed
+ * status:
+ *   - ACTIVE  when every prerequisite is satisfied;
+ *   - BLOCKED when not ready but the stage was "reached" (≥1 INCLUDED
+ *     prerequisite already COMPLETED) — i.e. it is genuinely waiting.
+ * Stages that stay INACTIVE (not ready, not reached) and stages already
+ * ACTIVE/COMPLETED are omitted (no-regress). The caller diffs against the
+ * current status to decide what to write.
+ */
+export function computeStageReadiness(args: {
+  stages: { id: string; dependsOnIds: string[] }[];
+  includedStageIds: ReadonlySet<string>;
+  completedStageIds: ReadonlySet<string>;
+  statusByStage: ReadonlyMap<string, "INACTIVE" | "ACTIVE" | "BLOCKED" | "COMPLETED">;
+}): Map<string, "ACTIVE" | "BLOCKED"> {
+  const { stages, includedStageIds, completedStageIds, statusByStage } = args;
+  const isSatisfied = (id: string) => completedStageIds.has(id) || !includedStageIds.has(id);
+  const out = new Map<string, "ACTIVE" | "BLOCKED">();
+
+  for (const stage of stages) {
+    if (!includedStageIds.has(stage.id)) continue; // excluded: no row for this task
+    const current = statusByStage.get(stage.id);
+    if (current === "ACTIVE" || current === "COMPLETED") continue; // no-regress
+
+    if (stage.dependsOnIds.every(isSatisfied)) {
+      out.set(stage.id, "ACTIVE");
+    } else {
+      // "Reached" = some INCLUDED prerequisite is already COMPLETED.
+      const reached = stage.dependsOnIds.some(
+        (id) => includedStageIds.has(id) && completedStageIds.has(id)
+      );
+      if (reached) out.set(stage.id, "BLOCKED");
+    }
+  }
+  return out;
+}
+
 /** Reads `assignee:<stageId>` form fields into a { stageId: assigneeId } map,
  * skipping empty values (= "no assignment"). */
 export function parseStageAssignments(formData: FormData): Record<string, string> {

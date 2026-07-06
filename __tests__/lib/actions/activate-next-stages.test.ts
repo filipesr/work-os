@@ -10,168 +10,145 @@ vi.mock("@/lib/prisma", () => ({
     taskActiveStage: {
       updateMany: vi.fn().mockResolvedValue({}),
       findMany: vi.fn().mockResolvedValue([]),
-      update: vi.fn().mockResolvedValue({}),
-      upsert: vi.fn().mockResolvedValue({}),
-      findFirst: vi.fn(),
     },
-    stageDependency: { findMany: vi.fn() },
+    templateStage: {
+      findUnique: vi.fn().mockResolvedValue({ templateId: "tpl" }),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   },
   prisma: {},
 }));
 
-// Readiness is derived from each dependent stage's own `dependencies` (already
-// loaded by the dependents query) checked against the set of COMPLETED stages.
-// Both the COMPLETED set and the pre-created dependent rows are batch-loaded via
-// taskActiveStage.findMany (two calls, in order) — see activateNextStages. The
-// mocks below feed those two inputs with mockResolvedValueOnce, in call order:
-//   1st findMany → COMPLETED set   2nd findMany → existing dependent rows
+// activateNextStages now: marks the completed row COMPLETED, loads the task's
+// rows (= the INCLUDED stages), loads the full template graph, and recomputes
+// readiness via computeStageReadiness. A prerequisite with NO row for the task
+// (excluded/optional-off) counts as satisfied → pass-through. Transitions are
+// written with updateMany({ where: { taskId, stageId }, data: { status } }) —
+// never touching assigneeId.
 
-describe("activateNextStages preserva assignee ao ativar", () => {
+type Node = { id: string; name?: string; dependsOn?: string[] };
+function graph(nodes: Node[]) {
+  return nodes.map((n) => ({
+    id: n.id,
+    name: n.name ?? n.id,
+    dependencies: (n.dependsOn ?? []).map((d) => ({ dependsOnStageId: d })),
+    defaultTeam: null,
+  }));
+}
+
+// Transition writes = updateMany calls that are NOT the completed-mark (the mark
+// carries `where.status: "ACTIVE"`).
+function transitionCalls(prisma: {
+  taskActiveStage: {
+    updateMany: {
+      mock: {
+        calls: [{ where: { stageId?: string; status?: string }; data: { status: string } }][];
+      };
+    };
+  };
+}) {
+  return prisma.taskActiveStage.updateMany.mock.calls
+    .map((c) => c[0])
+    .filter((a) => a.where.status === undefined);
+}
+
+async function run(
+  rows: { stageId: string; status: string }[],
+  nodes: Node[],
+  completedStageId = "s1"
+) {
+  const prisma = (await import("@/lib/prisma")).default as never as {
+    taskActiveStage: { findMany: ReturnType<typeof vi.fn>; updateMany: ReturnType<typeof vi.fn> };
+    templateStage: { findUnique: ReturnType<typeof vi.fn>; findMany: ReturnType<typeof vi.fn> };
+  };
+  prisma.taskActiveStage.findMany.mockResolvedValue(rows);
+  prisma.templateStage.findUnique.mockResolvedValue({ templateId: "tpl" });
+  prisma.templateStage.findMany.mockResolvedValue(graph(nodes));
+  const { activateNextStages } = await import("@/lib/actions/task");
+  const result = await activateNextStages("task1", completedStageId);
+  return { prisma, result };
+}
+
+describe("activateNextStages", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("faz upsert de status sem incluir assigneeId no data", async () => {
-    const prisma = (await import("@/lib/prisma")).default as any;
-
-    // Dependents of s1: s2 with no remaining prerequisites → ACTIVE.
-    prisma.stageDependency.findMany.mockResolvedValue([
-      { stage: { id: "s2", dependencies: [], defaultTeam: null } },
-    ]);
-    // 1st findMany = completed set (s1 just completed); 2nd = existing rows.
-    prisma.taskActiveStage.findMany
-      .mockResolvedValueOnce([{ stageId: "s1" }])
-      .mockResolvedValueOnce([{ stageId: "s2", status: "INACTIVE" }]);
-
-    const { activateNextStages } = await import("@/lib/actions/task");
-    await activateNextStages("task1", "s1");
-
-    // Implementation must call upsert (not create) and the update branch must
-    // contain ONLY { status: "ACTIVE" } — never assigneeId — to preserve
-    // whatever assignee was set during task creation.
-    const upsertCall = prisma.taskActiveStage.upsert.mock.calls.at(-1)?.[0];
-    expect(upsertCall?.update).toEqual({ status: "ACTIVE" }); // NÃO contém assigneeId
+  it("ativa dependente pronto sem tocar assigneeId", async () => {
+    const { prisma, result } = await run(
+      [
+        { stageId: "s1", status: "COMPLETED" },
+        { stageId: "s2", status: "INACTIVE" },
+      ],
+      [{ id: "s1" }, { id: "s2", dependsOn: ["s1"] }]
+    );
+    const t = transitionCalls(prisma as never);
+    const s2 = t.find((c) => c.where.stageId === "s2");
+    expect(s2?.data).toEqual({ status: "ACTIVE" }); // sem assigneeId
+    expect(result.activated.map((s) => s.id)).toEqual(["s2"]);
   });
 
   it("não regride etapa já ACTIVE", async () => {
-    const prisma = (await import("@/lib/prisma")).default as any;
-
-    prisma.stageDependency.findMany.mockResolvedValue([
-      { stage: { id: "s2", dependencies: [], defaultTeam: null } },
-    ]);
-    // Row is already ACTIVE — must NOT be overwritten
-    prisma.taskActiveStage.findMany
-      .mockResolvedValueOnce([{ stageId: "s1" }])
-      .mockResolvedValueOnce([{ stageId: "s2", status: "ACTIVE" }]);
-
-    const { activateNextStages } = await import("@/lib/actions/task");
-    await activateNextStages("task1", "s1");
-
-    // upsert must NOT have been called (stage skipped via no-regress guard)
-    expect(prisma.taskActiveStage.upsert).not.toHaveBeenCalled();
-  });
-
-  it("não regride etapa já COMPLETED", async () => {
-    const prisma = (await import("@/lib/prisma")).default as any;
-
-    // Dependents of s1.
-    prisma.stageDependency.findMany.mockResolvedValue([
-      { stage: { id: "s2", dependencies: [], defaultTeam: null } },
-    ]);
-    // Row is already COMPLETED — must be skipped
-    prisma.taskActiveStage.findMany
-      .mockResolvedValueOnce([{ stageId: "s1" }])
-      .mockResolvedValueOnce([{ stageId: "s2", status: "COMPLETED" }]);
-
-    const { activateNextStages } = await import("@/lib/actions/task");
-    await activateNextStages("task1", "s1");
-
-    // No upsert for a COMPLETED stage
-    expect(prisma.taskActiveStage.upsert).not.toHaveBeenCalled();
-    // Only the outer dependents query runs (readiness no longer queries deps).
-    expect(prisma.stageDependency.findMany).toHaveBeenCalledTimes(1);
-  });
-
-  it("INACTIVE com deps incompletas → upsert BLOCKED e aparece em blocked", async () => {
-    const prisma = (await import("@/lib/prisma")).default as any;
-
-    // s2 depends on s1 (just completed) AND s_other (still incomplete).
-    prisma.stageDependency.findMany.mockResolvedValue([
-      {
-        stage: {
-          id: "s2",
-          dependencies: [{ dependsOnStageId: "s1" }, { dependsOnStageId: "s_other" }],
-          defaultTeam: null,
-        },
-      },
-    ]);
-    // Only s1 is complete — s_other is not. s2 row is INACTIVE (eligible).
-    prisma.taskActiveStage.findMany
-      .mockResolvedValueOnce([{ stageId: "s1" }])
-      .mockResolvedValueOnce([{ stageId: "s2", status: "INACTIVE" }]);
-
-    const { activateNextStages } = await import("@/lib/actions/task");
-    const result = await activateNextStages("task1", "s1");
-
-    // upsert must have been called with update: { status: "BLOCKED" }
-    const upsertCall = prisma.taskActiveStage.upsert.mock.calls.at(-1)?.[0];
-    expect(upsertCall?.update).toEqual({ status: "BLOCKED" });
-    expect(upsertCall?.create).toEqual({ taskId: "task1", stageId: "s2", status: "BLOCKED" });
-
-    // Stage must appear in blocked, not activated
-    expect(result.blocked).toHaveLength(1);
+    const { prisma, result } = await run(
+      [
+        { stageId: "s1", status: "COMPLETED" },
+        { stageId: "s2", status: "ACTIVE" },
+      ],
+      [{ id: "s1" }, { id: "s2", dependsOn: ["s1"] }]
+    );
+    expect(transitionCalls(prisma as never).some((c) => c.where.stageId === "s2")).toBe(false);
     expect(result.activated).toHaveLength(0);
   });
 
-  it("BLOCKED→BLOCKED: sem mudança de estado — upsert NÃO chamado, não aparece em blocked", async () => {
-    const prisma = (await import("@/lib/prisma")).default as any;
+  it("não regride etapa já COMPLETED", async () => {
+    const { prisma } = await run(
+      [
+        { stageId: "s1", status: "COMPLETED" },
+        { stageId: "s2", status: "COMPLETED" },
+      ],
+      [{ id: "s1" }, { id: "s2", dependsOn: ["s1"] }]
+    );
+    expect(transitionCalls(prisma as never).some((c) => c.where.stageId === "s2")).toBe(false);
+  });
 
-    // s2 still has an unmet dep (s_other).
-    prisma.stageDependency.findMany.mockResolvedValue([
-      {
-        stage: {
-          id: "s2",
-          dependencies: [{ dependsOnStageId: "s1" }, { dependsOnStageId: "s_other" }],
-          defaultTeam: null,
-        },
-      },
-    ]);
-    // s2 is already BLOCKED
-    prisma.taskActiveStage.findMany
-      .mockResolvedValueOnce([{ stageId: "s1" }])
-      .mockResolvedValueOnce([{ stageId: "s2", status: "BLOCKED" }]);
+  it("deps incompletas → BLOCKED e aparece em blocked", async () => {
+    const { prisma, result } = await run(
+      [
+        { stageId: "s1", status: "COMPLETED" },
+        { stageId: "s_other", status: "ACTIVE" },
+        { stageId: "s2", status: "INACTIVE" },
+      ],
+      [{ id: "s1" }, { id: "s_other" }, { id: "s2", dependsOn: ["s1", "s_other"] }]
+    );
+    const s2 = transitionCalls(prisma as never).find((c) => c.where.stageId === "s2");
+    expect(s2?.data).toEqual({ status: "BLOCKED" });
+    expect(result.blocked.map((s) => s.id)).toEqual(["s2"]);
+    expect(result.activated).toHaveLength(0);
+  });
 
-    const { activateNextStages } = await import("@/lib/actions/task");
-    const result = await activateNextStages("task1", "s1");
-
-    // No upsert — no spurious write
-    expect(prisma.taskActiveStage.upsert).not.toHaveBeenCalled();
-    // Not pushed to either array
+  it("BLOCKED→BLOCKED: sem mudança — nenhuma escrita nem entrada em blocked", async () => {
+    const { prisma, result } = await run(
+      [
+        { stageId: "s1", status: "COMPLETED" },
+        { stageId: "s_other", status: "ACTIVE" },
+        { stageId: "s2", status: "BLOCKED" },
+      ],
+      [{ id: "s1" }, { id: "s_other" }, { id: "s2", dependsOn: ["s1", "s_other"] }]
+    );
+    expect(transitionCalls(prisma as never).some((c) => c.where.stageId === "s2")).toBe(false);
     expect(result.blocked).toHaveLength(0);
     expect(result.activated).toHaveLength(0);
   });
 
-  it("sem linha pré-criada (null) → upsert com create sem assigneeId", async () => {
-    const prisma = (await import("@/lib/prisma")).default as any;
-
-    // s2 has no remaining prerequisites → ACTIVE.
-    prisma.stageDependency.findMany.mockResolvedValue([
-      { stage: { id: "s2", dependencies: [], defaultTeam: null } },
-    ]);
-    // No pre-created row for this legacy task (existing rows empty).
-    prisma.taskActiveStage.findMany
-      .mockResolvedValueOnce([{ stageId: "s1" }])
-      .mockResolvedValueOnce([]);
-
-    const { activateNextStages } = await import("@/lib/actions/task");
-    const result = await activateNextStages("task1", "s1");
-
-    const upsertCall = prisma.taskActiveStage.upsert.mock.calls.at(-1)?.[0];
-    // create branch must NOT include assigneeId
-    expect(upsertCall?.create).toEqual({ taskId: "task1", stageId: "s2", status: "ACTIVE" });
-    expect(upsertCall?.create).not.toHaveProperty("assigneeId");
-    // update branch must also not include assigneeId
-    expect(upsertCall?.update).toEqual({ status: "ACTIVE" });
-
-    // Stage appears in activated
-    expect(result.activated).toHaveLength(1);
+  it("pass-through: etapa B excluída (sem linha) → concluir A ativa C", async () => {
+    const { prisma, result } = await run(
+      [
+        { stageId: "A", status: "COMPLETED" },
+        { stageId: "C", status: "INACTIVE" }, // B não tem linha (excluída)
+      ],
+      [{ id: "A" }, { id: "B", dependsOn: ["A"] }, { id: "C", dependsOn: ["B"] }],
+      "A"
+    );
+    const c = transitionCalls(prisma as never).find((x) => x.where.stageId === "C");
+    expect(c?.data).toEqual({ status: "ACTIVE" });
+    expect(result.activated.map((s) => s.id)).toEqual(["C"]);
   });
 });

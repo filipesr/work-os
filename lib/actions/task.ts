@@ -13,7 +13,7 @@ import {
   parseStageAssignments,
   parseSelectedStages,
   isValidStageAssignee,
-  areAllPrerequisitesComplete,
+  computeStageReadiness,
 } from "@/lib/stage-assignment-helpers";
 import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
@@ -679,95 +679,67 @@ export async function completeTask(taskId: string) {
  */
 export async function activateNextStages(taskId: string, completedStageId: string) {
   try {
-    // 1. Mark current active stage as COMPLETED
+    // 1. Mark current active stage as COMPLETED.
     await prisma.taskActiveStage.updateMany({
-      where: {
-        taskId,
-        stageId: completedStageId,
-        status: "ACTIVE",
-      },
-      data: {
-        status: "COMPLETED",
-        completedAt: new Date(),
-      },
+      where: { taskId, stageId: completedStageId, status: "ACTIVE" },
+      data: { status: "COMPLETED", completedAt: new Date() },
     });
 
-    // 2. Find all stages that depend on this completed stage
-    const dependentStages = await prisma.stageDependency.findMany({
-      where: {
-        dependsOnStageId: completedStageId,
-      },
-      include: {
-        stage: {
-          include: {
-            dependencies: {
-              include: {
-                dependsOn: true,
-              },
-            },
-            defaultTeam: true,
-          },
-        },
-      },
-    });
-
-    // Completed stages for this task — loaded once and reused for every
-    // dependent stage's readiness check (completedStageId was marked COMPLETED
-    // in step 1, so it is already included here).
-    const completedRows = await prisma.taskActiveStage.findMany({
-      where: { taskId, status: "COMPLETED" },
-      select: { stageId: true },
-    });
-    const completedSet = new Set(completedRows.map((c) => c.stageId));
-
-    type DependentStage = (typeof dependentStages)[number]["stage"];
-    const activated: DependentStage[] = [];
-    const blocked: DependentStage[] = [];
-
-    // Pre-created rows for every dependent stage, loaded in a single query
-    // (was an N+1 findUnique per dependent). Keyed by stageId for in-loop lookup.
-    const dependentStageIds = dependentStages.map((dep) => dep.stage.id);
-    const existingRows = await prisma.taskActiveStage.findMany({
-      where: { taskId, stageId: { in: dependentStageIds } },
+    // 2. Current rows for this task = the INCLUDED stages. A template stage
+    //    without a row here was left out of the task (optional/deselected).
+    const rows = await prisma.taskActiveStage.findMany({
+      where: { taskId },
       select: { stageId: true, status: true },
     });
-    const existingByStageId = new Map(existingRows.map((r) => [r.stageId, r]));
+    const includedStageIds = new Set(rows.map((r) => r.stageId));
+    const completedStageIds = new Set(
+      rows.filter((r) => r.status === "COMPLETED").map((r) => r.stageId)
+    );
+    const statusByStage = new Map(rows.map((r) => [r.stageId, r.status]));
 
-    // 3. Para cada dependente, transicionar a linha PRÉ-CRIADA (nunca criar do zero).
-    for (const dep of dependentStages) {
-      const stage = dep.stage;
+    // 3. Load the full template dependency graph (includes excluded stages, which
+    //    have no row) so readiness can treat them as satisfied (pass-through).
+    const anchor = await prisma.templateStage.findUnique({
+      where: { id: completedStageId },
+      select: { templateId: true },
+    });
+    if (!anchor) return { activated: [], blocked: [] };
 
-      // 3a. Look up the existing row (batch-loaded above) — avoid the dependency
-      //     computation for stages already ACTIVE or COMPLETED (no-regress guard).
-      const existing = existingByStageId.get(stage.id) ?? null;
+    const templateStages = await prisma.templateStage.findMany({
+      where: { templateId: anchor.templateId },
+      select: {
+        id: true,
+        name: true,
+        dependencies: { select: { dependsOnStageId: true } },
+        defaultTeam: { select: { id: true, name: true, members: { select: { id: true } } } },
+      },
+    });
+    const stageById = new Map(templateStages.map((s) => [s.id, s]));
 
-      // Já trabalhada/finalizada: não regredir.
-      if (existing && (existing.status === "ACTIVE" || existing.status === "COMPLETED")) {
-        continue;
-      }
+    // 4. Recompute readiness for every included stage (pass-through built in).
+    const transitions = computeStageReadiness({
+      stages: templateStages.map((s) => ({
+        id: s.id,
+        dependsOnIds: s.dependencies.map((d) => d.dependsOnStageId),
+      })),
+      includedStageIds,
+      completedStageIds,
+      statusByStage,
+    });
 
-      // 3b. Only now compute dependency status (skipped for ACTIVE/COMPLETED above).
-      const allDepsComplete = areAllPrerequisitesComplete(
-        stage.dependencies.map((d) => d.dependsOnStageId),
-        completedSet
-      );
-      const nextStatus: ActiveStageStatus = allDepsComplete ? "ACTIVE" : "BLOCKED";
-
-      // 3c. BLOCKED→BLOCKED: already blocked and still partially unmet — skip the
-      //     no-op write so the stage does NOT appear in the returned `blocked` array.
-      if (existing && existing.status === "BLOCKED" && !allDepsComplete) {
-        continue;
-      }
-
-      // Transição preservando assigneeId (NÃO incluir assigneeId no data).
-      // upsert cobre tarefas legadas sem a linha pré-criada (backfill tolerante).
-      await prisma.taskActiveStage.upsert({
-        where: { taskId_stageId: { taskId, stageId: stage.id } },
-        update: { status: nextStatus },
-        create: { taskId, stageId: stage.id, status: nextStatus },
+    // 5. Apply only real changes — preserve assigneeId (never write it here).
+    type TemplateStageNode = (typeof templateStages)[number];
+    const activated: TemplateStageNode[] = [];
+    const blocked: TemplateStageNode[] = [];
+    for (const [stageId, next] of transitions) {
+      if (statusByStage.get(stageId) === next) continue; // no-op
+      await prisma.taskActiveStage.updateMany({
+        where: { taskId, stageId },
+        data: { status: next },
       });
-
-      if (nextStatus === "ACTIVE") activated.push(stage);
+      const stage = stageById.get(stageId);
+      if (!stage) continue;
+      if (next === "ACTIVE") activated.push(stage);
       else blocked.push(stage);
     }
 
