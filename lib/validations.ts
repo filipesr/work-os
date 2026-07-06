@@ -77,19 +77,30 @@ const artifactMediaTypeEnum = z.enum([
 ]);
 const sensitivityEnum = z.enum(["INTERNO", "CLIENTE", "CONFIDENCIAL"]);
 
-// prepareArtifactUpload — the browser sends declared metadata; the server computes the sealed
-// path/name and signs the upload token. mediaType + purposeId are required for NAS_UPLOAD.
-export const prepareArtifactUploadSchema = z.object({
-  taskId: z.string().min(1, "Demanda é obrigatória"),
-  mediaType: artifactMediaTypeEnum,
-  purposeId: z.string().min(1, "Propósito é obrigatório"),
-  target: z.enum(["CAMPANHA", "INSTITUCIONAL"]).default("CAMPANHA"),
-  sensitivity: sensitivityEnum.default("INTERNO"),
-  stageId: z.string().optional(),
-  originalFileName: z.string().min(1, "Nome do arquivo é obrigatório").max(255),
-  mimeType: z.string().min(1, "MIME é obrigatório").max(255),
-  sizeBytes: z.number().int().positive("Tamanho inválido"),
-});
+// prepareArtifactUpload — o browser envia os metadados declarados; o servidor calcula o path/nome
+// selado e assina o token. Escopo (TASK/PROJECT/CLIENT) + o id do dono correspondente; sem campos de
+// campanha (spec 2026-07-06-nas-flow-simplification). mediaType + purposeId obrigatórios.
+export const prepareArtifactUploadSchema = z
+  .object({
+    scope: z.enum(["TASK", "PROJECT", "CLIENT"]).default("TASK"),
+    taskId: z.string().min(1).optional(),
+    projectId: z.string().min(1).optional(),
+    clientId: z.string().min(1).optional(),
+    mediaType: artifactMediaTypeEnum,
+    purposeId: z.string().min(1, "Propósito é obrigatório"),
+    sensitivity: sensitivityEnum.default("INTERNO"),
+    stageId: z.string().optional(),
+    originalFileName: z.string().min(1, "Nome do arquivo é obrigatório").max(255),
+    mimeType: z.string().min(1, "MIME é obrigatório").max(255),
+    sizeBytes: z.number().int().positive("Tamanho inválido"),
+  })
+  .refine(
+    (d) =>
+      (d.scope === "TASK" && !!d.taskId) ||
+      (d.scope === "PROJECT" && !!d.projectId) ||
+      (d.scope === "CLIENT" && !!d.clientId),
+    { message: "Escopo requer o id do dono correspondente.", path: ["scope"] }
+  );
 
 // ========== Scoped link artifacts (spec 2026-07-06) ==========
 // Artifacts carry a `scope` (TASK / PROJECT / CLIENT). v1 supports LINK artifacts only for the

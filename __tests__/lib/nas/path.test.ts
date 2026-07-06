@@ -55,98 +55,114 @@ describe("normalizeExtension", () => {
   });
 });
 
-describe("buildNasPath — campanha", () => {
+const JULY_2026 = new Date(2026, 6, 15); // local July 15, 2026 → AAAA_MM = 2026_07
+
+describe("buildNasPath — TASK", () => {
   const base = {
+    scope: "TASK" as const,
     client: "Construções Açaí",
-    target: "CAMPANHA" as const,
+    ownerName: "Abertura da Loja",
+    ownerId: "task_1",
     mediaType: "VIDEOS" as const,
     purpose: "Vídeo",
-    taskTitle: "Abertura da Loja",
     originalFileName: "render_final.mov",
     version: 3,
-    campaignYear: 2026,
-    campaignMonth: 7,
-    campaignSlug: "Black Friday",
+    uploadDate: JULY_2026,
   };
 
-  it("builds the deterministic campaign path and name", () => {
+  it("pasta {cliente}/{tarefa ~id}/institucional/{tipoMidia} e nome com AAAA_MM do envio", () => {
     const r = buildNasPath(base);
-    expect(r.relPath).toBe(
-      "Construcoes Acai/Campanhas/2026_07_BlackFriday/videos/2026_07_BlackFriday_Video_AberturaDaLoja_v03.mov"
+    expect(r.relPath).toMatch(
+      /^Construcoes Acai\/Abertura da Loja ~[0-9a-f]{6}\/institucional\/videos\/2026_07_Video_AberturaDaLoja_v03\.mov$/
     );
-    expect(r.fileName).toBe("2026_07_BlackFriday_Video_AberturaDaLoja_v03.mov");
+    expect(r.fileName).toBe("2026_07_Video_AberturaDaLoja_v03.mov");
     expect(r.ext).toBe("mov");
     expect(r.truncated).toBe(false);
   });
 
-  it("Social Media keeps the real folder label", () => {
+  it("Social Media mantém o rótulo de pasta real", () => {
     const r = buildNasPath({
       ...base,
       mediaType: "SOCIAL_MEDIA",
       originalFileName: "post.png",
       purpose: "Feed",
     });
-    expect(r.relPath).toContain("/Social Media/");
+    expect(r.relPath).toContain("/institucional/Social Media/");
   });
 
-  it("requires campaign fields", () => {
-    expect(() => buildNasPath({ ...base, campaignSlug: undefined })).toThrow(/CAMPANHA exige/);
+  it("exige ownerName/ownerId", () => {
+    expect(() => buildNasPath({ ...base, ownerId: undefined })).toThrow(/TASK\/PROJECT exigem/);
   });
 
-  it("pads version to 2 digits and does not lose precision above 99", () => {
+  it("versão paddada a 2 dígitos, sem perda acima de 99", () => {
     expect(buildNasPath({ ...base, version: 1 }).fileName).toContain("_v01.");
     expect(buildNasPath({ ...base, version: 100 }).fileName).toContain("_v100.");
   });
 });
 
-describe("buildNasPath — institucional", () => {
-  it("uses {Cliente} as the name prefix and Institucional folder", () => {
+describe("buildNasPath — PROJECT", () => {
+  it("usa o nome do projeto como Demanda e pasta própria", () => {
     const r = buildNasPath({
+      scope: "PROJECT",
       client: "João & Cia",
-      target: "INSTITUCIONAL",
+      ownerName: "Rebrand 2026",
+      ownerId: "proj_1",
       mediaType: "LOGOS",
       purpose: "Logo Principal",
-      taskTitle: "Rebrand 2026",
       originalFileName: "marca.svg",
       version: 1,
+      uploadDate: JULY_2026,
     });
-    expect(r.relPath).toBe(
-      "Joao & Cia/Institucional/logos/JoaoCia_LogoPrincipal_Rebrand2026_v01.svg"
+    expect(r.relPath).toMatch(
+      /^Joao & Cia\/Rebrand 2026 ~[0-9a-f]{6}\/institucional\/logos\/2026_07_LogoPrincipal_Rebrand2026_v01\.svg$/
     );
   });
 });
 
-describe("buildNasPath — length budgets", () => {
-  it("caps an over-long relPath under LIMITS.relPath with a hash suffix", () => {
+describe("buildNasPath — CLIENT", () => {
+  it("cai em {cliente}/institucional, nome {Cliente}_{Proposito}_v e sem data", () => {
     const r = buildNasPath({
+      scope: "CLIENT",
+      client: "João & Cia",
+      mediaType: "LOGOS",
+      purpose: "Logo Principal",
+      originalFileName: "marca.svg",
+      version: 1,
+      uploadDate: JULY_2026,
+    });
+    expect(r.relPath).toBe("Joao & Cia/institucional/logos/JoaoCia_LogoPrincipal_v01.svg");
+  });
+});
+
+describe("buildNasPath — length budgets", () => {
+  it("limita relPath longo abaixo de LIMITS.relPath com hash", () => {
+    const r = buildNasPath({
+      scope: "TASK",
       client: "C".repeat(60),
-      target: "CAMPANHA",
+      ownerName: "T".repeat(300),
+      ownerId: "task_long",
       mediaType: "DOCUMENTOS",
       purpose: "Documento Muito Detalhado De Especificacao",
-      taskTitle: "T".repeat(300),
       originalFileName: "spec.pdf",
       version: 12,
-      campaignYear: 2026,
-      campaignMonth: 12,
-      campaignSlug: "Campanha Anual De Fim De Ano Muito Longa",
+      uploadDate: JULY_2026,
     });
     expect(r.relPath.length).toBeLessThanOrEqual(LIMITS.relPath);
     expect(r.truncated).toBe(true);
     expect(r.fileName.endsWith(".pdf")).toBe(true);
   });
 
-  it("is deterministic — same input yields same output", () => {
+  it("é determinístico — mesma entrada, mesma saída", () => {
     const input = {
+      scope: "TASK" as const,
       client: "X".repeat(80),
-      target: "CAMPANHA" as const,
+      ownerName: "Y".repeat(200),
+      ownerId: "task_det",
       mediaType: "FOTOS" as const,
       purpose: "P".repeat(40),
-      taskTitle: "Y".repeat(200),
       originalFileName: "foto.jpg",
       version: 5,
-      campaignYear: 2026,
-      campaignMonth: 3,
-      campaignSlug: "Z".repeat(90),
+      uploadDate: JULY_2026,
     };
     expect(buildNasPath(input)).toEqual(buildNasPath(input));
   });

@@ -67,60 +67,82 @@ async function audit(
 }
 
 interface VersionParams {
-  taskId: string;
+  scope: "TASK" | "PROJECT" | "CLIENT";
+  taskId: string | null;
+  projectId: string | null;
+  clientId: string | null;
   userId: string;
   folderName: string;
-  target: "CAMPANHA" | "INSTITUCIONAL";
+  /** Task title (TASK) / project name (PROJECT). Undefined para CLIENT. */
+  ownerName?: string;
+  ownerId?: string;
   mediaType: Prisma.TaskArtifactCreateInput["mediaType"];
   purposeId: string;
   purposeLabel: string;
-  taskTitle: string;
   originalFileName: string;
   mimeType: string;
   sizeBytes: number;
   sensitivity: Prisma.TaskArtifactCreateInput["sensitivity"];
   stageId?: string;
-  campaignYear?: number;
-  campaignMonth?: number;
-  campaignSlug?: string;
 }
 
-// Allocate the next version and create the PENDING artifact in one transaction. The version is
-// max(existing)+1 across ALL rows for (taskId, purposeId, mediaType) — expired/failed/deleted count,
-// so a number is never reused. Retries on the unique-constraint race.
+// Aloca a próxima versão e cria o artefato PENDING numa transação. A versão é max(existentes)+1 no
+// grupo (dono do escopo, purposeId, mediaType) — expirados/falhos/deletados contam, então nunca se
+// reusa número. Encadeia com a versão vigente (Feature A: marca a anterior isCurrent=false).
+// Reintenta na corrida de constraint única.
 async function createArtifactWithVersion(
   params: VersionParams
 ): Promise<{ id: string; nasPath: string; fileName: string; version: number }> {
+  const ownerWhere =
+    params.scope === "TASK"
+      ? { taskId: params.taskId }
+      : params.scope === "PROJECT"
+        ? { projectId: params.projectId }
+        : { clientId: params.clientId };
+
   const MAX_RETRIES = 5;
   let lastErr: unknown;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       return await prisma.$transaction(async (tx) => {
+        const group = { ...ownerWhere, purposeId: params.purposeId, mediaType: params.mediaType };
         const last = await tx.taskArtifact.findFirst({
-          where: {
-            taskId: params.taskId,
-            purposeId: params.purposeId,
-            mediaType: params.mediaType,
-          },
+          where: group,
           orderBy: { version: "desc" },
           select: { version: true },
         });
+        const currentRow = await tx.taskArtifact.findFirst({
+          where: { ...group, isCurrent: true },
+          select: { id: true, rootId: true },
+        });
         const version = (last?.version ?? 0) + 1;
+        const rootId = currentRow ? (currentRow.rootId ?? currentRow.id) : null;
+
         const built = buildNasPath({
+          scope: params.scope,
           client: params.folderName,
-          target: params.target,
+          ownerName: params.ownerName,
+          ownerId: params.ownerId,
           mediaType: params.mediaType as NonNullable<VersionParams["mediaType"]>,
           purpose: params.purposeLabel,
-          taskTitle: params.taskTitle,
           originalFileName: params.originalFileName,
           version,
-          campaignYear: params.campaignYear,
-          campaignMonth: params.campaignMonth,
-          campaignSlug: params.campaignSlug,
+          uploadDate: new Date(),
         });
+
+        if (currentRow) {
+          await tx.taskArtifact.update({
+            where: { id: currentRow.id },
+            data: { isCurrent: false },
+          });
+        }
+
         const created = await tx.taskArtifact.create({
           data: {
+            scope: params.scope,
             taskId: params.taskId,
+            projectId: params.projectId,
+            clientId: params.clientId,
             userId: params.userId,
             uploadedById: params.userId,
             title: params.originalFileName,
@@ -130,7 +152,6 @@ async function createArtifactWithVersion(
             uploadStatus: "PENDING",
             mediaType: params.mediaType,
             purposeId: params.purposeId,
-            target: params.target,
             sensitivity: params.sensitivity,
             stageId: params.stageId ?? null,
             nasPath: built.relPath,
@@ -139,6 +160,8 @@ async function createArtifactWithVersion(
             mimeType: params.mimeType,
             sizeBytes: BigInt(params.sizeBytes),
             version,
+            rootId,
+            isCurrent: true,
           },
           select: { id: true },
         });
@@ -159,50 +182,61 @@ async function createArtifactWithVersion(
  */
 export async function prepareArtifactUpload(input: unknown) {
   try {
-    const user = await requireMemberOrHigher();
-    const userId = user.id as string;
-
     const parsed = prepareArtifactUploadSchema.safeParse(input);
     if (!parsed.success) return { error: parsed.error.issues[0].message };
     const data = parsed.data;
+
+    // RBAC por escopo: tarefa = membro+; projeto/cliente = MANAGER+.
+    const user =
+      data.scope === "TASK" ? await requireMemberOrHigher() : await requireManagerOrAdmin();
+    const userId = user.id as string;
 
     if (!isNasUploadConfigured()) {
       return { error: "Upload no NAS não está configurado neste ambiente." };
     }
 
-    const task = await prisma.task.findUnique({
-      where: { id: data.taskId },
-      select: {
-        id: true,
-        title: true,
-        project: {
-          select: {
-            nasUploadEnabled: true,
-            campaignSlug: true,
-            campaignYear: true,
-            campaignMonth: true,
-            client: { select: { folderName: true } },
-          },
-        },
-      },
-    });
-    if (!task) return { error: "Demanda não encontrada." };
-    if (!task.project.nasUploadEnabled) {
-      return {
-        error: "Upload no NAS não habilitado para este projeto (pendente revisão de metadados).",
-      };
-    }
-    const folderName = task.project.client.folderName;
-    if (!folderName) return { error: "Cliente sem folderName definido para o NAS." };
+    // Resolve folderName (raiz do cliente) + nome/id do dono conforme o escopo.
+    let folderName: string | null = null;
+    let ownerName: string | undefined;
+    let ownerId: string | undefined;
+    let taskId: string | null = null;
+    let projectId: string | null = null;
+    let clientId: string | null = null;
 
-    if (
-      data.target === "CAMPANHA" &&
-      (task.project.campaignSlug == null ||
-        task.project.campaignYear == null ||
-        task.project.campaignMonth == null)
-    ) {
-      return { error: "Projeto sem metadados de campanha (slug/ano/mês). Revise antes do upload." };
+    if (data.scope === "TASK") {
+      const task = await prisma.task.findUnique({
+        where: { id: data.taskId ?? "" },
+        select: {
+          id: true,
+          title: true,
+          project: { select: { client: { select: { folderName: true } } } },
+        },
+      });
+      if (!task) return { error: "Demanda não encontrada." };
+      folderName = task.project.client.folderName;
+      ownerName = task.title;
+      ownerId = task.id;
+      taskId = task.id;
+    } else if (data.scope === "PROJECT") {
+      const project = await prisma.project.findUnique({
+        where: { id: data.projectId ?? "" },
+        select: { id: true, name: true, client: { select: { folderName: true } } },
+      });
+      if (!project) return { error: "Projeto não encontrado." };
+      folderName = project.client.folderName;
+      ownerName = project.name;
+      ownerId = project.id;
+      projectId = project.id;
+    } else {
+      const client = await prisma.client.findUnique({
+        where: { id: data.clientId ?? "" },
+        select: { id: true, folderName: true },
+      });
+      if (!client) return { error: "Cliente não encontrado." };
+      folderName = client.folderName;
+      clientId = client.id;
     }
+    if (!folderName) return { error: "Cliente sem pasta (folderName) definida para o NAS." };
 
     const purpose = await prisma.deliverablePurpose.findUnique({
       where: { id: data.purposeId },
@@ -225,29 +259,29 @@ export async function prepareArtifactUpload(input: unknown) {
     }
 
     const artifact = await createArtifactWithVersion({
-      taskId: task.id,
+      scope: data.scope,
+      taskId,
+      projectId,
+      clientId,
       userId,
       folderName,
-      target: data.target,
+      ownerName,
+      ownerId,
       mediaType: data.mediaType,
       purposeId: purpose.id,
       purposeLabel: purpose.label,
-      taskTitle: task.title,
       originalFileName: data.originalFileName,
       mimeType: data.mimeType,
       sizeBytes: data.sizeBytes,
       sensitivity: data.sensitivity,
       stageId: data.stageId,
-      campaignYear: task.project.campaignYear ?? undefined,
-      campaignMonth: task.project.campaignMonth ?? undefined,
-      campaignSlug: task.project.campaignSlug ?? undefined,
     });
 
     const jti = randomUUID();
     const uploadToken = await signUploadToken(
       {
         artifactId: artifact.id,
-        taskId: task.id,
+        taskId: taskId ?? projectId ?? clientId ?? artifact.id,
         nasPath: artifact.nasPath,
         fileName: artifact.fileName,
         maxSize: maxBytes,
@@ -264,8 +298,12 @@ export async function prepareArtifactUpload(input: unknown) {
       metadata: { version: artifact.version, mediaType: data.mediaType },
     });
 
-    revalidatePath(`/tasks/${task.id}`);
-    revalidatePath(`/admin/tasks/${task.id}`);
+    if (taskId) {
+      revalidatePath(`/tasks/${taskId}`);
+      revalidatePath(`/admin/tasks/${taskId}`);
+    }
+    if (projectId) revalidatePath(`/admin/projects/${projectId}`);
+    if (clientId) revalidatePath(`/admin/clients/${clientId}`);
 
     return {
       success: true as const,

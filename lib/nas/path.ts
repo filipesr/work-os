@@ -4,12 +4,14 @@
 // + Apêndice D allowlist). Pure and dependency-light (node:crypto only) so it is unit-testable and
 // usable from server actions (prepare) without touching the DB or the agent.
 //
-// Layout:
-//   Campanha:      {Cliente}/Campanhas/{Ano_Mes_Campanha}/{tipoMidia}/{arquivo}
-//   Institucional: {Cliente}/Institucional/{tipoMidia}/{arquivo}
-// Names:
-//   Campanha:      {Ano_Mes_Campanha}_{Proposito}_{Demanda}_v{NN}.{ext}
-//   Institucional: {Cliente}_{Proposito}_{Demanda}_v{NN}.{ext}
+// Layout (spec 2026-07-06-nas-flow-simplification — tudo em `institucional`, por escopo):
+//   CLIENT:  {cliente}/institucional/{tipoMidia}/{arquivo}
+//   PROJECT: {cliente}/{projeto ~id}/institucional/{tipoMidia}/{arquivo}
+//   TASK:    {cliente}/{tarefa ~id}/institucional/{tipoMidia}/{arquivo}
+// Names (AAAA_MM = data do envio):
+//   CLIENT:  {Cliente}_{Proposito}_v{NN}.{ext}
+//   PROJECT: {AAAA_MM}_{Proposito}_{Projeto}_v{NN}.{ext}
+//   TASK:    {AAAA_MM}_{Proposito}_{Demanda}_v{NN}.{ext}
 //
 // The string-literal unions below intentionally mirror the Prisma enums `ArtifactMediaType` /
 // `ArtifactTarget` (same member values), so Prisma enum values pass through with no coupling.
@@ -24,7 +26,7 @@ export type ArtifactMediaType =
   | "SOCIAL_MEDIA"
   | "OUTROS";
 
-export type ArtifactTarget = "CAMPANHA" | "INSTITUCIONAL";
+export type ArtifactScope = "TASK" | "PROJECT" | "CLIENT";
 
 // enum -> folder label (central mapper). SOCIAL_MEDIA is a real folder name; the rest lowercase.
 export const MEDIA_TYPE_FOLDER: Record<ArtifactMediaType, string> = {
@@ -94,7 +96,7 @@ export class NasPathError extends Error {
       | "DOUBLE_EXTENSION"
       | "BLOCKED_EXTENSION"
       | "EXT_NOT_ALLOWED_FOR_TYPE"
-      | "MISSING_CAMPAIGN_FIELDS"
+      | "MISSING_OWNER"
       | "EMPTY_COMPONENT",
     message: string
   ) {
@@ -186,21 +188,21 @@ function capWithHash(value: string, max: number): string {
 }
 
 export interface BuildNasPathInput {
+  scope: ArtifactScope;
   /** Client folderName (human, ASCII-normalized here). */
   client: string;
-  target: ArtifactTarget;
+  /** Task title (TASK) or project name (PROJECT). Ignored for CLIENT. */
+  ownerName?: string;
+  /** Task id (TASK) or project id (PROJECT) — for the folder id suffix. Ignored for CLIENT. */
+  ownerId?: string;
   mediaType: ArtifactMediaType;
   /** DeliverablePurpose label, e.g. "Banner Web". */
   purpose: string;
-  /** Snapshot source: task.title -> {Demanda}. */
-  taskTitle: string;
   originalFileName: string;
   /** Version number NN (never reused across expired/failed/deleted). */
   version: number;
-  // Campaign fields (required when target === "CAMPANHA").
-  campaignYear?: number;
-  campaignMonth?: number;
-  campaignSlug?: string;
+  /** Upload timestamp — drives AAAA_MM for TASK/PROJECT names. */
+  uploadDate: Date;
 }
 
 export interface BuildNasPathResult {
@@ -220,70 +222,72 @@ export function buildNasPath(input: BuildNasPathInput): BuildNasPathResult {
   const mediaFolder = MEDIA_TYPE_FOLDER[input.mediaType];
   const versionTag = `v${pad2(input.version)}`;
   const purposeTok = toNasToken(input.purpose);
-  const demandaTok = toNasToken(input.taskTitle);
   const clientRaw = toAsciiSafe(input.client);
   if (!clientRaw) throw new NasPathError("EMPTY_COMPONENT", "cliente vazio após normalização");
   if (!purposeTok) throw new NasPathError("EMPTY_COMPONENT", "propósito vazio após normalização");
-  if (!demandaTok) throw new NasPathError("EMPTY_COMPONENT", "demanda vazia após normalização");
 
+  const OWNER_NAME_MAX = LIMITS.campaignFolder - 8; // deixa espaço p/ " ~<6hex>"
   const clientFolder = capWithHash(clientRaw, LIMITS.client);
+  const ym = `${input.uploadDate.getFullYear()}_${pad2(input.uploadDate.getMonth() + 1)}`;
+  let truncated = clientRaw.length > LIMITS.client;
 
   let dirParts: string[];
-  let baseNamePrefix: string;
+  let fixed: string; // prefixo do nome até o "_" antes do campo variável
+  let demandaTok: string; // campo variável ("" para CLIENT — sem campo a encolher)
 
-  if (input.target === "CAMPANHA") {
-    if (
-      input.campaignYear == null ||
-      input.campaignMonth == null ||
-      !input.campaignSlug ||
-      !toNasToken(input.campaignSlug)
-    ) {
-      throw new NasPathError(
-        "MISSING_CAMPAIGN_FIELDS",
-        "target CAMPANHA exige campaignYear, campaignMonth e campaignSlug"
-      );
-    }
-    const campaignToken = `${input.campaignYear}_${pad2(input.campaignMonth)}_${toNasToken(input.campaignSlug)}`;
-    const campaignFolder = capWithHash(campaignToken, LIMITS.campaignFolder);
-    dirParts = [clientFolder, "Campanhas", campaignFolder, mediaFolder];
-    baseNamePrefix = campaignFolder;
+  if (input.scope === "CLIENT") {
+    dirParts = [clientFolder, "institucional", mediaFolder];
+    fixed = `${toNasToken(clientRaw)}_${purposeTok}_`;
+    demandaTok = "";
   } else {
-    dirParts = [clientFolder, "Institucional", mediaFolder];
-    baseNamePrefix = toNasToken(clientRaw);
-  }
-
-  // Compose the filename, capping so the *base* (without extension) fits LIMITS.fileName,
-  // then re-checking the whole relPath budget and shrinking the Demanda field if needed.
-  const fixed = `${baseNamePrefix}_${purposeTok}_`;
-  const tail = `_${versionTag}.${ext}`;
-  let fileName = buildFileName(fixed, demandaTok, tail);
-
-  let relPath = [...dirParts, fileName].join("/");
-  let truncated =
-    fileName.includes("~") || clientFolder.includes("~") || dirParts.some((p) => p.includes("~"));
-
-  if (relPath.length > LIMITS.relPath) {
-    // Deterministically shrink the Demanda token to bring the whole relPath under budget.
-    const overflow = relPath.length - LIMITS.relPath;
-    const shrunkDemanda = capWithHash(demandaTok, Math.max(1, demandaTok.length - overflow));
-    fileName = buildFileName(fixed, shrunkDemanda, tail);
-    relPath = [...dirParts, fileName].join("/");
-    truncated = true;
-    // Last resort: if still over budget (pathological dir lengths), hash the whole base.
-    if (relPath.length > LIMITS.relPath) {
-      const forced = `${baseNamePrefix}_${purposeTok}_${shortHash(relPath)}${tail}`;
-      fileName = forced.length <= LIMITS.fileName ? forced : capWithHash(forced, LIMITS.fileName);
-      relPath = [...dirParts, fileName].join("/");
+    if (!input.ownerName || !input.ownerId) {
+      throw new NasPathError("MISSING_OWNER", "TASK/PROJECT exigem ownerName e ownerId");
     }
+    const ownerAscii = toAsciiSafe(input.ownerName);
+    if (!ownerAscii) throw new NasPathError("EMPTY_COMPONENT", "nome do dono vazio");
+    truncated = truncated || ownerAscii.length > OWNER_NAME_MAX;
+    const idTok = shortHash(input.ownerId);
+    const ownerFolder = `${capWithHash(ownerAscii, OWNER_NAME_MAX)} ~${idTok}`;
+    dirParts = [clientFolder, ownerFolder, "institucional", mediaFolder];
+    demandaTok = toNasToken(ownerAscii);
+    if (!demandaTok) throw new NasPathError("EMPTY_COMPONENT", "demanda vazia após normalização");
+    fixed = `${ym}_${purposeTok}_`;
   }
 
+  const tail = `_${versionTag}.${ext}`;
+  const dirLen = dirParts.join("/").length;
+  // Orçamento do nome: cabe em LIMITS.fileName E no que sobra do relPath.
+  const maxFile = Math.max(12, Math.min(LIMITS.fileName, LIMITS.relPath - dirLen - 1));
+
+  // Nome ideal (sem cap) para detectar truncamento do campo.
+  const idealFull =
+    input.scope === "CLIENT" ? `${fixed.replace(/_$/, "")}${tail}` : `${fixed}${demandaTok}${tail}`;
+  truncated = truncated || idealFull.length > maxFile;
+
+  const fileName =
+    input.scope === "CLIENT"
+      ? fitFixed(fixed, tail, maxFile)
+      : fitField(fixed, demandaTok, tail, maxFile);
+
+  const relPath = [...dirParts, fileName].join("/");
   return { relPath, fileName, mediaFolder, ext, truncated };
 }
 
-function buildFileName(fixed: string, demanda: string, tail: string): string {
+// {Cliente}_{Proposito} (fixed termina em "_") + tail, cabendo em `max`.
+function fitFixed(fixed: string, tail: string, max: number): string {
+  const base = fixed.replace(/_$/, "");
+  const full = `${base}${tail}`;
+  if (full.length <= max) return full;
+  return `${capWithHash(base, Math.max(1, max - tail.length))}${tail}`;
+}
+
+// {fixed}{demanda}{tail} cabendo em `max`: encolhe o campo Demanda; se o prefixo já não couber,
+// hasheia o nome inteiro.
+function fitField(fixed: string, demanda: string, tail: string, max: number): string {
   const full = `${fixed}${demanda}${tail}`;
-  if (full.length <= LIMITS.fileName) return full;
-  // Keep fixed prefix + tail, cap the demanda part with a hash suffix.
-  const room = Math.max(1, LIMITS.fileName - fixed.length - tail.length);
-  return `${fixed}${capWithHash(demanda, room)}${tail}`;
+  if (full.length <= max) return full;
+  const room = max - fixed.length - tail.length;
+  if (room >= 8) return `${fixed}${capWithHash(demanda, room)}${tail}`;
+  // Prefixo (fixed+demanda) longo demais — hasheia mantendo o tail (extensão).
+  return `${capWithHash(`${fixed}${demanda}`, Math.max(1, max - tail.length))}${tail}`;
 }
