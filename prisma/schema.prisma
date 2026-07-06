@@ -175,7 +175,6 @@ model User {
   // Artifact / NAS relations
   uploadedArtifacts   TaskArtifact[]      @relation("ArtifactUploader")
   deletedArtifacts    TaskArtifact[]      @relation("ArtifactDeleter")
-  reviewedNasProjects Project[]           @relation("NasMetadataReviewer")
   createdShareLinks   ArtifactShareLink[]
   artifactAuditLogs   ArtifactAuditLog[]
 }
@@ -216,18 +215,6 @@ model Project {
 
   // Artefatos com escopo PROJECT (spec 2026-07-06). Destacados nas demandas do projeto.
   artifacts TaskArtifact[]
-
-  // --- Metadados de campanha p/ árvore do NAS (spec 2026-07-02) ---
-  // Slug da campanha + mês/ano de VEICULAÇÃO (define a pasta permanente). Manuais, MANAGER+.
-  campaignSlug  String?
-  campaignYear  Int?
-  campaignMonth Int?
-
-  // Libera upload no NAS só após revisão dos metadados de campanha (default off).
-  nasUploadEnabled        Boolean   @default(false)
-  nasMetadataReviewedAt   DateTime?
-  nasMetadataReviewedById String?
-  nasMetadataReviewedBy   User?     @relation("NasMetadataReviewer", fields: [nasMetadataReviewedById], references: [id], onUpdate: NoAction, onDelete: SetNull)
 }
 
 // --- 3. Workflow Template Engine Models (The "Script") ---

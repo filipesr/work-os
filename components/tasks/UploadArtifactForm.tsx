@@ -34,10 +34,17 @@ const SENSITIVITIES = [
 ];
 
 interface Options {
-  nasUploadEnabled: boolean;
   uploadConfigured: boolean;
   purposes: { id: string; label: string }[];
   stages: { id: string; name: string; defaultMediaType: string | null }[];
+}
+
+type Scope = "TASK" | "PROJECT" | "CLIENT";
+interface UploadArtifactFormProps {
+  scope: Scope;
+  taskId?: string;
+  projectId?: string;
+  clientId?: string;
 }
 
 type Phase = "idle" | "preparing" | "uploading" | "done" | "error";
@@ -68,7 +75,12 @@ function putWithProgress(
   });
 }
 
-export function UploadArtifactForm({ taskId }: { taskId: string }) {
+export function UploadArtifactForm({
+  scope,
+  taskId,
+  projectId,
+  clientId,
+}: UploadArtifactFormProps) {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [endpoint, setEndpoint] = useState<UploadEndpoint | null>(null);
@@ -77,7 +89,6 @@ export function UploadArtifactForm({ taskId }: { taskId: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [mediaType, setMediaType] = useState("FOTOS");
   const [purposeId, setPurposeId] = useState("");
-  const [target, setTarget] = useState("CAMPANHA");
   const [sensitivity, setSensitivity] = useState("INTERNO");
   const [stageId, setStageId] = useState("");
 
@@ -91,13 +102,12 @@ export function UploadArtifactForm({ taskId }: { taskId: string }) {
     (async () => {
       const [ep, opt] = await Promise.all([
         resolveUploadEndpoint(),
-        getArtifactUploadOptions(taskId),
+        getArtifactUploadOptions({ scope, taskId }),
       ]);
       if (!active) return;
       setEndpoint(ep);
       if ("success" in opt && opt.success) {
         setOptions({
-          nasUploadEnabled: opt.nasUploadEnabled,
           uploadConfigured: opt.uploadConfigured,
           purposes: opt.purposes,
           stages: opt.stages,
@@ -108,7 +118,7 @@ export function UploadArtifactForm({ taskId }: { taskId: string }) {
     return () => {
       active = false;
     };
-  }, [taskId]);
+  }, [scope, taskId, projectId, clientId]);
 
   const busy = phase === "preparing" || phase === "uploading";
   const blockedReason = checking
@@ -117,11 +127,9 @@ export function UploadArtifactForm({ taskId }: { taskId: string }) {
       ? "Agente do NAS não encontrado na rede local. Conecte-se à LAN ou à VPN para enviar arquivos."
       : !options?.uploadConfigured
         ? "Upload no NAS não está configurado neste ambiente."
-        : !options?.nasUploadEnabled
-          ? "Upload no NAS não habilitado para este projeto. Peça a um gestor para revisar os metadados de campanha."
-          : options.purposes.length === 0
-            ? "Nenhum propósito de entregável cadastrado. Cadastre em Admin › Propósitos de entregável."
-            : null;
+        : options.purposes.length === 0
+          ? "Nenhum propósito de entregável cadastrado. Cadastre em Admin › Propósitos de entregável."
+          : null;
   const canUpload = !checking && !blockedReason;
 
   async function handleUpload() {
@@ -131,10 +139,12 @@ export function UploadArtifactForm({ taskId }: { taskId: string }) {
     setPhase("preparing");
     setErrorMsg("");
     const prep = await prepareArtifactUpload({
+      scope,
       taskId,
+      projectId,
+      clientId,
       mediaType,
       purposeId,
-      target,
       sensitivity,
       stageId: stageId || undefined,
       originalFileName: file.name,
@@ -234,22 +244,6 @@ export function UploadArtifactForm({ taskId }: { taskId: string }) {
                 {p.label}
               </option>
             ))}
-          </select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="nas-target" className="text-sm">
-            Destino
-          </Label>
-          <select
-            id="nas-target"
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            disabled={busy}
-            className={selectClass}
-          >
-            <option value="CAMPANHA">Campanha</option>
-            <option value="INSTITUCIONAL">Institucional</option>
           </select>
         </div>
 

@@ -362,14 +362,12 @@ export function UnifiedArtifactsPanel({
           </div>
 
           {mode === "upload" ? (
-            scope === "TASK" ? (
-              <UploadArtifactForm taskId={ownerIds.taskId as string} />
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Upload no NAS para {scope === "PROJECT" ? "projeto" : "cliente"} estará disponível
-                com o rollout do NAS. Por ora, use um link.
-              </p>
-            )
+            <UploadArtifactForm
+              scope={scope}
+              taskId={ownerIds.taskId}
+              projectId={ownerIds.projectId}
+              clientId={ownerIds.clientId}
+            />
           ) : (
             <div className="space-y-3">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

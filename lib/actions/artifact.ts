@@ -326,21 +326,13 @@ export async function prepareArtifactUpload(input: unknown) {
   }
 }
 
-/** Dropdown data + gating flags for the upload form (active purposes, task stages, config state). */
-export async function getArtifactUploadOptions(taskId: string) {
+/** Dados do form de upload por escopo: propósitos ativos + (só TASK) etapas + estado do ambiente. */
+export async function getArtifactUploadOptions(args: {
+  scope: "TASK" | "PROJECT" | "CLIENT";
+  taskId?: string;
+}) {
   try {
     await requireMemberOrHigher();
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      select: {
-        id: true,
-        project: { select: { nasUploadEnabled: true } },
-        activeStages: {
-          select: { stage: { select: { id: true, name: true, defaultMediaType: true } } },
-        },
-      },
-    });
-    if (!task) return { error: "Demanda não encontrada." };
 
     const purposes = await prisma.deliverablePurpose.findMany({
       where: { active: true },
@@ -348,16 +340,29 @@ export async function getArtifactUploadOptions(taskId: string) {
       select: { id: true, label: true },
     });
 
+    let stages: { id: string; name: string; defaultMediaType: string | null }[] = [];
+    if (args.scope === "TASK" && args.taskId) {
+      const task = await prisma.task.findUnique({
+        where: { id: args.taskId },
+        select: {
+          activeStages: {
+            select: { stage: { select: { id: true, name: true, defaultMediaType: true } } },
+          },
+        },
+      });
+      stages =
+        task?.activeStages.map((s) => ({
+          id: s.stage.id,
+          name: s.stage.name,
+          defaultMediaType: s.stage.defaultMediaType,
+        })) ?? [];
+    }
+
     return {
       success: true as const,
-      nasUploadEnabled: task.project.nasUploadEnabled,
       uploadConfigured: isNasUploadConfigured(),
       purposes,
-      stages: task.activeStages.map((s) => ({
-        id: s.stage.id,
-        name: s.stage.name,
-        defaultMediaType: s.stage.defaultMediaType,
-      })),
+      stages,
     };
   } catch (error) {
     console.error("getArtifactUploadOptions error:", error);
