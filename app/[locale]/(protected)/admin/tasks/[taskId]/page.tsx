@@ -8,6 +8,7 @@ import { CompleteTaskButton } from "@/components/tasks/CompleteTaskButton";
 import prisma from "@/lib/prisma";
 import { mapArtifactRow } from "@/lib/artifacts/unify";
 import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
+import { TaskLifecycleActions } from "@/components/tasks/TaskLifecycleActions";
 import { TimeLogsList } from "@/components/tasks/TimeLogsList";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
@@ -115,6 +116,10 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                   {t(`taskStatus.${task.status}`)}
                 </span>
               </div>
+            </div>
+
+            <div className="mb-4">
+              <TaskLifecycleActions taskId={task.id} taskStatus={task.status} />
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t-2 border-border">

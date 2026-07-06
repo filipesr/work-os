@@ -16,7 +16,7 @@ export interface MonthEvent {
 export interface DemandTask {
   id: string;
   title: string;
-  status: "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED";
+  status: "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED" | "OBSOLETE";
   projectId: string;
   projectName: string;
   stageName: string | null;

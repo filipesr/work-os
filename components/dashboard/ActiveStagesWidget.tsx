@@ -87,6 +87,7 @@ function ActiveStageRow({
     PAUSED: "bg-purple-100 text-purple-800 border-purple-300",
     COMPLETED: "bg-green-100 text-green-800 border-green-300",
     CANCELLED: "bg-red-100 text-red-800 border-red-300",
+    OBSOLETE: "bg-gray-100 text-gray-500 border-gray-300",
   };
 
   // Format date

@@ -5,11 +5,12 @@
  * detail page).
  *
  * Regras (spec 2026-07-06-task-project-completion-design):
- * - `completed` = tarefas COMPLETED; `cancelled` = tarefas CANCELLED.
- * - denominador = tarefas não-canceladas; `pct` = round(completed / nonCancelled * 100).
+ * - `completed` = tarefas COMPLETED.
+ * - descartadas = CANCELLED + OBSOLETE (fora do denominador e nunca "completed").
+ * - denominador = tarefas ativas (total - descartadas); `pct` = round(completed / ativas * 100).
  * - `state`:
- *   - `empty`     → nenhuma tarefa não-cancelada (não conta como concluído nem no cálculo).
- *   - `completed` → há tarefas não-canceladas e TODAS estão COMPLETED.
+ *   - `empty`     → nenhuma tarefa ativa (não conta como concluído nem no cálculo).
+ *   - `completed` → há tarefas ativas e TODAS estão COMPLETED.
  *   - `pending`   → caso contrário.
  */
 export type ProjectCompletionState = "empty" | "pending" | "completed";
@@ -18,6 +19,7 @@ export interface ProjectCompletion {
   total: number;
   completed: number;
   cancelled: number;
+  obsolete: number;
   pct: number;
   state: ProjectCompletionState;
 }
@@ -26,18 +28,19 @@ export function computeProjectCompletion(tasks: { status: string }[]): ProjectCo
   const total = tasks.length;
   const completed = tasks.filter((t) => t.status === "COMPLETED").length;
   const cancelled = tasks.filter((t) => t.status === "CANCELLED").length;
-  const nonCancelled = total - cancelled;
+  const obsolete = tasks.filter((t) => t.status === "OBSOLETE").length;
+  const active = total - cancelled - obsolete; // denominador
 
-  const pct = nonCancelled === 0 ? 0 : Math.round((completed / nonCancelled) * 100);
+  const pct = active === 0 ? 0 : Math.round((completed / active) * 100);
 
   let state: ProjectCompletionState;
-  if (nonCancelled === 0) {
+  if (active === 0) {
     state = "empty";
-  } else if (completed === nonCancelled) {
+  } else if (completed === active) {
     state = "completed";
   } else {
     state = "pending";
   }
 
-  return { total, completed, cancelled, pct, state };
+  return { total, completed, cancelled, obsolete, pct, state };
 }

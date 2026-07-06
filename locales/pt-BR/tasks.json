@@ -138,7 +138,8 @@
     "inProgress": "Em Progresso",
     "paused": "Pausado",
     "completed": "Concluído",
-    "cancelled": "Cancelado"
+    "cancelled": "Cancelado",
+    "obsolete": "Obsoleto"
   },
   "priority": {
     "low": "Baixa",

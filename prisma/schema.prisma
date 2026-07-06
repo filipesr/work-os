@@ -26,6 +26,7 @@ enum TaskStatus {
   PAUSED
   COMPLETED
   CANCELLED
+  OBSOLETE // Demanda descartada por mudança de requisitos (arquival, fora de pendentes/%)
 }
 
 enum TaskPriority {

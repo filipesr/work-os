@@ -17,6 +17,7 @@ const STATUS_CLASS: Record<DemandTask["status"], string> = {
   IN_PROGRESS: "bg-primary/10 text-primary border-primary/20",
   PAUSED: "bg-destructive/10 text-destructive border-destructive/20",
   CANCELLED: "bg-destructive/10 text-destructive border-destructive/20",
+  OBSOLETE: "bg-muted text-muted-foreground border-border",
   BACKLOG: "bg-muted text-muted-foreground border-border",
 };
 

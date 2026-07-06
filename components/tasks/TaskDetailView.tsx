@@ -129,6 +129,7 @@ export function TaskDetailView({
     PAUSED: { label: tStatus("paused"), variant: "outline" as const },
     COMPLETED: { label: tStatus("completed"), variant: "default" as const },
     CANCELLED: { label: tStatus("cancelled"), variant: "destructive" as const },
+    OBSOLETE: { label: tStatus("obsolete"), variant: "outline" as const },
   };
 
   return (

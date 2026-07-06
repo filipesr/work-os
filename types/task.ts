@@ -14,7 +14,7 @@ export type ActiveStageWithDetails = {
     id: string;
     title: string;
     priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-    status: "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED";
+    status: "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED" | "OBSOLETE";
     dueDate: Date | null;
     createdAt: Date;
     project: {

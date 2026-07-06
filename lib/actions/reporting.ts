@@ -561,7 +561,7 @@ export interface CalendarTask {
   id: string;
   title: string;
   dueDate: Date | null;
-  status: "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED";
+  status: "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED" | "OBSOLETE";
   projectId: string;
   projectName: string;
   clientName: string;
@@ -707,7 +707,7 @@ export async function getCalendarTasks(filters: CalendarFilters): Promise<Calend
 export interface MonthlyDemandTask {
   id: string;
   title: string;
-  status: "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED";
+  status: "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED" | "OBSOLETE";
   projectId: string;
   projectName: string;
   stageName: string | null;

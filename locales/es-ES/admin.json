@@ -294,6 +294,7 @@
         "IN_PROGRESS": "En Progreso",
         "COMPLETED": "Completada",
         "CANCELLED": "Cancelada",
+        "OBSOLETE": "Obsoleta",
         "PAUSED": "Pausada"
       },
       "priority": {
@@ -374,7 +375,8 @@
         "IN_PROGRESS": "En Progreso",
         "PAUSED": "Pausada",
         "COMPLETED": "Completada",
-        "CANCELLED": "Cancelada"
+        "CANCELLED": "Cancelada",
+        "OBSOLETE": "Obsoleta"
       },
       "filters": {
         "quick": {
@@ -459,6 +461,7 @@
         "COMPLETED": "Completada",
         "IN_PROGRESS": "En Progreso",
         "CANCELLED": "Cancelada",
+        "OBSOLETE": "Obsoleta",
         "PAUSED": "Pausada"
       },
       "taskPriority": {

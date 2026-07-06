@@ -6,7 +6,7 @@ import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { Prisma, type ActiveStageStatus } from "@prisma/client";
 import { auth } from "@/auth";
-import { requireMemberOrHigher, getSessionUser } from "@/lib/permissions";
+import { requireMemberOrHigher, requireManagerOrAdmin, getSessionUser } from "@/lib/permissions";
 import { createTaskSchema } from "@/lib/validations";
 import {
   createTaskStages,
@@ -31,7 +31,7 @@ async function getCurrentUser() {
 
 // Type definitions matching Prisma schema
 type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-type TaskStatus = "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED";
+type TaskStatus = "BACKLOG" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED" | "OBSOLETE";
 
 // ========== Task Creation ==========
 
@@ -1862,4 +1862,90 @@ export async function assignTask(taskId: string, targetUserId: string) {
       error: error instanceof Error ? error.message : "Failed to assign task",
     };
   }
+}
+
+// ========== Obsolescência + duplicação (spec 2026-07-06) ==========
+
+/** Marca a tarefa como OBSOLETE (arquival): sai de pendentes e do % do projeto. MANAGER+. */
+export async function markTaskObsolete(taskId: string) {
+  const user = await requireManagerOrAdmin();
+  try {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: { id: true, projectId: true },
+    });
+    if (!task) return { error: "Tarefa não encontrada." };
+
+    await prisma.task.update({ where: { id: taskId }, data: { status: "OBSOLETE" } });
+    await prisma.taskComment.create({
+      data: {
+        taskId,
+        userId: user.id as string,
+        content: `**TAREFA MARCADA COMO OBSOLETA**\nData: ${new Date().toLocaleString("pt-BR")}`,
+      },
+    });
+
+    revalidatePath(`/admin/tasks/${taskId}`);
+    revalidatePath(`/tasks/${taskId}`);
+    revalidatePath("/admin/tasks");
+    revalidatePath("/dashboard");
+    if (task.projectId) revalidatePath(`/admin/projects/${task.projectId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("markTaskObsolete error:", error);
+    return { error: "Erro ao marcar como obsoleta." };
+  }
+}
+
+/** Duplica a tarefa (só metadados): título+"(cópia)", descrição, projeto e o mesmo template, com
+ * as MESMAS etapas incluídas recriadas frescas (status zerado); sem comentários, sem artefatos.
+ * Redireciona para a nova tarefa (aberta para edição). MANAGER+. */
+export async function duplicateTask(taskId: string) {
+  const user = await requireManagerOrAdmin();
+  const userId = user.id as string;
+  let newId: string | null = null;
+
+  try {
+    const original = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: {
+        title: true,
+        description: true,
+        priority: true,
+        projectId: true,
+        activeStages: { select: { stageId: true, stage: { select: { templateId: true } } } },
+      },
+    });
+    if (!original) return { error: "Tarefa não encontrada." };
+    if (original.activeStages.length === 0) return { error: "Tarefa sem etapas para duplicar." };
+
+    const templateId = original.activeStages[0].stage.templateId;
+    const selectedStageIds = new Set(original.activeStages.map((s) => s.stageId));
+
+    const created = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const t = await tx.task.create({
+        data: {
+          title: `${original.title} (cópia)`,
+          description: original.description,
+          priority: original.priority,
+          status: "BACKLOG",
+          projectId: original.projectId,
+          assigneeId: null,
+        },
+      });
+      await createTaskStages(tx, { taskId: t.id, templateId, userId, selectedStageIds });
+      return t;
+    });
+    newId = created.id;
+
+    revalidatePath("/admin/tasks");
+    revalidatePath("/dashboard");
+    if (original.projectId) revalidatePath(`/admin/projects/${original.projectId}`);
+  } catch (error) {
+    console.error("duplicateTask error:", error);
+    return { error: "Erro ao duplicar tarefa." };
+  }
+
+  // redirect() lança — fora do try para não ser capturado.
+  if (newId) redirect(`/admin/tasks/${newId}`);
 }

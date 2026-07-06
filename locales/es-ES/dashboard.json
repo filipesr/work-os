@@ -19,7 +19,8 @@
     "PAUSED": "Pausado",
     "COMPLETED": "Completado",
     "CANCELLED": "Cancelado",
-    "BLOCKED": "Bloqueado"
+    "BLOCKED": "Bloqueado",
+    "OBSOLETE": "Obsoleto"
   },
   "dates": {
     "noDueDate": "Sin plazo",
