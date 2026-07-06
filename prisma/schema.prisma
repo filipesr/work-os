@@ -243,6 +243,10 @@ model TemplateStage {
   // Tipo de mídia sugerido para artefatos gerados nesta etapa (proveniência).
   defaultMediaType ArtifactMediaType?
 
+  // Etapa opcional: aparece DESMARCADA no form de criação da tarefa (o criador
+  // marca só se couber na demanda). Etapas não incluídas não geram TaskActiveStage.
+  optional Boolean @default(false)
+
   // Relations
   dependencies   StageDependency[] @relation("DependsOn")
   dependents     StageDependency[] @relation("Stage")
