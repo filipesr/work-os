@@ -145,6 +145,12 @@ de task (seguindo `__tests__/lib/actions/task-auth.test.ts` e `reporting.test.ts
   (schemas novos em `lib/validations.ts`); mensagens amigáveis para campo ausente/vazio.
 - Tier 1.3 — `Promise.all` nos waterfalls de `unassignTask`, `completeTask`,
   `completeStageAndAdvance`, `unassignActiveStage` e `revertTaskStage`.
+- Tier 1.3 (batch, 2026-07-01) — eliminados os 2 loops N+1 restantes em `task.ts`:
+  `activateNextStages` batch-carrega as linhas pré-criadas dos dependentes num único
+  `findMany` (era `findUnique` por dependente); o loop de atribuição de próximas etapas em
+  `completeStageAndAdvance` batch-carrega os times num único `findMany` (era `findUnique`
+  por etapa). Comportamento idêntico; testes de `activate-next-stages` ajustados aos 2
+  `findMany` em ordem.
 - Tier 2.1 — Suspense por widget em `reports/productivity` e `reports/performance`
   (com `cache()` para dedupe de queries compartilhadas).
 - Tier 2.3 — testes novos: `__tests__/lib/actions/admin-actions-auth.test.ts` (+11) e

@@ -721,15 +721,22 @@ export async function activateNextStages(taskId: string, completedStageId: strin
     const activated: DependentStage[] = [];
     const blocked: DependentStage[] = [];
 
+    // Pre-created rows for every dependent stage, loaded in a single query
+    // (was an N+1 findUnique per dependent). Keyed by stageId for in-loop lookup.
+    const dependentStageIds = dependentStages.map((dep) => dep.stage.id);
+    const existingRows = await prisma.taskActiveStage.findMany({
+      where: { taskId, stageId: { in: dependentStageIds } },
+      select: { stageId: true, status: true },
+    });
+    const existingByStageId = new Map(existingRows.map((r) => [r.stageId, r]));
+
     // 3. Para cada dependente, transicionar a linha PRÉ-CRIADA (nunca criar do zero).
     for (const dep of dependentStages) {
       const stage = dep.stage;
 
-      // 3a. Fetch existing row first — avoid the dependency query for stages
-      //     already ACTIVE or COMPLETED (no-regress guard).
-      const existing = await prisma.taskActiveStage.findUnique({
-        where: { taskId_stageId: { taskId, stageId: stage.id } },
-      });
+      // 3a. Look up the existing row (batch-loaded above) — avoid the dependency
+      //     computation for stages already ACTIVE or COMPLETED (no-regress guard).
+      const existing = existingByStageId.get(stage.id) ?? null;
 
       // Já trabalhada/finalizada: não regredir.
       if (existing && (existing.status === "ACTIVE" || existing.status === "COMPLETED")) {
@@ -874,24 +881,29 @@ export async function completeStageAndAdvance(
 
     // Atribuição opcional das próximas etapas (frente A), validada por equipe.
     if (assignments && Object.keys(assignments).length > 0) {
-      // activated/blocked items carry no team membership — re-query per stage.
+      // Next stages carry no team membership — batch-fetch the teams for every
+      // stage that has a requested assignment (was an N+1 findUnique per stage).
       const nextStages = [...activated, ...blocked];
-      for (const next of nextStages) {
-        const requested = assignments[next.id];
-        if (!requested) continue;
-        const stageTeam = await prisma.templateStage.findUnique({
-          where: { id: next.id },
+      const requestedStageIds = nextStages.map((next) => next.id).filter((id) => assignments[id]);
+      if (requestedStageIds.length > 0) {
+        const stageTeams = await prisma.templateStage.findMany({
+          where: { id: { in: requestedStageIds } },
           select: {
             id: true,
             defaultTeamId: true,
             defaultTeam: { select: { members: { select: { id: true } } } },
           },
         });
-        if (stageTeam && isValidStageAssignee(stageTeam, requested)) {
-          await prisma.taskActiveStage.update({
-            where: { taskId_stageId: { taskId, stageId: next.id } },
-            data: { assigneeId: requested },
-          });
+        const stageTeamById = new Map(stageTeams.map((s) => [s.id, s]));
+        for (const stageId of requestedStageIds) {
+          const requested = assignments[stageId];
+          const stageTeam = stageTeamById.get(stageId);
+          if (stageTeam && isValidStageAssignee(stageTeam, requested)) {
+            await prisma.taskActiveStage.update({
+              where: { taskId_stageId: { taskId, stageId } },
+              data: { assigneeId: requested },
+            });
+          }
         }
       }
     }
