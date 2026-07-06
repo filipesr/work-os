@@ -15,6 +15,7 @@ export async function createTemplateStage(templateId: string, formData: FormData
     defaultTeamId: (formData.get("defaultTeamId") as string) || undefined,
     expectedDurationHours: formData.get("expectedDurationHours") ?? undefined,
     defaultMediaType: (formData.get("defaultMediaType") as string) || undefined,
+    optional: formData.get("optional") ?? undefined,
     dependencies: formData.getAll("dependencies[]"),
   });
 
@@ -22,8 +23,15 @@ export async function createTemplateStage(templateId: string, formData: FormData
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const { name, order, defaultTeamId, expectedDurationHours, defaultMediaType, dependencies } =
-    parsed.data;
+  const {
+    name,
+    order,
+    defaultTeamId,
+    expectedDurationHours,
+    defaultMediaType,
+    optional,
+    dependencies,
+  } = parsed.data;
 
   try {
     const newStage = await prisma.templateStage.create({
@@ -34,6 +42,7 @@ export async function createTemplateStage(templateId: string, formData: FormData
         defaultTeamId: defaultTeamId || null,
         expectedDurationHours: expectedDurationHours ?? null,
         defaultMediaType: defaultMediaType ?? null,
+        optional,
       },
     });
 
@@ -65,6 +74,7 @@ export async function updateTemplateStage(stageId: string, templateId: string, f
     defaultTeamId: (formData.get("defaultTeamId") as string) || undefined,
     expectedDurationHours: formData.get("expectedDurationHours") ?? undefined,
     defaultMediaType: (formData.get("defaultMediaType") as string) || undefined,
+    optional: formData.get("optional") ?? undefined,
     dependencies: formData.getAll("dependencies[]"),
   });
 
@@ -72,8 +82,15 @@ export async function updateTemplateStage(stageId: string, templateId: string, f
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const { name, order, defaultTeamId, expectedDurationHours, defaultMediaType, dependencies } =
-    parsed.data;
+  const {
+    name,
+    order,
+    defaultTeamId,
+    expectedDurationHours,
+    defaultMediaType,
+    optional,
+    dependencies,
+  } = parsed.data;
 
   try {
     await prisma.templateStage.update({
@@ -84,6 +101,7 @@ export async function updateTemplateStage(stageId: string, templateId: string, f
         defaultTeamId: defaultTeamId || null,
         expectedDurationHours: expectedDurationHours ?? null,
         defaultMediaType: defaultMediaType ?? null,
+        optional,
       },
     });
 

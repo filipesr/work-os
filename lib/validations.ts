@@ -125,6 +125,8 @@ export const templateStageSchema = z.object({
     (v) => (v === "" || v === null || v === undefined ? undefined : v),
     artifactMediaTypeEnum.optional()
   ),
+  // Etapa opcional: aparece desmarcada na criação da tarefa. Checkbox → "on"/ausente.
+  optional: z.preprocess((v) => v === "on" || v === true, z.boolean()).default(false),
   dependencies: z.array(z.string()).optional().default([]),
 });
 
