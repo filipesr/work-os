@@ -896,18 +896,35 @@ export async function completeStageAndAdvance(
       });
     }
 
-    // 7. Update task status if needed
-    const remainingActive = await prisma.taskActiveStage.count({
+    // 7. Update task status. Etapas não incluídas (F1) não têm linha, então
+    // qualquer linha ainda em ACTIVE/BLOCKED/INACTIVE significa "falta etapa".
+    // Se nenhuma linha aberta restar, a última etapa fechou → concluir a tarefa.
+    const remainingOpen = await prisma.taskActiveStage.count({
       where: {
         taskId,
-        status: "ACTIVE",
+        status: { in: ["ACTIVE", "BLOCKED", "INACTIVE"] },
       },
     });
 
-    if (remainingActive > 0) {
+    if (remainingOpen > 0) {
       await prisma.task.update({
         where: { id: taskId },
         data: { status: "IN_PROGRESS" },
+      });
+    } else {
+      // Auto-conclusão: todas as etapas incluídas foram concluídas.
+      await prisma.task.update({
+        where: { id: taskId },
+        data: { status: "COMPLETED", completedAt: new Date() },
+      });
+
+      const userName = currentUser.name || currentUser.email;
+      await prisma.taskComment.create({
+        data: {
+          taskId,
+          userId: currentUserId,
+          content: `**TAREFA CONCLUÍDA AUTOMATICAMENTE** ao encerrar a última etapa (${activeStage.stage.name})\nPor: ${userName}\nData: ${new Date().toLocaleString("pt-BR")}`,
+        },
       });
     }
 

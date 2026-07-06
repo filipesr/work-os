@@ -6,7 +6,9 @@ import { requireManagerOrAdmin } from "@/lib/permissions";
 import { toNasClientFolder } from "@/lib/nas/path";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import { computeProjectCompletion } from "@/lib/project-status";
 import { EditClientHeader } from "./edit-client-header";
+import { ProjectStatusFilter } from "./project-status-filter";
 
 // folderName (pasta-raiz do cliente no NAS) trava assim que existe qualquer artefato NAS sob o
 // cliente — renomear a pasta depois divergiria dos caminhos já gravados.
@@ -23,11 +25,25 @@ async function getClient(clientId: string) {
     where: { id: clientId },
     include: {
       projects: {
-        include: { _count: { select: { tasks: true } } },
+        include: {
+          tasks: { select: { status: true } },
+          _count: { select: { tasks: true } },
+        },
         orderBy: { name: "asc" },
       },
     },
   });
+}
+
+// Allow-list para o filtro de conclusão (espelha o pick() de admin/tasks/page).
+const COMPLETION_FILTERS = ["pending", "completed"] as const;
+type CompletionFilter = (typeof COMPLETION_FILTERS)[number];
+
+function pickCompletion(value: string | string[] | undefined): CompletionFilter | undefined {
+  const single = Array.isArray(value) ? value[0] : value;
+  return single && (COMPLETION_FILTERS as readonly string[]).includes(single)
+    ? (single as CompletionFilter)
+    : undefined;
 }
 
 async function updateClient(formData: FormData) {
@@ -117,12 +133,15 @@ async function setProjectStatus(formData: FormData) {
 
 export default async function ClientDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ clientId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { clientId } = await params;
-  const [client, t] = await Promise.all([
+  const [client, sp, t] = await Promise.all([
     getClient(clientId),
+    searchParams,
     getTranslations("admin.clients.detail"),
   ]);
 
@@ -133,6 +152,14 @@ export default async function ClientDetailPage({
   const folderNameLocked = await isClientFolderLocked(clientId);
 
   const totalTasks = client.projects.reduce((sum, p) => sum + p._count.tasks, 0);
+
+  // Classifica cada projeto pelo estado derivado e aplica o filtro (se válido).
+  const statusFilter = pickCompletion(sp.status);
+  const visibleProjects = client.projects.filter((project) => {
+    if (!statusFilter) return true;
+    const { state } = computeProjectCompletion(project.tasks);
+    return state === statusFilter;
+  });
 
   return (
     <div className="container mx-auto p-8">
@@ -206,6 +233,9 @@ export default async function ClientDetailPage({
           </button>
         </form>
 
+        {/* Completion filter chips (Pendentes / Concluídos / Todos) */}
+        <ProjectStatusFilter />
+
         <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
@@ -225,7 +255,7 @@ export default async function ClientDetailPage({
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
-              {client.projects.map((project) => {
+              {visibleProjects.map((project) => {
                 const isActive = project.status === "ACTIVE";
                 return (
                   <tr
@@ -282,7 +312,7 @@ export default async function ClientDetailPage({
                   </tr>
                 );
               })}
-              {client.projects.length === 0 && (
+              {visibleProjects.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-6 py-8 text-center text-sm text-muted-foreground">
                     {t("noProjects")}

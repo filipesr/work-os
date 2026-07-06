@@ -4,8 +4,15 @@ import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import { computeProjectCompletion } from "@/lib/project-status";
 import { EditProjectHeader } from "./edit-project-header";
 import { ProjectArtifactsTable } from "@/components/admin/ProjectArtifactsTable";
+
+const COMPLETION_STATE_LABEL: Record<string, string> = {
+  empty: "Sem tarefas",
+  pending: "Pendente",
+  completed: "Concluído",
+};
 
 // Campaign metadata + nasUploadEnabled lock once any NAS artifact exists for the project.
 async function isProjectNasLocked(projectId: string): Promise<boolean> {
@@ -147,6 +154,9 @@ export default async function ProjectDetailPage({
     },
     {} as Record<string, number>
   );
+
+  // Derived completion (% + state) from task statuses — single source of truth.
+  const completion = computeProjectCompletion(project.tasks);
 
   // All artifacts across the project's tasks (flattened for the searchable table).
   const artifacts = project.tasks.flatMap((task) =>
@@ -313,7 +323,14 @@ export default async function ProjectDetailPage({
       </div>
 
       {/* Info Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-6">
+        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+          <p className="text-sm text-muted-foreground">Conclusão</p>
+          <p className="text-3xl font-bold text-foreground mt-1">{completion.pct}%</p>
+          <p className="text-xs font-semibold text-muted-foreground mt-1">
+            {COMPLETION_STATE_LABEL[completion.state]}
+          </p>
+        </div>
         <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
           <p className="text-sm text-muted-foreground">{t("totalTasks")}</p>
           <p className="text-3xl font-bold text-foreground mt-1">{project.tasks.length}</p>
