@@ -5,9 +5,9 @@ import { requireManagerOrAdmin } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { computeProjectCompletion } from "@/lib/project-status";
+import { mapArtifactRow } from "@/lib/artifacts/unify";
+import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
 import { EditProjectHeader } from "./edit-project-header";
-import { ProjectArtifactsTable } from "@/components/admin/ProjectArtifactsTable";
-import { ScopedArtifactsManager } from "@/components/admin/ScopedArtifactsManager";
 
 const COMPLETION_STATE_LABEL: Record<string, string> = {
   empty: "Sem tarefas",
@@ -76,7 +76,7 @@ async function getProject(projectId: string) {
       client: true,
       artifacts: {
         where: { scope: "PROJECT" },
-        select: { id: true, title: true, url: true },
+        include: { user: { select: { name: true, email: true } } },
         orderBy: { createdAt: "desc" },
       },
       tasks: {
@@ -164,19 +164,13 @@ export default async function ProjectDetailPage({
   // Derived completion (% + state) from task statuses — single source of truth.
   const completion = computeProjectCompletion(project.tasks);
 
-  // All artifacts across the project's tasks (flattened for the searchable table).
-  const artifacts = project.tasks.flatMap((task) =>
-    task.artifacts.map((a) => ({
-      id: a.id,
-      title: a.title,
-      url: a.url,
-      type: a.type,
-      createdAt: a.createdAt.toISOString(),
-      taskId: task.id,
-      taskTitle: task.title,
-      userName: a.user.name || a.user.email || "—",
-    }))
-  );
+  // Linhas unificadas: artefatos do Projeto + artefatos das Tarefas do projeto.
+  const artifactRows = [
+    ...project.artifacts.map((a) => mapArtifactRow(a, "PROJECT")),
+    ...project.tasks.flatMap((task) =>
+      task.artifacts.map((a) => mapArtifactRow(a, "TASK", { id: task.id, title: task.title }))
+    ),
+  ];
 
   const statusColors: Record<string, string> = {
     BACKLOG: "bg-gray-100 text-gray-800 border-gray-200",
@@ -350,7 +344,7 @@ export default async function ProjectDetailPage({
         {/* Artifacts total, next to "Concluída" */}
         <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
           <p className="text-sm text-muted-foreground">{t("artifacts")}</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{artifacts.length}</p>
+          <p className="text-3xl font-bold text-foreground mt-1">{artifactRows.length}</p>
         </div>
       </div>
 
@@ -435,19 +429,16 @@ export default async function ProjectDetailPage({
         </div>
       </div>
 
-      {/* Project reference artifacts (scope PROJECT) — visíveis nas demandas do projeto */}
-      <div className="mt-6">
-        <ScopedArtifactsManager
-          scope="PROJECT"
-          ownerId={project.id}
-          artifacts={project.artifacts}
-        />
-      </div>
-
-      {/* Artifacts Table (searchable) */}
+      {/* Artefatos: Projeto + Tarefas do projeto (Origem por linha) */}
       <div className="mt-6">
         <h2 className="text-xl font-bold text-foreground mb-4">{t("artifactsTable")}</h2>
-        <ProjectArtifactsTable artifacts={artifacts} />
+        <UnifiedArtifactsPanel
+          rows={artifactRows}
+          scope="PROJECT"
+          ownerIds={{ projectId: project.id }}
+          canAdd
+          canRemove
+        />
       </div>
     </div>
   );

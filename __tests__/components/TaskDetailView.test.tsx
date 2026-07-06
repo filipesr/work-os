@@ -14,6 +14,9 @@ vi.mock("@/components/tasks/CommentsList", () => ({ CommentsList: () => <div /> 
 vi.mock("@/components/tasks/ArtifactsList", () => ({ ArtifactsList: () => <div /> }));
 vi.mock("@/components/tasks/AddCommentForm", () => ({ AddCommentForm: () => <div /> }));
 vi.mock("@/components/tasks/AddArtifactForm", () => ({ AddArtifactForm: () => <div /> }));
+vi.mock("@/components/artifacts/UnifiedArtifactsPanel", () => ({
+  UnifiedArtifactsPanel: () => <div />,
+}));
 vi.mock("@/components/tasks/TaskActionsMenu", () => ({ TaskActionsMenu: () => <div /> }));
 vi.mock("@/components/tasks/ActivityButton", () => ({ ActivityButton: () => <div /> }));
 vi.mock("@/components/tasks/TimeLogsList", () => ({ TimeLogsList: () => <div /> }));
@@ -51,6 +54,8 @@ function renderView(taskOver?: Record<string, unknown>, role: UserRole = UserRol
   return render(
     <TaskDetailView
       task={makeTask(taskOver)}
+      artifactRows={[]}
+      canManageScoped={false}
       availableNextStages={[]}
       previousStages={[]}
       currentUserId="u1"

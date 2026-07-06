@@ -7,7 +7,8 @@ import { toNasClientFolder } from "@/lib/nas/path";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { computeProjectCompletion } from "@/lib/project-status";
-import { ScopedArtifactsManager } from "@/components/admin/ScopedArtifactsManager";
+import { mapArtifactRow } from "@/lib/artifacts/unify";
+import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
 import { EditClientHeader } from "./edit-client-header";
 import { ProjectStatusFilter } from "./project-status-filter";
 
@@ -27,7 +28,7 @@ async function getClient(clientId: string) {
     include: {
       artifacts: {
         where: { scope: "CLIENT" },
-        select: { id: true, title: true, url: true },
+        include: { user: { select: { name: true, email: true } } },
         orderBy: { createdAt: "desc" },
       },
       projects: {
@@ -214,9 +215,16 @@ export default async function ClientDetailPage({
         </div>
       </div>
 
-      {/* Client reference artifacts (scope CLIENT) — visíveis nas demandas do cliente */}
+      {/* Artefatos do cliente (Origem: Cliente) — visíveis nas demandas do cliente */}
       <div className="mt-6">
-        <ScopedArtifactsManager scope="CLIENT" ownerId={client.id} artifacts={client.artifacts} />
+        <h2 className="text-xl font-bold text-foreground mb-4">Artefatos</h2>
+        <UnifiedArtifactsPanel
+          rows={client.artifacts.map((a) => mapArtifactRow(a, "CLIENT"))}
+          scope="CLIENT"
+          ownerIds={{ clientId: client.id }}
+          canAdd
+          canRemove
+        />
       </div>
 
       {/* Projects Table */}

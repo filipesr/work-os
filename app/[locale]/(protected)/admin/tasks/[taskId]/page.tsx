@@ -5,7 +5,9 @@ import { AdvanceStageButton } from "@/components/tasks/AdvanceStageButton";
 import { RevertStageButton } from "@/components/tasks/RevertStageButton";
 import { UnassignActiveStageButton } from "@/components/tasks/UnassignActiveStageButton";
 import { CompleteTaskButton } from "@/components/tasks/CompleteTaskButton";
-import { ArtifactsList } from "@/components/tasks/ArtifactsList";
+import prisma from "@/lib/prisma";
+import { mapArtifactRow } from "@/lib/artifacts/unify";
+import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
 import { TimeLogsList } from "@/components/tasks/TimeLogsList";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
@@ -37,6 +39,33 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
   if (!task) {
     notFound();
   }
+
+  // Artefatos de projeto/cliente (escopo) para a tabela única com Origem.
+  const scoped = await prisma.project.findUnique({
+    where: { id: task.project.id },
+    select: {
+      artifacts: {
+        where: { scope: "PROJECT" },
+        include: { user: { select: { name: true, email: true } } },
+        orderBy: { createdAt: "desc" },
+      },
+      client: {
+        select: {
+          artifacts: {
+            where: { scope: "CLIENT" },
+            include: { user: { select: { name: true, email: true } } },
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      },
+    },
+  });
+
+  const artifactRows = [
+    ...task.artifacts.map((a) => mapArtifactRow(a, "TASK", { id: task.id, title: task.title })),
+    ...(scoped?.artifacts ?? []).map((a) => mapArtifactRow(a, "PROJECT")),
+    ...(scoped?.client.artifacts ?? []).map((a) => mapArtifactRow(a, "CLIENT")),
+  ];
 
   return (
     <div className="container mx-auto p-8">
@@ -297,11 +326,18 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
           <div className="sticky top-24 space-y-6">
             <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
               <h2 className="text-xl font-bold text-foreground mb-4">{t("artifacts")}</h2>
-              {task.artifacts.length > 0 ? (
-                <ArtifactsList artifacts={task.artifacts} />
-              ) : (
-                <p className="text-sm text-muted-foreground">{t("noArtifacts")}</p>
-              )}
+              <UnifiedArtifactsPanel
+                rows={artifactRows}
+                scope="TASK"
+                ownerIds={{
+                  taskId: task.id,
+                  projectId: task.project.id,
+                  clientId: task.project.clientId,
+                }}
+                currentTaskId={task.id}
+                canAdd
+                canRemove
+              />
             </div>
 
             {/* Time tracking (registered time logs + open/running activities) */}

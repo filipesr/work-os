@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { TaskDetailView } from "@/components/tasks/TaskDetailView";
+import { mapArtifactRow } from "@/lib/artifacts/unify";
 import { getAvailableNextStages, getPreviousStages } from "@/lib/actions/task";
 import { getCurrentActiveLog } from "@/lib/actions/activity";
 import { UserRole } from "@prisma/client";
@@ -30,14 +31,14 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
             include: {
               artifacts: {
                 where: { scope: "CLIENT" },
-                select: { id: true, title: true, url: true },
+                include: { user: { select: { name: true, email: true } } },
                 orderBy: { createdAt: "desc" },
               },
             },
           },
           artifacts: {
             where: { scope: "PROJECT" },
-            select: { id: true, title: true, url: true },
+            include: { user: { select: { name: true, email: true } } },
             orderBy: { createdAt: "desc" },
           },
         },
@@ -182,11 +183,23 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
   const managerialRoles: UserRole[] = [UserRole.ADMIN, UserRole.MANAGER, UserRole.SUPERVISOR];
   const isManagerialRole = managerialRoles.includes(session.user.role as UserRole);
   const canPerformActions = isStageAssignee || isManagerialRole;
+  const canManageScoped = ([UserRole.ADMIN, UserRole.MANAGER] as UserRole[]).includes(
+    session.user.role as UserRole
+  );
+
+  // Linhas unificadas: Tarefa + Projeto + Cliente (Origem por linha).
+  const artifactRows = [
+    ...task.artifacts.map((a) => mapArtifactRow(a, "TASK", { id: task.id, title: task.title })),
+    ...task.project.artifacts.map((a) => mapArtifactRow(a, "PROJECT")),
+    ...task.project.client.artifacts.map((a) => mapArtifactRow(a, "CLIENT")),
+  ];
 
   return (
     <div className="container mx-auto py-6">
       <TaskDetailView
         task={task}
+        artifactRows={artifactRows}
+        canManageScoped={canManageScoped}
         availableNextStages={availableNextStages}
         previousStages={previousStages}
         currentUserId={session.user.id!}

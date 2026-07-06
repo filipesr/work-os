@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
@@ -28,14 +27,12 @@ import {
   AlertCircle,
   MessageSquare,
   Paperclip,
-  ChevronDown,
-  ChevronUp,
   Clock,
 } from "lucide-react";
 import { CommentsList } from "./CommentsList";
-import { ArtifactsList } from "./ArtifactsList";
 import { AddCommentForm } from "./AddCommentForm";
-import { AddArtifactForm } from "./AddArtifactForm";
+import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
+import { type UnifiedArtifactRow } from "@/lib/artifacts/unify";
 import { TaskActionsMenu } from "./TaskActionsMenu";
 import { ActivityButton } from "./ActivityButton";
 import { TimeLogsList } from "./TimeLogsList";
@@ -48,13 +45,8 @@ import { format } from "date-fns";
 import { ptBR, es } from "date-fns/locale";
 import { useTranslations, useLocale } from "next-intl";
 
-type ScopedRef = { id: string; title: string; url: string | null };
-
 type TaskWithRelations = Task & {
-  project: Project & {
-    client: Client & { artifacts: ScopedRef[] };
-    artifacts: ScopedRef[];
-  };
+  project: Project & { client: Client };
   assignee: Pick<User, "id" | "name" | "email" | "image"> | null;
   currentStage:
     | (TemplateStage & { defaultTeam: Team | null; template: { id: string; name: string } })
@@ -81,31 +73,10 @@ interface ActiveLog {
   };
 }
 
-/** Bloco destacado de referências (link) de projeto ou cliente na aba de artefatos. */
-function ScopedRefBlock({ label, items }: { label: string; items: ScopedRef[] }) {
-  return (
-    <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-3">
-      <p className="text-xs font-semibold text-primary mb-2">{label}</p>
-      <ul className="space-y-1.5">
-        {items.map((a) => (
-          <li key={a.id} className="min-w-0">
-            <a
-              href={a.url ?? "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block truncate text-sm font-medium text-primary underline-offset-2 hover:text-primary/80 hover:underline"
-            >
-              {a.title}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 interface TaskDetailViewProps {
   task: TaskWithRelations;
+  artifactRows: UnifiedArtifactRow[];
+  canManageScoped: boolean;
   availableNextStages: TemplateStage[];
   previousStages: TemplateStage[];
   currentUserId: string;
@@ -118,6 +89,8 @@ interface TaskDetailViewProps {
 
 export function TaskDetailView({
   task,
+  artifactRows,
+  canManageScoped,
   availableNextStages,
   previousStages,
   currentUserId,
@@ -127,7 +100,6 @@ export function TaskDetailView({
   canPerformActions,
   currentStageAssignee,
 }: TaskDetailViewProps) {
-  const [showArtifactForm, setShowArtifactForm] = useState(false);
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
   const canViewTimeLogs =
     currentUserRole === UserRole.ADMIN || currentUserRole === UserRole.MANAGER;
@@ -359,55 +331,23 @@ export function TaskDetailView({
               <Paperclip className="h-4 w-4" />
               {tArtifacts("title")}
               <Badge variant="secondary" className="ml-auto text-xs">
-                {task.artifacts.length}
+                {artifactRows.length}
               </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Referências de projeto e cliente, destacadas acima dos artefatos da tarefa */}
-            {(task.project.artifacts.length > 0 || task.project.client.artifacts.length > 0) && (
-              <div className="space-y-3">
-                {task.project.artifacts.length > 0 && (
-                  <ScopedRefBlock label="Do projeto" items={task.project.artifacts} />
-                )}
-                {task.project.client.artifacts.length > 0 && (
-                  <ScopedRefBlock label="Do cliente" items={task.project.client.artifacts} />
-                )}
-                <Separator />
-              </div>
-            )}
-
-            <ArtifactsList artifacts={task.artifacts} />
-
-            {/* Toggle button for form */}
-            {canPerformActions && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowArtifactForm(!showArtifactForm)}
-                className="w-full"
-              >
-                {showArtifactForm ? (
-                  <>
-                    <ChevronUp className="h-4 w-4 mr-2" />
-                    {tArtifacts("hideForm")}
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-4 w-4 mr-2" />
-                    {tArtifacts("addArtifact")}
-                  </>
-                )}
-              </Button>
-            )}
-
-            {/* Collapsible Add Artifact Form */}
-            {canPerformActions && showArtifactForm && (
-              <>
-                <Separator />
-                <AddArtifactForm taskId={task.id} userId={currentUserId} />
-              </>
-            )}
+          <CardContent>
+            <UnifiedArtifactsPanel
+              rows={artifactRows}
+              scope="TASK"
+              ownerIds={{
+                taskId: task.id,
+                projectId: task.projectId,
+                clientId: task.project.clientId,
+              }}
+              currentTaskId={task.id}
+              canAdd={canPerformActions}
+              canRemove={canManageScoped}
+            />
           </CardContent>
         </Card>
 
