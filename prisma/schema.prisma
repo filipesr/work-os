@@ -398,7 +398,12 @@ model TaskArtifact {
   mimeType         String?
   sizeBytes        BigInt?
   checksum         String? // sha256 hex, preenchido pelo agente no finalize
-  version          Int?
+
+  // Versionamento (spec 2026-07-06): cadeia por raiz. `rootId` = raiz da cadeia (null = a própria
+  // linha é a raiz); `isCurrent` marca a versão vigente (listagens filtram isCurrent=true).
+  version   Int     @default(1)
+  rootId    String?
+  isCurrent Boolean @default(true)
 
   uploadedById String?
   uploadedBy   User?   @relation("ArtifactUploader", fields: [uploadedById], references: [id], onUpdate: NoAction, onDelete: SetNull)
@@ -422,6 +427,7 @@ model TaskArtifact {
   @@index([projectId])
   @@index([clientId])
   @@index([uploadStatus])
+  @@index([rootId])
 }
 
 // Propósito do entregável (tag pesquisável; compõe o nome). CRUD admin (MANAGER+).

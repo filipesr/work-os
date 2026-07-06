@@ -30,14 +30,14 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
           client: {
             include: {
               artifacts: {
-                where: { scope: "CLIENT" },
+                where: { scope: "CLIENT", isCurrent: true },
                 include: { user: { select: { name: true, email: true } } },
                 orderBy: { createdAt: "desc" },
               },
             },
           },
           artifacts: {
-            where: { scope: "PROJECT" },
+            where: { scope: "PROJECT", isCurrent: true },
             include: { user: { select: { name: true, email: true } } },
             orderBy: { createdAt: "desc" },
           },
@@ -86,6 +86,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
         },
       },
       artifacts: {
+        where: { isCurrent: true },
         include: {
           user: {
             select: {

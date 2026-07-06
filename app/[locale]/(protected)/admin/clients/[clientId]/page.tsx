@@ -27,7 +27,7 @@ async function getClient(clientId: string) {
     where: { id: clientId },
     include: {
       artifacts: {
-        where: { scope: "CLIENT" },
+        where: { scope: "CLIENT", isCurrent: true },
         include: { user: { select: { name: true, email: true } } },
         orderBy: { createdAt: "desc" },
       },

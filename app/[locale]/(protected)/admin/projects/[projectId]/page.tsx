@@ -75,7 +75,7 @@ async function getProject(projectId: string) {
     include: {
       client: true,
       artifacts: {
-        where: { scope: "PROJECT" },
+        where: { scope: "PROJECT", isCurrent: true },
         include: { user: { select: { name: true, email: true } } },
         orderBy: { createdAt: "desc" },
       },
@@ -83,6 +83,7 @@ async function getProject(projectId: string) {
         include: {
           assignee: { select: { id: true, name: true, email: true } },
           artifacts: {
+            where: { isCurrent: true },
             include: { user: { select: { name: true, email: true } } },
             orderBy: { createdAt: "desc" },
           },

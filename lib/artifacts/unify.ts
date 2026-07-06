@@ -13,6 +13,7 @@ export type UnifiedArtifactRow = {
   type: string | null; // ArtifactType (link)
   mediaType: string | null; // ArtifactMediaType (NAS)
   fileName: string | null;
+  version: number;
   createdAt: string; // ISO
   taskId: string | null;
   taskTitle: string | null;
@@ -68,6 +69,7 @@ type RawArtifact = {
   type?: string | null;
   mediaType?: string | null;
   fileName?: string | null;
+  version?: number | null;
   createdAt: Date | string;
   user?: { name?: string | null; email?: string | null } | null;
 };
@@ -88,6 +90,7 @@ export function mapArtifactRow(
     type: a.type ?? null,
     mediaType: a.mediaType ?? null,
     fileName: a.fileName ?? null,
+    version: a.version ?? 1,
     createdAt: typeof a.createdAt === "string" ? a.createdAt : a.createdAt.toISOString(),
     taskId: task?.id ?? null,
     taskTitle: task?.title ?? null,

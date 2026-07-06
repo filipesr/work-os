@@ -8,7 +8,12 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import toast from "react-hot-toast";
 import { addLinkArtifact } from "@/lib/actions/task";
-import { addScopedLinkArtifact, removeScopedArtifact } from "@/lib/actions/artifact";
+import {
+  addScopedLinkArtifact,
+  removeScopedArtifact,
+  addLinkArtifactVersion,
+  getArtifactVersions,
+} from "@/lib/actions/artifact";
 import {
   type UnifiedArtifactRow,
   ORIGIN_LABEL,
@@ -62,7 +67,50 @@ export function UnifiedArtifactsPanel({
   const [type, setType] = useState<ArtifactType>("OTHER");
   const [isPending, startTransition] = useTransition();
 
+  // Versionamento: form de "nova versão" aberto (por id) + histórico expandido (por id).
+  const [verId, setVerId] = useState<string | null>(null);
+  const [verTitle, setVerTitle] = useState("");
+  const [verUrl, setVerUrl] = useState("");
+  const [verType, setVerType] = useState<ArtifactType>("OTHER");
+  const [historyFor, setHistoryFor] = useState<string | null>(null);
+  const [history, setHistory] = useState<UnifiedArtifactRow[]>([]);
+
   const sorted = sortRows(rows);
+
+  const handleNewVersion = (id: string) => {
+    if (!verTitle.trim() || !verUrl.trim()) return toast.error("Título e URL são obrigatórios.");
+    try {
+      new URL(verUrl);
+    } catch {
+      return toast.error("URL inválida.");
+    }
+    startTransition(async () => {
+      const res = await addLinkArtifactVersion(id, { title: verTitle, url: verUrl, type: verType });
+      if (res?.success) {
+        setVerId(null);
+        setVerTitle("");
+        setVerUrl("");
+        setVerType("OTHER");
+        toast.success("Nova versão criada");
+        router.refresh();
+      } else {
+        toast.error(res?.error ?? "Erro ao criar versão");
+      }
+    });
+  };
+
+  const toggleHistory = (id: string) => {
+    if (historyFor === id) {
+      setHistoryFor(null);
+      setHistory([]);
+      return;
+    }
+    startTransition(async () => {
+      const rowsHist = await getArtifactVersions(id);
+      setHistory(rowsHist);
+      setHistoryFor(id);
+    });
+  };
 
   const handleAddLink = () => {
     if (!title.trim() || !url.trim()) return toast.error("Título e URL são obrigatórios.");
@@ -120,82 +168,183 @@ export function UnifiedArtifactsPanel({
             const showTaskBadge = a.taskId != null && a.taskId !== currentTaskId;
             const isNas = a.storageKind === "NAS_UPLOAD";
             return (
-              <div
-                key={a.id}
-                className="flex items-start justify-between gap-3 rounded-lg border bg-card p-3 hover:bg-accent/40 transition-colors"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${ORIGIN_CHIP[a.origin]}`}
-                    >
-                      {ORIGIN_LABEL[a.origin]}
-                    </span>
-                    {isNas ? (
-                      <span className="flex items-center gap-2 min-w-0">
-                        <span className="truncate text-sm font-medium">
-                          {a.fileName || a.title}
-                        </span>
-                        <span
-                          className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${
-                            nasStatus[a.uploadStatus]?.cls ??
-                            "bg-muted text-muted-foreground border-border"
-                          }`}
-                        >
-                          {nasStatus[a.uploadStatus]?.label ?? a.uploadStatus}
-                        </span>
-                      </span>
-                    ) : (
-                      <a
-                        href={a.url ?? undefined}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group flex min-w-0 items-center gap-1 text-sm font-medium hover:underline"
+              <div key={a.id} className="rounded-lg border bg-card">
+                <div className="flex items-start justify-between gap-3 p-3 hover:bg-accent/40 transition-colors">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${ORIGIN_CHIP[a.origin]}`}
                       >
-                        <span className="truncate">{a.title}</span>
-                        <ExternalLink className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
-                      </a>
-                    )}
+                        {ORIGIN_LABEL[a.origin]}
+                      </span>
+                      {a.version > 1 && (
+                        <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                          v{a.version}
+                        </span>
+                      )}
+                      {isNas ? (
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className="truncate text-sm font-medium">
+                            {a.fileName || a.title}
+                          </span>
+                          <span
+                            className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                              nasStatus[a.uploadStatus]?.cls ??
+                              "bg-muted text-muted-foreground border-border"
+                            }`}
+                          >
+                            {nasStatus[a.uploadStatus]?.label ?? a.uploadStatus}
+                          </span>
+                        </span>
+                      ) : (
+                        <a
+                          href={a.url ?? undefined}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex min-w-0 items-center gap-1 text-sm font-medium hover:underline"
+                        >
+                          <span className="truncate">{a.title}</span>
+                          <ExternalLink className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                        </a>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span>{artifactTypeLabel(a)}</span>
+                      {showTaskBadge && (
+                        <>
+                          <span>•</span>
+                          <span className="truncate">Tarefa: {a.taskTitle}</span>
+                        </>
+                      )}
+                      {a.userName && (
+                        <>
+                          <span>•</span>
+                          <span>{a.userName}</span>
+                        </>
+                      )}
+                      <span>•</span>
+                      <span>
+                        {a.version > 1 ? "Atualizado" : "Criado"}{" "}
+                        {formatDistanceToNow(new Date(a.createdAt), {
+                          addSuffix: true,
+                          locale: ptBR,
+                        })}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span>{artifactTypeLabel(a)}</span>
-                    {showTaskBadge && (
-                      <>
-                        <span>•</span>
-                        <span className="truncate">Tarefa: {a.taskTitle}</span>
-                      </>
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    {isNas && a.uploadStatus === "READY" && (
+                      <DownloadArtifactButton artifactId={a.id} />
                     )}
-                    {a.userName && (
-                      <>
-                        <span>•</span>
-                        <span>{a.userName}</span>
-                      </>
+                    {a.version > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleHistory(a.id)}
+                        disabled={isPending}
+                        className="text-xs font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50"
+                      >
+                        {historyFor === a.id ? "ocultar" : "ver versões"}
+                      </button>
                     )}
-                    <span>•</span>
-                    <span>
-                      {formatDistanceToNow(new Date(a.createdAt), {
-                        addSuffix: true,
-                        locale: ptBR,
-                      })}
-                    </span>
+                    {canAdd && !isNas && (
+                      <button
+                        type="button"
+                        onClick={() => setVerId(verId === a.id ? null : a.id)}
+                        disabled={isPending}
+                        className="text-xs font-semibold text-primary hover:text-primary/80 disabled:opacity-50"
+                      >
+                        Nova versão
+                      </button>
+                    )}
+                    {canRemove && a.origin !== "TASK" && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(a.id)}
+                        disabled={isPending}
+                        className="text-xs font-semibold text-muted-foreground hover:text-destructive disabled:opacity-50"
+                      >
+                        Remover
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
-                  {isNas && a.uploadStatus === "READY" && (
-                    <DownloadArtifactButton artifactId={a.id} />
-                  )}
-                  {canRemove && a.origin !== "TASK" && (
+                {/* Nova versão (link) */}
+                {verId === a.id && (
+                  <div className="space-y-2 border-t border-border p-3">
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                      <input
+                        type="text"
+                        value={verTitle}
+                        onChange={(e) => setVerTitle(e.target.value)}
+                        placeholder="Título da nova versão"
+                        disabled={isPending}
+                        className="h-10 w-full rounded-lg border-2 border-input-border bg-input px-3 text-sm font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none"
+                      />
+                      <select
+                        value={verType}
+                        onChange={(e) => setVerType(e.target.value as ArtifactType)}
+                        disabled={isPending}
+                        className="h-10 w-full rounded-lg border-2 border-input-border bg-input px-3 text-sm font-medium text-foreground focus-visible:border-primary focus-visible:outline-none"
+                      >
+                        {TYPE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <input
+                      type="url"
+                      value={verUrl}
+                      onChange={(e) => setVerUrl(e.target.value)}
+                      placeholder="https://…"
+                      disabled={isPending}
+                      className="h-10 w-full rounded-lg border-2 border-input-border bg-input px-3 text-sm font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none"
+                    />
                     <button
                       type="button"
-                      onClick={() => handleRemove(a.id)}
-                      disabled={isPending}
-                      className="text-xs font-semibold text-muted-foreground hover:text-destructive disabled:opacity-50"
+                      onClick={() => handleNewVersion(a.id)}
+                      disabled={isPending || !verTitle.trim() || !verUrl.trim()}
+                      className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Remover
+                      {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Salvar nova versão
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* Histórico de versões */}
+                {historyFor === a.id && history.length > 0 && (
+                  <ul className="space-y-1 border-t border-border p-3">
+                    {history.map((h) => (
+                      <li key={h.id} className="flex items-center gap-2 text-xs">
+                        <span className="shrink-0 font-bold text-muted-foreground">
+                          v{h.version}
+                        </span>
+                        {h.storageKind === "NAS_UPLOAD" ? (
+                          <span className="truncate">{h.fileName || h.title}</span>
+                        ) : (
+                          <a
+                            href={h.url ?? undefined}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="truncate text-primary hover:underline"
+                          >
+                            {h.title}
+                          </a>
+                        )}
+                        <span className="shrink-0 text-muted-foreground">
+                          {formatDistanceToNow(new Date(h.createdAt), {
+                            addSuffix: true,
+                            locale: ptBR,
+                          })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             );
           })}

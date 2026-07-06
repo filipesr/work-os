@@ -285,6 +285,7 @@ export async function getTaskById(taskId: string) {
         orderBy: { createdAt: "desc" },
       },
       artifacts: {
+        where: { isCurrent: true },
         include: {
           user: {
             select: {

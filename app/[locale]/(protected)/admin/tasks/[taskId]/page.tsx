@@ -45,14 +45,14 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
     where: { id: task.project.id },
     select: {
       artifacts: {
-        where: { scope: "PROJECT" },
+        where: { scope: "PROJECT", isCurrent: true },
         include: { user: { select: { name: true, email: true } } },
         orderBy: { createdAt: "desc" },
       },
       client: {
         select: {
           artifacts: {
-            where: { scope: "CLIENT" },
+            where: { scope: "CLIENT", isCurrent: true },
             include: { user: { select: { name: true, email: true } } },
             orderBy: { createdAt: "desc" },
           },

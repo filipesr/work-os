@@ -34,6 +34,7 @@ import {
 } from "@/lib/nas/config";
 import { generateShareToken, hashShareSecret } from "@/lib/nas/share-token";
 import { canShare, transitionRevokesShares } from "@/lib/nas/sensitivity";
+import { mapArtifactRow, type ArtifactOrigin } from "@/lib/artifacts/unify";
 
 type Db = typeof prisma | Prisma.TransactionClient;
 
@@ -588,4 +589,96 @@ export async function removeScopedArtifact(id: string) {
     console.error("removeScopedArtifact error:", error);
     return { error: "Erro ao remover artefato." };
   }
+}
+
+// ========== Versionamento (spec 2026-07-06) ==========
+
+// Permissão por escopo: tarefa = membro+; projeto/cliente = MANAGER+.
+async function requireForArtifactScope(scope: string) {
+  return scope === "TASK" ? requireMemberOrHigher() : requireManagerOrAdmin();
+}
+
+function revalidateForArtifact(a: {
+  taskId: string | null;
+  projectId: string | null;
+  clientId: string | null;
+}) {
+  if (a.taskId) {
+    revalidatePath(`/tasks/${a.taskId}`);
+    revalidatePath(`/admin/tasks/${a.taskId}`);
+  }
+  if (a.projectId) revalidatePath(`/admin/projects/${a.projectId}`);
+  if (a.clientId) revalidatePath(`/admin/clients/${a.clientId}`);
+}
+
+/** Cria uma nova versão (link) de um artefato existente: nova linha na mesma raiz, version+1,
+ * isCurrent=true; a anterior vira isCurrent=false. Só a versão vigente pode ser versionada. */
+export async function addLinkArtifactVersion(
+  artifactId: string,
+  input: { title: string; url: string; type?: string }
+) {
+  try {
+    const current = await prisma.taskArtifact.findUnique({ where: { id: artifactId } });
+    if (!current) return { error: "Artefato não encontrado." };
+    if (!current.isCurrent) return { error: "Só a versão vigente pode receber uma nova versão." };
+
+    const user = await requireForArtifactScope(current.scope);
+
+    const title = input.title?.trim();
+    const url = input.url?.trim();
+    if (!title) return { error: "Título é obrigatório." };
+    if (!url) return { error: "URL é obrigatória." };
+    try {
+      new URL(url);
+    } catch {
+      return { error: "URL inválida." };
+    }
+    const type = (input.type ?? "OTHER") as (typeof current)["type"];
+    const rootId = current.rootId ?? current.id;
+
+    await prisma.$transaction([
+      prisma.taskArtifact.update({ where: { id: current.id }, data: { isCurrent: false } }),
+      prisma.taskArtifact.create({
+        data: {
+          scope: current.scope,
+          taskId: current.taskId,
+          projectId: current.projectId,
+          clientId: current.clientId,
+          title,
+          url,
+          type,
+          storageKind: "LINK",
+          uploadStatus: "READY",
+          userId: user.id as string,
+          rootId,
+          version: current.version + 1,
+          isCurrent: true,
+        },
+      }),
+    ]);
+
+    revalidateForArtifact(current);
+    return { success: true };
+  } catch (error) {
+    console.error("addLinkArtifactVersion error:", error);
+    return { error: "Erro ao criar nova versão." };
+  }
+}
+
+/** Retorna a cadeia de versões de um artefato (todas as versões da mesma raiz), desc por versão. */
+export async function getArtifactVersions(artifactId: string) {
+  const art = await prisma.taskArtifact.findUnique({
+    where: { id: artifactId },
+    select: { id: true, rootId: true, scope: true },
+  });
+  if (!art) return [];
+  await requireForArtifactScope(art.scope);
+
+  const root = art.rootId ?? art.id;
+  const rows = await prisma.taskArtifact.findMany({
+    where: { OR: [{ id: root }, { rootId: root }] },
+    include: { user: { select: { name: true, email: true } } },
+    orderBy: { version: "desc" },
+  });
+  return rows.map((r) => mapArtifactRow(r, r.scope as ArtifactOrigin));
 }
