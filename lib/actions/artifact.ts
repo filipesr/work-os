@@ -20,6 +20,7 @@ import {
   prepareArtifactUploadSchema,
   createShareLinkSchema,
   changeSensitivitySchema,
+  scopedLinkArtifactSchema,
 } from "@/lib/validations";
 import { ALLOWLIST, buildNasPath, NasPathError, normalizeExtension } from "@/lib/nas/path";
 import { signUploadToken } from "@/lib/nas/token";
@@ -527,5 +528,64 @@ export async function restoreArtifact(artifactId: string) {
   } catch (error) {
     console.error("restoreArtifact error:", error);
     return { error: "Erro ao restaurar artefato." };
+  }
+}
+
+// ========== Scoped link artifacts (spec 2026-07-06) ==========
+// PROJECT/CLIENT reference material (v1: link only). TASK-scoped links keep using
+// addLinkArtifact in lib/actions/task.ts. Owner/scope invariant enforced by the schema.
+
+export async function addScopedLinkArtifact(input: unknown) {
+  const user = await requireManagerOrAdmin();
+  const parsed = scopedLinkArtifactSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+  }
+  const { scope, projectId, clientId, title, url, type } = parsed.data;
+  if (scope === "TASK") {
+    return { error: "Artefatos de tarefa usam o fluxo da própria demanda." };
+  }
+
+  try {
+    await prisma.taskArtifact.create({
+      data: {
+        scope,
+        projectId: projectId ?? null,
+        clientId: clientId ?? null,
+        title: title.trim(),
+        url: url.trim(),
+        type,
+        userId: user.id as string,
+        storageKind: "LINK",
+        uploadStatus: "READY",
+      },
+    });
+    if (projectId) revalidatePath(`/admin/projects/${projectId}`);
+    if (clientId) revalidatePath(`/admin/clients/${clientId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("addScopedLinkArtifact error:", error);
+    return { error: "Erro ao adicionar artefato." };
+  }
+}
+
+export async function removeScopedArtifact(id: string) {
+  await requireManagerOrAdmin();
+  try {
+    const art = await prisma.taskArtifact.findUnique({
+      where: { id },
+      select: { scope: true, projectId: true, clientId: true },
+    });
+    if (!art) return { error: "Artefato não encontrado." };
+    if (art.scope === "TASK") {
+      return { error: "Artefatos de tarefa não são removidos por aqui." };
+    }
+    await prisma.taskArtifact.delete({ where: { id } });
+    if (art.projectId) revalidatePath(`/admin/projects/${art.projectId}`);
+    if (art.clientId) revalidatePath(`/admin/clients/${art.clientId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("removeScopedArtifact error:", error);
+    return { error: "Erro ao remover artefato." };
   }
 }
