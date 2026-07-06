@@ -8,6 +8,7 @@ interface Stage {
   id: string;
   name: string;
   order: number;
+  optional?: boolean;
   defaultTeamId: string | null;
   defaultTeam: { id: string; name: string } | null;
   dependents: Array<{
@@ -31,10 +32,10 @@ function groupStagesByLevel(stages: Stage[]): Stage[][] {
   const processedStages = new Set<string>();
 
   // Find stages with no dependencies (level 0)
-  const noDeps = stages.filter(s => s.dependents.length === 0);
+  const noDeps = stages.filter((s) => s.dependents.length === 0);
   if (noDeps.length > 0) {
     levels.push(noDeps);
-    noDeps.forEach(s => processedStages.add(s.id));
+    noDeps.forEach((s) => processedStages.add(s.id));
   }
 
   // Process remaining stages level by level
@@ -46,7 +47,7 @@ function groupStagesByLevel(stages: Stage[]): Stage[][] {
       if (processedStages.has(stage.id)) continue;
 
       // Check if all dependencies are in processed stages
-      const allDepsProcessed = stage.dependents.every(dep =>
+      const allDepsProcessed = stage.dependents.every((dep) =>
         processedStages.has(dep.dependsOnStageId)
       );
 
@@ -57,16 +58,16 @@ function groupStagesByLevel(stages: Stage[]): Stage[][] {
 
     if (nextLevel.length === 0) {
       // No more stages can be processed, add remaining stages as a final level
-      const remaining = stages.filter(s => !processedStages.has(s.id));
+      const remaining = stages.filter((s) => !processedStages.has(s.id));
       if (remaining.length > 0) {
         levels.push(remaining);
-        remaining.forEach(s => processedStages.add(s.id));
+        remaining.forEach((s) => processedStages.add(s.id));
       }
       break;
     }
 
     levels.push(nextLevel);
-    nextLevel.forEach(s => processedStages.add(s.id));
+    nextLevel.forEach((s) => processedStages.add(s.id));
     currentLevel++;
   }
 
@@ -77,11 +78,7 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
   const t = useTranslations("template.visualization");
 
   if (stages.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground py-8">
-        {t("empty")}
-      </div>
-    );
+    return <div className="text-center text-muted-foreground py-8">{t("empty")}</div>;
   }
 
   const levels = groupStagesByLevel(stages);
@@ -89,9 +86,19 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
   return (
     <div className="bg-muted/30 rounded-lg p-6 border-2 border-border">
       <h3 className="text-lg font-bold text-foreground mb-4">{t("title")}</h3>
-      <p className="text-sm text-muted-foreground mb-6">
-        {t("subtitle")}
-      </p>
+      <p className="text-sm text-muted-foreground mb-3">{t("subtitle")}</p>
+
+      {/* Legenda: normal vs opcional */}
+      <div className="flex flex-wrap items-center gap-4 mb-6 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-4 rounded border-2 border-primary/30 bg-card" />
+          Etapa padrão
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-4 rounded border-2 border-dashed border-amber-400 bg-amber-50" />
+          Etapa opcional (vem desmarcada ao criar a demanda)
+        </span>
+      </div>
 
       <div className="flex flex-col">
         {levels.map((level, levelIndex) => (
@@ -106,16 +113,35 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
                 </div>
               )}
 
-              <div className={`flex items-center gap-4 flex-wrap ${level.length > 1 ? 'pl-4' : ''}`}>
+              <div
+                className={`flex items-center gap-4 flex-wrap ${level.length > 1 ? "pl-4" : ""}`}
+              >
                 {level.map((stage, stageIndex) => (
                   <div key={stage.id} className="flex items-center gap-4">
-                    {/* Stage Card */}
-                    <div className="bg-card border-2 border-primary/30 rounded-lg p-4 min-w-[200px] shadow-sm">
+                    {/* Stage Card — etapas opcionais em âmbar tracejado */}
+                    <div
+                      className={`rounded-lg p-4 min-w-[200px] shadow-sm border-2 ${
+                        stage.optional
+                          ? "bg-amber-50/50 border-amber-400 border-dashed"
+                          : "bg-card border-primary/30"
+                      }`}
+                    >
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary font-bold text-xs">
+                        <span
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full font-bold text-xs ${
+                            stage.optional
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-primary/10 text-primary"
+                          }`}
+                        >
                           {stage.order}
                         </span>
                         <h4 className="font-bold text-foreground text-sm">{stage.name}</h4>
+                        {stage.optional && (
+                          <span className="ml-auto rounded-full border border-amber-400 bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                            Opcional
+                          </span>
+                        )}
                       </div>
 
                       {stage.defaultTeam && (
@@ -128,9 +154,7 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
                         <div className="mt-2 pt-2 border-t border-border">
                           <p className="text-xs text-muted-foreground">
                             {t("requires")}{" "}
-                            {stage.dependents
-                              .map(d => d.dependsOn.name)
-                              .join(", ")}
+                            {stage.dependents.map((d) => d.dependsOn.name).join(", ")}
                           </p>
                         </div>
                       )}
@@ -168,7 +192,9 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
             <span>{t("legendStage")}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs h-5">{t("parallelExecution", { count: 2 })}</Badge>
+            <Badge variant="secondary" className="text-xs h-5">
+              {t("parallelExecution", { count: 2 })}
+            </Badge>
             <span>{t("legendParallel")}</span>
           </div>
           <div className="flex items-center gap-2">

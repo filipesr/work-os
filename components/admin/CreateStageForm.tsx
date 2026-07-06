@@ -137,27 +137,6 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
               placeholder={t("slaPlaceholder")}
             />
           </div>
-          <div>
-            <label
-              htmlFor="defaultMediaType"
-              className="block text-sm font-semibold text-foreground mb-2"
-            >
-              Tipo de mídia padrão (NAS)
-            </label>
-            <select
-              id="defaultMediaType"
-              name="defaultMediaType"
-              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
-            >
-              <option value="">—</option>
-              <option value="VIDEOS">Vídeos</option>
-              <option value="FOTOS">Fotos</option>
-              <option value="DOCUMENTOS">Documentos</option>
-              <option value="LOGOS">Logos</option>
-              <option value="SOCIAL_MEDIA">Social Media</option>
-              <option value="OUTROS">Outros</option>
-            </select>
-          </div>
           <div className="flex items-end">
             <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <input type="checkbox" name="optional" className="h-4 w-4" />
