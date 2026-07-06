@@ -222,15 +222,27 @@ export function CreateTaskForm({
                   key={stage.id}
                   className="flex items-center justify-between gap-3 rounded-md bg-background/60 px-3 py-2"
                 >
-                  <div className="min-w-0">
-                    <span className="text-sm font-medium text-foreground">
-                      {index + 1}. {stage.name}
-                    </span>
-                    {stage.defaultTeam && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {stage.defaultTeam.name}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <input
+                      type="checkbox"
+                      name={`stage:${stage.id}`}
+                      defaultChecked={!stage.optional}
+                      className="h-4 w-4 shrink-0"
+                      aria-label={stage.name}
+                    />
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-foreground">
+                        {index + 1}. {stage.name}
+                        {stage.optional && (
+                          <span className="ml-2 text-xs text-muted-foreground">(opcional)</span>
+                        )}
                       </span>
-                    )}
+                      {stage.defaultTeam && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {stage.defaultTeam.name}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <StageAssigneeSelect
                     stageId={stage.id}

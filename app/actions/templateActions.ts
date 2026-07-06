@@ -33,6 +33,7 @@ export async function getTemplateStagePreview(templateId: string) {
       id: true,
       name: true,
       order: true,
+      optional: true,
       defaultTeam: {
         select: {
           id: true,

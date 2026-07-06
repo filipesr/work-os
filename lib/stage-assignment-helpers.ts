@@ -34,6 +34,16 @@ export function areAllPrerequisitesComplete(
   return prerequisiteStageIds.every((id) => completedStageIds.has(id));
 }
 
+/** Reads `stage:<stageId>` checkbox fields; returns the set of CHECKED stageIds.
+ * Unchecked checkboxes are simply absent from FormData, so presence = selected. */
+export function parseSelectedStages(formData: FormData): Set<string> {
+  const out = new Set<string>();
+  for (const key of formData.keys()) {
+    if (key.startsWith("stage:")) out.add(key.slice("stage:".length));
+  }
+  return out;
+}
+
 /** Reads `assignee:<stageId>` form fields into a { stageId: assigneeId } map,
  * skipping empty values (= "no assignment"). */
 export function parseStageAssignments(formData: FormData): Record<string, string> {
@@ -47,25 +57,38 @@ export function parseStageAssignments(formData: FormData): Record<string, string
   return out;
 }
 
-/** Pre-creates ALL template stages for a task as TaskActiveStage rows.
- * The lowest-order stage starts ACTIVE (the workflow entry point, matching the
- * legacy createTask behaviour); the rest start INACTIVE. We key off `order`
- * rather than "no dependencies" because some templates wire their dependency
- * graph independently of order — `order` is the source of truth for the start.
- * Assignments are applied only when valid (assignee ∈ stage.defaultTeam).
- * A TaskStageLog is opened only for the initial ACTIVE stage.
+/** Pre-creates the INCLUDED template stages for a task as TaskActiveStage rows.
+ *
+ * Which stages are included:
+ *   - `selectedStageIds` given (create form) → exactly those stages.
+ *   - `selectedStageIds` omitted (batch create, no per-stage UI) → all
+ *     NON-optional stages (optional stages default to "off").
+ * Excluded stages get NO row at all — the workflow engine treats "stage without
+ * a row for this task" as not part of the task (see computeStageReadiness).
+ *
+ * The lowest-order INCLUDED stage starts ACTIVE (the workflow entry point); the
+ * rest start INACTIVE. We key off `order` (source of truth for the start) rather
+ * than "no dependencies". Assignments apply only when valid (assignee ∈
+ * stage.defaultTeam). A TaskStageLog is opened only for the initial ACTIVE stage.
  * Runs inside a caller-provided transaction; not a Server Action. */
 export async function createTaskStages(
   tx: Prisma.TransactionClient,
-  args: { taskId: string; templateId: string; userId: string; assignments?: Record<string, string> }
+  args: {
+    taskId: string;
+    templateId: string;
+    userId: string;
+    assignments?: Record<string, string>;
+    selectedStageIds?: ReadonlySet<string>;
+  }
 ): Promise<void> {
-  const { taskId, templateId, userId, assignments = {} } = args;
+  const { taskId, templateId, userId, assignments = {}, selectedStageIds } = args;
 
   const stages = await tx.templateStage.findMany({
     where: { templateId },
     orderBy: { order: "asc" },
     select: {
       id: true,
+      optional: true,
       defaultTeamId: true,
       defaultTeam: { select: { members: { select: { id: true } } } },
     },
@@ -75,10 +98,19 @@ export async function createTaskStages(
     throw new Error("Template is misconfigured; no stages found.");
   }
 
-  // Lowest order (first after the asc sort) is the entry point.
-  const startStageId = stages[0].id;
+  // Included = explicitly selected (create form) OR, when no selection is given
+  // (batch), every non-optional stage.
+  const included = stages.filter((s) =>
+    selectedStageIds ? selectedStageIds.has(s.id) : !s.optional
+  );
+  if (included.length === 0) {
+    throw new Error("At least one stage must be included in the task.");
+  }
 
-  for (const stage of stages) {
+  // Lowest order among the INCLUDED stages (already sorted asc) is the entry point.
+  const startStageId = included[0].id;
+
+  for (const stage of included) {
     const isStart = stage.id === startStageId;
     const requested = assignments[stage.id];
     const assigneeId = requested && isValidStageAssignee(stage, requested) ? requested : null;

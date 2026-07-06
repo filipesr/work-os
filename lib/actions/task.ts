@@ -11,6 +11,7 @@ import { createTaskSchema } from "@/lib/validations";
 import {
   createTaskStages,
   parseStageAssignments,
+  parseSelectedStages,
   isValidStageAssignee,
   areAllPrerequisitesComplete,
 } from "@/lib/stage-assignment-helpers";
@@ -71,6 +72,7 @@ export async function createTask(formData: FormData) {
   const dueDate = dueDateStr ? new Date(dueDateStr) : null;
 
   const assignments = parseStageAssignments(formData);
+  const selectedStageIds = parseSelectedStages(formData);
 
   // Execute task creation within a transaction
   const task = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -91,6 +93,7 @@ export async function createTask(formData: FormData) {
       templateId,
       userId,
       assignments,
+      selectedStageIds,
     });
 
     return newTask;
