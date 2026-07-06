@@ -7,6 +7,7 @@ import { toNasClientFolder } from "@/lib/nas/path";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { computeProjectCompletion } from "@/lib/project-status";
+import { ScopedArtifactsManager } from "@/components/admin/ScopedArtifactsManager";
 import { EditClientHeader } from "./edit-client-header";
 import { ProjectStatusFilter } from "./project-status-filter";
 
@@ -24,6 +25,11 @@ async function getClient(clientId: string) {
   return await prisma.client.findUnique({
     where: { id: clientId },
     include: {
+      artifacts: {
+        where: { scope: "CLIENT" },
+        select: { id: true, title: true, url: true },
+        orderBy: { createdAt: "desc" },
+      },
       projects: {
         include: {
           tasks: { select: { status: true } },
@@ -206,6 +212,11 @@ export default async function ClientDetailPage({
           <p className="text-sm text-muted-foreground">{t("totalTasks")}</p>
           <p className="text-3xl font-bold text-foreground mt-1">{totalTasks}</p>
         </div>
+      </div>
+
+      {/* Client reference artifacts (scope CLIENT) — visíveis nas demandas do cliente */}
+      <div className="mt-6">
+        <ScopedArtifactsManager scope="CLIENT" ownerId={client.id} artifacts={client.artifacts} />
       </div>
 
       {/* Projects Table */}

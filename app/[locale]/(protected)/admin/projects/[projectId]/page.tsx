@@ -7,6 +7,7 @@ import { getTranslations } from "next-intl/server";
 import { computeProjectCompletion } from "@/lib/project-status";
 import { EditProjectHeader } from "./edit-project-header";
 import { ProjectArtifactsTable } from "@/components/admin/ProjectArtifactsTable";
+import { ScopedArtifactsManager } from "@/components/admin/ScopedArtifactsManager";
 
 const COMPLETION_STATE_LABEL: Record<string, string> = {
   empty: "Sem tarefas",
@@ -73,6 +74,11 @@ async function getProject(projectId: string) {
     where: { id: projectId },
     include: {
       client: true,
+      artifacts: {
+        where: { scope: "PROJECT" },
+        select: { id: true, title: true, url: true },
+        orderBy: { createdAt: "desc" },
+      },
       tasks: {
         include: {
           assignee: { select: { id: true, name: true, email: true } },
@@ -427,6 +433,15 @@ export default async function ProjectDetailPage({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Project reference artifacts (scope PROJECT) — visíveis nas demandas do projeto */}
+      <div className="mt-6">
+        <ScopedArtifactsManager
+          scope="PROJECT"
+          ownerId={project.id}
+          artifacts={project.artifacts}
+        />
       </div>
 
       {/* Artifacts Table (searchable) */}

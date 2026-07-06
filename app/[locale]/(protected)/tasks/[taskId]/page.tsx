@@ -26,7 +26,20 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
     include: {
       project: {
         include: {
-          client: true,
+          client: {
+            include: {
+              artifacts: {
+                where: { scope: "CLIENT" },
+                select: { id: true, title: true, url: true },
+                orderBy: { createdAt: "desc" },
+              },
+            },
+          },
+          artifacts: {
+            where: { scope: "PROJECT" },
+            select: { id: true, title: true, url: true },
+            orderBy: { createdAt: "desc" },
+          },
         },
       },
       assignee: {
