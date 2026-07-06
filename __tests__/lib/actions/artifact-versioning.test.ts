@@ -50,15 +50,12 @@ describe("addLinkArtifactVersion", () => {
       clientId: null,
       version: 1,
       rootId: null,
-      type: "OTHER",
+      title: "Briefing",
+      type: "DOCUMENT",
     });
 
     const { addLinkArtifactVersion } = await import("@/lib/actions/artifact");
-    const res = await addLinkArtifactVersion("a1", {
-      title: "Briefing v2",
-      url: "https://drive/x",
-      type: "DOCUMENT",
-    });
+    const res = await addLinkArtifactVersion("a1", { url: "https://drive/x" });
 
     expect(res).toEqual({ success: true });
     // marca a v1 como não-vigente
@@ -66,7 +63,7 @@ describe("addLinkArtifactVersion", () => {
       where: { id: "a1" },
       data: { isCurrent: false },
     });
-    // cria a v2 na mesma raiz (a1), version 2, vigente
+    // cria a v2 na mesma raiz (a1), version 2, vigente — título e tipo HERDADOS, só a URL muda.
     const data = prisma.taskArtifact.create.mock.calls.at(-1)?.[0].data;
     expect(data).toMatchObject({
       scope: "TASK",
@@ -75,6 +72,9 @@ describe("addLinkArtifactVersion", () => {
       version: 2,
       isCurrent: true,
       storageKind: "LINK",
+      title: "Briefing",
+      type: "DOCUMENT",
+      url: "https://drive/x",
     });
   });
 
@@ -84,7 +84,7 @@ describe("addLinkArtifactVersion", () => {
     };
     prisma.taskArtifact.findUnique.mockResolvedValue({ id: "a1", isCurrent: false, scope: "TASK" });
     const { addLinkArtifactVersion } = await import("@/lib/actions/artifact");
-    const res = await addLinkArtifactVersion("a1", { title: "x", url: "https://x" });
+    const res = await addLinkArtifactVersion("a1", { url: "https://x" });
     expect(res).toHaveProperty("error");
   });
 
@@ -101,10 +101,11 @@ describe("addLinkArtifactVersion", () => {
       clientId: null,
       version: 1,
       rootId: null,
+      title: "Briefing",
       type: "OTHER",
     });
     const { addLinkArtifactVersion } = await import("@/lib/actions/artifact");
-    const res = await addLinkArtifactVersion("a1", { title: "x", url: "notaurl" });
+    const res = await addLinkArtifactVersion("a1", { url: "notaurl" });
     expect(res).toHaveProperty("error");
   });
 });

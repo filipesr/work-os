@@ -68,29 +68,26 @@ export function UnifiedArtifactsPanel({
   const [isPending, startTransition] = useTransition();
 
   // Versionamento: form de "nova versão" aberto (por id) + histórico expandido (por id).
+  // Título e tipo são herdados — só a URL muda.
   const [verId, setVerId] = useState<string | null>(null);
-  const [verTitle, setVerTitle] = useState("");
   const [verUrl, setVerUrl] = useState("");
-  const [verType, setVerType] = useState<ArtifactType>("OTHER");
   const [historyFor, setHistoryFor] = useState<string | null>(null);
   const [history, setHistory] = useState<UnifiedArtifactRow[]>([]);
 
   const sorted = sortRows(rows);
 
   const handleNewVersion = (id: string) => {
-    if (!verTitle.trim() || !verUrl.trim()) return toast.error("Título e URL são obrigatórios.");
+    if (!verUrl.trim()) return toast.error("URL é obrigatória.");
     try {
       new URL(verUrl);
     } catch {
       return toast.error("URL inválida.");
     }
     startTransition(async () => {
-      const res = await addLinkArtifactVersion(id, { title: verTitle, url: verUrl, type: verType });
+      const res = await addLinkArtifactVersion(id, { url: verUrl });
       if (res?.success) {
         setVerId(null);
-        setVerTitle("");
         setVerUrl("");
-        setVerType("OTHER");
         toast.success("Nova versão criada");
         router.refresh();
       } else {
@@ -247,7 +244,7 @@ export function UnifiedArtifactsPanel({
                         {historyFor === a.id ? "ocultar" : "ver versões"}
                       </button>
                     )}
-                    {canAdd && !isNas && (
+                    {canAdd && !isNas && a.origin === scope && (
                       <button
                         type="button"
                         onClick={() => setVerId(verId === a.id ? null : a.id)}
@@ -270,43 +267,25 @@ export function UnifiedArtifactsPanel({
                   </div>
                 </div>
 
-                {/* Nova versão (link) */}
+                {/* Nova versão (link): título e tipo herdados — só a URL muda. */}
                 {verId === a.id && (
                   <div className="space-y-2 border-t border-border p-3">
-                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                      <input
-                        type="text"
-                        value={verTitle}
-                        onChange={(e) => setVerTitle(e.target.value)}
-                        placeholder="Título da nova versão"
-                        disabled={isPending}
-                        className="h-10 w-full rounded-lg border-2 border-input-border bg-input px-3 text-sm font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none"
-                      />
-                      <select
-                        value={verType}
-                        onChange={(e) => setVerType(e.target.value as ArtifactType)}
-                        disabled={isPending}
-                        className="h-10 w-full rounded-lg border-2 border-input-border bg-input px-3 text-sm font-medium text-foreground focus-visible:border-primary focus-visible:outline-none"
-                      >
-                        {TYPE_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Título e tipo são mantidos de <span className="font-semibold">{a.title}</span>{" "}
+                      — informe apenas a nova URL.
+                    </p>
                     <input
                       type="url"
                       value={verUrl}
                       onChange={(e) => setVerUrl(e.target.value)}
-                      placeholder="https://…"
+                      placeholder="https://… (nova versão)"
                       disabled={isPending}
                       className="h-10 w-full rounded-lg border-2 border-input-border bg-input px-3 text-sm font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => handleNewVersion(a.id)}
-                      disabled={isPending || !verTitle.trim() || !verUrl.trim()}
+                      disabled={isPending || !verUrl.trim()}
                       className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -334,6 +313,9 @@ export function UnifiedArtifactsPanel({
                           >
                             {h.title}
                           </a>
+                        )}
+                        {h.userName && (
+                          <span className="shrink-0 text-muted-foreground">· {h.userName}</span>
                         )}
                         <span className="shrink-0 text-muted-foreground">
                           {formatDistanceToNow(new Date(h.createdAt), {

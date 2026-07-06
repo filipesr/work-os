@@ -612,11 +612,9 @@ function revalidateForArtifact(a: {
 }
 
 /** Cria uma nova versão (link) de um artefato existente: nova linha na mesma raiz, version+1,
- * isCurrent=true; a anterior vira isCurrent=false. Só a versão vigente pode ser versionada. */
-export async function addLinkArtifactVersion(
-  artifactId: string,
-  input: { title: string; url: string; type?: string }
-) {
+ * isCurrent=true; a anterior vira isCurrent=false. Título e tipo são HERDADOS da versão vigente —
+ * só a URL muda. Só a versão vigente pode ser versionada. */
+export async function addLinkArtifactVersion(artifactId: string, input: { url: string }) {
   try {
     const current = await prisma.taskArtifact.findUnique({ where: { id: artifactId } });
     if (!current) return { error: "Artefato não encontrado." };
@@ -624,16 +622,13 @@ export async function addLinkArtifactVersion(
 
     const user = await requireForArtifactScope(current.scope);
 
-    const title = input.title?.trim();
     const url = input.url?.trim();
-    if (!title) return { error: "Título é obrigatório." };
     if (!url) return { error: "URL é obrigatória." };
     try {
       new URL(url);
     } catch {
       return { error: "URL inválida." };
     }
-    const type = (input.type ?? "OTHER") as (typeof current)["type"];
     const rootId = current.rootId ?? current.id;
 
     await prisma.$transaction([
@@ -644,9 +639,9 @@ export async function addLinkArtifactVersion(
           taskId: current.taskId,
           projectId: current.projectId,
           clientId: current.clientId,
-          title,
+          title: current.title, // herdado
           url,
-          type,
+          type: current.type, // herdado
           storageKind: "LINK",
           uploadStatus: "READY",
           userId: user.id as string,
