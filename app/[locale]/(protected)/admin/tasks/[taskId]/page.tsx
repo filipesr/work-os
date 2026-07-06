@@ -10,6 +10,9 @@ import { mapArtifactRow } from "@/lib/artifacts/unify";
 import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
 import { TaskLifecycleActions } from "@/components/tasks/TaskLifecycleActions";
 import { TimeLogsList } from "@/components/tasks/TimeLogsList";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Paperclip } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { getTranslations } from "next-intl/server";
@@ -89,9 +92,9 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
         {t("backToProject")}
       </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-2">
           {/* Task Header */}
           <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-6">
             <div className="flex items-start justify-between mb-4">
@@ -329,21 +332,31 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
         {/* Artifacts + time tracking sidebar */}
         <div className="lg:col-span-1">
           <div className="sticky top-24 space-y-6">
-            <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-              <h2 className="text-xl font-bold text-foreground mb-4">{t("artifacts")}</h2>
-              <UnifiedArtifactsPanel
-                rows={artifactRows}
-                scope="TASK"
-                ownerIds={{
-                  taskId: task.id,
-                  projectId: task.project.id,
-                  clientId: task.project.clientId,
-                }}
-                currentTaskId={task.id}
-                canAdd
-                canRemove
-              />
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Paperclip className="h-4 w-4" />
+                  {t("artifacts")}
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {artifactRows.length}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <UnifiedArtifactsPanel
+                  rows={artifactRows}
+                  scope="TASK"
+                  ownerIds={{
+                    taskId: task.id,
+                    projectId: task.project.id,
+                    clientId: task.project.clientId,
+                  }}
+                  currentTaskId={task.id}
+                  canAdd
+                  canRemove
+                />
+              </CardContent>
+            </Card>
 
             {/* Time tracking (registered time logs + open/running activities) */}
             <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">

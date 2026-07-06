@@ -254,7 +254,7 @@ export function UnifiedArtifactsPanel({
                         Nova versão
                       </button>
                     )}
-                    {canRemove && a.origin !== "TASK" && (
+                    {canRemove && a.origin === scope && a.origin !== "TASK" && (
                       <button
                         type="button"
                         onClick={() => handleRemove(a.id)}
@@ -303,15 +303,15 @@ export function UnifiedArtifactsPanel({
                           v{h.version}
                         </span>
                         {h.storageKind === "NAS_UPLOAD" ? (
-                          <span className="truncate">{h.fileName || h.title}</span>
+                          <span className="truncate">{h.fileName || "arquivo"}</span>
                         ) : (
                           <a
                             href={h.url ?? undefined}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="truncate text-primary hover:underline"
+                            className="shrink-0 text-primary hover:underline"
                           >
-                            {h.title}
+                            abrir
                           </a>
                         )}
                         {h.userName && (
