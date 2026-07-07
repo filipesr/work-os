@@ -23,13 +23,15 @@ Runbook operacional para colocar o upload/registro de artefatos no NAS em produ�
 ## 1. Gates de código (fazer no deploy)
 
 - [ ] **Backfill de tarefas legadas:** a Feature 1 removeu o fallback que recriava linhas de etapa.
-      Rodar em **produção** o diagnóstico e, se houver tarefas ativas sem `TaskActiveStage`, criar as
-      linhas faltantes **antes** de publicar:
-      `sql
-    SELECT t.id FROM "Task" t
-    LEFT JOIN "TaskActiveStage" tas ON tas."taskId" = t.id
-    WHERE tas.id IS NULL AND t.status NOT IN ('COMPLETED','CANCELLED','OBSOLETE');
-    `
+      Rodar em **produção** o diagnóstico (abaixo) e, se houver tarefas ativas sem `TaskActiveStage`,
+      criar as linhas faltantes **antes** de publicar.
+
+```sql
+SELECT t.id FROM "Task" t
+LEFT JOIN "TaskActiveStage" tas ON tas."taskId" = t.id
+WHERE tas.id IS NULL AND t.status NOT IN ('COMPLETED','CANCELLED','OBSOLETE');
+```
+
 - [ ] **Índices únicos parciais de versão NAS** por projeto/cliente (rede de segurança adiada; hoje
       só o `@@unique` de TASK existe). Aplicar via SQL manual se quiser a garantia no banco.
 
