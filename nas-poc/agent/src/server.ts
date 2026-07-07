@@ -15,6 +15,7 @@ import path from "node:path";
 import Fastify, { type FastifyInstance, type FastifyRequest, type FastifyReply } from "fastify";
 import cors from "@fastify/cors";
 import { loadConfig, safeResolve, type AgentConfig, type HashMode } from "./config.js";
+import { checkArtifactFiles } from "./reconcile.js";
 import {
   loadKeyStore,
   verifyUploadToken,
@@ -262,8 +263,17 @@ async function downloadHandler(
 // ---- app wiring --------------------------------------------------------------
 
 function registerRawParser(app: FastifyInstance) {
-  // Never buffer bodies — we stream request.raw ourselves.
   app.removeAllContentTypeParsers();
+  // JSON explícito para as rotas de controle (reconcile). Mais específico que "*", então só bodies
+  // application/json são bufferizados/parseados; o upload (octet-stream) cai no "*" e é streamado.
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
+    try {
+      done(null, body ? JSON.parse(body as string) : {});
+    } catch (e) {
+      done(e as Error, undefined);
+    }
+  });
+  // Never buffer other bodies — we stream request.raw ourselves.
   app.addContentTypeParser("*", (_req, _payload, done) => done(null, undefined));
 }
 
@@ -337,6 +347,18 @@ async function reconcileCleanup(cfg: AgentConfig, req: FastifyRequest, reply: Fa
   return reply.send({ removed });
 }
 
+// Pull-reconcile: o app manda [{artifactId, nasPath}] e recebe [{artifactId, exists, sizeBytes}].
+// O app usa isso para levar a READY (arquivo bom cujo finalize se perdeu) ou expirar com segurança.
+async function reconcileStatus(cfg: AgentConfig, req: FastifyRequest, reply: FastifyReply) {
+  if (!requireReconcileAuth(cfg, req, reply)) return;
+  const body = req.body as { items?: unknown } | undefined;
+  const items = Array.isArray(body?.items)
+    ? (body.items as { artifactId: string; nasPath: string }[])
+    : [];
+  const results = await checkArtifactFiles(cfg.nasRoot, items);
+  return reply.send({ results });
+}
+
 // ---- finalize worker (drena a fila persistente com backoff) ------------------
 
 function startFinalizeWorker(
@@ -404,6 +426,7 @@ async function buildLanApp(
   app.get("/v1/download", (req, reply) => downloadHandler(cfg, store, req, reply));
   app.get("/v1/reconcile/report", (req, reply) => reconcileReport(cfg, queue, req, reply));
   app.post("/v1/reconcile/cleanup", (req, reply) => reconcileCleanup(cfg, req, reply));
+  app.post("/v1/reconcile/status", (req, reply) => reconcileStatus(cfg, req, reply));
   return app;
 }
 

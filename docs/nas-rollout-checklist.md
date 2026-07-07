@@ -101,18 +101,44 @@ automático. Envs (de `nas-poc/.env.example`):
       público; DNS-01 valida sem HTTP-01). TLS terminado no agente ou em proxy reverso no NAS.
 - [ ] O host de download usa o TLS do Cloudflare Tunnel.
 
-## 6. Cron de reconciliação (Vercel)
+## 6. Reconciliação de uploads travados
 
-- [ ] Cron do Vercel chamando `/api/cron/nas-reconcile` (expira `PENDING/UPLOADING` vencidos;
-      nunca um item que o agente reporte STORED/finalize-pendente). Autenticado por `CRON_SECRET`.
+**Topologia importante:** a Vercel roda na nuvem e o agente fica em **IP privado (LAN)** — a Vercel
+**não alcança** o agente. Só o _navegador_ (na LAN) e o _agente_ (saída p/ internet) atravessam a
+fronteira. Logo, a recuperação de um upload cujo `finalize` se perdeu é feita **por push do agente**,
+não por pull da Vercel.
+
+- [ ] **Push de finalize resiliente (principal):** o agente reenfileira o `finalize` numa fila
+      **persistente** (sobrevive a restart) e reintenta até a Vercel responder. É o canal confiável
+      (agente → URL pública da Vercel). Ajustar `MAX_ATTEMPTS`/backoff para praticamente não desistir.
+- [ ] **Cron de expiração (última rede):** cron do Vercel chamando `/api/cron/nas-reconcile` expira
+      `PENDING/UPLOADING` **muito** vencidos (TTL generoso, para não falsear um arquivo que o push
+      ainda vai confirmar). Autenticado por `CRON_SECRET`.
+- [ ] **Recuperação pelo usuário (UI):** ações **Reenviar** / **Remover** em artefatos não-READY
+      (independem de topologia).
+
+### Opção futura — pull-reconcile server-side via túnel (NÃO implementado)
+
+O agente já expõe **`POST /v1/reconcile/status`** (recebe `[{artifactId, nasPath}]`, devolve
+`[{artifactId, exists, sizeBytes}]`) — hoje **só no listener LAN** (porta 8080), por segurança. Para
+a **Vercel** consultar o agente e reconciliar de forma automática/determinística (arquivo presente →
+READY; ausente e vencido → FAILED), seria preciso **expor esse endpoint pelo túnel**:
+
+- Adicionar a rota `POST /v1/reconcile/status` ao listener do **túnel** (porta 8081), hoje restrito a
+  `GET /v1/download`, **e** proteger com `RECONCILE_TOKEN` + (idealmente) Cloudflare Access.
+- **Trade-off:** aumenta a superfície pública do agente. Por isso fica como opção, não default — o
+  push resiliente + a UI já cobrem o caso comum sem abrir mais nada.
+- A primitiva (`checkArtifactFiles` / rota LAN) já está pronta e testada; só falta a exposição.
 
 ## 7. Verificação pós-deploy (smoke)
 
 - [ ] `GET /v1/health` (LAN) → `ok:true, writable:true, freeBytes`, `version` ≥ mínima.
-- [ ] **Upload por escopo** cai na pasta certa (conferir no Explorer/Finder):
-  - Cliente → `{cliente}/institucional/{tipoMidia}/{Cliente}_{Proposito}_v01.ext`
-  - Projeto → `{cliente}/{projeto ~id}/institucional/{tipoMidia}/{AAAA_MM}_{Proposito}_{Projeto}_v01.ext`
-  - Tarefa → `{cliente}/{tarefa ~id}/institucional/{tipoMidia}/{AAAA_MM}_{Proposito}_{Demanda}_v01.ext`
+- [ ] **Upload por escopo** cai na pasta certa (nome vem do ARQUIVO enviado; conferir no
+      Explorer/Finder):
+  - Cliente → `{cliente}/institucional/{tipoMidia}/{Arquivo}_v01.ext`
+  - Projeto → `{cliente}/{projeto ~id}/institucional/{tipoMidia}/{AAAA_MM}_{Arquivo}_v01.ext`
+  - Tarefa → `{cliente}/{tarefa ~id}/institucional/{tipoMidia}/{AAAA_MM}_{Arquivo}_v01.ext`
+  - **Versão:** reenviar o mesmo nome → `_v02`; nome diferente → artefato novo (`_v01`).
 - [ ] **Download interno** LAN (302 → agente) com Range (`206`).
 - [ ] **Share CLIENTE** via túnel (senha/expiração); INTERNO/CONFIDENCIAL **sem** share/externo.
 - [ ] **Segurança do túnel:** externo `GET /v1/download` OK; `POST /v1/uploads`, `GET /v1/health`,
