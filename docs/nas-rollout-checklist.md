@@ -122,6 +122,30 @@ automático. Envs (de `nas-poc/.env.example`):
       público; DNS-01 valida sem HTTP-01). TLS terminado no agente ou em proxy reverso no NAS.
 - [ ] O host de download usa o TLS do Cloudflare Tunnel.
 
+## 5b. Interim (opcional) — NAS **na LAN** antes do NS/Cloudflare, via wildcard
+
+Caminho rápido para ter upload/download **na LAN pelo domínio online** sem esperar a Cloudflare —
+aproveitando o **wildcard `*.goonmarketing.com`** que já existe na cPanel (pula acme.sh/DNS-01). Só
+resolve a LAN; o **download externo** continua esperando o túnel (§4). **Renovação do cert é manual
+(~90 dias)** — some quando a Cloudflare entrar. Estado atual: DNS `nas-agent-lan.goonmarketing.com`
+→ A → `192.168.200.216` **já criado e resolvendo** (inclusive no resolver local — sem filtro de
+rebinding).
+
+- [ ] **cPanel → SSL/TLS:** exportar o **certificado + chave privada** do `*.goonmarketing.com`.
+- [ ] **Asustor ADM → Certificado:** importar o par.
+- [ ] **Proxy reverso no Asustor:** `nas-agent-lan.goonmarketing.com` :443 (TLS, cert importado) →
+      `127.0.0.1:8080` (agente). O agente segue HTTP interno.
+- [ ] **Envs de produção:** `node scripts/nas-prod-setup.mjs` → colar `app.env` no Vercel
+      (**rebuild** — `NEXT_PUBLIC_*` é build-time) + `agent.env` no NAS (agente passa a **verificar
+      tokens da Vercel** e **finalizar** em `https://workos.goonmarketing.com/...`). `ALLOWED_ORIGIN`
+      do agente inclui `https://workos.goonmarketing.com`.
+- [ ] **Testar** upload/download na LAN pelo domínio online (`NEXT_PUBLIC_NAS_AGENT_URL_LAN=
+    https://nas-agent-lan.goonmarketing.com`).
+
+> **Bloqueio atual do teste:** `NEXT_PUBLIC_NAS_AGENT_URL_LAN` já setada em produção, mas o agente
+> ainda é **HTTP:8080 sem cert** → o probe em :443 falha e o NAS aparece mas degrada (upload
+> "conecte-se à LAN", download com toast). Os passos acima (cert + proxy) é o que falta para funcionar.
+
 ## 6. Reconciliação de uploads travados
 
 **Topologia importante:** a Vercel roda na nuvem e o agente fica em **IP privado (LAN)** — a Vercel
