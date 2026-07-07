@@ -6,20 +6,25 @@
  * that their role allows.
  */
 
+import { cache } from "react";
 import { auth } from "@/auth";
 import { UserRole } from "@prisma/client";
 
 /**
  * Get the currently authenticated user from the session.
  * Throws an error if the user is not authenticated.
+ *
+ * Wrapped in React `cache()` so the session lookup (`auth()` — cookie decrypt)
+ * is deduped within a single server render/action, even though the many require*
+ * helpers each call it. No cross-request leakage: `cache()` is per-request.
  */
-export const getSessionUser = async () => {
+export const getSessionUser = cache(async () => {
   const session = await auth();
   if (!session?.user) {
     throw new Error("Not Authenticated");
   }
   return session.user;
-};
+});
 
 /**
  * Check if the current user has one of the allowed roles.

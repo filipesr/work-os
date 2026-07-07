@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -20,14 +21,15 @@ import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 // Re-export types for backward compatibility
 export type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
-// Helper to get current user
-async function getCurrentUser() {
+// Helper to get current user. Cached per-request (React cache) so the session
+// lookup dedupes across the many callers within a single render/action.
+const getCurrentUser = cache(async () => {
   const session = await auth();
   if (!session?.user) {
     throw new Error("Unauthorized: You must be logged in");
   }
   return session.user;
-}
+});
 
 // Type definitions matching Prisma schema
 type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";

@@ -20,6 +20,8 @@ export function useHeartbeat(intervalMs: number = 60000) {
           headers: {
             "Content-Type": "application/json",
           },
+          // Não deixar um heartbeat pendurar até o próximo tick (evita acúmulo).
+          signal: AbortSignal.timeout(10000),
         });
       } catch (error) {
         // Silently fail - don't spam user with errors

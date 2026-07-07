@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArtifactType } from "@prisma/client";
 import { ExternalLink, Link2, Loader2, Upload } from "lucide-react";
@@ -73,6 +73,8 @@ export function UnifiedArtifactsPanel({
   const [verUrl, setVerUrl] = useState("");
   const [historyFor, setHistoryFor] = useState<string | null>(null);
   const [history, setHistory] = useState<UnifiedArtifactRow[]>([]);
+  // Cache de histórico por id — não refaz o fetch ao reabrir "ver versões".
+  const historyCache = useRef<Map<string, UnifiedArtifactRow[]>>(new Map());
 
   const sorted = sortRows(rows);
 
@@ -88,6 +90,7 @@ export function UnifiedArtifactsPanel({
       if (res?.success) {
         setVerId(null);
         setVerUrl("");
+        historyCache.current.delete(id); // invalida — há uma versão nova
         toast.success("Nova versão criada");
         router.refresh();
       } else {
@@ -102,8 +105,15 @@ export function UnifiedArtifactsPanel({
       setHistory([]);
       return;
     }
+    const cached = historyCache.current.get(id);
+    if (cached) {
+      setHistory(cached);
+      setHistoryFor(id);
+      return;
+    }
     startTransition(async () => {
       const rowsHist = await getArtifactVersions(id);
+      historyCache.current.set(id, rowsHist);
       setHistory(rowsHist);
       setHistoryFor(id);
     });
