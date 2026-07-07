@@ -34,6 +34,12 @@ export interface UploadEndpoint {
   health: NasHealth | null;
 }
 
+/** True quando algum endpoint do agente está configurado no build (LAN e/ou túnel). Se false, o NAS
+ *  não foi provisionado neste ambiente — download/upload não têm pra onde ir (esconder/avisar). */
+export function nasClientConfigured(): boolean {
+  return !!(LAN_URL || TUNNEL_URL);
+}
+
 /** Probe the LAN agent once with a short timeout. Returns null on timeout/offline/non-OK. */
 export async function probeLanAgent(
   timeoutMs: number = HEALTH_TIMEOUT_MS

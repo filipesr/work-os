@@ -6,7 +6,8 @@
 
 import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
-import { probeLanAgent } from "@/lib/nas/endpoint";
+import toast from "react-hot-toast";
+import { probeLanAgent, nasClientConfigured, NAS_ENDPOINT_CONFIG } from "@/lib/nas/endpoint";
 
 export function DownloadArtifactButton({
   artifactId,
@@ -19,16 +20,24 @@ export function DownloadArtifactButton({
   const [busy, setBusy] = useState(false);
 
   async function go() {
-    setBusy(true);
-    try {
-      const health = await probeLanAgent();
-      const net = health?.ok ? "lan" : "remote";
-      window.location.href = `/api/artifacts/${artifactId}/download?net=${net}`;
-    } finally {
-      // O download é uma navegação que NÃO descarrega a página; sem isto o botão fica "girando"
-      // para sempre (inclusive se o usuário cancela o download). Libera após iniciar.
-      setTimeout(() => setBusy(false), 2000);
+    // Degrada com elegância em vez de navegar para o erro JSON cru da rota de download.
+    if (!nasClientConfigured()) {
+      toast.error("Download do NAS indisponível neste ambiente.");
+      return;
     }
+    setBusy(true);
+    const health = await probeLanAgent();
+    // Sem agente na LAN e sem túnel configurado → não há como baixar. Avisa e não navega.
+    if (!health?.ok && !NAS_ENDPOINT_CONFIG.TUNNEL_URL) {
+      setBusy(false);
+      toast.error("Agente não encontrado — conecte-se à LAN/VPN para baixar.");
+      return;
+    }
+    const net = health?.ok ? "lan" : "remote";
+    window.location.href = `/api/artifacts/${artifactId}/download?net=${net}`;
+    // O download é uma navegação que NÃO descarrega a página; sem isto o botão fica "girando" para
+    // sempre (inclusive se o usuário cancela). Libera após iniciar.
+    setTimeout(() => setBusy(false), 2000);
   }
 
   if (iconOnly) {
