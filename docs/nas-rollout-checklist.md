@@ -6,9 +6,16 @@ Runbook operacional para colocar o upload/registro de artefatos no NAS em produ�
 `docs/superpowers/specs/2026-07-06-nas-flow-simplification-design.md` (esquema atual) e
 `nas-poc/LOCAL-E2E.md` (§Produção).
 
+> **Domínio oficial do app:** `https://workos.goonmarketing.com` (Vercel). Subdomínios do agente
+> (irmãos, sob `goonmarketing.com`, SSL por host): `nas-agent-lan…` (A → IP privado) e
+> `nas-agent-download…` (túnel).
+>
 > **Estado atual:** todo o lado-nuvem está pronto e testado por unidade. O agente roda em LAN
-> (E2E local validado). Só falta a exposição externa (túnel) — que depende do NS — e a configuração
-> de produção abaixo. **Nada de código novo é necessário para o rollout.**
+> (E2E local validado). **Pré-preparado para o NS:** domínio propagado nos docs/config; compose de
+> produção já no agente endurecido (v0.2.0); `cloudflared/config.yml` com o hostname real; cron
+> `nas-reconcile` já no `vercel.json`; SQL dos índices parciais pronto (§1). Só falta a exposição
+> externa (túnel/DNS/TLS) — que depende do NS — e preencher os segredos de produção. **Nada de código
+> novo é necessário para o rollout.**
 
 ## 0. Pré-requisitos
 
@@ -32,8 +39,18 @@ LEFT JOIN "TaskActiveStage" tas ON tas."taskId" = t.id
 WHERE tas.id IS NULL AND t.status NOT IN ('COMPLETED','CANCELLED','OBSOLETE');
 ```
 
-- [ ] **Índices únicos parciais de versão NAS** por projeto/cliente (rede de segurança adiada; hoje
-      só o `@@unique` de TASK existe). Aplicar via SQL manual se quiser a garantia no banco.
+- [ ] **Índices únicos parciais de versão NAS** por projeto/cliente (rede de segurança; hoje só o
+      `@@unique([taskId, fileKey, version])` de TASK existe). São **partial indexes** (não cabem no
+      `@@unique` do Prisma) — aplicar via SQL manual no deploy:
+
+```sql
+CREATE UNIQUE INDEX IF NOT EXISTS "TaskArtifact_projectId_fileKey_version_key"
+  ON "TaskArtifact" ("projectId", "fileKey", "version")
+  WHERE "projectId" IS NOT NULL AND "fileKey" IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "TaskArtifact_clientId_fileKey_version_key"
+  ON "TaskArtifact" ("clientId", "fileKey", "version")
+  WHERE "clientId" IS NOT NULL AND "fileKey" IS NOT NULL;
+```
 
 ## 2. Env de produção — App (Vercel)
 
@@ -47,9 +64,9 @@ Definir com `vercel env add` (ou dashboard) em **Production**. Nomes exatos (de 
 | `NEXT_PUBLIC_NAS_AGENT_URL_TUNNEL` | igual ao `NAS_AGENT_URL_TUNNEL`                                               |
 | `NAS_TOKEN_SIGNING_KEY`            | **chave privada Ed25519** (app assina o upload/download token)                |
 | `NAS_TOKEN_KID`                    | id da chave (rotação por kid)                                                 |
-| `NAS_TOKEN_ISSUER`                 | issuer do JWT (ex.: `work.goonmarketing.com`)                                 |
+| `NAS_TOKEN_ISSUER`                 | issuer do JWT (ex.: `workos.goonmarketing.com`)                               |
 | `NAS_FINALIZE_SECRET`              | segredo HMAC do finalize — **igual ao `FINALIZE_SECRET` do agente**           |
-| `NAS_SHARE_BASE_URL`               | `https://work.goonmarketing.com/api/artifacts/share`                          |
+| `NAS_SHARE_BASE_URL`               | `https://workos.goonmarketing.com/api/artifacts/share`                        |
 | `NAS_UNC_PREFIX`                   | `\\NAS\WorkOS` (compõe o link local "Abrir pasta")                            |
 | `SHARE_TOKEN_PEPPER`               | pepper do HMAC dos tokens de share                                            |
 | `NAS_SMB_HOST`, `NAS_SMB_SHARE`    | host/share SMB para os links locais                                           |
@@ -65,8 +82,8 @@ automático. Envs (de `nas-poc/.env.example`):
 
 | Env                       | Valor / origem                                                                         |
 | ------------------------- | -------------------------------------------------------------------------------------- |
-| `ALLOWED_ORIGIN`          | origem de produção do app (`https://work.goonmarketing.com`) — CORS/health             |
-| `CLOUD_FINALIZE_URL`      | `https://work.goonmarketing.com/api/artifacts/finalize`                                |
+| `ALLOWED_ORIGIN`          | origem de produção do app (`https://workos.goonmarketing.com`) — CORS/health           |
+| `CLOUD_FINALIZE_URL`      | `https://workos.goonmarketing.com/api/artifacts/finalize`                              |
 | `FINALIZE_SECRET`         | **igual ao `NAS_FINALIZE_SECRET` do app**                                              |
 | `TOKEN_PUBLIC_KEYS`       | chave(s) pública(s) por `kid` (JWKS-like) — verifica os tokens do app                  |
 | `NAS_SHARE_PATH`          | caminho do share no filesystem do container (ex.: `/volume1/WorkOS`)                   |
@@ -111,7 +128,9 @@ não por pull da Vercel.
 - [ ] **Push de finalize resiliente (principal):** o agente reenfileira o `finalize` numa fila
       **persistente** (sobrevive a restart) e reintenta até a Vercel responder. É o canal confiável
       (agente → URL pública da Vercel). Ajustar `MAX_ATTEMPTS`/backoff para praticamente não desistir.
-- [ ] **Cron de expiração (última rede):** cron do Vercel chamando `/api/cron/nas-reconcile` expira
+- [x] **Cron de expiração (última rede):** já registrado no `vercel.json`
+      (`/api/cron/nas-reconcile`, a cada 15 min). Só falta setar `CRON_SECRET` em produção. O cron
+      expira
       `PENDING/UPLOADING` **muito** vencidos (TTL generoso, para não falsear um arquivo que o push
       ainda vai confirmar). Autenticado por `CRON_SECRET`.
 - [ ] **Recuperação pelo usuário (UI):** ações **Reenviar** / **Remover** em artefatos não-READY

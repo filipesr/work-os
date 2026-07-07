@@ -9,7 +9,7 @@ credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
 
 ingress:
   # Only the download path reaches the agent. Everything else falls through to 404.
-  - hostname: nas-agent-download.<seu-dominio>
+  - hostname: nas-agent-download.goonmarketing.com
     path: ^/v1/download
     service: http://agent:8081 # compose service name; use http://localhost:8081 if cloudflared runs on the host
   - service: http_status:404

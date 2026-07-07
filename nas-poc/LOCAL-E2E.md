@@ -69,7 +69,7 @@ Nada muda no código. Ajuste só as env (nomes públicos + cert):
 
 - App: `NAS_AGENT_URL_LAN=https://nas-agent-lan.goonmarketing.com`,
   `NAS_AGENT_URL_TUNNEL=https://nas-agent-download.goonmarketing.com`, `NEXT_PUBLIC_*` idem,
-  `NAS_SHARE_BASE_URL=https://work.goonmarketing.com/api/artifacts/share`.
+  `NAS_SHARE_BASE_URL=https://workos.goonmarketing.com/api/artifacts/share`.
 - Agente: rodar em HTTPS (cert Let's Encrypt DNS-01 do host LAN), `ALLOWED_ORIGIN` = origem de prod,
-  `CLOUD_FINALIZE_URL=https://work.goonmarketing.com/api/artifacts/finalize`, `TUNNEL_TOKEN` do
+  `CLOUD_FINALIZE_URL=https://workos.goonmarketing.com/api/artifacts/finalize`, `TUNNEL_TOKEN` do
   Cloudflare. Ver `docs/superpowers/specs/2026-07-02-nas-artifact-storage-design.md` (Apêndice C).
