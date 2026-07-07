@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { toNasClientFolder } from "@/lib/nas/path";
 
 export const metadata: Metadata = {
   title: "Clientes",
@@ -28,9 +30,17 @@ async function createClient(formData: FormData) {
   const name = formData.get("name") as string;
   if (!name) return;
 
-  await prisma.client.create({
-    data: { name },
-  });
+  // Deriva a pasta-raiz do NAS do nome (pré-requisito de upload; editável até o 1º upload).
+  const data = { name, folderName: toNasClientFolder(name) || null };
+  try {
+    await prisma.client.create({ data });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      await prisma.client.create({ data: { name } }); // colisão de pasta — define depois em Editar
+    } else {
+      throw e;
+    }
+  }
 
   revalidatePath("/admin/clients");
 }

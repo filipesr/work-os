@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireMemberOrHigher } from "@/lib/permissions";
 import { createClientSchema } from "@/lib/validations";
+import { toNasClientFolder } from "@/lib/nas/path";
 
 interface CreateClientData {
   name: string;
@@ -23,14 +25,27 @@ export async function createClient(data: CreateClientData) {
 
     const { name, description, email, phone } = parsed.data;
 
-    const client = await prisma.client.create({
-      data: {
-        name: name.trim(),
-        description: description?.trim() || null,
-        email: email?.trim() || null,
-        phone: phone?.trim() || null,
-      },
-    });
+    // Deriva a pasta-raiz do NAS do nome (o único pré-requisito de upload). Fica editável até o
+    // primeiro upload. Em colisão do @unique, cria sem — define-se depois em Editar.
+    const createData = {
+      name: name.trim(),
+      description: description?.trim() || null,
+      email: email?.trim() || null,
+      phone: phone?.trim() || null,
+      folderName: toNasClientFolder(name.trim()) || null,
+    };
+    let client;
+    try {
+      client = await prisma.client.create({ data: createData });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+        const { folderName: _drop, ...rest } = createData;
+        void _drop;
+        client = await prisma.client.create({ data: rest });
+      } else {
+        throw e;
+      }
+    }
 
     revalidatePath("/admin/clients");
     revalidatePath("/admin/tasks/new");

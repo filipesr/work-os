@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildNasPath,
+  fileBaseToken,
   normalizeExtension,
   toAsciiSafe,
   toNasToken,
@@ -29,6 +30,23 @@ describe("toNasToken", () => {
     expect(toNasToken("Black Friday")).toBe("BlackFriday");
     expect(toNasToken("João & Cia")).toBe("JoaoCia");
     expect(toNasToken("banner web")).toBe("BannerWeb");
+  });
+});
+
+describe("fileBaseToken (identidade da cadeia de versões)", () => {
+  it("tira a extensão e normaliza o nome do arquivo", () => {
+    expect(fileBaseToken("LP.jpg")).toBe("LP");
+    expect(fileBaseToken("banner.jpg")).toBe("Banner");
+    expect(fileBaseToken("render_final.mov")).toBe("RenderFinal");
+    expect(fileBaseToken("Banner Final.png")).toBe("BannerFinal");
+    expect(fileBaseToken("Relatório-Q1.pdf")).toBe("RelatorioQ1");
+  });
+  it("mesmo nome (qualquer extensão) → mesma chave; nome diferente → chave diferente", () => {
+    expect(fileBaseToken("LP.jpg")).toBe(fileBaseToken("LP.png")); // extensão não muda a identidade
+    expect(fileBaseToken("LP.jpg")).not.toBe(fileBaseToken("banner.jpg"));
+  });
+  it("nome sem extensão é aceito", () => {
+    expect(fileBaseToken("README")).toBe("README");
   });
 });
 
@@ -64,30 +82,43 @@ describe("buildNasPath — TASK", () => {
     ownerName: "Abertura da Loja",
     ownerId: "task_1",
     mediaType: "VIDEOS" as const,
-    purpose: "Vídeo",
     originalFileName: "render_final.mov",
     version: 3,
     uploadDate: JULY_2026,
   };
 
-  it("pasta {cliente}/{tarefa ~id}/institucional/{tipoMidia} e nome com AAAA_MM do envio", () => {
+  it("pasta {cliente}/{tarefa ~id}/institucional/{tipoMidia}; nome = {AAAA_MM}_{arquivo}_v{NN}", () => {
     const r = buildNasPath(base);
     expect(r.relPath).toMatch(
-      /^Construcoes Acai\/Abertura da Loja ~[0-9a-f]{6}\/institucional\/videos\/2026_07_Video_AberturaDaLoja_v03\.mov$/
+      /^Construcoes Acai\/Abertura da Loja ~[0-9a-f]{6}\/institucional\/videos\/2026_07_RenderFinal_v03\.mov$/
     );
-    expect(r.fileName).toBe("2026_07_Video_AberturaDaLoja_v03.mov");
+    expect(r.fileName).toBe("2026_07_RenderFinal_v03.mov");
     expect(r.ext).toBe("mov");
     expect(r.truncated).toBe(false);
   });
 
-  it("Social Media mantém o rótulo de pasta real", () => {
-    const r = buildNasPath({
+  it("o nome vem do ARQUIVO, não da tarefa — arquivos diferentes → nomes diferentes", () => {
+    const lp = buildNasPath({
       ...base,
-      mediaType: "SOCIAL_MEDIA",
-      originalFileName: "post.png",
-      purpose: "Feed",
+      mediaType: "FOTOS",
+      originalFileName: "LP.jpg",
+      version: 1,
     });
+    const banner = buildNasPath({
+      ...base,
+      mediaType: "FOTOS",
+      originalFileName: "banner.jpg",
+      version: 1,
+    });
+    expect(lp.fileName).toBe("2026_07_LP_v01.jpg");
+    expect(banner.fileName).toBe("2026_07_Banner_v01.jpg");
+    expect(lp.fileName).not.toBe(banner.fileName); // sem colisão
+  });
+
+  it("Social Media mantém o rótulo de pasta real", () => {
+    const r = buildNasPath({ ...base, mediaType: "SOCIAL_MEDIA", originalFileName: "post.png" });
     expect(r.relPath).toContain("/institucional/Social Media/");
+    expect(r.fileName).toBe("2026_07_Post_v03.png");
   });
 
   it("exige ownerName/ownerId", () => {
@@ -101,36 +132,34 @@ describe("buildNasPath — TASK", () => {
 });
 
 describe("buildNasPath — PROJECT", () => {
-  it("usa o nome do projeto como Demanda e pasta própria", () => {
+  it("nome = {AAAA_MM}_{arquivo}_v{NN} na pasta do projeto", () => {
     const r = buildNasPath({
       scope: "PROJECT",
       client: "João & Cia",
       ownerName: "Rebrand 2026",
       ownerId: "proj_1",
       mediaType: "LOGOS",
-      purpose: "Logo Principal",
       originalFileName: "marca.svg",
       version: 1,
       uploadDate: JULY_2026,
     });
     expect(r.relPath).toMatch(
-      /^Joao & Cia\/Rebrand 2026 ~[0-9a-f]{6}\/institucional\/logos\/2026_07_LogoPrincipal_Rebrand2026_v01\.svg$/
+      /^Joao & Cia\/Rebrand 2026 ~[0-9a-f]{6}\/institucional\/logos\/2026_07_Marca_v01\.svg$/
     );
   });
 });
 
 describe("buildNasPath — CLIENT", () => {
-  it("cai em {cliente}/institucional, nome {Cliente}_{Proposito}_v e sem data", () => {
+  it("cai em {cliente}/institucional, nome {arquivo}_v{NN} e sem data", () => {
     const r = buildNasPath({
       scope: "CLIENT",
       client: "João & Cia",
       mediaType: "LOGOS",
-      purpose: "Logo Principal",
       originalFileName: "marca.svg",
       version: 1,
       uploadDate: JULY_2026,
     });
-    expect(r.relPath).toBe("Joao & Cia/institucional/logos/JoaoCia_LogoPrincipal_v01.svg");
+    expect(r.relPath).toBe("Joao & Cia/institucional/logos/Marca_v01.svg");
   });
 });
 
@@ -142,7 +171,6 @@ describe("buildNasPath — length budgets", () => {
       ownerName: "T".repeat(300),
       ownerId: "task_long",
       mediaType: "DOCUMENTOS",
-      purpose: "Documento Muito Detalhado De Especificacao",
       originalFileName: "spec.pdf",
       version: 12,
       uploadDate: JULY_2026,
@@ -159,7 +187,6 @@ describe("buildNasPath — length budgets", () => {
       ownerName: "Y".repeat(200),
       ownerId: "task_det",
       mediaType: "FOTOS" as const,
-      purpose: "P".repeat(40),
       originalFileName: "foto.jpg",
       version: 5,
       uploadDate: JULY_2026,

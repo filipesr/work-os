@@ -362,8 +362,11 @@ model TaskArtifact {
   storageKind  ArtifactStorageKind  @default(LINK)
   uploadStatus ArtifactUploadStatus @default(READY)
   mediaType    ArtifactMediaType? // NAS_UPLOAD exige (código + índice)
-  purposeId    String? // NAS_UPLOAD exige
+  purposeId    String? // legado (propósito removido do fluxo); mantido nullable
   purpose      DeliverablePurpose?  @relation(fields: [purposeId], references: [id], onUpdate: NoAction, onDelete: Restrict)
+  // Token normalizado do NOME DO ARQUIVO enviado — identidade da cadeia de versões (mesmo nome →
+  // nova versão; nome diferente → artefato novo). Null p/ LINK.
+  fileKey      String?
   sensitivity  SensitivityLevel     @default(INTERNO)
 
   stageId String?
@@ -400,12 +403,13 @@ model TaskArtifact {
   shareLinks ArtifactShareLink[]
   auditLogs  ArtifactAuditLog[]
 
-  @@unique([taskId, purposeId, mediaType, version])
+  @@unique([taskId, fileKey, version])
   @@index([taskId])
   @@index([projectId])
   @@index([clientId])
   @@index([uploadStatus])
   @@index([rootId])
+  @@index([fileKey])
 }
 
 // Propósito do entregável (tag pesquisável; compõe o nome). CRUD admin (MANAGER+).

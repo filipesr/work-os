@@ -4,8 +4,17 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArtifactType } from "@prisma/client";
 import { ExternalLink, Link2, Loader2, Upload } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+// < 24h: "há cerca de X"; depois: "em dd/mm/yyyy às hh:mm".
+function formatArtifactTime(date: Date): string {
+  const ageMs = Date.now() - date.getTime();
+  if (ageMs < 24 * 60 * 60 * 1000) {
+    return formatDistanceToNow(date, { addSuffix: true, locale: ptBR });
+  }
+  return `em ${format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`;
+}
 import toast from "react-hot-toast";
 import { addLinkArtifact } from "@/lib/actions/task";
 import {
@@ -232,10 +241,7 @@ export function UnifiedArtifactsPanel({
                       <span>•</span>
                       <span>
                         {a.version > 1 ? "Atualizado" : "Criado"}{" "}
-                        {formatDistanceToNow(new Date(a.createdAt), {
-                          addSuffix: true,
-                          locale: ptBR,
-                        })}
+                        {formatArtifactTime(new Date(a.createdAt))}
                       </span>
                     </div>
                   </div>
@@ -304,37 +310,42 @@ export function UnifiedArtifactsPanel({
                   </div>
                 )}
 
-                {/* Histórico de versões */}
-                {historyFor === a.id && history.length > 0 && (
+                {/* Histórico de versões — exclui a versão atual (já exibida no card acima) */}
+                {historyFor === a.id && history.some((h) => h.id !== a.id) && (
                   <ul className="space-y-1 border-t border-border p-3">
-                    {history.map((h) => (
-                      <li key={h.id} className="flex items-center gap-2 text-xs">
-                        <span className="shrink-0 font-bold text-muted-foreground">
-                          v{h.version}
-                        </span>
-                        {h.storageKind === "NAS_UPLOAD" ? (
-                          <span className="truncate">{h.fileName || "arquivo"}</span>
-                        ) : (
-                          <a
-                            href={h.url ?? undefined}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="shrink-0 text-primary hover:underline"
-                          >
-                            abrir
-                          </a>
-                        )}
-                        {h.userName && (
-                          <span className="shrink-0 text-muted-foreground">· {h.userName}</span>
-                        )}
-                        <span className="shrink-0 text-muted-foreground">
-                          {formatDistanceToNow(new Date(h.createdAt), {
-                            addSuffix: true,
-                            locale: ptBR,
-                          })}
-                        </span>
-                      </li>
-                    ))}
+                    {history
+                      .filter((h) => h.id !== a.id)
+                      .map((h) => (
+                        <li key={h.id} className="flex items-center gap-2 text-xs">
+                          <span className="shrink-0 font-bold text-muted-foreground">
+                            v{h.version}
+                          </span>
+                          {h.storageKind === "NAS_UPLOAD" ? (
+                            h.uploadStatus === "READY" ? (
+                              <DownloadArtifactButton artifactId={h.id} iconOnly />
+                            ) : (
+                              <span className="shrink-0 text-muted-foreground">
+                                ({nasStatus[h.uploadStatus]?.label ?? h.uploadStatus})
+                              </span>
+                            )
+                          ) : (
+                            <a
+                              href={h.url ?? undefined}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 text-primary hover:underline"
+                            >
+                              abrir
+                            </a>
+                          )}
+                          {h.userName && (
+                            <span className="shrink-0 text-muted-foreground">· {h.userName}</span>
+                          )}
+                          <span className="shrink-0 text-muted-foreground">
+                            {formatArtifactTime(new Date(h.createdAt))}
+                          </span>
+                        </li>
+                      ))}
                   </ul>
                 )}
               </div>

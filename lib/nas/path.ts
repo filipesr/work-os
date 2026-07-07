@@ -8,10 +8,10 @@
 //   CLIENT:  {cliente}/institucional/{tipoMidia}/{arquivo}
 //   PROJECT: {cliente}/{projeto ~id}/institucional/{tipoMidia}/{arquivo}
 //   TASK:    {cliente}/{tarefa ~id}/institucional/{tipoMidia}/{arquivo}
-// Names (AAAA_MM = data do envio):
-//   CLIENT:  {Cliente}_{Proposito}_v{NN}.{ext}
-//   PROJECT: {AAAA_MM}_{Proposito}_{Projeto}_v{NN}.{ext}
-//   TASK:    {AAAA_MM}_{Proposito}_{Demanda}_v{NN}.{ext}
+// Names (o nome vem do ARQUIVO enviado — identidade da cadeia de versões; contexto fica nas pastas):
+//   CLIENT:  {Arquivo}_v{NN}.{ext}
+//   PROJECT: {AAAA_MM}_{Arquivo}_v{NN}.{ext}
+//   TASK:    {AAAA_MM}_{Arquivo}_v{NN}.{ext}   (AAAA_MM = data do envio)
 //
 // The string-literal unions below intentionally mirror the Prisma enums `ArtifactMediaType` /
 // `ArtifactTarget` (same member values), so Prisma enum values pass through with no coupling.
@@ -144,6 +144,17 @@ export function toNasClientFolder(name: string): string {
   return toAsciiSafe(name);
 }
 
+// Nome do arquivo enviado, SEM extensão, normalizado a um token NAS. É a IDENTIDADE da cadeia de
+// versões (mesmo nome → nova versão; nome diferente → artefato novo) e o componente variável do
+// nome final no NAS. "LP.jpg" -> "LP", "Banner Final.png" -> "BannerFinal".
+export function fileBaseToken(originalFileName: string): string {
+  const name = originalFileName.trim();
+  const dot = name.lastIndexOf(".");
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  // "_"/"-" viram separadores de palavra: "render_final" -> "RenderFinal".
+  return toNasToken(base.replace(/[_-]+/g, " "));
+}
+
 // Normalize an extension from the original file name. Throws on missing / double / blocked.
 export function normalizeExtension(originalFileName: string, mediaType: ArtifactMediaType): string {
   const name = originalFileName.trim();
@@ -196,8 +207,6 @@ export interface BuildNasPathInput {
   /** Task id (TASK) or project id (PROJECT) — for the folder id suffix. Ignored for CLIENT. */
   ownerId?: string;
   mediaType: ArtifactMediaType;
-  /** DeliverablePurpose label, e.g. "Banner Web". */
-  purpose: string;
   originalFileName: string;
   /** Version number NN (never reused across expired/failed/deleted). */
   version: number;
@@ -221,10 +230,14 @@ export function buildNasPath(input: BuildNasPathInput): BuildNasPathResult {
   const ext = normalizeExtension(input.originalFileName, input.mediaType);
   const mediaFolder = MEDIA_TYPE_FOLDER[input.mediaType];
   const versionTag = `v${pad2(input.version)}`;
-  const purposeTok = toNasToken(input.purpose);
   const clientRaw = toAsciiSafe(input.client);
   if (!clientRaw) throw new NasPathError("EMPTY_COMPONENT", "cliente vazio após normalização");
-  if (!purposeTok) throw new NasPathError("EMPTY_COMPONENT", "propósito vazio após normalização");
+
+  // Campo variável do nome = o arquivo enviado (identidade da cadeia). O contexto (cliente/tarefa)
+  // já está nas PASTAS, então o nome não repete a tarefa — vem do arquivo.
+  const fileTok = fileBaseToken(input.originalFileName);
+  if (!fileTok)
+    throw new NasPathError("EMPTY_COMPONENT", "nome de arquivo vazio após normalização");
 
   const OWNER_NAME_MAX = LIMITS.campaignFolder - 8; // deixa espaço p/ " ~<6hex>"
   const clientFolder = capWithHash(clientRaw, LIMITS.client);
@@ -232,13 +245,11 @@ export function buildNasPath(input: BuildNasPathInput): BuildNasPathResult {
   let truncated = clientRaw.length > LIMITS.client;
 
   let dirParts: string[];
-  let fixed: string; // prefixo do nome até o "_" antes do campo variável
-  let demandaTok: string; // campo variável ("" para CLIENT — sem campo a encolher)
+  let fixed: string; // prefixo do nome até o campo variável (o arquivo)
 
   if (input.scope === "CLIENT") {
     dirParts = [clientFolder, "institucional", mediaFolder];
-    fixed = `${toNasToken(clientRaw)}_${purposeTok}_`;
-    demandaTok = "";
+    fixed = ""; // {arquivo}_v{NN} (institucional do cliente é atemporal — sem data)
   } else {
     if (!input.ownerName || !input.ownerId) {
       throw new NasPathError("MISSING_OWNER", "TASK/PROJECT exigem ownerName e ownerId");
@@ -249,9 +260,7 @@ export function buildNasPath(input: BuildNasPathInput): BuildNasPathResult {
     const idTok = shortHash(input.ownerId);
     const ownerFolder = `${capWithHash(ownerAscii, OWNER_NAME_MAX)} ~${idTok}`;
     dirParts = [clientFolder, ownerFolder, "institucional", mediaFolder];
-    demandaTok = toNasToken(ownerAscii);
-    if (!demandaTok) throw new NasPathError("EMPTY_COMPONENT", "demanda vazia após normalização");
-    fixed = `${ym}_${purposeTok}_`;
+    fixed = `${ym}_`; // {AAAA_MM}_{arquivo}_v{NN}
   }
 
   const tail = `_${versionTag}.${ext}`;
@@ -260,25 +269,12 @@ export function buildNasPath(input: BuildNasPathInput): BuildNasPathResult {
   const maxFile = Math.max(12, Math.min(LIMITS.fileName, LIMITS.relPath - dirLen - 1));
 
   // Nome ideal (sem cap) para detectar truncamento do campo.
-  const idealFull =
-    input.scope === "CLIENT" ? `${fixed.replace(/_$/, "")}${tail}` : `${fixed}${demandaTok}${tail}`;
-  truncated = truncated || idealFull.length > maxFile;
+  truncated = truncated || `${fixed}${fileTok}${tail}`.length > maxFile;
 
-  const fileName =
-    input.scope === "CLIENT"
-      ? fitFixed(fixed, tail, maxFile)
-      : fitField(fixed, demandaTok, tail, maxFile);
+  const fileName = fitField(fixed, fileTok, tail, maxFile);
 
   const relPath = [...dirParts, fileName].join("/");
   return { relPath, fileName, mediaFolder, ext, truncated };
-}
-
-// {Cliente}_{Proposito} (fixed termina em "_") + tail, cabendo em `max`.
-function fitFixed(fixed: string, tail: string, max: number): string {
-  const base = fixed.replace(/_$/, "");
-  const full = `${base}${tail}`;
-  if (full.length <= max) return full;
-  return `${capWithHash(base, Math.max(1, max - tail.length))}${tail}`;
 }
 
 // {fixed}{demanda}{tail} cabendo em `max`: encolhe o campo Demanda; se o prefixo já não couber,

@@ -22,7 +22,13 @@ import {
   changeSensitivitySchema,
   scopedLinkArtifactSchema,
 } from "@/lib/validations";
-import { ALLOWLIST, buildNasPath, NasPathError, normalizeExtension } from "@/lib/nas/path";
+import {
+  ALLOWLIST,
+  buildNasPath,
+  fileBaseToken,
+  NasPathError,
+  normalizeExtension,
+} from "@/lib/nas/path";
 import { signUploadToken } from "@/lib/nas/token";
 import {
   getNasSigningConfig,
@@ -77,7 +83,8 @@ interface VersionParams {
   ownerName?: string;
   ownerId?: string;
   mediaType: Prisma.TaskArtifactCreateInput["mediaType"];
-  purposeId: string;
+  purposeId: string | null;
+  /** DeliverablePurpose label; "" quando sem propósito (omitido do nome). */
   purposeLabel: string;
   originalFileName: string;
   mimeType: string;
@@ -87,9 +94,9 @@ interface VersionParams {
 }
 
 // Aloca a próxima versão e cria o artefato PENDING numa transação. A versão é max(existentes)+1 no
-// grupo (dono do escopo, purposeId, mediaType) — expirados/falhos/deletados contam, então nunca se
-// reusa número. Encadeia com a versão vigente (Feature A: marca a anterior isCurrent=false).
-// Reintenta na corrida de constraint única.
+// grupo (dono do escopo, fileKey) — MESMO nome de arquivo = nova versão; nome diferente = artefato
+// novo. Expirados/falhos/deletados contam, então nunca se reusa número. Encadeia com a versão
+// vigente (marca a anterior isCurrent=false). Reintenta na corrida de constraint única.
 async function createArtifactWithVersion(
   params: VersionParams
 ): Promise<{ id: string; nasPath: string; fileName: string; version: number }> {
@@ -100,12 +107,15 @@ async function createArtifactWithVersion(
         ? { projectId: params.projectId }
         : { clientId: params.clientId };
 
+  // Identidade da cadeia = nome do arquivo normalizado (mesmo token que compõe o nome no NAS).
+  const fileKey = fileBaseToken(params.originalFileName);
+
   const MAX_RETRIES = 5;
   let lastErr: unknown;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       return await prisma.$transaction(async (tx) => {
-        const group = { ...ownerWhere, purposeId: params.purposeId, mediaType: params.mediaType };
+        const group = { ...ownerWhere, fileKey };
         const last = await tx.taskArtifact.findFirst({
           where: group,
           orderBy: { version: "desc" },
@@ -124,7 +134,6 @@ async function createArtifactWithVersion(
           ownerName: params.ownerName,
           ownerId: params.ownerId,
           mediaType: params.mediaType as NonNullable<VersionParams["mediaType"]>,
-          purpose: params.purposeLabel,
           originalFileName: params.originalFileName,
           version,
           uploadDate: new Date(),
@@ -152,6 +161,7 @@ async function createArtifactWithVersion(
             uploadStatus: "PENDING",
             mediaType: params.mediaType,
             purposeId: params.purposeId,
+            fileKey,
             sensitivity: params.sensitivity,
             stageId: params.stageId ?? null,
             nasPath: built.relPath,
@@ -238,11 +248,18 @@ export async function prepareArtifactUpload(input: unknown) {
     }
     if (!folderName) return { error: "Cliente sem pasta (folderName) definida para o NAS." };
 
-    const purpose = await prisma.deliverablePurpose.findUnique({
-      where: { id: data.purposeId },
-      select: { id: true, label: true, active: true },
-    });
-    if (!purpose || !purpose.active) return { error: "Propósito inválido ou inativo." };
+    // Propósito é opcional: quando informado, valida; quando ausente, o nome sai sem esse segmento.
+    let purposeId: string | null = null;
+    let purposeLabel = "";
+    if (data.purposeId) {
+      const purpose = await prisma.deliverablePurpose.findUnique({
+        where: { id: data.purposeId },
+        select: { id: true, label: true, active: true },
+      });
+      if (!purpose || !purpose.active) return { error: "Propósito inválido ou inativo." };
+      purposeId = purpose.id;
+      purposeLabel = purpose.label;
+    }
 
     // Extension + size validation (allowlist / Apêndice D). Agent re-checks + sniffs the bytes.
     try {
@@ -268,8 +285,8 @@ export async function prepareArtifactUpload(input: unknown) {
       ownerName,
       ownerId,
       mediaType: data.mediaType,
-      purposeId: purpose.id,
-      purposeLabel: purpose.label,
+      purposeId,
+      purposeLabel,
       originalFileName: data.originalFileName,
       mimeType: data.mimeType,
       sizeBytes: data.sizeBytes,
@@ -326,38 +343,17 @@ export async function prepareArtifactUpload(input: unknown) {
   }
 }
 
-/** Dados do form de upload por escopo: propósitos ativos + (só TASK) etapas + estado do ambiente. */
-export async function getArtifactUploadOptions(args: {
+/** Estado do ambiente para o form de upload (só o gate de configuração — o form coleta Arquivo /
+ * Tipo de mídia / Sensibilidade; propósito e proveniência foram removidos por serem write-only). */
+export async function getArtifactUploadOptions(_args: {
   scope: "TASK" | "PROJECT" | "CLIENT";
   taskId?: string;
 }) {
   try {
     await requireMemberOrHigher();
-
-    const purposes = await prisma.deliverablePurpose.findMany({
-      where: { active: true },
-      orderBy: [{ order: "asc" }, { label: "asc" }],
-      select: { id: true, label: true },
-    });
-
-    let stages: { id: string; name: string }[] = [];
-    if (args.scope === "TASK" && args.taskId) {
-      const task = await prisma.task.findUnique({
-        where: { id: args.taskId },
-        select: {
-          activeStages: {
-            select: { stage: { select: { id: true, name: true } } },
-          },
-        },
-      });
-      stages = task?.activeStages.map((s) => ({ id: s.stage.id, name: s.stage.name })) ?? [];
-    }
-
     return {
       success: true as const,
       uploadConfigured: isNasUploadConfigured(),
-      purposes,
-      stages,
     };
   } catch (error) {
     console.error("getArtifactUploadOptions error:", error);

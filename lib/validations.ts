@@ -79,7 +79,8 @@ const sensitivityEnum = z.enum(["INTERNO", "CLIENTE", "CONFIDENCIAL"]);
 
 // prepareArtifactUpload — o browser envia os metadados declarados; o servidor calcula o path/nome
 // selado e assina o token. Escopo (TASK/PROJECT/CLIENT) + o id do dono correspondente; sem campos de
-// campanha (spec 2026-07-06-nas-flow-simplification). mediaType + purposeId obrigatórios.
+// campanha (spec 2026-07-06-nas-flow-simplification). mediaType obrigatório; purposeId opcional
+// (quando ausente, o nome sai sem o segmento de propósito).
 export const prepareArtifactUploadSchema = z
   .object({
     scope: z.enum(["TASK", "PROJECT", "CLIENT"]).default("TASK"),
@@ -87,7 +88,7 @@ export const prepareArtifactUploadSchema = z
     projectId: z.string().min(1).optional(),
     clientId: z.string().min(1).optional(),
     mediaType: artifactMediaTypeEnum,
-    purposeId: z.string().min(1, "Propósito é obrigatório"),
+    purposeId: z.string().min(1).optional(),
     sensitivity: sensitivityEnum.default("INTERNO"),
     stageId: z.string().optional(),
     originalFileName: z.string().min(1, "Nome do arquivo é obrigatório").max(255),

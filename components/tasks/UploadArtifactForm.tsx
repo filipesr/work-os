@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Loader2, Upload, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { resolveUploadEndpoint, type UploadEndpoint } from "@/lib/nas/endpoint";
 import {
@@ -33,10 +32,46 @@ const SENSITIVITIES = [
   { v: "CONFIDENCIAL", l: "Confidencial" },
 ];
 
+// Palpite do tipo de mídia pela extensão (conveniência — o servidor valida pela allowlist e o
+// usuário pode trocar). Alinhado com ALLOWLIST em lib/nas/path.ts.
+const EXT_MEDIA: Record<string, string> = {
+  mp4: "VIDEOS",
+  mov: "VIDEOS",
+  webm: "VIDEOS",
+  mkv: "VIDEOS",
+  jpg: "FOTOS",
+  jpeg: "FOTOS",
+  png: "FOTOS",
+  webp: "FOTOS",
+  gif: "FOTOS",
+  tiff: "FOTOS",
+  tif: "FOTOS",
+  heic: "FOTOS",
+  raw: "FOTOS",
+  cr2: "FOTOS",
+  nef: "FOTOS",
+  arw: "FOTOS",
+  svg: "LOGOS",
+  ai: "LOGOS",
+  eps: "LOGOS",
+  cdr: "LOGOS",
+  pdf: "DOCUMENTOS",
+  docx: "DOCUMENTOS",
+  xlsx: "DOCUMENTOS",
+  pptx: "DOCUMENTOS",
+  txt: "DOCUMENTOS",
+  zip: "DOCUMENTOS",
+  indd: "DOCUMENTOS",
+  psd: "DOCUMENTOS",
+};
+
+function guessMediaType(fileName: string): string | null {
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+  return EXT_MEDIA[ext] ?? null;
+}
+
 interface Options {
   uploadConfigured: boolean;
-  purposes: { id: string; label: string }[];
-  stages: { id: string; name: string }[];
 }
 
 type Scope = "TASK" | "PROJECT" | "CLIENT";
@@ -88,9 +123,7 @@ export function UploadArtifactForm({
 
   const [file, setFile] = useState<File | null>(null);
   const [mediaType, setMediaType] = useState("FOTOS");
-  const [purposeId, setPurposeId] = useState("");
   const [sensitivity, setSensitivity] = useState("INTERNO");
-  const [stageId, setStageId] = useState("");
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
@@ -107,11 +140,7 @@ export function UploadArtifactForm({
       if (!active) return;
       setEndpoint(ep);
       if ("success" in opt && opt.success) {
-        setOptions({
-          uploadConfigured: opt.uploadConfigured,
-          purposes: opt.purposes,
-          stages: opt.stages,
-        });
+        setOptions({ uploadConfigured: opt.uploadConfigured });
       }
       setChecking(false);
     })();
@@ -127,14 +156,11 @@ export function UploadArtifactForm({
       ? "Agente do NAS não encontrado na rede local. Conecte-se à LAN ou à VPN para enviar arquivos."
       : !options?.uploadConfigured
         ? "Upload no NAS não está configurado neste ambiente."
-        : options.purposes.length === 0
-          ? "Nenhum propósito de entregável cadastrado. Cadastre em Admin › Propósitos de entregável."
-          : null;
+        : null;
   const canUpload = !checking && !blockedReason;
 
   async function handleUpload() {
     if (!file) return toast.error("Selecione um arquivo.");
-    if (!purposeId) return toast.error("Selecione um propósito.");
 
     setPhase("preparing");
     setErrorMsg("");
@@ -144,9 +170,7 @@ export function UploadArtifactForm({
       projectId,
       clientId,
       mediaType,
-      purposeId,
       sensitivity,
-      stageId: stageId || undefined,
       originalFileName: file.name,
       mimeType: file.type || "application/octet-stream",
       sizeBytes: file.size,
@@ -202,7 +226,14 @@ export function UploadArtifactForm({
             ref={fileInputRef}
             id="nas-file"
             type="file"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              const f = e.target.files?.[0] ?? null;
+              setFile(f);
+              if (f) {
+                const guessed = guessMediaType(f.name);
+                if (guessed) setMediaType(guessed);
+              }
+            }}
             disabled={busy}
             className="block w-full text-sm text-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-primary-foreground file:font-semibold hover:file:bg-primary/90"
           />
@@ -228,26 +259,6 @@ export function UploadArtifactForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="nas-purpose" className="text-sm">
-            Propósito
-          </Label>
-          <select
-            id="nas-purpose"
-            value={purposeId}
-            onChange={(e) => setPurposeId(e.target.value)}
-            disabled={busy}
-            className={selectClass}
-          >
-            <option value="">Selecione…</option>
-            {options!.purposes.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-2">
           <Label htmlFor="nas-sensitivity" className="text-sm">
             Sensibilidade
           </Label>
@@ -265,28 +276,6 @@ export function UploadArtifactForm({
             ))}
           </select>
         </div>
-
-        {options!.stages.length > 0 && (
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="nas-stage" className="text-sm">
-              Etapa (proveniência) — opcional
-            </Label>
-            <select
-              id="nas-stage"
-              value={stageId}
-              onChange={(e) => setStageId(e.target.value)}
-              disabled={busy}
-              className={selectClass}
-            >
-              <option value="">—</option>
-              {options!.stages.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
 
       {phase === "uploading" && (
@@ -302,12 +291,7 @@ export function UploadArtifactForm({
         <p className="text-sm text-green-600">Upload concluído — finalizando no servidor.</p>
       )}
 
-      <Button
-        type="button"
-        size="sm"
-        onClick={handleUpload}
-        disabled={!canUpload || busy || !file || !purposeId}
-      >
+      <Button type="button" size="sm" onClick={handleUpload} disabled={!canUpload || busy || !file}>
         {busy ? (
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
         ) : (
