@@ -102,10 +102,15 @@ async function verify(token: string, store: KeyStore, audience: string): Promise
   }
 }
 
+/** Estrutural: qualquer store de jti (in-memory ou persistente) que saiba reivindicar um jti. */
+export interface JtiClaimer {
+  claim(jti: string, exp?: number): boolean;
+}
+
 export async function verifyUploadToken(
   token: string,
   store: KeyStore,
-  jtiStore: JtiStore
+  jtiStore: JtiClaimer
 ): Promise<UploadTokenClaims> {
   const payload = (await verify(token, store, "nas-agent-upload")) as UploadTokenClaims;
   for (const f of ["artifactId", "taskId", "nasPath", "fileName", "jti"] as const) {

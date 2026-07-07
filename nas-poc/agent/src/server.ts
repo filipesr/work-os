@@ -7,8 +7,8 @@
 // Download path: verify JWT -> Range-aware stream (200/206/416).
 
 import { createHash } from "node:crypto";
-import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, rename, rm, stat, statfs } from "node:fs/promises";
+import { createReadStream, createWriteStream, mkdirSync } from "node:fs";
+import { mkdir, open, readdir, rename, rm, stat, statfs } from "node:fs/promises";
 import { once } from "node:events";
 import { finished } from "node:stream/promises";
 import path from "node:path";
@@ -19,11 +19,13 @@ import {
   loadKeyStore,
   verifyUploadToken,
   verifyDownloadToken,
-  JtiStore,
+  type JtiClaimer,
   TokenError,
   KeyStore,
 } from "./token.js";
 import { callFinalize } from "./finalize.js";
+import { PersistentJtiStore, FinalizeQueue, AuditLog } from "./store.js";
+import { sniffUpload, SniffError } from "./sniff.js";
 
 function bearer(req: FastifyRequest): string | undefined {
   const h = req.headers.authorization;
@@ -67,7 +69,9 @@ async function healthHandler(cfg: AgentConfig, store: KeyStore, reply: FastifyRe
 async function uploadHandler(
   cfg: AgentConfig,
   store: KeyStore,
-  jtis: JtiStore,
+  jtis: JtiClaimer,
+  queue: FinalizeQueue,
+  audit: AuditLog,
   req: FastifyRequest,
   reply: FastifyReply
 ) {
@@ -131,6 +135,27 @@ async function uploadHandler(
   }
   const msWrite = Date.now() - tWrite;
 
+  // Sniffing dos primeiros bytes ANTES de publicar — nunca publica um arquivo mal-rotulado.
+  try {
+    const fh = await open(tmpPath, "r");
+    const headBuf = Buffer.alloc(256);
+    const { bytesRead } = await fh.read(headBuf, 0, 256, 0);
+    await fh.close();
+    const ext = path.extname(claims.fileName).slice(1).toLowerCase();
+    sniffUpload(headBuf.subarray(0, bytesRead), ext);
+  } catch (err) {
+    if (err instanceof SniffError) {
+      await safeUnlink(tmpPath);
+      await audit.append({
+        event: "rejected_sniff",
+        artifactId: claims.artifactId,
+        code: err.code,
+      });
+      return reply.code(415).send({ error: err.code, message: err.message });
+    }
+    throw err;
+  }
+
   // Atomic publish.
   await rename(tmpPath, finalPath);
 
@@ -145,22 +170,30 @@ async function uploadHandler(
     msHash = Date.now() - tHash;
   }
 
-  // Finalize with the cloud (flip PENDING/UPLOADING -> READY). Best-effort: the file is already
-  // stored, so a finalize failure is logged but not fatal (cloud reconcile/retry closes the loop).
+  // Finalize (PENDING/UPLOADING -> READY): tenta inline uma vez; se falhar, enfileira para retry
+  // persistente (durável a restart do agente — o worker drena a fila com backoff).
   let finalized = false;
   if (cfg.cloudFinalizeUrl && cfg.finalizeSecret) {
     const r = await callFinalize(
       { url: cfg.cloudFinalizeUrl, secret: cfg.finalizeSecret, agentId: cfg.agentId },
-      { artifactId: claims.artifactId, checksum, sizeBytes: bytes }
+      { artifactId: claims.artifactId, checksum, sizeBytes: bytes },
+      { retries: 1 }
     );
     finalized = r.ok;
     if (!r.ok) {
-      req.log.error(
+      req.log.warn(
         { artifactId: claims.artifactId, status: r.status, err: r.error },
-        "cloud finalize failed"
+        "finalize inline falhou — enfileirado para retry"
       );
+      await queue.enqueue({ artifactId: claims.artifactId, checksum, sizeBytes: bytes });
     }
   }
+  await audit.append({
+    event: "stored",
+    artifactId: claims.artifactId,
+    sizeBytes: bytes,
+    finalized,
+  });
 
   return reply.code(201).send({
     checksum,
@@ -234,10 +267,130 @@ function registerRawParser(app: FastifyInstance) {
   app.addContentTypeParser("*", (_req, _payload, done) => done(null, undefined));
 }
 
+// ---- reconcile (LAN, auth admin) --------------------------------------------
+
+function requireReconcileAuth(cfg: AgentConfig, req: FastifyRequest, reply: FastifyReply): boolean {
+  if (!cfg.reconcileToken) {
+    reply.code(503).send({ error: "reconcile_disabled" });
+    return false;
+  }
+  if (bearer(req) !== cfg.reconcileToken) {
+    reply.code(401).send({ error: "unauthorized" });
+    return false;
+  }
+  return true;
+}
+
+// Varre NAS_ROOT por .uploading-*.tmp órfãos mais velhos que `olderThanMs`.
+async function findOrphanTmps(
+  dir: string,
+  olderThanMs: number
+): Promise<{ path: string; ageMs: number }[]> {
+  const out: { path: string; ageMs: number }[] = [];
+  async function walk(d: string): Promise<void> {
+    let entries;
+    try {
+      entries = await readdir(d, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) await walk(p);
+      else if (/\.uploading-.*\.tmp$/.test(e.name)) {
+        try {
+          const s = await stat(p);
+          const age = Date.now() - s.mtimeMs;
+          if (age >= olderThanMs) out.push({ path: p, ageMs: age });
+        } catch {
+          /* sumiu no meio — ignora */
+        }
+      }
+    }
+  }
+  await walk(dir);
+  return out;
+}
+
+async function reconcileReport(
+  cfg: AgentConfig,
+  queue: FinalizeQueue,
+  req: FastifyRequest,
+  reply: FastifyReply
+) {
+  if (!requireReconcileAuth(cfg, req, reply)) return;
+  const orphans = await findOrphanTmps(cfg.nasRoot, cfg.tmpTtlMs);
+  return reply.send({
+    orphanTmp: orphans.map((o) => ({ path: path.relative(cfg.nasRoot, o.path), ageMs: o.ageMs })),
+    pendingFinalize: queue.pending(),
+  });
+}
+
+async function reconcileCleanup(cfg: AgentConfig, req: FastifyRequest, reply: FastifyReply) {
+  if (!requireReconcileAuth(cfg, req, reply)) return;
+  const orphans = await findOrphanTmps(cfg.nasRoot, cfg.tmpTtlMs);
+  let removed = 0;
+  for (const o of orphans) {
+    await safeUnlink(o.path);
+    removed++;
+  }
+  return reply.send({ removed });
+}
+
+// ---- finalize worker (drena a fila persistente com backoff) ------------------
+
+function startFinalizeWorker(
+  cfg: AgentConfig,
+  queue: FinalizeQueue,
+  audit: AuditLog,
+  log: FastifyInstance["log"]
+): () => void {
+  if (!cfg.cloudFinalizeUrl || !cfg.finalizeSecret) return () => {};
+  const url = cfg.cloudFinalizeUrl;
+  const secret = cfg.finalizeSecret;
+  const MAX_ATTEMPTS = 8;
+
+  const tick = async () => {
+    for (const job of queue.due()) {
+      const r = await callFinalize(
+        { url, secret, agentId: cfg.agentId },
+        { artifactId: job.artifactId, checksum: job.checksum, sizeBytes: job.sizeBytes },
+        { retries: 1 }
+      );
+      if (r.ok) {
+        await queue.remove(job.artifactId);
+        await audit.append({ event: "finalized_async", artifactId: job.artifactId });
+        continue;
+      }
+      const terminal = !!r.status && r.status >= 400 && r.status < 500 && r.status !== 429;
+      const attempts = job.attempts + 1;
+      if (terminal || attempts >= MAX_ATTEMPTS) {
+        await queue.remove(job.artifactId);
+        await audit.append({
+          event: "finalize_failed",
+          artifactId: job.artifactId,
+          status: r.status,
+          attempts,
+        });
+        log.error({ artifactId: job.artifactId, status: r.status }, "finalize desistiu");
+      } else {
+        const backoff = Math.min(30 * 60 * 1000, 1000 * 2 ** attempts); // até 30 min
+        await queue.reschedule(job.artifactId, attempts, Date.now() + backoff);
+      }
+    }
+  };
+
+  const iv = setInterval(() => void tick().catch(() => {}), 30_000);
+  iv.unref?.();
+  return () => clearInterval(iv);
+}
+
 async function buildLanApp(
   cfg: AgentConfig,
   store: KeyStore,
-  jtis: JtiStore
+  jtis: JtiClaimer,
+  queue: FinalizeQueue,
+  audit: AuditLog
 ): Promise<FastifyInstance> {
   const app = Fastify({ logger: true, bodyLimit: cfg.maxUploadBytes });
   registerRawParser(app);
@@ -245,8 +398,12 @@ async function buildLanApp(
     origin: cfg.allowedOrigins.includes("*") ? true : cfg.allowedOrigins,
   });
   app.get("/v1/health", (_req, reply) => healthHandler(cfg, store, reply));
-  app.put("/v1/uploads/:artifactId", (req, reply) => uploadHandler(cfg, store, jtis, req, reply));
+  app.put("/v1/uploads/:artifactId", (req, reply) =>
+    uploadHandler(cfg, store, jtis, queue, audit, req, reply)
+  );
   app.get("/v1/download", (req, reply) => downloadHandler(cfg, store, req, reply));
+  app.get("/v1/reconcile/report", (req, reply) => reconcileReport(cfg, queue, req, reply));
+  app.post("/v1/reconcile/cleanup", (req, reply) => reconcileCleanup(cfg, req, reply));
   return app;
 }
 
@@ -262,21 +419,28 @@ async function buildTunnelApp(cfg: AgentConfig, store: KeyStore): Promise<Fastif
 async function main() {
   const cfg = loadConfig();
   const store = await loadKeyStore(cfg.tokenPublicKeysRaw);
-  const jtis = new JtiStore();
 
-  const lan = await buildLanApp(cfg, store, jtis);
+  mkdirSync(cfg.stateDir, { recursive: true });
+  const jtis = new PersistentJtiStore(path.join(cfg.stateDir, "jti.json"));
+  const queue = new FinalizeQueue(path.join(cfg.stateDir, "finalize-queue.json"));
+  const audit = new AuditLog(path.join(cfg.stateDir, "audit.jsonl"));
+
+  const lan = await buildLanApp(cfg, store, jtis, queue, audit);
   const tunnel = await buildTunnelApp(cfg, store);
 
   await lan.listen({ host: cfg.lanHost, port: cfg.lanPort });
   await tunnel.listen({ host: cfg.tunnelHost, port: cfg.tunnelPort });
 
+  const stopWorker = startFinalizeWorker(cfg, queue, audit, lan.log);
+
   lan.log.info(
-    { nasRoot: cfg.nasRoot, hashMode: cfg.hashMode, kids: store.kids },
+    { nasRoot: cfg.nasRoot, stateDir: cfg.stateDir, hashMode: cfg.hashMode, kids: store.kids },
     `agent up — LAN ${cfg.lanHost}:${cfg.lanPort}, TUNNEL ${cfg.tunnelHost}:${cfg.tunnelPort}`
   );
 
   for (const sig of ["SIGINT", "SIGTERM"] as const) {
     process.on(sig, async () => {
+      stopWorker();
       await Promise.allSettled([lan.close(), tunnel.close()]);
       process.exit(0);
     });

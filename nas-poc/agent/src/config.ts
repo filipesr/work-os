@@ -19,6 +19,12 @@ export interface AgentConfig {
   // (PoC/load-test mode). When set, after storing it POSTs to the cloud to flip PENDING -> READY.
   cloudFinalizeUrl?: string;
   finalizeSecret?: string;
+  // Diretório de estado persistente (jti, fila de finalize, auditoria). Default: {nasRoot}/.agent-state.
+  stateDir: string;
+  // Token dos endpoints de reconcile (LAN, auth admin). Sem ele, reconcile fica desabilitado.
+  reconcileToken?: string;
+  // TTL de arquivos .uploading-*.tmp órfãos (reconcile cleanup).
+  tmpTtlMs: number;
 }
 
 function num(name: string, def: number): number {
@@ -59,6 +65,9 @@ export function loadConfig(): AgentConfig {
     tokenPublicKeysRaw,
     cloudFinalizeUrl: process.env.CLOUD_FINALIZE_URL || undefined,
     finalizeSecret: process.env.FINALIZE_SECRET || undefined,
+    stateDir: process.env.STATE_DIR || path.join(path.resolve(nasRoot), ".agent-state"),
+    reconcileToken: process.env.RECONCILE_TOKEN || undefined,
+    tmpTtlMs: num("TMP_TTL_MS", 24 * 60 * 60 * 1000),
   };
 }
 

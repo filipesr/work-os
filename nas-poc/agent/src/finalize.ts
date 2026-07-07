@@ -57,6 +57,8 @@ export async function callFinalize(
           "x-nas-signature": signature,
         },
         body,
+        // Nuvem lenta não pode pendurar o worker/upload.
+        signal: AbortSignal.timeout(15000),
       });
       if (res.ok) return { ok: true, status: res.status };
       lastErr = `status ${res.status}`;
