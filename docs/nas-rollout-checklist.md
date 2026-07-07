@@ -54,6 +54,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS "TaskArtifact_clientId_fileKey_version_key"
 
 ## 2. Env de produção — App (Vercel)
 
+> **Atalho:** `node scripts/nas-prod-setup.mjs` gera de uma vez o par de chaves + segredos e escreve
+> os DOIS blocos prontos (`nas-poc/out/prod/app.env` p/ a Vercel e `agent.env` p/ o NAS), já com o
+> domínio. Basta preencher os `<placeholders>` (SMB host, uid/gid, TUNNEL_TOKEN). Segredos gitignored.
+
 Definir com `vercel env add` (ou dashboard) em **Production**. Nomes exatos (de `lib/nas/config.ts`):
 
 | Env                                | Valor / origem                                                                |
