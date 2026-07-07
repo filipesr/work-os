@@ -63,16 +63,19 @@ Definir com `vercel env add` (ou dashboard) em **Production**. Nomes exatos (de 
 Rodar o agente (`nas-poc/agent`) em container no NAS (Container Manager/Docker), com restart
 automático. Envs (de `nas-poc/.env.example`):
 
-| Env                       | Valor / origem                                                             |
-| ------------------------- | -------------------------------------------------------------------------- |
-| `ALLOWED_ORIGIN`          | origem de produção do app (`https://work.goonmarketing.com`) — CORS/health |
-| `CLOUD_FINALIZE_URL`      | `https://work.goonmarketing.com/api/artifacts/finalize`                    |
-| `FINALIZE_SECRET`         | **igual ao `NAS_FINALIZE_SECRET` do app**                                  |
-| `TOKEN_PUBLIC_KEYS`       | chave(s) pública(s) por `kid` (JWKS-like) — verifica os tokens do app      |
-| `NAS_SHARE_PATH`          | caminho do share no filesystem do container (ex.: `/volume1/WorkOS`)       |
-| `MAX_UPLOAD_BYTES`        | teto de upload (bate com a allowlist do app)                               |
-| `AGENT_UID` / `AGENT_GID` | usuário **dono da árvore** (users = ACL read-only; só o agente escreve)    |
-| `TUNNEL_TOKEN`            | token do Cloudflare Tunnel (só se o cloudflared rodar no mesmo compose)    |
+| Env                       | Valor / origem                                                                         |
+| ------------------------- | -------------------------------------------------------------------------------------- |
+| `ALLOWED_ORIGIN`          | origem de produção do app (`https://work.goonmarketing.com`) — CORS/health             |
+| `CLOUD_FINALIZE_URL`      | `https://work.goonmarketing.com/api/artifacts/finalize`                                |
+| `FINALIZE_SECRET`         | **igual ao `NAS_FINALIZE_SECRET` do app**                                              |
+| `TOKEN_PUBLIC_KEYS`       | chave(s) pública(s) por `kid` (JWKS-like) — verifica os tokens do app                  |
+| `NAS_SHARE_PATH`          | caminho do share no filesystem do container (ex.: `/volume1/WorkOS`)                   |
+| `MAX_UPLOAD_BYTES`        | teto de upload (bate com a allowlist do app)                                           |
+| `AGENT_UID` / `AGENT_GID` | usuário **dono da árvore** (users = ACL read-only; só o agente escreve)                |
+| `TUNNEL_TOKEN`            | token do Cloudflare Tunnel (só se o cloudflared rodar no mesmo compose)                |
+| `STATE_DIR`               | estado persistente (jti/fila de finalize/auditoria). Default `{NAS_ROOT}/.agent-state` |
+| `RECONCILE_TOKEN`         | auth (Bearer) dos endpoints `/v1/reconcile/*` (LAN). Sem ele → 503                     |
+| `TMP_TTL_MS`              | TTL de `.uploading-*.tmp` órfãos p/ o reconcile cleanup (default 24h)                  |
 
 - [ ] Imagem **versionada** em registry (rollback); `version` exposta no `/health`.
 - [ ] **Dois listeners:** porta LAN (upload/download/health/reconcile) e porta túnel (**só**
