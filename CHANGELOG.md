@@ -5,6 +5,59 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [2.3.0] - 2026-07-07
+
+### 🚀 Adicionado
+
+#### Fluxo de trabalho
+
+- **Etapas opcionais por tarefa:** flag `optional` em `TemplateStage` (marcável no template,
+  destacada em âmbar tracejado + legenda no card de fluxo). Na criação da demanda as etapas
+  opcionais vêm **desmarcadas** e as normais marcadas mas desmarcáveis; etapas não incluídas
+  **não geram linha** e somem de fluxo/seguimento/retorno/histórico. Motor reescrito
+  (`computeStageReadiness`) com _pass-through_ por etapas excluídas.
+- **Conclusão automática da tarefa:** ao encerrar a última etapa, `Task.status` vira `COMPLETED`
+  (corrige a lacuna em que a tarefa ficava `IN_PROGRESS` com todas as etapas concluídas).
+- **Status/% do projeto:** card de **% de conclusão** no detalhe do projeto e filtro
+  **Pendentes/Concluídos** na lista de projetos do cliente (`computeProjectCompletion`).
+- **Tarefa OBSOLETE + Duplicar:** novo status `OBSOLETE` (sai de pendentes e do %) e ação
+  **Duplicar** (copia metadados + recria etapas frescas, sem comentários/artefatos), no
+  `TaskLifecycleActions` do `/admin/tasks/{id}`.
+
+#### Artefatos
+
+- **Artefatos com escopo** `TASK`/`PROJECT`/`CLIENT` (um só modelo com `scope` + FKs nuláveis).
+  **Tabela única** com chip **Origem** nas 4 telas (tarefa, admin-tarefa, projeto, cliente);
+  descrição do projeto em destaque no card da tarefa.
+- **Versionamento de artefatos:** cadeia `rootId`/`version`/`isCurrent`. Ação **"Nova versão"**
+  (herda título/tipo, só a URL muda; só no próprio escopo); card mostra **Criado/Atualizado** +
+  selo `v{N}` + expander **"ver versões"** com o responsável de cada versão.
+
+### 🛠️ Modificado
+
+- **Fluxo NAS simplificado:** pastas `institucional` por escopo
+  (`{cliente}/institucional`, `{cliente}/{projeto|tarefa ~id}/institucional`); nome com `AAAA_MM`
+  da data do envio. `prepareArtifactUpload`/`buildNasPath` por escopo, RBAC por escopo,
+  **sem gate `nasUploadEnabled` nem metadados de campanha** — só exige `Client.folderName`.
+  Upload NAS habilitado também em projeto/cliente.
+- **Robustez/desempenho:** `getSessionUser`/`getCurrentUser` em `React cache()` (dedup da
+  sessão por request); `AbortSignal.timeout` no proxy de imagem e no heartbeat; cache local do
+  histórico de versões no painel.
+- **N+1 eliminados** em `activateNextStages` e `completeStageAndAdvance` (batch de linhas/times).
+
+### 🗑️ Removido
+
+- Card **"Armazenamento no NAS"** (metadados de campanha + toggle) do detalhe do projeto.
+- Campos mortos pós-simplificação NAS: `Project.campaignSlug/Year/Month`, `nasUploadEnabled`,
+  `nasMetadataReviewed*`; `TaskArtifact.target` (+ enum `ArtifactTarget`); `TemplateStage.defaultMediaType`.
+  Componentes aposentados: `ScopedArtifactsManager`, `ProjectArtifactsTable`, `AddArtifactForm`.
+
+### ✅ Testes
+
+- Novos testes: seleção/prontidão de etapas, `computeProjectCompletion`, auto-conclusão,
+  artefatos com escopo + versionamento, ciclo de vida da tarefa, `buildNasPath` por escopo,
+  unificação de linhas de artefato. Suíte em **237** testes, verde.
+
 ## [2.2.0] - 2026-06-29
 
 ### 🚀 Adicionado

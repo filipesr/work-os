@@ -65,12 +65,6 @@ enum ArtifactMediaType {
   OUTROS
 }
 
-// Alvo da árvore de pastas: campanha (com Ano_Mes) ou institucional.
-enum ArtifactTarget {
-  CAMPANHA
-  INSTITUCIONAL
-}
-
 // Como o artefato é armazenado: link externo (legado/atual) ou upload no NAS.
 enum ArtifactStorageKind {
   LINK
@@ -242,9 +236,6 @@ model TemplateStage {
   defaultTeamId String? // The team auto-assigned (e.g., "QC")
   defaultTeam   Team?   @relation(fields: [defaultTeamId], references: [id], onUpdate: NoAction, onDelete: SetNull)
 
-  // Tipo de mídia sugerido para artefatos gerados nesta etapa (proveniência).
-  defaultMediaType ArtifactMediaType?
-
   // Etapa opcional: aparece DESMARCADA no form de criação da tarefa (o criador
   // marca só se couber na demanda). Etapas não incluídas não geram TaskActiveStage.
   optional Boolean @default(false)
@@ -373,7 +364,6 @@ model TaskArtifact {
   mediaType    ArtifactMediaType? // NAS_UPLOAD exige (código + índice)
   purposeId    String? // NAS_UPLOAD exige
   purpose      DeliverablePurpose?  @relation(fields: [purposeId], references: [id], onUpdate: NoAction, onDelete: Restrict)
-  target       ArtifactTarget       @default(CAMPANHA)
   sensitivity  SensitivityLevel     @default(INTERNO)
 
   stageId String?

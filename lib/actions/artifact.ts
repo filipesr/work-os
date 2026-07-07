@@ -340,22 +340,17 @@ export async function getArtifactUploadOptions(args: {
       select: { id: true, label: true },
     });
 
-    let stages: { id: string; name: string; defaultMediaType: string | null }[] = [];
+    let stages: { id: string; name: string }[] = [];
     if (args.scope === "TASK" && args.taskId) {
       const task = await prisma.task.findUnique({
         where: { id: args.taskId },
         select: {
           activeStages: {
-            select: { stage: { select: { id: true, name: true, defaultMediaType: true } } },
+            select: { stage: { select: { id: true, name: true } } },
           },
         },
       });
-      stages =
-        task?.activeStages.map((s) => ({
-          id: s.stage.id,
-          name: s.stage.name,
-          defaultMediaType: s.stage.defaultMediaType,
-        })) ?? [];
+      stages = task?.activeStages.map((s) => ({ id: s.stage.id, name: s.stage.name })) ?? [];
     }
 
     return {

@@ -36,7 +36,7 @@ const SENSITIVITIES = [
 interface Options {
   uploadConfigured: boolean;
   purposes: { id: string; label: string }[];
-  stages: { id: string; name: string; defaultMediaType: string | null }[];
+  stages: { id: string; name: string }[];
 }
 
 type Scope = "TASK" | "PROJECT" | "CLIENT";
