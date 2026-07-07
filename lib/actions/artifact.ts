@@ -625,6 +625,51 @@ export async function removeScopedArtifact(id: string) {
   }
 }
 
+/** Recuperação: remove um upload NAS NÃO-READY (travado/falho) em qualquer escopo, inclusive TASK.
+ *  Se era a versão vigente, promove a anterior da cadeia a vigente (não deixa a cadeia sem current).
+ *  READY não sai por aqui. RBAC por escopo (tarefa = membro+; projeto/cliente = MANAGER+). */
+export async function removeFailedArtifact(id: string) {
+  const art = await prisma.taskArtifact.findUnique({
+    where: { id },
+    select: {
+      scope: true,
+      storageKind: true,
+      uploadStatus: true,
+      taskId: true,
+      projectId: true,
+      clientId: true,
+      rootId: true,
+      isCurrent: true,
+    },
+  });
+  if (!art) return { error: "Artefato não encontrado." };
+  await requireForArtifactScope(art.scope); // throws (propaga) se não autorizado
+  if (art.storageKind !== "NAS_UPLOAD") return { error: "Só uploads NAS saem por aqui." };
+  if (art.uploadStatus === "READY") return { error: "Artefato pronto — não é removível por aqui." };
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.artifactAuditLog.deleteMany({ where: { artifactId: id } });
+      await tx.taskArtifact.delete({ where: { id } });
+      if (art.isCurrent) {
+        const root = art.rootId ?? id;
+        const prev = await tx.taskArtifact.findFirst({
+          where: { OR: [{ id: root }, { rootId: root }], NOT: { id } },
+          orderBy: { version: "desc" },
+          select: { id: true },
+        });
+        if (prev) {
+          await tx.taskArtifact.update({ where: { id: prev.id }, data: { isCurrent: true } });
+        }
+      }
+    });
+    revalidateForArtifact(art);
+    return { success: true };
+  } catch (error) {
+    console.error("removeFailedArtifact error:", error);
+    return { error: "Erro ao remover artefato." };
+  }
+}
+
 // ========== Versionamento (spec 2026-07-06) ==========
 
 // Permissão por escopo: tarefa = membro+; projeto/cliente = MANAGER+.

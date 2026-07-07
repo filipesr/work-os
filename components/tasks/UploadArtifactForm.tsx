@@ -17,6 +17,7 @@ import {
   markUploading,
   prepareArtifactUpload,
 } from "@/lib/actions/artifact";
+import { guessMediaType, putWithProgress } from "@/lib/nas/upload-client";
 
 const MEDIA_TYPES = [
   { v: "VIDEOS", l: "Vídeos" },
@@ -31,44 +32,6 @@ const SENSITIVITIES = [
   { v: "CLIENTE", l: "Cliente" },
   { v: "CONFIDENCIAL", l: "Confidencial" },
 ];
-
-// Palpite do tipo de mídia pela extensão (conveniência — o servidor valida pela allowlist e o
-// usuário pode trocar). Alinhado com ALLOWLIST em lib/nas/path.ts.
-const EXT_MEDIA: Record<string, string> = {
-  mp4: "VIDEOS",
-  mov: "VIDEOS",
-  webm: "VIDEOS",
-  mkv: "VIDEOS",
-  jpg: "FOTOS",
-  jpeg: "FOTOS",
-  png: "FOTOS",
-  webp: "FOTOS",
-  gif: "FOTOS",
-  tiff: "FOTOS",
-  tif: "FOTOS",
-  heic: "FOTOS",
-  raw: "FOTOS",
-  cr2: "FOTOS",
-  nef: "FOTOS",
-  arw: "FOTOS",
-  svg: "LOGOS",
-  ai: "LOGOS",
-  eps: "LOGOS",
-  cdr: "LOGOS",
-  pdf: "DOCUMENTOS",
-  docx: "DOCUMENTOS",
-  xlsx: "DOCUMENTOS",
-  pptx: "DOCUMENTOS",
-  txt: "DOCUMENTOS",
-  zip: "DOCUMENTOS",
-  indd: "DOCUMENTOS",
-  psd: "DOCUMENTOS",
-};
-
-function guessMediaType(fileName: string): string | null {
-  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
-  return EXT_MEDIA[ext] ?? null;
-}
 
 interface Options {
   uploadConfigured: boolean;
@@ -86,29 +49,6 @@ type Phase = "idle" | "preparing" | "uploading" | "done" | "error";
 
 const selectClass =
   "flex h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 transition-all";
-
-function putWithProgress(
-  url: string,
-  token: string,
-  file: File,
-  onProgress: (pct: number) => void
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("PUT", url);
-    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-    xhr.setRequestHeader("Content-Type", "application/octet-stream");
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-    };
-    xhr.onload = () =>
-      xhr.status >= 200 && xhr.status < 300
-        ? resolve()
-        : reject(new Error(`Agente respondeu ${xhr.status}`));
-    xhr.onerror = () => reject(new Error("Erro de rede ao enviar ao agente"));
-    xhr.send(file);
-  });
-}
 
 export function UploadArtifactForm({
   scope,

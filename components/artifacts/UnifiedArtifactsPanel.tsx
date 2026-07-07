@@ -20,9 +20,11 @@ import { addLinkArtifact } from "@/lib/actions/task";
 import {
   addScopedLinkArtifact,
   removeScopedArtifact,
+  removeFailedArtifact,
   addLinkArtifactVersion,
   getArtifactVersions,
 } from "@/lib/actions/artifact";
+import { guessMediaType, uploadFileToNas } from "@/lib/nas/upload-client";
 import {
   type UnifiedArtifactRow,
   ORIGIN_LABEL,
@@ -84,6 +86,11 @@ export function UnifiedArtifactsPanel({
   const [history, setHistory] = useState<UnifiedArtifactRow[]>([]);
   // Cache de histórico por id — não refaz o fetch ao reabrir "ver versões".
   const historyCache = useRef<Map<string, UnifiedArtifactRow[]>>(new Map());
+
+  // Recuperação de uploads NAS travados/falhos: um file input escondido, alvo por ref.
+  const reenviarInputRef = useRef<HTMLInputElement>(null);
+  const reenviarForRef = useRef<string | null>(null);
+  const [reenviarBusy, setReenviarBusy] = useState<string | null>(null);
 
   const sorted = sortRows(rows);
 
@@ -171,8 +178,58 @@ export function UnifiedArtifactsPanel({
     });
   };
 
+  // Recuperação: remove um upload NAS não-READY (travado/falho).
+  const handleRemoveFailed = (id: string) => {
+    startTransition(async () => {
+      const res = await removeFailedArtifact(id);
+      if (res?.success) {
+        toast.success("Removido");
+        router.refresh();
+      } else {
+        toast.error(res?.error ?? "Erro ao remover");
+      }
+    });
+  };
+
+  // Reenviar: abre o seletor de arquivo para o artefato alvo; ao escolher, sobe de novo (mesmo nome
+  // = nova versão; nome diferente = artefato novo — o servidor decide pela identidade do arquivo).
+  const startReenviar = (id: string) => {
+    reenviarForRef.current = id;
+    reenviarInputRef.current?.click();
+  };
+  const handleReenviarFile = async (file: File | null) => {
+    const id = reenviarForRef.current;
+    if (!file || !id) return;
+    setReenviarBusy(id);
+    const res = await uploadFileToNas(file, {
+      scope,
+      taskId: ownerIds.taskId,
+      projectId: ownerIds.projectId,
+      clientId: ownerIds.clientId,
+      mediaType: guessMediaType(file.name) ?? "OUTROS",
+    });
+    setReenviarBusy(null);
+    if (res.ok) {
+      toast.success(`Reenviado: ${res.fileName}. Finalizando…`);
+      setTimeout(() => router.refresh(), 1500);
+    } else {
+      toast.error(res.error);
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {/* Input escondido do "Reenviar" (um só, alvo via ref). */}
+      <input
+        ref={reenviarInputRef}
+        type="file"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0] ?? null;
+          e.target.value = ""; // permite re-selecionar o mesmo arquivo
+          void handleReenviarFile(f);
+        }}
+      />
       {/* Rows */}
       {sorted.length === 0 ? (
         <div className="text-center py-8 text-sm text-muted-foreground">
@@ -249,6 +306,26 @@ export function UnifiedArtifactsPanel({
                   <div className="flex shrink-0 items-center gap-2">
                     {isNas && a.uploadStatus === "READY" && (
                       <DownloadArtifactButton artifactId={a.id} />
+                    )}
+                    {isNas && a.uploadStatus !== "READY" && a.origin === scope && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => startReenviar(a.id)}
+                          disabled={isPending || reenviarBusy !== null}
+                          className="text-xs font-semibold text-primary hover:text-primary/80 disabled:opacity-50"
+                        >
+                          {reenviarBusy === a.id ? "Enviando…" : "Reenviar"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFailed(a.id)}
+                          disabled={isPending || reenviarBusy !== null}
+                          className="text-xs font-semibold text-muted-foreground hover:text-destructive disabled:opacity-50"
+                        >
+                          Remover
+                        </button>
+                      </>
                     )}
                     {a.version > 1 && (
                       <button

@@ -24,7 +24,7 @@ import {
   TokenError,
   KeyStore,
 } from "./token.js";
-import { callFinalize } from "./finalize.js";
+import { callFinalize, decideFinalize } from "./finalize.js";
 import { PersistentJtiStore, FinalizeQueue, AuditLog } from "./store.js";
 import { sniffUpload, SniffError } from "./sniff.js";
 
@@ -370,7 +370,6 @@ function startFinalizeWorker(
   if (!cfg.cloudFinalizeUrl || !cfg.finalizeSecret) return () => {};
   const url = cfg.cloudFinalizeUrl;
   const secret = cfg.finalizeSecret;
-  const MAX_ATTEMPTS = 8;
 
   const tick = async () => {
     for (const job of queue.due()) {
@@ -379,25 +378,26 @@ function startFinalizeWorker(
         { artifactId: job.artifactId, checksum: job.checksum, sizeBytes: job.sizeBytes },
         { retries: 1 }
       );
-      if (r.ok) {
+      const d = decideFinalize(job, r, Date.now());
+      if (d.action === "remove" && d.reason === "ok") {
         await queue.remove(job.artifactId);
         await audit.append({ event: "finalized_async", artifactId: job.artifactId });
-        continue;
-      }
-      const terminal = !!r.status && r.status >= 400 && r.status < 500 && r.status !== 429;
-      const attempts = job.attempts + 1;
-      if (terminal || attempts >= MAX_ATTEMPTS) {
+      } else if (d.action === "remove") {
+        // Só desiste em erro TERMINAL (4xx) ou backstop de idade — nunca por contagem de transientes.
         await queue.remove(job.artifactId);
         await audit.append({
           event: "finalize_failed",
           artifactId: job.artifactId,
           status: r.status,
-          attempts,
+          attempts: d.attempts,
+          reason: d.reason,
         });
-        log.error({ artifactId: job.artifactId, status: r.status }, "finalize desistiu");
+        log.error(
+          { artifactId: job.artifactId, status: r.status, reason: d.reason },
+          "finalize desistiu"
+        );
       } else {
-        const backoff = Math.min(30 * 60 * 1000, 1000 * 2 ** attempts); // até 30 min
-        await queue.reschedule(job.artifactId, attempts, Date.now() + backoff);
+        await queue.reschedule(job.artifactId, d.attempts, d.nextAttemptAt);
       }
     }
   };

@@ -110,6 +110,57 @@ describe("addLinkArtifactVersion", () => {
   });
 });
 
+describe("removeFailedArtifact (recuperação — segurança)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(requireMemberOrHigher).mockResolvedValue(asUser as never);
+    vi.mocked(requireManagerOrAdmin).mockResolvedValue(asUser as never);
+  });
+
+  const findUnique = async () =>
+    (
+      (await import("@/lib/prisma")).prisma as never as {
+        taskArtifact: { findUnique: ReturnType<typeof vi.fn> };
+      }
+    ).taskArtifact.findUnique;
+
+  it("recusa remover um artefato READY (não nuke o que está bom)", async () => {
+    (await findUnique()).mockResolvedValue({
+      scope: "TASK",
+      storageKind: "NAS_UPLOAD",
+      uploadStatus: "READY",
+      taskId: "t1",
+      projectId: null,
+      clientId: null,
+      rootId: null,
+      isCurrent: true,
+    });
+    const { removeFailedArtifact } = await import("@/lib/actions/artifact");
+    expect(await removeFailedArtifact("a1")).toHaveProperty("error");
+  });
+
+  it("recusa remover um LINK (só uploads NAS saem por aqui)", async () => {
+    (await findUnique()).mockResolvedValue({
+      scope: "TASK",
+      storageKind: "LINK",
+      uploadStatus: "READY",
+      taskId: "t1",
+      projectId: null,
+      clientId: null,
+      rootId: null,
+      isCurrent: true,
+    });
+    const { removeFailedArtifact } = await import("@/lib/actions/artifact");
+    expect(await removeFailedArtifact("a1")).toHaveProperty("error");
+  });
+
+  it("artefato inexistente → erro", async () => {
+    (await findUnique()).mockResolvedValue(null);
+    const { removeFailedArtifact } = await import("@/lib/actions/artifact");
+    expect(await removeFailedArtifact("nope")).toHaveProperty("error");
+  });
+});
+
 describe("getArtifactVersions", () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -72,3 +72,42 @@ export async function callFinalize(
   }
   return { ok: false, error: lastErr };
 }
+
+// ---- política de retry do worker persistente ---------------------------------
+
+export interface FinalizeQueueJob {
+  attempts: number;
+  createdAt: number; // epoch ms
+}
+
+export type FinalizeDecision =
+  | { action: "remove"; reason: "ok" | "terminal" | "too_old"; attempts: number }
+  | { action: "reschedule"; attempts: number; nextAttemptAt: number };
+
+export const FINALIZE_BACKOFF_CAP_MS = 30 * 60 * 1000; // 30 min
+export const FINALIZE_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000; // 14 dias (backstop de abandono)
+
+/**
+ * Decisão do worker por job. Sucesso → remove. 4xx (exceto 429) é TERMINAL (reintentar não resolve).
+ * Transiente (5xx/429/erro de rede) → reintenta com backoff limitado e **nunca desiste por
+ * contagem** — só um backstop de idade. Assim, uma queda longa da nuvem não perde o finalize: o
+ * agente insiste (fila persistente) até a nuvem voltar. É o substituto correto do pull-reconcile
+ * na topologia Vercel↔LAN (a Vercel não alcança o agente).
+ */
+export function decideFinalize(
+  job: FinalizeQueueJob,
+  result: FinalizeResult,
+  now: number,
+  opts: { maxAgeMs?: number } = {}
+): FinalizeDecision {
+  if (result.ok) return { action: "remove", reason: "ok", attempts: job.attempts };
+  const terminal =
+    !!result.status && result.status >= 400 && result.status < 500 && result.status !== 429;
+  const attempts = job.attempts + 1;
+  if (terminal) return { action: "remove", reason: "terminal", attempts };
+  if (now - job.createdAt > (opts.maxAgeMs ?? FINALIZE_MAX_AGE_MS)) {
+    return { action: "remove", reason: "too_old", attempts };
+  }
+  const backoff = Math.min(FINALIZE_BACKOFF_CAP_MS, 1000 * 2 ** Math.min(attempts, 11));
+  return { action: "reschedule", attempts, nextAttemptAt: now + backoff };
+}
