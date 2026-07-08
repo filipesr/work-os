@@ -7,6 +7,8 @@ import { getTranslations } from "next-intl/server";
 import { computeProjectCompletion } from "@/lib/project-status";
 import { mapArtifactRow } from "@/lib/artifacts/unify";
 import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
+import { StorageBreakdown } from "@/components/nas/StorageBreakdown";
+import { storageByTask } from "@/lib/nas/storage-stats";
 import { EditProjectHeader } from "./edit-project-header";
 
 const COMPLETION_STATE_LABEL: Record<string, string> = {
@@ -109,6 +111,7 @@ export default async function ProjectDetailPage({
 
   // Derived completion (% + state) from task statuses — single source of truth.
   const completion = computeProjectCompletion(project.tasks);
+  const taskStorage = await storageByTask(projectId);
 
   // Linhas unificadas: artefatos do Projeto + artefatos das Tarefas do projeto.
   const artifactRows = [
@@ -273,6 +276,10 @@ export default async function ProjectDetailPage({
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <StorageBreakdown title="Armazenamento no NAS — por tarefa" stats={taskStorage} />
       </div>
 
       {/* Artefatos: Projeto + Tarefas do projeto (Origem por linha) */}

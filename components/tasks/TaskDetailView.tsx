@@ -32,6 +32,8 @@ import {
 import { CommentsList } from "./CommentsList";
 import { AddCommentForm } from "./AddCommentForm";
 import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
+import { StorageBreakdown } from "@/components/nas/StorageBreakdown";
+import type { StorageStats } from "@/lib/nas/storage-format";
 import { type UnifiedArtifactRow } from "@/lib/artifacts/unify";
 import { TaskActionsMenu } from "./TaskActionsMenu";
 import { ActivityButton } from "./ActivityButton";
@@ -85,6 +87,7 @@ interface TaskDetailViewProps {
   allTemplateStages: (TemplateStage & { defaultTeam: { id: string; name: string } | null })[];
   canPerformActions: boolean;
   currentStageAssignee?: string | null;
+  typeStorage: StorageStats;
 }
 
 export function TaskDetailView({
@@ -99,6 +102,7 @@ export function TaskDetailView({
   allTemplateStages,
   canPerformActions,
   currentStageAssignee,
+  typeStorage,
 }: TaskDetailViewProps) {
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
   const canViewTimeLogs =
@@ -349,6 +353,9 @@ export function TaskDetailView({
               canAdd={canPerformActions}
               canRemove={canManageScoped}
             />
+            <div className="mt-4">
+              <StorageBreakdown title="Armazenamento no NAS — por tipo" stats={typeStorage} />
+            </div>
           </CardContent>
         </Card>
 

@@ -9,6 +9,8 @@ import { getTranslations } from "next-intl/server";
 import { computeProjectCompletion } from "@/lib/project-status";
 import { mapArtifactRow } from "@/lib/artifacts/unify";
 import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
+import { StorageBreakdown } from "@/components/nas/StorageBreakdown";
+import { storageByProject } from "@/lib/nas/storage-stats";
 import { EditClientHeader } from "./edit-client-header";
 import { ProjectStatusFilter } from "./project-status-filter";
 
@@ -159,6 +161,7 @@ export default async function ClientDetailPage({
   const folderNameLocked = await isClientFolderLocked(clientId);
 
   const totalTasks = client.projects.reduce((sum, p) => sum + p._count.tasks, 0);
+  const projectStorage = await storageByProject(clientId);
 
   // Classifica cada projeto pelo estado derivado e aplica o filtro (se válido).
   const statusFilter = pickCompletion(sp.status);
@@ -213,6 +216,10 @@ export default async function ClientDetailPage({
           <p className="text-sm text-muted-foreground">{t("totalTasks")}</p>
           <p className="text-3xl font-bold text-foreground mt-1">{totalTasks}</p>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <StorageBreakdown title="Armazenamento no NAS — por projeto" stats={projectStorage} />
       </div>
 
       {/* Artefatos do cliente (Origem: Cliente) — visíveis nas demandas do cliente */}

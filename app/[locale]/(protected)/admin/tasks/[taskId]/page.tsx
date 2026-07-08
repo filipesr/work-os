@@ -8,6 +8,8 @@ import { CompleteTaskButton } from "@/components/tasks/CompleteTaskButton";
 import prisma from "@/lib/prisma";
 import { mapArtifactRow } from "@/lib/artifacts/unify";
 import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
+import { StorageBreakdown } from "@/components/nas/StorageBreakdown";
+import { storageByMediaType } from "@/lib/nas/storage-stats";
 import { TaskLifecycleActions } from "@/components/tasks/TaskLifecycleActions";
 import { TimeLogsList } from "@/components/tasks/TimeLogsList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +45,8 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
   if (!task) {
     notFound();
   }
+
+  const typeStorage = await storageByMediaType(taskId);
 
   // Artefatos de projeto/cliente (escopo) para a tabela única com Origem.
   const scoped = await prisma.project.findUnique({
@@ -355,6 +359,9 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                   canAdd
                   canRemove
                 />
+                <div className="mt-4">
+                  <StorageBreakdown title="Armazenamento no NAS — por tipo" stats={typeStorage} />
+                </div>
               </CardContent>
             </Card>
 

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { TaskStatus } from "@prisma/client";
 import Link from "next/link";
+import { storageByClient } from "@/lib/nas/storage-stats";
+import { StorageBreakdown } from "@/components/nas/StorageBreakdown";
 
 export const metadata: Metadata = {
   title: "Administração",
@@ -47,17 +49,19 @@ export default async function AdminDashboardPage() {
   const t = await getTranslations("admin.dashboard");
 
   // Fetch system statistics in parallel
-  const [userCount, clientCount, projectCount, templateCount, activeTaskCount] = await Promise.all([
-    prisma.user.count(),
-    prisma.client.count(),
-    prisma.project.count(),
-    prisma.workflowTemplate.count(),
-    prisma.task.count({
-      where: {
-        status: { in: [TaskStatus.BACKLOG, TaskStatus.IN_PROGRESS, TaskStatus.PAUSED] },
-      },
-    }),
-  ]);
+  const [userCount, clientCount, projectCount, templateCount, activeTaskCount, clientStorage] =
+    await Promise.all([
+      prisma.user.count(),
+      prisma.client.count(),
+      prisma.project.count(),
+      prisma.workflowTemplate.count(),
+      prisma.task.count({
+        where: {
+          status: { in: [TaskStatus.BACKLOG, TaskStatus.IN_PROGRESS, TaskStatus.PAUSED] },
+        },
+      }),
+      storageByClient(),
+    ]);
 
   return (
     <div>
@@ -108,6 +112,10 @@ export default async function AdminDashboardPage() {
           title={t("nav.tasks.title")}
           description={t("nav.tasks.description")}
         />
+      </div>
+
+      <div className="mt-10">
+        <StorageBreakdown title="Armazenamento no NAS — por cliente" stats={clientStorage} />
       </div>
     </div>
   );
