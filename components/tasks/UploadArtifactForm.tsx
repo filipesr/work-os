@@ -4,20 +4,20 @@
 // and loads the dropdown data. If the agent isn't reachable, or the project/env isn't configured,
 // upload is disabled with an explanation. The file bytes go straight from the browser to the agent
 // (PUT with the signed token) — never through Vercel.
+//
+// Envios são fire-and-forget e CONCORRENTES: ao enviar, o picker é liberado na hora e o upload corre
+// em background numa lista de progresso (cada item some ao concluir). O status final (finalizando ->
+// Pronto) aparece no card do artefato, via router.refresh().
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Loader2, Upload, ShieldAlert } from "lucide-react";
+import { Loader2, Upload, ShieldAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { resolveUploadEndpoint, type UploadEndpoint } from "@/lib/nas/endpoint";
-import {
-  getArtifactUploadOptions,
-  markUploading,
-  prepareArtifactUpload,
-} from "@/lib/actions/artifact";
-import { guessMediaType, putWithProgress } from "@/lib/nas/upload-client";
+import { getArtifactUploadOptions } from "@/lib/actions/artifact";
+import { guessMediaType, uploadFileToNas } from "@/lib/nas/upload-client";
 
 const MEDIA_TYPES = [
   { v: "VIDEOS", l: "Vídeos" },
@@ -45,7 +45,13 @@ interface UploadArtifactFormProps {
   clientId?: string;
 }
 
-type Phase = "idle" | "preparing" | "uploading" | "done" | "error";
+// Um envio em andamento (concorrente). `error` preenchido = falhou (fica na lista até dispensar).
+interface InFlight {
+  id: number;
+  name: string;
+  progress: number;
+  error?: string;
+}
 
 const selectClass =
   "flex h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 transition-all";
@@ -65,9 +71,8 @@ export function UploadArtifactForm({
   const [mediaType, setMediaType] = useState("FOTOS");
   const [sensitivity, setSensitivity] = useState("INTERNO");
 
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [progress, setProgress] = useState(0);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [inFlight, setInFlight] = useState<InFlight[]>([]);
+  const idRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -89,7 +94,6 @@ export function UploadArtifactForm({
     };
   }, [scope, taskId, projectId, clientId]);
 
-  const busy = phase === "preparing" || phase === "uploading";
   const blockedReason = checking
     ? null
     : !endpoint?.uploadEnabled
@@ -99,43 +103,29 @@ export function UploadArtifactForm({
         : null;
   const canUpload = !checking && !blockedReason;
 
-  async function handleUpload() {
+  // Fire-and-forget: libera o picker na hora e sobe em background (permite envios concorrentes).
+  function handleUpload() {
     if (!file) return toast.error("Selecione um arquivo.");
+    const f = file;
+    const params = { scope, taskId, projectId, clientId, mediaType, sensitivity };
+    const id = ++idRef.current;
 
-    setPhase("preparing");
-    setErrorMsg("");
-    const prep = await prepareArtifactUpload({
-      scope,
-      taskId,
-      projectId,
-      clientId,
-      mediaType,
-      sensitivity,
-      originalFileName: file.name,
-      mimeType: file.type || "application/octet-stream",
-      sizeBytes: file.size,
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setInFlight((cur) => [...cur, { id, name: f.name, progress: 0 }]);
+
+    void uploadFileToNas(f, params, (pct) =>
+      setInFlight((cur) => cur.map((e) => (e.id === id ? { ...e, progress: pct } : e)))
+    ).then((res) => {
+      if (res.ok) {
+        setInFlight((cur) => cur.filter((e) => e.id !== id));
+        toast.success(`Enviado: ${res.fileName}`);
+        router.refresh(); // o card reflete finalizando -> Pronto
+      } else {
+        setInFlight((cur) => cur.map((e) => (e.id === id ? { ...e, error: res.error } : e)));
+        toast.error(res.error);
+      }
     });
-    if (!("success" in prep) || !prep.success) {
-      setPhase("error");
-      setErrorMsg(("error" in prep && prep.error) || "Falha ao preparar upload.");
-      return;
-    }
-
-    await markUploading(prep.artifact.id);
-    setPhase("uploading");
-    setProgress(0);
-    try {
-      await putWithProgress(prep.upload.url, prep.upload.token, file, setProgress);
-      setPhase("done");
-      toast.success(`Enviado: ${prep.artifact.fileName}. Finalizando no servidor…`);
-      setFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      // The agent finalizes asynchronously (PENDING/UPLOADING -> READY); refresh to reflect it.
-      setTimeout(() => router.refresh(), 1500);
-    } catch (e) {
-      setPhase("error");
-      setErrorMsg(e instanceof Error ? e.message : "Falha no upload.");
-    }
   }
 
   if (checking) {
@@ -174,7 +164,6 @@ export function UploadArtifactForm({
                 if (guessed) setMediaType(guessed);
               }
             }}
-            disabled={busy}
             className="block w-full text-sm text-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-primary-foreground file:font-semibold hover:file:bg-primary/90"
           />
         </div>
@@ -187,7 +176,6 @@ export function UploadArtifactForm({
             id="nas-mediaType"
             value={mediaType}
             onChange={(e) => setMediaType(e.target.value)}
-            disabled={busy}
             className={selectClass}
           >
             {MEDIA_TYPES.map((m) => (
@@ -206,7 +194,6 @@ export function UploadArtifactForm({
             id="nas-sensitivity"
             value={sensitivity}
             onChange={(e) => setSensitivity(e.target.value)}
-            disabled={busy}
             className={selectClass}
           >
             {SENSITIVITIES.map((s) => (
@@ -218,31 +205,43 @@ export function UploadArtifactForm({
         </div>
       </div>
 
-      {phase === "uploading" && (
-        <div className="space-y-1">
-          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-            <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
-          </div>
-          <p className="text-xs text-muted-foreground">Enviando… {progress}%</p>
-        </div>
-      )}
-      {phase === "error" && <p className="text-sm text-destructive">{errorMsg}</p>}
-      {phase === "done" && (
-        <p className="text-sm text-green-600">Upload concluído — finalizando no servidor.</p>
-      )}
-
-      <Button type="button" size="sm" onClick={handleUpload} disabled={!canUpload || busy || !file}>
-        {busy ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-        ) : (
-          <Upload className="h-4 w-4 mr-2" />
-        )}
-        {phase === "preparing"
-          ? "Preparando…"
-          : phase === "uploading"
-            ? "Enviando…"
-            : "Enviar ao NAS"}
+      <Button type="button" size="sm" onClick={handleUpload} disabled={!canUpload || !file}>
+        <Upload className="h-4 w-4 mr-2" />
+        Enviar ao NAS
       </Button>
+
+      {/* Envios em andamento (concorrentes) — cada item some ao concluir. */}
+      {inFlight.length > 0 && (
+        <ul className="space-y-2 pt-1">
+          {inFlight.map((e) => (
+            <li key={e.id} className="space-y-1">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="truncate text-foreground">{e.name}</span>
+                <span className="shrink-0 text-muted-foreground">
+                  {e.error ? "falhou" : `${e.progress}%`}
+                  {e.error && (
+                    <button
+                      type="button"
+                      onClick={() => setInFlight((cur) => cur.filter((x) => x.id !== e.id))}
+                      className="ml-1 align-middle text-muted-foreground hover:text-foreground"
+                      aria-label="Dispensar"
+                    >
+                      <X className="inline h-3 w-3" />
+                    </button>
+                  )}
+                </span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className={`h-full transition-all ${e.error ? "bg-destructive" : "bg-primary"}`}
+                  style={{ width: `${e.error ? 100 : e.progress}%` }}
+                />
+              </div>
+              {e.error && <p className="text-xs text-destructive">{e.error}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
