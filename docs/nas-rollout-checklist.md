@@ -10,12 +10,15 @@ Runbook operacional para colocar o upload/registro de artefatos no NAS em produ�
 > (irmãos, sob `goonmarketing.com`, SSL por host): `nas-agent-lan…` (A → IP privado) e
 > `nas-agent-download…` (túnel).
 >
-> **Estado atual:** todo o lado-nuvem está pronto e testado por unidade. O agente roda em LAN
-> (E2E local validado). **Pré-preparado para o NS:** domínio propagado nos docs/config; compose de
-> produção já no agente endurecido (v0.2.0); `cloudflared/config.yml` com o hostname real; cron
-> `nas-reconcile` já no `vercel.json`; SQL dos índices parciais pronto (§1). Só falta a exposição
-> externa (túnel/DNS/TLS) — que depende do NS — e preencher os segredos de produção. **Nada de código
-> novo é necessário para o rollout.**
+> **Estado atual (2026-07-08) — NAS FUNCIONANDO EM PRODUÇÃO na LAN** via o interim **§5b**: agente
+> HTTPS em `nas-agent-lan.goonmarketing.com` (Caddy + wildcard cPanel, `network_mode: host` para
+> alcançar a Vercel no finalize), com upload/download/versionamento/métricas rodando pelo domínio
+> `workos.goonmarketing.com`. Chaves de produção `kid=prod-1`; envs NAS setadas na Vercel.
+>
+> **Pendente (depende do NS→Cloudflare):** exposição **EXTERNA** (uso fora da LAN) — §4–5, que troca o
+> wildcard-manual pelo **DNS-01 auto-renovável** + túnel opcional, aposentando o host-mode. **Share
+> externo** adiado (candidato: Google Drive on-demand). ⚠️ O cert wildcard **renova ~26/ago/2026** —
+> reconstruir o `fullchain.pem` com o newline entre leaf/cabundle (gotcha no §5b).
 
 ## 0. Pré-requisitos
 
@@ -134,14 +137,14 @@ rebinding).
 - [x] **cPanel → SSL/TLS:** exportar CRT + KEY + CABUNDLE do `*.goonmarketing.com`.
 - [x] **Montar o `fullchain.pem` COM newline entre leaf e cabundle** — ⚠️ **gotcha crítico:** o cPanel
       exporta o CRT **sem newline final**, então `cat crt cabundle > fullchain` **gruda** `-----END
-    CERTIFICATE----------BEGIN CERTIFICATE-----` na mesma linha e o `pem.Decode` do Go/Caddy falha
+  CERTIFICATE----------BEGIN CERTIFICATE-----` na mesma linha e o `pem.Decode` do Go/Caddy falha
       com `no PEM data in certificate input` (o `head`/`grep`/`od` do início parecem OK — o erro é no
       boundary). Monte assim: `{ cat crt.txt; echo; cat cabundle.txt; echo; } > fullchain.pem` e
       confirme com `grep -n 'BEGIN CERTIFICATE\|END CERTIFICATE' fullchain.pem` → **4 linhas
       separadas** (1/30/31/59). (Vale também na renovação de ~ago/2026.)
 - [x] **Reverse proxy = container Caddy** no mesmo compose (o Asustor ADM não tem proxy embutido
       prático). Caddy na `:443` com `tls /certs/fullchain.pem /certs/key.pem` → `reverse_proxy
-    agent:8080`. Agente volta pra rede **bridge** (finalize vai pra URL pública da Vercel).
+  agent:8080`. Agente volta pra rede **bridge** (finalize vai pra URL pública da Vercel).
       Artefatos: `nas-poc/out/lan-deploy-tls/{compose.tls.yml,Caddyfile,certs/}` (gitignored).
 - [x] **Envs:** `node scripts/nas-prod-setup.mjs` → `app.env` no Vercel (**rebuild** — `NEXT_PUBLIC_*`
       é build-time) + `agent.env` no NAS. `FINALIZE_SECRET` do agente == `NAS_FINALIZE_SECRET` do app.

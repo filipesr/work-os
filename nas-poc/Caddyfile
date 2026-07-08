@@ -4,7 +4,7 @@
 }
 nas-agent-lan.goonmarketing.com {
 	tls /certs/fullchain.pem /certs/key.pem
-	reverse_proxy agent:8080 {
+	reverse_proxy localhost:8080 {
 		# Private Network Access: navegador exige este header no preflight quando um site
 		# público (https) acessa um IP privado (o agente na LAN). Sem ele, o browser bloqueia.
 		header_down Access-Control-Allow-Private-Network "true"
