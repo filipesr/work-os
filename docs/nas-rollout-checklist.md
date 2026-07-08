@@ -131,20 +131,23 @@ resolve a LAN; o **download externo** continua esperando o túnel (§4). **Renov
 → A → `192.168.200.216` **já criado e resolvendo** (inclusive no resolver local — sem filtro de
 rebinding).
 
-- [ ] **cPanel → SSL/TLS:** exportar o **certificado + chave privada** do `*.goonmarketing.com`.
-- [ ] **Asustor ADM → Certificado:** importar o par.
-- [ ] **Proxy reverso no Asustor:** `nas-agent-lan.goonmarketing.com` :443 (TLS, cert importado) →
-      `127.0.0.1:8080` (agente). O agente segue HTTP interno.
-- [ ] **Envs de produção:** `node scripts/nas-prod-setup.mjs` → colar `app.env` no Vercel
-      (**rebuild** — `NEXT_PUBLIC_*` é build-time) + `agent.env` no NAS (agente passa a **verificar
-      tokens da Vercel** e **finalizar** em `https://workos.goonmarketing.com/...`). `ALLOWED_ORIGIN`
-      do agente inclui `https://workos.goonmarketing.com`.
-- [ ] **Testar** upload/download na LAN pelo domínio online (`NEXT_PUBLIC_NAS_AGENT_URL_LAN=
-    https://nas-agent-lan.goonmarketing.com`).
-
-> **Bloqueio atual do teste:** `NEXT_PUBLIC_NAS_AGENT_URL_LAN` já setada em produção, mas o agente
-> ainda é **HTTP:8080 sem cert** → o probe em :443 falha e o NAS aparece mas degrada (upload
-> "conecte-se à LAN", download com toast). Os passos acima (cert + proxy) é o que falta para funcionar.
+- [x] **cPanel → SSL/TLS:** exportar CRT + KEY + CABUNDLE do `*.goonmarketing.com`.
+- [x] **Montar o `fullchain.pem` COM newline entre leaf e cabundle** — ⚠️ **gotcha crítico:** o cPanel
+      exporta o CRT **sem newline final**, então `cat crt cabundle > fullchain` **gruda** `-----END
+    CERTIFICATE----------BEGIN CERTIFICATE-----` na mesma linha e o `pem.Decode` do Go/Caddy falha
+      com `no PEM data in certificate input` (o `head`/`grep`/`od` do início parecem OK — o erro é no
+      boundary). Monte assim: `{ cat crt.txt; echo; cat cabundle.txt; echo; } > fullchain.pem` e
+      confirme com `grep -n 'BEGIN CERTIFICATE\|END CERTIFICATE' fullchain.pem` → **4 linhas
+      separadas** (1/30/31/59). (Vale também na renovação de ~ago/2026.)
+- [x] **Reverse proxy = container Caddy** no mesmo compose (o Asustor ADM não tem proxy embutido
+      prático). Caddy na `:443` com `tls /certs/fullchain.pem /certs/key.pem` → `reverse_proxy
+    agent:8080`. Agente volta pra rede **bridge** (finalize vai pra URL pública da Vercel).
+      Artefatos: `nas-poc/out/lan-deploy-tls/{compose.tls.yml,Caddyfile,certs/}` (gitignored).
+- [x] **Envs:** `node scripts/nas-prod-setup.mjs` → `app.env` no Vercel (**rebuild** — `NEXT_PUBLIC_*`
+      é build-time) + `agent.env` no NAS. `FINALIZE_SECRET` do agente == `NAS_FINALIZE_SECRET` do app.
+      **Sem** `NAS_AGENT_URL_TUNNEL` (sem túnel → download externo degrada com aviso).
+- [x] **Verificado (2026-07-08):** `curl https://nas-agent-lan.goonmarketing.com/v1/health` →
+      `ok:true, writable:true, kids:["prod-1"]`. ✅ Agente HTTPS na LAN funcionando.
 
 ## 6. Reconciliação de uploads travados
 

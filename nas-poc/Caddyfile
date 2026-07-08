@@ -1,0 +1,8 @@
+{
+	# cert explícito (wildcard exportado da cPanel) — sem ACME. Sem redirect :80.
+	auto_https disable_redirects
+}
+nas-agent-lan.goonmarketing.com {
+	tls /certs/fullchain.pem /certs/key.pem
+	reverse_proxy agent:8080
+}

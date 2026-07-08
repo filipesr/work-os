@@ -1,0 +1,44 @@
+# §5b — agente HTTP interno + Caddy terminando TLS na 443 com o wildcard. Sem túnel/cloudflared
+# (upload é LAN-only; share externo adiado). Finalize vai pra URL pública da Vercel (bridge alcança).
+services:
+  agent:
+    build: ./agent
+    image: nas-poc-agent:latest
+    restart: unless-stopped
+    user: "${AGENT_UID}:${AGENT_GID}"
+    environment:
+      NAS_ROOT: /data
+      STATE_DIR: /data/.agent-state
+      LAN_PORT: "8080"
+      LAN_HOST: "0.0.0.0"
+      TUNNEL_PORT: "8081"
+      TUNNEL_HOST: "127.0.0.1"
+      POC_HASH_MODE: "${POC_HASH_MODE:-inline}"
+      MAX_UPLOAD_BYTES: "${MAX_UPLOAD_BYTES:-5368709120}"
+      ALLOWED_ORIGIN: "${ALLOWED_ORIGIN}"
+      CLOUD_FINALIZE_URL: "${CLOUD_FINALIZE_URL}"
+      FINALIZE_SECRET: "${FINALIZE_SECRET}"
+      RECONCILE_TOKEN: "${RECONCILE_TOKEN}"
+      TOKEN_PUBLIC_KEYS: "${TOKEN_PUBLIC_KEYS}"
+      AGENT_VERSION: "0.2.0"
+    volumes:
+      - "${NAS_SHARE_PATH:-/volume1/WorkOS-PoC}:/data"
+    expose:
+      - "8080" # NÃO publicado no host — só o Caddy (mesma rede) alcança
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - agent
+    ports:
+      - "443:443"
+    volumes:
+      - "./Caddyfile:/etc/caddy/Caddyfile:ro"
+      - "./certs:/certs:ro"
+      - "caddy_data:/data"
+      - "caddy_config:/config"
+
+volumes:
+  caddy_data:
+  caddy_config:
