@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { getTaskById, getPreviousStages, getTaskTimeTracking } from "@/lib/actions/task";
 import { AdvanceStageButton } from "@/components/tasks/AdvanceStageButton";
 import { RevertStageButton } from "@/components/tasks/RevertStageButton";
@@ -18,19 +17,22 @@ import { Paperclip } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { getTranslations } from "next-intl/server";
+import { BackLink } from "@/components/ui/BackLink";
+import { formatDisplayDate, formatDisplayDateTime } from "@/lib/dates";
 
-function formatDate(value: Date | string): string {
-  const d = new Date(value);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  return `${dd}/${mm}/${d.getFullYear()}`;
+interface StageLogRow {
+  id: string;
+  stage: { name: string };
+  user: { name: string | null; email: string | null };
+  enteredAt: Date;
+  exitedAt: Date | null;
 }
 
-function formatDateTime(value: Date | string): string {
-  const d = new Date(value);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  return `${formatDate(d)} ${hh}:${min}`;
+interface CommentRow {
+  id: string;
+  content: string;
+  user: { name: string | null; email: string | null };
+  createdAt: Date;
 }
 
 export default async function TaskDetailPage({ params }: { params: Promise<{ taskId: string }> }) {
@@ -78,23 +80,11 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
   return (
     <div className="container mx-auto p-8">
       {/* Back link — returns to the parent project */}
-      <Link
+      <BackLink
         href={`/admin/projects/${task.project.id}`}
-        className="inline-flex items-center text-primary hover:text-primary/80 mb-6 font-semibold transition-colors"
-      >
-        <svg
-          className="w-5 h-5 mr-2"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path d="M15 19l-7-7 7-7" />
-        </svg>
-        {t("backToProject")}
-      </Link>
+        label={t("backToProject")}
+        className="mb-6"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
@@ -163,7 +153,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
               <div>
                 <p className="text-sm font-semibold text-muted-foreground">{t("dueDate")}</p>
                 <p className="mt-1 text-sm text-foreground font-medium">
-                  {task.dueDate ? formatDate(task.dueDate) : t("noDueDate")}
+                  {task.dueDate ? formatDisplayDate(task.dueDate) : t("noDueDate")}
                 </p>
               </div>
             </div>
@@ -272,7 +262,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
               <p className="text-muted-foreground">{t("noStageHistory")}</p>
             ) : (
               <div className="space-y-4">
-                {task.stageLogs.map((log: any) => (
+                {task.stageLogs.map((log: StageLogRow) => (
                   <div
                     key={log.id}
                     className="border-l-4 border-primary pl-4 py-2 bg-muted/30 rounded-r-lg"
@@ -286,11 +276,11 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                       </div>
                       <div className="ml-4 text-right text-sm text-muted-foreground">
                         <p>
-                          {t("entered")} {formatDateTime(log.enteredAt)}
+                          {t("entered")} {formatDisplayDateTime(log.enteredAt)}
                         </p>
                         {log.exitedAt && (
                           <p>
-                            {t("exited")} {formatDateTime(log.exitedAt)}
+                            {t("exited")} {formatDisplayDateTime(log.exitedAt)}
                           </p>
                         )}
                       </div>
@@ -306,7 +296,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
             <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
               <h2 className="text-xl font-bold text-foreground mb-4">{t("comments")}</h2>
               <div className="space-y-4">
-                {task.comments.map((comment: any) => (
+                {task.comments.map((comment: CommentRow) => (
                   <div
                     key={comment.id}
                     className={`border-l-4 pl-4 py-2 rounded-r-lg ${
@@ -322,7 +312,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {t("by")} {comment.user.name || comment.user.email} •{" "}
-                          {formatDateTime(comment.createdAt)}
+                          {formatDisplayDateTime(comment.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -387,7 +377,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                           {a.user.name || a.user.email}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {t("timeStartedAt")} {formatDateTime(a.startedAt)}
+                          {t("timeStartedAt")} {formatDisplayDateTime(a.startedAt)}
                         </p>
                       </div>
                       <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-xs font-bold text-green-800">

@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
-import { UserRole } from "@prisma/client";
 import { requireAdmin } from "@/lib/permissions";
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import EditUserButton from "../edit-user-button";
+import { updateUserRoleAndTeams } from "@/lib/actions/user";
+import { BackLink } from "@/components/ui/BackLink";
+import { StatCard } from "@/components/admin/StatCard";
 
 async function getUser(userId: string) {
   await requireAdmin();
@@ -43,83 +44,6 @@ async function getTeams() {
   });
 }
 
-async function updateUser(formData: FormData) {
-  "use server";
-  await requireAdmin();
-  const id = formData.get("id") as string;
-  const role = formData.get("role") as UserRole;
-  const teamIds = formData.getAll("teamIds").map(String);
-  const birthdayRaw = formData.get("birthday") as string | null;
-  const admissionRaw = formData.get("admissionDate") as string | null;
-  if (!id || !role) return;
-
-  const current = await prisma.user.findUnique({
-    where: { id },
-    select: { teams: { select: { id: true } } },
-  });
-  const currentIds = new Set(current?.teams.map((tm) => tm.id) ?? []);
-  const teamsChanged =
-    currentIds.size !== teamIds.length || teamIds.some((tid) => !currentIds.has(tid));
-
-  const activeStages = await prisma.taskActiveStage.findMany({
-    where: {
-      assigneeId: id,
-      status: "ACTIVE",
-    },
-    select: { id: true },
-  });
-
-  if (teamsChanged && activeStages.length > 0) {
-    await prisma.taskActiveStage.updateMany({
-      where: {
-        assigneeId: id,
-        status: "ACTIVE",
-      },
-      data: { assigneeId: null },
-    });
-
-    const affectedTasks = await prisma.taskActiveStage.findMany({
-      where: {
-        assigneeId: null,
-        status: "ACTIVE",
-      },
-      select: { taskId: true },
-      distinct: ["taskId"],
-    });
-
-    for (const stage of affectedTasks) {
-      const remainingAssigned = await prisma.taskActiveStage.count({
-        where: {
-          taskId: stage.taskId,
-          assigneeId: { not: null },
-          status: "ACTIVE",
-        },
-      });
-
-      if (remainingAssigned === 0) {
-        await prisma.task.update({
-          where: { id: stage.taskId },
-          data: { status: "BACKLOG" },
-        });
-      }
-    }
-  }
-
-  await prisma.user.update({
-    where: { id },
-    data: {
-      role,
-      teams: { set: teamIds.map((tid) => ({ id: tid })) },
-      birthday: birthdayRaw ? new Date(birthdayRaw) : null,
-      admissionDate: admissionRaw ? new Date(admissionRaw) : null,
-    },
-  });
-
-  revalidatePath(`/admin/users/${id}`);
-  revalidatePath("/admin/users");
-  revalidatePath("/dashboard");
-}
-
 export default async function UserDetailPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
   const [user, teams, t, tRoles] = await Promise.all([
@@ -137,23 +61,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
 
   return (
     <div className="container mx-auto p-8">
-      <Link
-        href="/admin/users"
-        className="inline-flex items-center text-primary hover:text-primary/80 mb-6 font-semibold transition-colors"
-      >
-        <svg
-          className="w-5 h-5 mr-2"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path d="M15 19l-7-7 7-7" />
-        </svg>
-        {t("backToUsers")}
-      </Link>
+      <BackLink href="/admin/users" label={t("backToUsers")} className="mb-6" />
 
       {/* Header Card */}
       <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
@@ -200,7 +108,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
                   : null,
               }}
               teams={teams}
-              updateUser={updateUser}
+              updateUser={updateUserRoleAndTeams}
             />
           </div>
         </div>
@@ -208,18 +116,9 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
 
       {/* Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-          <p className="text-sm text-muted-foreground">{t("activeStages")}</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{user.activeStages.length}</p>
-        </div>
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-          <p className="text-sm text-muted-foreground">{t("assignedTasks")}</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{user.assignedTasks.length}</p>
-        </div>
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-          <p className="text-sm text-muted-foreground">{t("hoursLogged")}</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{totalHours.toFixed(1)}</p>
-        </div>
+        <StatCard label={t("activeStages")} value={user.activeStages.length} />
+        <StatCard label={t("assignedTasks")} value={user.assignedTasks.length} />
+        <StatCard label={t("hoursLogged")} value={totalHours.toFixed(1)} />
       </div>
 
       {/* Active Stages Table */}

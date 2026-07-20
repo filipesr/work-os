@@ -1,27 +1,24 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
-import { toNasClientFolder } from "@/lib/nas/path";
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { computeProjectCompletion } from "@/lib/project-status";
 import { mapArtifactRow } from "@/lib/artifacts/unify";
 import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
 import { StorageBreakdown } from "@/components/nas/StorageBreakdown";
 import { storageByProject } from "@/lib/nas/storage-stats";
+import { BackLink } from "@/components/ui/BackLink";
+import { StatCard } from "@/components/admin/StatCard";
+import {
+  isClientFolderLocked,
+  updateClient,
+  deleteClient,
+  createClientProject,
+  setProjectStatus,
+} from "@/lib/actions/client";
 import { EditClientHeader } from "./edit-client-header";
 import { ProjectStatusFilter } from "./project-status-filter";
-
-// folderName (pasta-raiz do cliente no NAS) trava assim que existe qualquer artefato NAS sob o
-// cliente — renomear a pasta depois divergiria dos caminhos já gravados.
-async function isClientFolderLocked(clientId: string): Promise<boolean> {
-  const count = await prisma.taskArtifact.count({
-    where: { storageKind: "NAS_UPLOAD", task: { project: { clientId } } },
-  });
-  return count > 0;
-}
 
 async function getClient(clientId: string) {
   await requireManagerOrAdmin();
@@ -53,91 +50,6 @@ function pickCompletion(value: string | string[] | undefined): CompletionFilter 
   return single && (COMPLETION_FILTERS as readonly string[]).includes(single)
     ? (single as CompletionFilter)
     : undefined;
-}
-
-async function updateClient(formData: FormData) {
-  "use server";
-  await requireManagerOrAdmin();
-  const id = formData.get("id") as string;
-  const name = formData.get("name") as string;
-  const description = formData.get("description") as string;
-  const email = formData.get("email") as string;
-  const phone = formData.get("phone") as string;
-  const folderNameRaw = ((formData.get("folderName") as string | null) ?? "").trim();
-  if (!id || !name) return;
-
-  const data: Prisma.ClientUpdateInput = {
-    name,
-    description: description || null,
-    email: email || null,
-    phone: phone || null,
-  };
-
-  // Only touch folderName while it's still editable (no NAS artifact yet). Empty input -> derive
-  // from the client name. Always slugified to a filesystem-safe folder label.
-  if (!(await isClientFolderLocked(id))) {
-    const desired = toNasClientFolder(folderNameRaw || name);
-    data.folderName = desired || null;
-  }
-
-  try {
-    await prisma.client.update({ where: { id }, data });
-  } catch (e) {
-    // Unique collision on folderName — save everything else and leave the folder untouched.
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-      const { folderName: _drop, ...rest } = data;
-      void _drop;
-      await prisma.client.update({ where: { id }, data: rest });
-    } else {
-      throw e;
-    }
-  }
-
-  revalidatePath(`/admin/clients/${id}`);
-  revalidatePath("/admin/clients");
-}
-
-async function deleteClient(formData: FormData) {
-  "use server";
-  await requireManagerOrAdmin();
-  const id = formData.get("id") as string;
-  if (!id) return;
-
-  await prisma.client.delete({
-    where: { id },
-  });
-
-  revalidatePath("/admin/clients");
-}
-
-async function createClientProject(formData: FormData) {
-  "use server";
-  await requireManagerOrAdmin();
-  const clientId = formData.get("clientId") as string;
-  const name = formData.get("name") as string;
-  if (!clientId || !name?.trim()) return;
-
-  await prisma.project.create({
-    data: { name: name.trim(), clientId },
-  });
-
-  revalidatePath(`/admin/clients/${clientId}`);
-}
-
-async function setProjectStatus(formData: FormData) {
-  "use server";
-  await requireManagerOrAdmin();
-  const id = formData.get("id") as string;
-  const clientId = formData.get("clientId") as string;
-  const status = formData.get("status") as string;
-  if (!id || (status !== "ACTIVE" && status !== "INACTIVE")) return;
-
-  await prisma.project.update({
-    where: { id },
-    data: { status: status as "ACTIVE" | "INACTIVE" },
-  });
-
-  revalidatePath(`/admin/clients/${clientId}`);
 }
 
 export default async function ClientDetailPage({
@@ -173,23 +85,7 @@ export default async function ClientDetailPage({
 
   return (
     <div className="container mx-auto p-8">
-      <Link
-        href="/admin/clients"
-        className="inline-flex items-center text-primary hover:text-primary/80 mb-6 font-semibold transition-colors"
-      >
-        <svg
-          className="w-5 h-5 mr-2"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path d="M15 19l-7-7 7-7" />
-        </svg>
-        {t("backToClients")}
-      </Link>
+      <BackLink href="/admin/clients" label={t("backToClients")} className="mb-6" />
 
       {/* Header Card */}
       <EditClientHeader
@@ -208,14 +104,8 @@ export default async function ClientDetailPage({
 
       {/* Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-          <p className="text-sm text-muted-foreground">{t("totalProjects")}</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{client.projects.length}</p>
-        </div>
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-          <p className="text-sm text-muted-foreground">{t("totalTasks")}</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{totalTasks}</p>
-        </div>
+        <StatCard label={t("totalProjects")} value={client.projects.length} />
+        <StatCard label={t("totalTasks")} value={totalTasks} />
       </div>
 
       <div className="mt-6">

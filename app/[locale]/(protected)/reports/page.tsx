@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { requireAnyRole } from "@/lib/auth";
 import { UserRole } from "@prisma/client";
 
@@ -11,6 +10,54 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { UserReportPicker } from "@/components/reports/UserReportPicker";
+import { ReportCard } from "@/components/reports/ReportCard";
+
+const REPORT_CARDS = [
+  {
+    key: "productivity",
+    href: "/reports/productivity",
+    iconBgClass: "bg-primary/10",
+    accentTextClass: "text-primary",
+    iconPath: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
+  },
+  {
+    key: "performance",
+    href: "/reports/performance",
+    iconBgClass: "bg-orange-500/10",
+    accentTextClass: "text-orange-500",
+    iconPath: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
+  },
+  {
+    key: "liveActivity",
+    href: "/reports/live-activity",
+    iconBgClass: "bg-green-500/10",
+    accentTextClass: "text-green-500",
+    iconPath: "M13 10V3L4 14h7v7l9-11h-7z",
+  },
+  {
+    key: "calendar",
+    href: "/reports/calendar",
+    iconBgClass: "bg-blue-500/10",
+    accentTextClass: "text-blue-500",
+    iconPath:
+      "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
+  },
+  {
+    key: "calendarMonthly",
+    href: "/reports/calendar/monthly",
+    iconBgClass: "bg-violet-500/10",
+    accentTextClass: "text-violet-500",
+    iconPath:
+      "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
+  },
+  {
+    key: "teamProductivity",
+    href: "/reports/team-productivity",
+    iconBgClass: "bg-purple-500/10",
+    accentTextClass: "text-purple-500",
+    iconPath: "M9 19V6h13M9 19a2 2 0 11-4 0 2 2 0 014 0zm12-4V6M3 6h18",
+  },
+] as const;
 
 export default async function ReportsIndexPage() {
   // Check authorization
@@ -41,353 +88,36 @@ export default async function ReportsIndexPage() {
 
       {/* Report Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Productivity Report */}
-        <Link href="/reports/productivity">
-          <Card className="hover:shadow-xl hover:border-primary transition-all duration-200 cursor-pointer h-full">
-            <CardHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <svg
-                    className="h-6 w-6 text-primary"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <CardTitle>{t("productivity.title")}</CardTitle>
-                </div>
-                <svg
-                  className="h-5 w-5 text-muted-foreground"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </div>
-              <CardDescription>{t("productivity.description")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-bold">•</span>
-                  <span>{t("productivity.feature1")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-bold">•</span>
-                  <span>{t("productivity.feature2")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-bold">•</span>
-                  <span>{t("productivity.feature3")}</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* Performance Report */}
-        <Link href="/reports/performance">
-          <Card className="hover:shadow-xl hover:border-primary transition-all duration-200 cursor-pointer h-full">
-            <CardHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-3 bg-orange-500/10 rounded-lg">
-                  <svg
-                    className="h-6 w-6 text-orange-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <CardTitle>{t("performance.title")}</CardTitle>
-                </div>
-                <svg
-                  className="h-5 w-5 text-muted-foreground"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </div>
-              <CardDescription>{t("performance.description")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-500 font-bold">•</span>
-                  <span>{t("performance.feature1")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-500 font-bold">•</span>
-                  <span>{t("performance.feature2")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-500 font-bold">•</span>
-                  <span>{t("performance.feature3")}</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* Live Activity Report */}
-        <Link href="/reports/live-activity">
-          <Card className="hover:shadow-xl hover:border-primary transition-all duration-200 cursor-pointer h-full">
-            <CardHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-3 bg-green-500/10 rounded-lg">
-                  <svg
-                    className="h-6 w-6 text-green-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <CardTitle>{t("liveActivity.title")}</CardTitle>
-                </div>
-                <svg
-                  className="h-5 w-5 text-muted-foreground"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </div>
-              <CardDescription>{t("liveActivity.description")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 font-bold">•</span>
-                  <span>{t("liveActivity.feature1")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 font-bold">•</span>
-                  <span>{t("liveActivity.feature2")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 font-bold">•</span>
-                  <span>{t("liveActivity.feature3")}</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* Calendar Report */}
-        <Link href="/reports/calendar">
-          <Card className="hover:shadow-xl hover:border-primary transition-all duration-200 cursor-pointer h-full">
-            <CardHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-3 bg-blue-500/10 rounded-lg">
-                  <svg
-                    className="h-6 w-6 text-blue-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <CardTitle>{t("calendar.title")}</CardTitle>
-                </div>
-                <svg
-                  className="h-5 w-5 text-muted-foreground"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </div>
-              <CardDescription>{t("calendar.description")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-500 font-bold">•</span>
-                  <span>{t("calendar.feature1")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-500 font-bold">•</span>
-                  <span>{t("calendar.feature2")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-500 font-bold">•</span>
-                  <span>{t("calendar.feature3")}</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* Monthly Event Calendar */}
-        <Link href="/reports/calendar/monthly">
-          <Card className="hover:shadow-xl hover:border-primary transition-all duration-200 cursor-pointer h-full">
-            <CardHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-3 bg-violet-500/10 rounded-lg">
-                  <svg
-                    className="h-6 w-6 text-violet-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <CardTitle>{t("calendarMonthly.title")}</CardTitle>
-                </div>
-                <svg
-                  className="h-5 w-5 text-muted-foreground"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </div>
-              <CardDescription>{t("calendarMonthly.description")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-violet-500 font-bold">•</span>
-                  <span>{t("calendarMonthly.feature1")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-violet-500 font-bold">•</span>
-                  <span>{t("calendarMonthly.feature2")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-violet-500 font-bold">•</span>
-                  <span>{t("calendarMonthly.feature3")}</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* Team Productivity Report */}
-        <Link href="/reports/team-productivity">
-          <Card className="hover:shadow-xl hover:border-primary transition-all duration-200 cursor-pointer h-full">
-            <CardHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-3 bg-purple-500/10 rounded-lg">
-                  <svg
-                    className="h-6 w-6 text-purple-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 19V6h13M9 19a2 2 0 11-4 0 2 2 0 014 0zm12-4V6M3 6h18"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <CardTitle>{t("teamProductivity.title")}</CardTitle>
-                </div>
-                <svg
-                  className="h-5 w-5 text-muted-foreground"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </div>
-              <CardDescription>{t("teamProductivity.description")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-500 font-bold">•</span>
-                  <span>{t("teamProductivity.feature1")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-500 font-bold">•</span>
-                  <span>{t("teamProductivity.feature2")}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-500 font-bold">•</span>
-                  <span>{t("teamProductivity.feature3")}</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </Link>
+        {REPORT_CARDS.map((card) => (
+          <ReportCard
+            key={card.key}
+            href={card.href}
+            iconBgClass={card.iconBgClass}
+            accentTextClass={card.accentTextClass}
+            icon={
+              <svg
+                className={`h-6 w-6 ${card.accentTextClass}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d={card.iconPath}
+                />
+              </svg>
+            }
+            title={t(`${card.key}.title`)}
+            description={t(`${card.key}.description`)}
+            features={[
+              t(`${card.key}.feature1`),
+              t(`${card.key}.feature2`),
+              t(`${card.key}.feature3`),
+            ]}
+          />
+        ))}
       </div>
 
       {/* Individual collaborator report */}

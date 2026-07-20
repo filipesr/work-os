@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { revertTaskStage } from "@/lib/actions/task";
 import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useControllableOpen } from "@/lib/hooks/useControllableOpen";
+import { useServerAction } from "@/lib/hooks/useServerAction";
 
 interface Stage {
   id: string;
@@ -24,45 +26,33 @@ export function RevertStageButton({
   open: controlledOpen,
   onOpenChange,
 }: RevertStageButtonProps) {
-  const [internalOpen, setInternalOpen] = useState(false);
-  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
-  const setIsOpen = (value: boolean) => {
-    if (onOpenChange) {
-      onOpenChange(value);
-    } else {
-      setInternalOpen(value);
-    }
-  };
+  const {
+    open: isOpen,
+    setOpen: setIsOpen,
+    isControlled,
+  } = useControllableOpen(controlledOpen, onOpenChange);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const { run, isPending } = useServerAction(revertTaskStage, {
+    successMessage: "Tarefa revertida para a etapa anterior",
+    onSuccess: () => {
+      setIsOpen(false);
+      setComment("");
+      setSelectedStageId(null);
+    },
+  });
 
   if (previousStages.length === 0) {
     return null;
   }
 
-  const handleRevert = async () => {
+  const handleRevert = () => {
     if (!selectedStageId || !comment.trim()) {
       toast.error("Por favor, selecione uma etapa e forneça um comentário.");
       return;
     }
-
-    startTransition(async () => {
-      const result = await revertTaskStage(taskId, selectedStageId, comment);
-
-      if (result?.error) {
-        toast.error(result.error);
-      } else {
-        toast.success("Tarefa revertida para a etapa anterior");
-        setIsOpen(false);
-        setComment("");
-        setSelectedStageId(null);
-      }
-    });
+    run(taskId, selectedStageId, comment);
   };
-
-  // If controlled via props, don't render button (only modal)
-  const isControlled = controlledOpen !== undefined;
 
   return (
     <>

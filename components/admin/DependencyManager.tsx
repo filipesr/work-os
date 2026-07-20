@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 import { updateStageDependencies } from "@/lib/actions/dependency";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { useServerAction } from "@/lib/hooks/useServerAction";
 
 interface DependencyManagerProps {
   stageId: string;
@@ -21,7 +29,6 @@ export function DependencyManager({
   onClose,
 }: DependencyManagerProps) {
   const [selectedDeps, setSelectedDeps] = useState<Set<string>>(new Set(currentDependencies));
-  const [isSaving, setIsSaving] = useState(false);
 
   // Filter out the current stage from available dependencies
   const availableStages = allStages.filter((stage) => stage.id !== stageId);
@@ -36,31 +43,26 @@ export function DependencyManager({
     setSelectedDeps(newSelected);
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    const result = await updateStageDependencies(stageId, templateId, Array.from(selectedDeps));
-
-    if (result?.success) {
-      onClose();
-    }
-    setIsSaving(false);
-  };
+  const { run: handleSave, isPending: isSaving } = useServerAction(
+    () => updateStageDependencies(stageId, templateId, Array.from(selectedDeps)),
+    { onSuccess: onClose }
+  );
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="dependency-manager-title"
-        className="bg-card border-2 border-border rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto shadow-lg"
-      >
-        <h3 id="dependency-manager-title" className="text-xl font-bold text-foreground mb-3">
-          Manage Dependencies: {stageName}
-        </h3>
-        <p className="text-muted-foreground mb-6 text-base">
-          Select which stages must be completed before "{stageName}" can start. These are the
-          prerequisites for this stage.
-        </p>
+    <Dialog
+      open
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Manage Dependencies: {stageName}</DialogTitle>
+          <DialogDescription>
+            Select which stages must be completed before "{stageName}" can start. These are the
+            prerequisites for this stage.
+          </DialogDescription>
+        </DialogHeader>
 
         {availableStages.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
@@ -106,7 +108,7 @@ export function DependencyManager({
             Cancel
           </button>
           <button
-            onClick={handleSave}
+            onClick={() => handleSave()}
             disabled={isSaving}
             className="px-5 py-2.5 bg-accent text-accent-foreground font-semibold rounded-lg hover:bg-accent/80 transition-all disabled:opacity-50 shadow-sm"
           >
@@ -123,7 +125,7 @@ export function DependencyManager({
             </p>
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

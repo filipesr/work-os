@@ -2,13 +2,15 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { computeProjectCompletion } from "@/lib/project-status";
 import { mapArtifactRow } from "@/lib/artifacts/unify";
 import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
 import { StorageBreakdown } from "@/components/nas/StorageBreakdown";
 import { storageByTask } from "@/lib/nas/storage-stats";
+import { BackLink } from "@/components/ui/BackLink";
+import { StatCard } from "@/components/admin/StatCard";
+import { updateProject, deleteProject } from "@/lib/actions/project";
 import { EditProjectHeader } from "./edit-project-header";
 
 const COMPLETION_STATE_LABEL: Record<string, string> = {
@@ -48,41 +50,6 @@ async function getClients() {
   return await prisma.client.findMany({
     orderBy: { name: "asc" },
   });
-}
-
-async function updateProject(formData: FormData) {
-  "use server";
-  await requireManagerOrAdmin();
-  const id = formData.get("id") as string;
-  const name = formData.get("name") as string;
-  const description = formData.get("description") as string;
-  const clientId = formData.get("clientId") as string;
-  if (!id || !name || !clientId) return;
-
-  await prisma.project.update({
-    where: { id },
-    data: {
-      name,
-      description: description || null,
-      clientId,
-    },
-  });
-
-  revalidatePath(`/admin/projects/${id}`);
-  revalidatePath("/admin/projects");
-}
-
-async function deleteProject(formData: FormData) {
-  "use server";
-  await requireManagerOrAdmin();
-  const id = formData.get("id") as string;
-  if (!id) return;
-
-  await prisma.project.delete({
-    where: { id },
-  });
-
-  revalidatePath("/admin/projects");
 }
 
 export default async function ProjectDetailPage({
@@ -139,23 +106,11 @@ export default async function ProjectDetailPage({
 
   return (
     <div className="container mx-auto p-8">
-      <Link
+      <BackLink
         href={`/admin/clients/${project.clientId}`}
-        className="inline-flex items-center text-primary hover:text-primary/80 mb-6 font-semibold transition-colors"
-      >
-        <svg
-          className="w-5 h-5 mr-2"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path d="M15 19l-7-7 7-7" />
-        </svg>
-        {t("backToProjects")}
-      </Link>
+        label={t("backToProjects")}
+        className="mb-6"
+      />
 
       {/* Header Card */}
       <EditProjectHeader
@@ -180,21 +135,12 @@ export default async function ProjectDetailPage({
             {COMPLETION_STATE_LABEL[completion.state]}
           </p>
         </div>
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-          <p className="text-sm text-muted-foreground">{t("totalTasks")}</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{project.tasks.length}</p>
-        </div>
+        <StatCard label={t("totalTasks")} value={project.tasks.length} />
         {(["BACKLOG", "IN_PROGRESS", "COMPLETED"] as const).map((status) => (
-          <div key={status} className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-            <p className="text-sm text-muted-foreground">{t(`status.${status}`)}</p>
-            <p className="text-3xl font-bold text-foreground mt-1">{statusCounts[status] || 0}</p>
-          </div>
+          <StatCard key={status} label={t(`status.${status}`)} value={statusCounts[status] || 0} />
         ))}
         {/* Artifacts total, next to "Concluída" */}
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-          <p className="text-sm text-muted-foreground">{t("artifacts")}</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{artifactRows.length}</p>
-        </div>
+        <StatCard label={t("artifacts")} value={artifactRows.length} />
       </div>
 
       {/* Tasks Table */}

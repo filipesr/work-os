@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useUrlFilters } from "@/lib/hooks/useUrlFilters";
 import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,9 +22,7 @@ const ROLES = ["ADMIN", "MANAGER", "SUPERVISOR", "MEMBER", "CLIENT"] as const;
  * (server reads them), so navigation/pagination/sorting compose naturally.
  */
 export function UserFilters({ teams }: { teams: { id: string; name: string }[] }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { searchParams, setParams, clearParams } = useUrlFilters({ scroll: true });
   const t = useTranslations("admin.users.filters");
   const tRoles = useTranslations("admin.users.roles");
 
@@ -35,32 +33,17 @@ export function UserFilters({ teams }: { teams: { id: string; name: string }[] }
 
   const activeCount = ["q", "role", "team"].filter((k) => searchParams.get(k)).length;
 
-  const push = (mutate: (sp: URLSearchParams) => void) => {
-    const sp = new URLSearchParams(searchParams.toString());
-    mutate(sp);
-    sp.delete("page"); // any filter change resets to the first page
-    const qs = sp.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+  const apply = () => {
+    setParams({ q: q.trim(), role, team });
     setOpen(false);
   };
-
-  const apply = () =>
-    push((sp) => {
-      const set = (k: string, v: string) => (v ? sp.set(k, v) : sp.delete(k));
-      set("q", q.trim());
-      set("role", role);
-      set("team", team);
-    });
 
   const clear = () => {
     setQ("");
     setRole("");
     setTeam("");
-    push((sp) => {
-      sp.delete("q");
-      sp.delete("role");
-      sp.delete("team");
-    });
+    clearParams(["q", "role", "team", "page"]);
+    setOpen(false);
   };
 
   const fieldClass =

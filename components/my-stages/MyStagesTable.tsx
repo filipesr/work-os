@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import type { ActiveStageWithDetails } from "@/lib/actions/task";
+import { priorityBadgeClass, stageStatusBadgeClass } from "@/lib/status-styles";
+import { formatDisplayDate, getDueState } from "@/lib/dates";
 
 interface MyStagesTableProps {
   stages: ActiveStageWithDetails[];
@@ -9,30 +11,8 @@ interface MyStagesTableProps {
   onRowClick: (stage: ActiveStageWithDetails) => void;
 }
 
-const priorityStyles: Record<string, string> = {
-  URGENT: "bg-red-100 text-red-800 border-red-300",
-  HIGH: "bg-orange-100 text-orange-800 border-orange-300",
-  MEDIUM: "bg-yellow-100 text-yellow-800 border-yellow-300",
-  LOW: "bg-green-100 text-green-800 border-green-300",
-};
-
-const stageStatusStyles: Record<string, string> = {
-  ACTIVE: "bg-blue-100 text-blue-800 border-blue-300",
-  BLOCKED: "bg-gray-100 text-gray-800 border-gray-300",
-  COMPLETED: "bg-green-100 text-green-800 border-green-300",
-};
-
 export function MyStagesTable({ stages, showAssignee, onRowClick }: MyStagesTableProps) {
   const t = useTranslations("myStages");
-
-  const formatDate = (date: Date | null) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
 
   return (
     <div className="overflow-x-auto">
@@ -89,14 +69,9 @@ export function MyStagesTable({ stages, showAssignee, onRowClick }: MyStagesTabl
           {stages.map((activeStage) => {
             const task = activeStage.task;
             const stage = activeStage.stage;
-            const isOverdue =
-              task.dueDate &&
-              new Date(task.dueDate) < new Date() &&
-              activeStage.status !== "COMPLETED";
-            const isDueSoon =
-              task.dueDate &&
-              !isOverdue &&
-              new Date(task.dueDate).getTime() - Date.now() < 2 * 24 * 60 * 60 * 1000;
+            const dueState = getDueState(task.dueDate);
+            const isOverdue = dueState === "overdue" && activeStage.status !== "COMPLETED";
+            const isDueSoon = !isOverdue && dueState !== "none";
             const isBlocked = activeStage.status === "BLOCKED";
 
             return (
@@ -155,18 +130,18 @@ export function MyStagesTable({ stages, showAssignee, onRowClick }: MyStagesTabl
                 )}
                 <td className="px-4 py-3">
                   <span
-                    className={`px-2 py-1 text-xs font-medium rounded-md border ${
-                      priorityStyles[task.priority]
-                    }`}
+                    className={`px-2 py-1 text-xs font-medium rounded-md border ${priorityBadgeClass(
+                      task.priority
+                    )}`}
                   >
                     {t(`priority.${task.priority}`)}
                   </span>
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className={`px-2 py-1 text-xs font-medium rounded-md border ${
-                      stageStatusStyles[activeStage.status]
-                    }`}
+                    className={`px-2 py-1 text-xs font-medium rounded-md border ${stageStatusBadgeClass(
+                      activeStage.status
+                    )}`}
                   >
                     {t(`status.${activeStage.status}`)}
                   </span>
@@ -177,7 +152,7 @@ export function MyStagesTable({ stages, showAssignee, onRowClick }: MyStagesTabl
                       isOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"
                     }`}
                   >
-                    {formatDate(task.dueDate)}
+                    {formatDisplayDate(task.dueDate)}
                   </span>
                 </td>
               </tr>

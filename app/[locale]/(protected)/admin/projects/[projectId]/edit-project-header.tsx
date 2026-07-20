@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { ConfirmActionButton } from "@/components/ui/ConfirmActionButton";
 
 interface EditProjectHeaderProps {
   project: {
@@ -27,7 +28,6 @@ export function EditProjectHeader({
   const t = useTranslations("admin.projects.detail");
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   if (isEditing) {
     return (
@@ -139,52 +139,26 @@ export function EditProjectHeader({
           >
             {t("editButton")}
           </button>
-          <button
-            onClick={() => setIsDeleting(true)}
-            className="px-5 py-2.5 bg-destructive text-destructive-foreground font-semibold rounded-lg hover:bg-destructive/90 transition-all shadow-sm"
-          >
-            {t("deleteButton")}
-          </button>
+          <ConfirmActionButton
+            action={async () => {
+              const formData = new FormData();
+              formData.set("id", project.id);
+              await deleteProject(formData);
+            }}
+            title={t("deleteConfirmTitle")}
+            description={t("deleteConfirmMessage")}
+            confirmLabel={t("deleteConfirmButton")}
+            cancelLabel={t("cancel")}
+            confirmVariant="destructive"
+            onSuccess={() => router.push(`/admin/clients/${project.clientId}`)}
+            trigger={
+              <button className="px-5 py-2.5 bg-destructive text-destructive-foreground font-semibold rounded-lg hover:bg-destructive/90 transition-all shadow-sm">
+                {t("deleteButton")}
+              </button>
+            }
+          />
         </div>
       </div>
-
-      {isDeleting && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-project-title"
-            className="bg-card border-2 border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg"
-          >
-            <h3 id="delete-project-title" className="text-xl font-bold text-foreground mb-4">
-              {t("deleteConfirmTitle")}
-            </h3>
-            <p className="text-muted-foreground mb-6">{t("deleteConfirmMessage")}</p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setIsDeleting(false)}
-                className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all"
-              >
-                {t("cancel")}
-              </button>
-              <form
-                action={async (formData: FormData) => {
-                  await deleteProject(formData);
-                  router.push(`/admin/clients/${project.clientId}`);
-                }}
-              >
-                <input type="hidden" name="id" value={project.id} />
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-destructive text-destructive-foreground font-semibold rounded-lg hover:bg-destructive/90 transition-all shadow-sm"
-                >
-                  {t("deleteConfirmButton")}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

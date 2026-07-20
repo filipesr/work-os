@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { completeStageAndAdvance } from "@/lib/actions/task";
 import {
@@ -11,6 +11,8 @@ import {
 import { StageAssigneeSelect } from "@/components/ui/StageAssigneeSelect";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useControllableOpen } from "@/lib/hooks/useControllableOpen";
+import { useServerAction } from "@/lib/hooks/useServerAction";
 
 type Member = { id: string; name: string | null; email: string | null };
 type MembersByStage = Record<string, Member[]>;
@@ -30,17 +32,11 @@ export function AdvanceStageButton({
 }: AdvanceStageButtonProps) {
   const t = useTranslations("tasks.stages");
 
-  const [internalOpen, setInternalOpen] = useState(false);
-  const showConfirm = controlledOpen !== undefined ? controlledOpen : internalOpen;
-  const setShowConfirm = (value: boolean) => {
-    if (onOpenChange) {
-      onOpenChange(value);
-    } else {
-      setInternalOpen(value);
-    }
-  };
-
-  const [isPending, startTransition] = useTransition();
+  const {
+    open: showConfirm,
+    setOpen: setShowConfirm,
+    isControlled,
+  } = useControllableOpen(controlledOpen, onOpenChange);
 
   // Pre-confirm preview state
   const [previewData, setPreviewData] = useState<{
@@ -50,6 +46,41 @@ export function AdvanceStageButton({
   const [previewLoading, setPreviewLoading] = useState(false);
   const [membersByStage, setMembersByStage] = useState<MembersByStage>({});
   const [assignments, setAssignments] = useState<Record<string, string>>({});
+
+  const { run, isPending } = useServerAction(completeStageAndAdvance, {
+    onSuccess: (result) => {
+      const r = result as
+        | { success?: boolean; activated?: unknown[]; blocked?: unknown[] }
+        | undefined;
+      if (!r?.success) return;
+
+      // Show success toast with summary
+      const activatedCount = r.activated?.length || 0;
+      const blockedCount = r.blocked?.length || 0;
+
+      if (activatedCount > 0 && blockedCount > 0) {
+        toast.success(
+          t("toasts.completedWithActivatedBlocked", {
+            activated: activatedCount,
+            blocked: blockedCount,
+          }),
+          { duration: 5000 }
+        );
+      } else if (activatedCount > 0) {
+        toast.success(t("toasts.completedWithActivated", { activated: activatedCount }), {
+          duration: 4000,
+        });
+      } else if (blockedCount > 0) {
+        toast.success(t("toasts.completedWithBlocked", { blocked: blockedCount }), {
+          duration: 4000,
+        });
+      } else {
+        toast.success(t("toasts.completed"));
+      }
+
+      setShowConfirm(false);
+    },
+  });
 
   // Load next-stage preview when the modal opens
   useEffect(() => {
@@ -131,48 +162,9 @@ export function AdvanceStageButton({
     );
   }
 
-  const handleComplete = async () => {
-    startTransition(async () => {
-      const result = await completeStageAndAdvance(
-        taskId,
-        currentStageId,
-        Object.keys(assignments).length > 0 ? assignments : undefined
-      );
-
-      if (result?.error) {
-        toast.error(result.error);
-      } else if (result?.success) {
-        // Show success toast with summary
-        const activatedCount = result.activated?.length || 0;
-        const blockedCount = result.blocked?.length || 0;
-
-        if (activatedCount > 0 && blockedCount > 0) {
-          toast.success(
-            t("toasts.completedWithActivatedBlocked", {
-              activated: activatedCount,
-              blocked: blockedCount,
-            }),
-            { duration: 5000 }
-          );
-        } else if (activatedCount > 0) {
-          toast.success(t("toasts.completedWithActivated", { activated: activatedCount }), {
-            duration: 4000,
-          });
-        } else if (blockedCount > 0) {
-          toast.success(t("toasts.completedWithBlocked", { blocked: blockedCount }), {
-            duration: 4000,
-          });
-        } else {
-          toast.success(t("toasts.completed"));
-        }
-
-        setShowConfirm(false);
-      }
-    });
+  const handleComplete = () => {
+    run(taskId, currentStageId, Object.keys(assignments).length > 0 ? assignments : undefined);
   };
-
-  // If controlled via props, don't render button (only modal)
-  const isControlled = controlledOpen !== undefined;
 
   return (
     <>

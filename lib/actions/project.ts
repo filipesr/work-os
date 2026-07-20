@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireMemberOrHigher } from "@/lib/permissions";
+import { requireMemberOrHigher, requireManagerOrAdmin } from "@/lib/permissions";
 import { createProjectSchema } from "@/lib/validations";
 
 interface CreateProjectData {
@@ -76,4 +76,39 @@ export async function getProjects() {
     console.error("Error fetching projects:", error);
     return [];
   }
+}
+
+// ========== Project detail page actions (movidas de admin/projects/[projectId]/page) ==========
+
+export async function updateProject(formData: FormData) {
+  await requireManagerOrAdmin();
+  const id = formData.get("id") as string;
+  const name = formData.get("name") as string;
+  const description = formData.get("description") as string;
+  const clientId = formData.get("clientId") as string;
+  if (!id || !name || !clientId) return;
+
+  await prisma.project.update({
+    where: { id },
+    data: {
+      name,
+      description: description || null,
+      clientId,
+    },
+  });
+
+  revalidatePath(`/admin/projects/${id}`);
+  revalidatePath("/admin/projects");
+}
+
+export async function deleteProject(formData: FormData) {
+  await requireManagerOrAdmin();
+  const id = formData.get("id") as string;
+  if (!id) return;
+
+  await prisma.project.delete({
+    where: { id },
+  });
+
+  revalidatePath("/admin/projects");
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { updateTemplateStage, deleteTemplateStage } from "@/lib/actions/stage";
 import { DependencySelector } from "./DependencySelector";
+import { ConfirmActionButton } from "@/components/ui/ConfirmActionButton";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
 
@@ -39,7 +40,6 @@ interface StagesListProps {
 export function StagesList({ stages, templateId, teams }: StagesListProps) {
   const t = useTranslations("template.stagesList");
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
-  const [deletingStageId, setDeletingStageId] = useState<string | null>(null);
   const [editingDeps, setEditingDeps] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -249,60 +249,22 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                     >
                       {t("editButton")}
                     </button>
-                    <button
-                      onClick={() => setDeletingStageId(stage.id)}
-                      className="px-4 py-2 text-sm font-semibold bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-all shadow-sm"
-                    >
-                      {t("deleteButton")}
-                    </button>
+                    <ConfirmActionButton
+                      action={() => deleteTemplateStage(stage.id, templateId)}
+                      title={t("deleteConfirmTitle")}
+                      description={t("deleteConfirmMessage", { stageName: stage.name })}
+                      confirmLabel={t("deleteConfirmButton")}
+                      cancelLabel={t("cancel")}
+                      confirmVariant="destructive"
+                      trigger={
+                        <button className="px-4 py-2 text-sm font-semibold bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-all shadow-sm">
+                          {t("deleteButton")}
+                        </button>
+                      }
+                    />
                   </div>
                 </div>
               </>
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {deletingStageId === stage.id && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                <div
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby={`delete-stage-title-${stage.id}`}
-                  className="bg-card border-2 border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg"
-                >
-                  <h3
-                    id={`delete-stage-title-${stage.id}`}
-                    className="text-xl font-bold text-foreground mb-4"
-                  >
-                    {t("deleteConfirmTitle")}
-                  </h3>
-                  <p className="text-muted-foreground mb-6">
-                    {t("deleteConfirmMessage", { stageName: stage.name })}
-                  </p>
-                  <div className="flex gap-3 justify-end">
-                    <button
-                      onClick={() => setDeletingStageId(null)}
-                      className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all"
-                    >
-                      {t("cancel")}
-                    </button>
-                    <form
-                      action={async () => {
-                        const result = await deleteTemplateStage(stage.id, templateId);
-                        if (result?.success) {
-                          setDeletingStageId(null);
-                        }
-                      }}
-                    >
-                      <button
-                        type="submit"
-                        className="px-5 py-2.5 bg-destructive text-destructive-foreground font-semibold rounded-lg hover:bg-destructive/90 transition-all shadow-sm"
-                      >
-                        {t("deleteConfirmButton")}
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              </div>
             )}
           </div>
         );

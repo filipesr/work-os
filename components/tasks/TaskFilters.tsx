@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
+import { useUrlFilters } from "@/lib/hooks/useUrlFilters";
 
 type Option = { id: string; name: string };
 
@@ -24,30 +23,11 @@ const selectClass =
 
 export function TaskFilters({ clients, teams }: { clients: Option[]; teams: Option[] }) {
   const t = useTranslations("admin.tasks.list");
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { searchParams, setParam, clearParams } = useUrlFilters();
 
   const current = (key: string) => searchParams.get(key) ?? "";
 
-  const setParam = useCallback(
-    (key: string, value: string | null) => {
-      const sp = new URLSearchParams(searchParams.toString());
-      if (value) sp.set(key, value);
-      else sp.delete(key);
-      sp.delete("page"); // any filter change resets pagination
-      const qs = sp.toString();
-      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    },
-    [router, pathname, searchParams]
-  );
-
-  const clearAll = useCallback(() => {
-    const sp = new URLSearchParams(searchParams.toString());
-    for (const key of [...FILTER_KEYS, "page"]) sp.delete(key);
-    const qs = sp.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [router, pathname, searchParams]);
+  const clearAll = () => clearParams([...FILTER_KEYS, "page"]);
 
   const quick = current("quick");
   const hasActiveFilters = FILTER_KEYS.some((key) => current(key) !== "");

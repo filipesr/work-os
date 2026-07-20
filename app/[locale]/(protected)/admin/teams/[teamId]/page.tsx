@@ -2,9 +2,11 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
+import { BackLink } from "@/components/ui/BackLink";
+import { StatCard } from "@/components/admin/StatCard";
+import { updateTeam, deleteTeam, setTeamMembers } from "@/lib/actions/team";
 import { EditTeamHeader } from "./edit-team-header";
 import ManageTeamMembers from "./manage-members-button";
 
@@ -33,52 +35,6 @@ async function getTeam(teamId: string) {
   });
 }
 
-async function updateTeam(formData: FormData) {
-  "use server";
-  await requireAdmin();
-  const id = formData.get("id") as string;
-  const name = formData.get("name") as string;
-  if (!id || !name) return;
-
-  await prisma.team.update({
-    where: { id },
-    data: { name },
-  });
-
-  revalidatePath(`/admin/teams/${id}`);
-  revalidatePath("/admin/teams");
-}
-
-async function deleteTeam(formData: FormData) {
-  "use server";
-  await requireAdmin();
-  const id = formData.get("id") as string;
-  if (!id) return;
-
-  await prisma.team.delete({
-    where: { id },
-  });
-
-  revalidatePath("/admin/teams");
-}
-
-async function setTeamMembers(formData: FormData) {
-  "use server";
-  await requireAdmin();
-  const id = formData.get("id") as string;
-  if (!id) return;
-  const userIds = formData.getAll("userIds").map(String);
-
-  await prisma.team.update({
-    where: { id },
-    data: { members: { set: userIds.map((userId) => ({ id: userId })) } },
-  });
-
-  revalidatePath(`/admin/teams/${id}`);
-  revalidatePath("/admin/teams");
-  revalidatePath("/dashboard");
-}
-
 export default async function TeamDetailPage({ params }: { params: Promise<{ teamId: string }> }) {
   const { teamId } = await params;
   const [team, allUsers, t, tRoles] = await Promise.all([
@@ -94,23 +50,7 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ tea
 
   return (
     <div className="container mx-auto p-8">
-      <Link
-        href="/admin/teams"
-        className="inline-flex items-center text-primary hover:text-primary/80 mb-6 font-semibold transition-colors"
-      >
-        <svg
-          className="w-5 h-5 mr-2"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path d="M15 19l-7-7 7-7" />
-        </svg>
-        {t("backToTeams")}
-      </Link>
+      <BackLink href="/admin/teams" label={t("backToTeams")} className="mb-6" />
 
       {/* Header Card */}
       <EditTeamHeader
@@ -121,14 +61,8 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ tea
 
       {/* Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-          <p className="text-sm text-muted-foreground">{t("totalMembers")}</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{team.members.length}</p>
-        </div>
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-          <p className="text-sm text-muted-foreground">{t("defaultStages")}</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{team.defaultStages.length}</p>
-        </div>
+        <StatCard label={t("totalMembers")} value={team.members.length} />
+        <StatCard label={t("defaultStages")} value={team.defaultStages.length} />
       </div>
 
       {/* Members Table */}

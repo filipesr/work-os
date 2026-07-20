@@ -166,3 +166,57 @@ export function monthRangeSaoPaulo(monthStr: string): { start: Date; end: Date }
     end: new Date(next.getTime() - SP_OFFSET_MS - 1),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Formatação de exibição (pt-BR) — fonte única para o `formatDate` inline que
+// era reimplementado em tabelas/modais (my-stages, dashboard, calendar, admin).
+// ---------------------------------------------------------------------------
+
+/** dd/mm/aaaa em pt-BR. Aceita Date, string ISO, null/undefined. */
+export function formatDisplayDate(date: Date | string | null | undefined, fallback = "-"): string {
+  if (!date) return fallback;
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return fallback;
+  return d.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+/** dd/mm/aaaa HH:mm em pt-BR. */
+export function formatDisplayDateTime(
+  date: Date | string | null | undefined,
+  fallback = "-"
+): string {
+  if (!date) return fallback;
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return fallback;
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export type DueState = "overdue" | "dueSoon" | "none";
+
+/**
+ * Classifica uma data de vencimento: `overdue` (vencida), `dueSoon` (vence em
+ * menos de 2 dias) ou `none`. Substitui o cálculo inline duplicado em
+ * MyStagesTable e ActiveStagesWidget.
+ */
+export function getDueState(
+  dueDate: Date | string | null | undefined,
+  ref: Date = new Date()
+): DueState {
+  if (!dueDate) return "none";
+  const d = typeof dueDate === "string" ? new Date(dueDate) : dueDate;
+  if (Number.isNaN(d.getTime())) return "none";
+  const diff = d.getTime() - ref.getTime();
+  if (diff < 0) return "overdue";
+  if (diff < 2 * DAY_MS) return "dueSoon";
+  return "none";
+}

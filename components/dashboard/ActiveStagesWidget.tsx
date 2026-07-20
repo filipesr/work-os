@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getMyActiveStages, getTeamBacklog } from "@/lib/actions/task";
+import { priorityBadgeClass, taskStatusBadgeClass } from "@/lib/status-styles";
+import { formatDisplayDate, getDueState } from "@/lib/dates";
 
 // The translator returned by getTranslations("dashboard"), passed down so each
 // row reuses the parent's single instance instead of awaiting its own (N+1).
@@ -64,41 +66,11 @@ function ActiveStageRow({
 }) {
   const task = activeStage.task;
   const stage = activeStage.stage;
-  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
-  const isDueSoon =
-    task.dueDate &&
-    !isOverdue &&
-    new Date(task.dueDate).getTime() - Date.now() < 2 * 24 * 60 * 60 * 1000; // 2 days
+  const dueState = getDueState(task.dueDate);
+  const isOverdue = dueState === "overdue";
+  const isDueSoon = dueState === "dueSoon";
   const isNew = Date.now() - new Date(task.createdAt).getTime() < 24 * 60 * 60 * 1000; // 24 hours
   const isBlocked = activeStage.status === "BLOCKED";
-
-  // Priority styles
-  const priorityStyles = {
-    URGENT: "bg-red-100 text-red-800 border-red-300",
-    HIGH: "bg-orange-100 text-orange-800 border-orange-300",
-    MEDIUM: "bg-yellow-100 text-yellow-800 border-yellow-300",
-    LOW: "bg-green-100 text-green-800 border-green-300",
-  };
-
-  // Status styles
-  const statusStyles = {
-    BACKLOG: "bg-gray-100 text-gray-800 border-gray-300",
-    IN_PROGRESS: "bg-blue-100 text-blue-800 border-blue-300",
-    PAUSED: "bg-purple-100 text-purple-800 border-purple-300",
-    COMPLETED: "bg-green-100 text-green-800 border-green-300",
-    CANCELLED: "bg-red-100 text-red-800 border-red-300",
-    OBSOLETE: "bg-gray-100 text-gray-500 border-gray-300",
-  };
-
-  // Format date
-  const formatDate = (date: Date | null) => {
-    if (!date) return t("dates.noDueDate");
-    return new Date(date).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
 
   return (
     <tr
@@ -155,9 +127,9 @@ function ActiveStageRow({
       </td>
       <td className="px-4 py-3">
         <span
-          className={`px-2 py-1 text-xs font-medium rounded-md border ${
-            priorityStyles[task.priority]
-          }`}
+          className={`px-2 py-1 text-xs font-medium rounded-md border ${priorityBadgeClass(
+            task.priority
+          )}`}
         >
           {t(`priority.${task.priority}`)}
         </span>
@@ -169,9 +141,9 @@ function ActiveStageRow({
           </span>
         ) : (
           <span
-            className={`px-2 py-1 text-xs font-medium rounded-md border ${
-              statusStyles[task.status]
-            }`}
+            className={`px-2 py-1 text-xs font-medium rounded-md border ${taskStatusBadgeClass(
+              task.status
+            )}`}
           >
             {t(`status.${task.status}`)}
           </span>
@@ -183,7 +155,7 @@ function ActiveStageRow({
             isOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"
           }`}
         >
-          {formatDate(task.dueDate)}
+          {formatDisplayDate(task.dueDate, t("dates.noDueDate"))}
         </span>
       </td>
       {showClaimButton && (

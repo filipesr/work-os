@@ -1,9 +1,8 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useTransition } from "react";
 import { CheckCircle2 } from "lucide-react";
+import { useUrlFilters } from "@/lib/hooks/useUrlFilters";
 
 interface Option {
   id: string;
@@ -24,23 +23,16 @@ interface CalendarFiltersBarProps {
 
 export function CalendarFiltersBar({ teams, projects, users, selected }: CalendarFiltersBarProps) {
   const t = useTranslations("reportsCalendar.filters");
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const { setParam, setParams } = useUrlFilters({ replace: true });
 
   const update = (key: string, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) params.set(key, value);
-    else params.delete(key);
-    if (key === "team") params.delete("user");
-    startTransition(() => router.replace(`?${params.toString()}`));
+    // Changing the team also clears the (now-stale) user selection.
+    if (key === "team") setParams({ team: value, user: null });
+    else setParam(key, value);
   };
 
   const toggleCompleted = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (selected.showCompleted) params.delete("showCompleted");
-    else params.set("showCompleted", "1");
-    startTransition(() => router.replace(`?${params.toString()}`));
+    setParam("showCompleted", selected.showCompleted ? null : "1");
   };
 
   const selectClass =

@@ -1,8 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useTransition } from "react";
+import { useUrlFilters } from "@/lib/hooks/useUrlFilters";
 
 interface PeriodSelectorProps {
   period: "week" | "month" | "custom";
@@ -12,26 +11,15 @@ interface PeriodSelectorProps {
 
 export function PeriodSelector({ period, from, to }: PeriodSelectorProps) {
   const t = useTranslations("reportsTeam.period");
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const { setParam, setParams } = useUrlFilters({ replace: true });
 
   const setPeriod = (value: "week" | "month" | "custom") => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("period", value);
-    if (value !== "custom") {
-      params.delete("from");
-      params.delete("to");
-    }
-    startTransition(() => router.replace(`?${params.toString()}`));
+    if (value === "custom") setParam("period", value);
+    else setParams({ period: value, from: null, to: null });
   };
 
   const setDate = (key: "from" | "to", value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) params.set(key, value);
-    else params.delete(key);
-    params.set("period", "custom");
-    startTransition(() => router.replace(`?${params.toString()}`));
+    setParams({ [key]: value, period: "custom" });
   };
 
   const selectClass =

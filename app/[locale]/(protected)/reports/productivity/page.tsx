@@ -11,42 +11,19 @@ import {
   getAvailableTimeLogMonths,
   type ProductivityFilters,
 } from "@/lib/actions/reporting";
-import { getTeamsForFilter, getProjectsForSelect } from "@/lib/actions/task";
-import { getClients } from "@/lib/actions/client";
-import { currentMonthSaoPaulo, monthRangeSaoPaulo, formatMonthLabel } from "@/lib/dates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Clock, Users, Briefcase, Building2, Workflow } from "lucide-react";
-import { getTranslations, getLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { ExportButtons } from "@/components/reports/ExportButtons";
+import { ReportFilterBar } from "@/components/reports/ReportFilterBar";
+import { CardSkeleton, SummarySkeleton } from "@/components/reports/skeletons";
+import { parseReportFilters } from "@/lib/reports/filters";
 
 // Dedupe the user query across the summary banner and the "Hours by User" card
 // (both need it, in different layout positions) so it runs once per request.
 const loadHoursByUser = cache((filters: ProductivityFilters) => getHoursByUser(filters));
 
 type T = Awaited<ReturnType<typeof getTranslations>>;
-
-function CardSkeleton() {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="h-5 w-40 bg-muted rounded animate-pulse" />
-      </CardHeader>
-      <CardContent>
-        <div className="h-24 bg-muted rounded animate-pulse" />
-      </CardContent>
-    </Card>
-  );
-}
-
-function SummarySkeleton() {
-  return (
-    <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950 dark:to-blue-950">
-      <CardContent className="pt-6">
-        <div className="h-12 w-48 bg-muted rounded animate-pulse" />
-      </CardContent>
-    </Card>
-  );
-}
 
 async function SummarySection({ filters, t }: { filters: ProductivityFilters; t: T }) {
   const hoursByUser = await loadHoursByUser(filters);
@@ -249,31 +226,16 @@ export default async function ProductivityReportPage({
 
   const params = await searchParams;
 
-  // Parse filter parameters
-  const rawMonth = typeof params.month === "string" ? params.month : undefined;
-  const teamId = typeof params.teamId === "string" && params.teamId ? params.teamId : undefined;
-  const clientId =
-    typeof params.clientId === "string" && params.clientId ? params.clientId : undefined;
-  const projectId =
-    typeof params.projectId === "string" && params.projectId ? params.projectId : undefined;
-
-  // Default to the current month (SP) even when no logs exist yet.
-  const monthStr = rawMonth && /^\d{4}-\d{2}$/.test(rawMonth) ? rawMonth : currentMonthSaoPaulo();
-  const { start: startDate, end: endDate } = monthRangeSaoPaulo(monthStr);
+  const { monthStr, teamId, clientId, projectId, startDate, endDate, hasFilters } =
+    parseReportFilters(params);
 
   // Stable reference so cache() dedupes loadHoursByUser across sections.
   const filters: ProductivityFilters = { startDate, endDate, teamId, clientId, projectId };
 
-  const [t, locale, months, teams, clients, projects] = await Promise.all([
+  const [t, months] = await Promise.all([
     getTranslations("reportsProductivity"),
-    getLocale(),
     getAvailableTimeLogMonths(),
-    getTeamsForFilter(),
-    getClients(),
-    getProjectsForSelect(),
   ]);
-  // "Limpar" is meaningful only when a non-default filter is active.
-  const hasFilters = Boolean(rawMonth || teamId || clientId || projectId);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -291,112 +253,16 @@ export default async function ProductivityReportPage({
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{t("filters.title")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* key remounts the uncontrolled selects when the active filters change
-              (incl. "Limpar"), so their displayed values reset to the new defaults. */}
-          <form
-            method="GET"
-            key={`${monthStr}|${teamId ?? ""}|${clientId ?? ""}|${projectId ?? ""}`}
-            className="flex flex-wrap gap-4 items-end"
-          >
-            <div className="min-w-[160px]">
-              <label htmlFor="month" className="block text-sm font-semibold text-foreground mb-2">
-                {t("filters.month")}
-              </label>
-              <select
-                id="month"
-                name="month"
-                defaultValue={monthStr}
-                className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
-              >
-                {months.map((m) => (
-                  <option key={m} value={m}>
-                    {formatMonthLabel(m, locale)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="min-w-[160px] flex-1">
-              <label htmlFor="teamId" className="block text-sm font-semibold text-foreground mb-2">
-                {t("filters.team")}
-              </label>
-              <select
-                id="teamId"
-                name="teamId"
-                defaultValue={teamId ?? ""}
-                className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
-              >
-                <option value="">{t("filters.allTeams")}</option>
-                {teams.map((tm) => (
-                  <option key={tm.id} value={tm.id}>
-                    {tm.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="min-w-[160px] flex-1">
-              <label
-                htmlFor="clientId"
-                className="block text-sm font-semibold text-foreground mb-2"
-              >
-                {t("filters.client")}
-              </label>
-              <select
-                id="clientId"
-                name="clientId"
-                defaultValue={clientId ?? ""}
-                className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
-              >
-                <option value="">{t("filters.allClients")}</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="min-w-[180px] flex-1">
-              <label
-                htmlFor="projectId"
-                className="block text-sm font-semibold text-foreground mb-2"
-              >
-                {t("filters.project")}
-              </label>
-              <select
-                id="projectId"
-                name="projectId"
-                defaultValue={projectId ?? ""}
-                className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
-              >
-                <option value="">{t("filters.allProjects")}</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.client.name} - {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="submit"
-              className="h-11 px-6 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md"
-            >
-              {t("filters.filter")}
-            </button>
-            {hasFilters && (
-              <Link
-                href="/reports/productivity"
-                className="h-11 inline-flex items-center px-6 border-2 border-input-border rounded-lg hover:bg-muted transition-all duration-200"
-              >
-                {t("filters.clear")}
-              </Link>
-            )}
-          </form>
-        </CardContent>
-      </Card>
+      <ReportFilterBar
+        basePath="/reports/productivity"
+        namespace="reportsProductivity"
+        months={months}
+        month={monthStr}
+        teamId={teamId}
+        clientId={clientId}
+        projectId={projectId}
+        hasFilters={hasFilters}
+      />
 
       {/* Summary Card */}
       <Suspense fallback={<SummarySkeleton />}>

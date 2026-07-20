@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Info } from "lucide-react";
 import type { ActiveStageWithDetails } from "@/lib/actions/task";
+import { priorityBadgeClass, stageStatusBadgeClass } from "@/lib/status-styles";
+import { formatDisplayDate, formatDisplayDateTime } from "@/lib/dates";
 
 interface StageDetailModalProps {
   stage: ActiveStageWithDetails | null;
@@ -19,43 +21,15 @@ interface StageDetailModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const priorityStyles: Record<string, string> = {
-  URGENT: "bg-red-100 text-red-800 border-red-300",
-  HIGH: "bg-orange-100 text-orange-800 border-orange-300",
-  MEDIUM: "bg-yellow-100 text-yellow-800 border-yellow-300",
-  LOW: "bg-green-100 text-green-800 border-green-300",
-};
-
-const stageStatusStyles: Record<string, string> = {
-  ACTIVE: "bg-blue-100 text-blue-800 border-blue-300",
-  BLOCKED: "bg-gray-100 text-gray-800 border-gray-300",
-  COMPLETED: "bg-green-100 text-green-800 border-green-300",
-};
-
 export function StageDetailModal({ stage, open, onOpenChange }: StageDetailModalProps) {
   const t = useTranslations("myStages");
 
   if (!stage) return null;
 
-  const formatDate = (date: Date | null | undefined) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  const formatDate = (date: Date | null | undefined) => formatDisplayDateTime(date);
 
-  const formatDateOnly = (date: Date | null | undefined) => {
-    if (!date) return t("modal.noDueDate");
-    return new Date(date).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
+  const formatDateOnly = (date: Date | null | undefined) =>
+    formatDisplayDate(date, t("modal.noDueDate"));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,9 +44,7 @@ export function StageDetailModal({ stage, open, onOpenChange }: StageDetailModal
 
         {/* Task Info Section */}
         <div>
-          <h3 className="text-sm font-semibold text-foreground mb-3">
-            {t("modal.taskInfo")}
-          </h3>
+          <h3 className="text-sm font-semibold text-foreground mb-3">{t("modal.taskInfo")}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-muted-foreground mb-1">{t("modal.project")}</p>
@@ -81,9 +53,9 @@ export function StageDetailModal({ stage, open, onOpenChange }: StageDetailModal
             <div>
               <p className="text-xs text-muted-foreground mb-1">{t("modal.priority")}</p>
               <span
-                className={`px-2 py-0.5 text-xs font-medium rounded-md border ${
-                  priorityStyles[stage.task.priority]
-                }`}
+                className={`px-2 py-0.5 text-xs font-medium rounded-md border ${priorityBadgeClass(
+                  stage.task.priority
+                )}`}
               >
                 {t(`priority.${stage.task.priority}`)}
               </span>
@@ -107,9 +79,7 @@ export function StageDetailModal({ stage, open, onOpenChange }: StageDetailModal
 
         {/* Stage Info Section */}
         <div>
-          <h3 className="text-sm font-semibold text-foreground mb-3">
-            {t("modal.stageInfo")}
-          </h3>
+          <h3 className="text-sm font-semibold text-foreground mb-3">{t("modal.stageInfo")}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-muted-foreground mb-1">{t("modal.stageName")}</p>
@@ -123,9 +93,9 @@ export function StageDetailModal({ stage, open, onOpenChange }: StageDetailModal
             <div>
               <p className="text-xs text-muted-foreground mb-1">{t("modal.stageStatus")}</p>
               <span
-                className={`px-2 py-0.5 text-xs font-medium rounded-md border ${
-                  stageStatusStyles[stage.status]
-                }`}
+                className={`px-2 py-0.5 text-xs font-medium rounded-md border ${stageStatusBadgeClass(
+                  stage.status
+                )}`}
               >
                 {t(`status.${stage.status}`)}
               </span>
@@ -136,7 +106,9 @@ export function StageDetailModal({ stage, open, onOpenChange }: StageDetailModal
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">{t("modal.assignee")}</p>
-              <p className="text-sm">{stage.assignee?.name || stage.assignee?.email || t("unassigned")}</p>
+              <p className="text-sm">
+                {stage.assignee?.name || stage.assignee?.email || t("unassigned")}
+              </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">{t("modal.team")}</p>

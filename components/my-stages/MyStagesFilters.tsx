@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { ActiveStageStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { stageStatusBadgeClass } from "@/lib/status-styles";
 
 interface MyStagesFiltersProps {
   onlyMine: boolean;
@@ -74,11 +75,7 @@ export function MyStagesFilters({
             aria-pressed={status === s}
             className={`px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
               status === s
-                ? s === "ACTIVE"
-                  ? "bg-blue-100 text-blue-800 border-blue-300"
-                  : s === "BLOCKED"
-                  ? "bg-gray-100 text-gray-800 border-gray-300"
-                  : "bg-green-100 text-green-800 border-green-300"
+                ? stageStatusBadgeClass(s)
                 : "bg-background text-muted-foreground border-border hover:bg-muted/50"
             }`}
           >
@@ -89,7 +86,9 @@ export function MyStagesFilters({
 
       {/* Date Filters */}
       <div className="flex items-center gap-2">
-        <label htmlFor="filter-start-date" className="text-sm text-muted-foreground">{t("filters.from")}</label>
+        <label htmlFor="filter-start-date" className="text-sm text-muted-foreground">
+          {t("filters.from")}
+        </label>
         <input
           id="filter-start-date"
           type="date"
@@ -98,7 +97,9 @@ export function MyStagesFilters({
           aria-label={t("filters.from")}
           className="px-2 py-1.5 text-sm border border-border rounded-md bg-background"
         />
-        <label htmlFor="filter-end-date" className="text-sm text-muted-foreground">{t("filters.to")}</label>
+        <label htmlFor="filter-end-date" className="text-sm text-muted-foreground">
+          {t("filters.to")}
+        </label>
         <input
           id="filter-end-date"
           type="date"

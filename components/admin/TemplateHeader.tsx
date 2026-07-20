@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateWorkflowTemplate, deleteWorkflowTemplate } from "@/lib/actions/template";
 import { useTranslations } from "next-intl";
+import { ConfirmActionButton } from "@/components/ui/ConfirmActionButton";
 
 interface TemplateHeaderProps {
   template: {
@@ -15,7 +16,6 @@ interface TemplateHeaderProps {
 export function TemplateHeader({ template }: TemplateHeaderProps) {
   const t = useTranslations("template.header");
   const [isEditing, setIsEditing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   if (isEditing) {
     return (
@@ -94,47 +94,21 @@ export function TemplateHeader({ template }: TemplateHeaderProps) {
           >
             {t("editButton")}
           </button>
-          <button
-            onClick={() => setIsDeleting(true)}
-            className="px-5 py-2.5 bg-destructive text-destructive-foreground font-semibold rounded-lg hover:bg-destructive/90 transition-all shadow-sm"
-          >
-            {t("deleteButton")}
-          </button>
+          <ConfirmActionButton
+            action={deleteWorkflowTemplate.bind(null, template.id)}
+            title={t("deleteConfirmTitle")}
+            description={t("deleteConfirmMessage")}
+            confirmLabel={t("deleteConfirmButton")}
+            cancelLabel={t("cancel")}
+            confirmVariant="destructive"
+            trigger={
+              <button className="px-5 py-2.5 bg-destructive text-destructive-foreground font-semibold rounded-lg hover:bg-destructive/90 transition-all shadow-sm">
+                {t("deleteButton")}
+              </button>
+            }
+          />
         </div>
       </div>
-
-      {/* Delete Confirmation Modal */}
-      {isDeleting && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-template-title"
-            className="bg-card border-2 border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg"
-          >
-            <h3 id="delete-template-title" className="text-xl font-bold text-foreground mb-4">
-              {t("deleteConfirmTitle")}
-            </h3>
-            <p className="text-muted-foreground mb-6">{t("deleteConfirmMessage")}</p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setIsDeleting(false)}
-                className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all"
-              >
-                {t("cancel")}
-              </button>
-              <form action={deleteWorkflowTemplate.bind(null, template.id)}>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-destructive text-destructive-foreground font-semibold rounded-lg hover:bg-destructive/90 transition-all shadow-sm"
-                >
-                  {t("deleteConfirmButton")}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

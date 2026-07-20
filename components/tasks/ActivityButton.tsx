@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { startWorkOnTask, stopWorkOnTask } from "@/lib/actions/activity";
 import { Play, Square, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
+import { useControllableOpen } from "@/lib/hooks/useControllableOpen";
+import { useServerAction } from "@/lib/hooks/useServerAction";
 
 interface ActiveLog {
   id: string;
@@ -29,10 +31,28 @@ export function ActivityButton({
   currentStageId,
   activeLog,
 }: ActivityButtonProps) {
-  const [isPending, startTransition] = useTransition();
-  const [showStopModal, setShowStopModal] = useState(false);
+  const { open: showStopModal, setOpen: setShowStopModal } = useControllableOpen();
   const [description, setDescription] = useState("");
   const t = useTranslations("tasks.activity");
+
+  const { run: runStart, isPending: isStarting } = useServerAction(startWorkOnTask, {
+    onSuccess: (result) => {
+      const r = result as { status?: string } | undefined;
+      if (r?.status === "already_active") {
+        toast(t("alreadyActiveInfo"));
+      } else {
+        toast.success(t("startSuccess", { taskTitle }));
+      }
+    },
+  });
+
+  const { run: runStop, isPending: isStopping } = useServerAction(stopWorkOnTask, {
+    successMessage: t("stopSuccess", { taskTitle }),
+    onSuccess: () => {
+      setShowStopModal(false);
+      setDescription("");
+    },
+  });
 
   // Check if this specific task is active
   const isThisTaskActive = activeLog?.taskId === taskId;
@@ -45,18 +65,7 @@ export function ActivityButton({
       toast.error(t("noStageError"));
       return;
     }
-
-    startTransition(async () => {
-      const result = await startWorkOnTask(taskId, currentStageId);
-
-      if (result.error) {
-        toast.error(result.error);
-      } else if ("status" in result && result.status === "already_active") {
-        toast(t("alreadyActiveInfo"));
-      } else {
-        toast.success(t("startSuccess", { taskTitle }));
-      }
-    });
+    runStart(taskId, currentStageId);
   };
 
   const handleStop = () => {
@@ -65,26 +74,15 @@ export function ActivityButton({
 
   const handleConfirmStop = () => {
     if (!activeLog) return;
-
-    startTransition(async () => {
-      const result = await stopWorkOnTask(activeLog.id, taskId, description);
-
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success(t("stopSuccess", { taskTitle }));
-        setShowStopModal(false);
-        setDescription("");
-      }
-    });
+    runStop(activeLog.id, taskId, description);
   };
 
   return (
     <>
       {isThisTaskActive ? (
         // This task is currently active - show STOP button
-        <Button onClick={handleStop} disabled={isPending} variant="destructive" className="w-full">
-          {isPending ? (
+        <Button onClick={handleStop} disabled={isStopping} variant="destructive" className="w-full">
+          {isStopping ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               {t("stopping")}
@@ -101,11 +99,11 @@ export function ActivityButton({
         <div className="space-y-2">
           <Button
             onClick={handleStart}
-            disabled={isPending}
+            disabled={isStarting}
             variant="default"
             className="w-full bg-green-600 hover:bg-green-700"
           >
-            {isPending ? (
+            {isStarting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t("starting")}
@@ -151,7 +149,7 @@ export function ActivityButton({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
-                disabled={isPending}
+                disabled={isStopping}
                 className="w-full px-4 py-3 border-2 border-input bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-input disabled:opacity-50 transition-all placeholder:text-muted-foreground"
                 placeholder={t("modal.placeholder")}
               />
@@ -165,17 +163,17 @@ export function ActivityButton({
                   setShowStopModal(false);
                   setDescription("");
                 }}
-                disabled={isPending}
+                disabled={isStopping}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 font-medium"
               >
                 {t("modal.cancel")}
               </button>
               <button
                 onClick={handleConfirmStop}
-                disabled={isPending}
+                disabled={isStopping}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 font-medium flex items-center gap-2"
               >
-                {isPending ? (
+                {isStopping ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     {t("stopping")}
