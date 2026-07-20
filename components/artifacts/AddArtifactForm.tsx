@@ -1,0 +1,149 @@
+"use client";
+
+import { useState, type TransitionStartFunction } from "react";
+import { useRouter } from "next/navigation";
+import { ArtifactType } from "@prisma/client";
+import { Link2, Loader2, Upload } from "lucide-react";
+import toast from "react-hot-toast";
+import { addLinkArtifact } from "@/lib/actions/task";
+import { addScopedLinkArtifact } from "@/lib/actions/artifact";
+import { UploadArtifactForm } from "@/components/tasks/UploadArtifactForm";
+
+const TYPE_OPTIONS: { value: ArtifactType; label: string }[] = [
+  { value: "DOCUMENT", label: "Documento" },
+  { value: "IMAGE", label: "Imagem" },
+  { value: "VIDEO", label: "Vídeo" },
+  { value: "FIGMA", label: "Figma" },
+  { value: "OTHER", label: "Outro" },
+];
+
+interface AddArtifactFormProps {
+  scope: "TASK" | "PROJECT" | "CLIENT";
+  ownerIds: { taskId?: string; projectId?: string; clientId?: string };
+  isPending: boolean;
+  startTransition: TransitionStartFunction;
+}
+
+export function AddArtifactForm({
+  scope,
+  ownerIds,
+  isPending,
+  startTransition,
+}: AddArtifactFormProps) {
+  const router = useRouter();
+  const [mode, setMode] = useState<"link" | "upload">("link");
+  const [title, setTitle] = useState("");
+  const [url, setUrl] = useState("");
+  const [type, setType] = useState<ArtifactType>("OTHER");
+
+  const handleAddLink = () => {
+    if (!title.trim() || !url.trim()) return toast.error("Título e URL são obrigatórios.");
+    try {
+      new URL(url);
+    } catch {
+      return toast.error("URL inválida.");
+    }
+    startTransition(async () => {
+      const res =
+        scope === "TASK"
+          ? await addLinkArtifact(ownerIds.taskId as string, title, url, type)
+          : await addScopedLinkArtifact({
+              scope,
+              projectId: scope === "PROJECT" ? ownerIds.projectId : undefined,
+              clientId: scope === "CLIENT" ? ownerIds.clientId : undefined,
+              title,
+              url,
+              type,
+            });
+      if (res && "error" in res && res.error) {
+        toast.error(res.error);
+      } else {
+        setTitle("");
+        setUrl("");
+        setType("OTHER");
+        toast.success("Artefato adicionado");
+        router.refresh();
+      }
+    });
+  };
+
+  return (
+    <div className="rounded-lg border-2 border-dashed border-border p-4">
+      <div className="mb-3 inline-flex rounded-lg border-2 border-border p-0.5">
+        <button
+          type="button"
+          onClick={() => setMode("link")}
+          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
+            mode === "link"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Link2 className="h-4 w-4" /> Adicionar link
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("upload")}
+          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
+            mode === "upload"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Upload className="h-4 w-4" /> Upload NAS
+        </button>
+      </div>
+
+      {mode === "upload" ? (
+        <UploadArtifactForm
+          scope={scope}
+          taskId={ownerIds.taskId}
+          projectId={ownerIds.projectId}
+          clientId={ownerIds.clientId}
+        />
+      ) : (
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Título"
+              disabled={isPending}
+              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all"
+            />
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as ArtifactType)}
+              disabled={isPending}
+              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base font-medium text-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all"
+            >
+              {TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <input
+            type="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://…"
+            disabled={isPending}
+            className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all"
+          />
+          <button
+            type="button"
+            onClick={handleAddLink}
+            disabled={isPending || !title.trim() || !url.trim()}
+            className="inline-flex h-11 items-center rounded-lg bg-primary px-6 font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Adicionar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

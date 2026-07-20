@@ -5,17 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, Clock, ArrowRight } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import type { StageRef, StageTeamRef } from "@/lib/types/stages";
 
 interface StageLog {
   id: string;
   enteredAt: Date;
   exitedAt: Date | null;
   status: "COMPLETED" | "REVERTED" | null;
-  stage: {
-    id: string;
-    name: string;
-    order: number;
-  };
+  stage: StageRef;
   user: {
     id: string;
     name: string | null;
@@ -27,10 +24,7 @@ interface TemplateStage {
   id: string;
   name: string;
   order: number;
-  defaultTeam: {
-    id: string;
-    name: string;
-  } | null;
+  defaultTeam: StageTeamRef | null;
 }
 
 interface StageWorkflowVisualizationProps {
@@ -50,22 +44,15 @@ export function StageWorkflowVisualization({
   );
 
   // Find current stage index
-  const currentStageIndex = allStages.findIndex(
-    (stage) => stage.id === currentStageId
-  );
+  const currentStageIndex = allStages.findIndex((stage) => stage.id === currentStageId);
 
   // Calculate duration for completed stages
   const getStageDuration = (stageId: string): string | null => {
-    const log = stageLogs.find(
-      (log) => log.stage.id === stageId && log.exitedAt !== null
-    );
+    const log = stageLogs.find((log) => log.stage.id === stageId && log.exitedAt !== null);
     if (!log || !log.exitedAt) return null;
 
-    const hours = differenceInHours(
-      new Date(log.exitedAt),
-      new Date(log.enteredAt)
-    );
-    
+    const hours = differenceInHours(new Date(log.exitedAt), new Date(log.enteredAt));
+
     if (hours < 1) return "< 1h";
     if (hours < 24) return `${hours}h`;
     const days = Math.floor(hours / 24);
@@ -103,8 +90,8 @@ export function StageWorkflowVisualization({
                     status === "current"
                       ? "bg-blue-50 border-2 border-blue-300"
                       : status === "completed"
-                      ? "bg-green-50"
-                      : "bg-gray-50"
+                        ? "bg-green-50"
+                        : "bg-gray-50"
                   }`}
                 >
                   {/* Icon */}
@@ -127,8 +114,8 @@ export function StageWorkflowVisualization({
                           status === "current"
                             ? "border-blue-600 text-blue-700 bg-blue-100"
                             : status === "completed"
-                            ? "border-green-600 text-green-700 bg-green-100"
-                            : "border-gray-400 text-gray-600"
+                              ? "border-green-600 text-green-700 bg-green-100"
+                              : "border-gray-400 text-gray-600"
                         }`}
                       >
                         {stage.order}
@@ -138,16 +125,14 @@ export function StageWorkflowVisualization({
                           status === "current"
                             ? "text-blue-900"
                             : status === "completed"
-                            ? "text-green-900"
-                            : "text-gray-700"
+                              ? "text-green-900"
+                              : "text-gray-700"
                         }`}
                       >
                         {stage.name}
                       </span>
                       {status === "current" && (
-                        <Badge className="bg-blue-600 text-white text-xs">
-                          Atual
-                        </Badge>
+                        <Badge className="bg-blue-600 text-white text-xs">Atual</Badge>
                       )}
                     </div>
 
@@ -155,9 +140,7 @@ export function StageWorkflowVisualization({
                     {status === "completed" && log && log.exitedAt && (
                       <div className="text-xs text-green-700 space-y-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            {log.user.name || log.user.email}
-                          </span>
+                          <span className="font-medium">{log.user.name || log.user.email}</span>
                           {duration && (
                             <>
                               <span>•</span>
@@ -188,9 +171,7 @@ export function StageWorkflowVisualization({
 
                     {/* Upcoming stage info */}
                     {status === "upcoming" && stage.defaultTeam && (
-                      <div className="text-xs text-gray-600">
-                        Time: {stage.defaultTeam.name}
-                      </div>
+                      <div className="text-xs text-gray-600">Time: {stage.defaultTeam.name}</div>
                     )}
                   </div>
                 </div>
@@ -200,9 +181,7 @@ export function StageWorkflowVisualization({
                   <div className="flex justify-center py-1">
                     <ArrowRight
                       className={`h-4 w-4 ${
-                        status === "completed"
-                          ? "text-green-500"
-                          : "text-gray-300"
+                        status === "completed" ? "text-green-500" : "text-gray-300"
                       }`}
                     />
                   </div>
@@ -222,16 +201,12 @@ export function StageWorkflowVisualization({
               <div className="text-gray-600">Concluídas</div>
             </div>
             <div>
-              <div className="font-semibold text-blue-700">
-                {currentStageId ? 1 : 0}
-              </div>
+              <div className="font-semibold text-blue-700">{currentStageId ? 1 : 0}</div>
               <div className="text-gray-600">Em andamento</div>
             </div>
             <div>
               <div className="font-semibold text-gray-700">
-                {allStages.length -
-                  Array.from(completedStageIds).length -
-                  (currentStageId ? 1 : 0)}
+                {allStages.length - Array.from(completedStageIds).length - (currentStageId ? 1 : 0)}
               </div>
               <div className="text-gray-600">Pendentes</div>
             </div>

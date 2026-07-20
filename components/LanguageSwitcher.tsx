@@ -4,7 +4,12 @@ import { useRouter, usePathname } from "next/navigation";
 import { useLocale } from "next-intl";
 import { locales, localeLabels, LocaleType } from "@/lib/i18n";
 import { setStoredLocale } from "@/lib/locale-storage";
-import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Languages } from "lucide-react";
 
@@ -39,16 +44,19 @@ export function LanguageSwitcher() {
   );
 
   return (
-    <DropdownMenu trigger={trigger}>
-      {locales.map((locale) => (
-        <DropdownMenuItem
-          key={locale}
-          onClick={() => switchLocale(locale)}
-          className={currentLocale === locale ? "bg-accent" : ""}
-        >
-          {localeLabels[locale]}
-        </DropdownMenuItem>
-      ))}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={8} className="w-56 bg-card shadow-lg px-0">
+        {locales.map((locale) => (
+          <DropdownMenuItem
+            key={locale}
+            onClick={() => switchLocale(locale)}
+            className={`px-4 py-2 ${currentLocale === locale ? "bg-accent" : ""}`}
+          >
+            {localeLabels[locale]}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
     </DropdownMenu>
   );
 }

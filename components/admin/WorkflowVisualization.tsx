@@ -3,25 +3,10 @@
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useTranslations } from "next-intl";
-
-interface Stage {
-  id: string;
-  name: string;
-  order: number;
-  optional?: boolean;
-  defaultTeamId: string | null;
-  defaultTeam: { id: string; name: string } | null;
-  dependents: Array<{
-    id: string;
-    stageId: string;
-    stage: { id: string; name: string; order: number };
-    dependsOnStageId: string;
-    dependsOn: { id: string; name: string; order: number };
-  }>;
-}
+import type { Stage } from "@/lib/types/stages";
 
 interface WorkflowVisualizationProps {
-  stages: any[]; // Using any temporarily to bypass type checking
+  stages: Stage[];
 }
 
 // Helper function to group stages by their dependency level

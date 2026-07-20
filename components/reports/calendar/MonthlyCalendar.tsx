@@ -5,8 +5,8 @@ import { useTranslations } from "next-intl";
 import { BatchCreateDialog } from "./BatchCreateDialog";
 import { DayDemandsDialog } from "./DayDemandsDialog";
 import { DayDetailDialog } from "./DayDetailDialog";
+import { EventPill } from "./EventPill";
 import {
-  COUNTRY_FLAG,
   isoToDisplay,
   type ClientDemands,
   type ClientOption,
@@ -129,22 +129,12 @@ export function MonthlyCalendar({
               {/* Events */}
               <div className="space-y-1">
                 {events.map((event) => (
-                  <button
+                  <EventPill
                     key={event.id}
-                    type="button"
-                    onClick={() => setBatch({ date: event.iso, eventTitle: event.title })}
-                    title={event.title}
-                    className={`block w-full truncate rounded border px-1.5 py-0.5 text-left text-[11px] font-medium transition-colors ${
-                      event.type === "holiday"
-                        ? "border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-400 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-200"
-                        : "border-violet-200 bg-violet-50 text-violet-700 hover:border-violet-400 dark:border-violet-800/60 dark:bg-violet-950/40 dark:text-violet-200"
-                    }`}
-                  >
-                    <span className="mr-1">
-                      {event.countries.map((c) => COUNTRY_FLAG[c]).join("")}
-                    </span>
-                    {event.title}
-                  </button>
+                    event={event}
+                    variant="calendar"
+                    onSelect={() => setBatch({ date: event.iso, eventTitle: event.title })}
+                  />
                 ))}
               </div>
 

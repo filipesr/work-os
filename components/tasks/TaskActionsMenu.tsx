@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu-radix";
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { AdvanceStageButton } from "./AdvanceStageButton";
 import { RevertStageButton } from "./RevertStageButton";

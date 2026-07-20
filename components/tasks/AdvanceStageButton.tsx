@@ -1,21 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { completeStageAndAdvance } from "@/lib/actions/task";
-import {
-  previewNextStages,
-  getTeamMembers,
-  type PreviewStage,
-} from "@/lib/actions/stage-assignment";
 import { StageAssigneeSelect } from "@/components/ui/StageAssigneeSelect";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useControllableOpen } from "@/lib/hooks/useControllableOpen";
 import { useServerAction } from "@/lib/hooks/useServerAction";
-
-type Member = { id: string; name: string | null; email: string | null };
-type MembersByStage = Record<string, Member[]>;
+import { useNextStagePreview } from "@/lib/hooks/useNextStagePreview";
 
 interface AdvanceStageButtonProps {
   taskId: string;
@@ -38,14 +30,14 @@ export function AdvanceStageButton({
     isControlled,
   } = useControllableOpen(controlledOpen, onOpenChange);
 
-  // Pre-confirm preview state
-  const [previewData, setPreviewData] = useState<{
-    activated: PreviewStage[];
-    blocked: PreviewStage[];
-  } | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [membersByStage, setMembersByStage] = useState<MembersByStage>({});
-  const [assignments, setAssignments] = useState<Record<string, string>>({});
+  // Pre-confirm preview state (loaded when the modal opens)
+  const {
+    previewData,
+    membersByStage,
+    assignments,
+    setAssignment,
+    loading: previewLoading,
+  } = useNextStagePreview(taskId, currentStageId, showConfirm);
 
   const { run, isPending } = useServerAction(completeStageAndAdvance, {
     onSuccess: (result) => {
@@ -81,74 +73,6 @@ export function AdvanceStageButton({
       setShowConfirm(false);
     },
   });
-
-  // Load next-stage preview when the modal opens
-  useEffect(() => {
-    if (!showConfirm || !currentStageId) return;
-
-    let cancelled = false;
-    setPreviewLoading(true);
-    setPreviewData(null);
-    setAssignments({});
-    setMembersByStage({});
-
-    (async () => {
-      try {
-        const result = await previewNextStages(taskId, currentStageId);
-        if (cancelled) return;
-
-        const allStages = [...result.activated, ...result.blocked];
-        const stagesWithTeam = allStages.filter((s) => s.defaultTeamId !== null);
-
-        const memberResults = await Promise.all(
-          stagesWithTeam.map(async (s) => ({
-            stageId: s.id,
-            members: await getTeamMembers(s.defaultTeamId as string),
-          }))
-        );
-
-        if (cancelled) return;
-
-        const newMembersByStage: MembersByStage = {};
-        for (const { stageId, members } of memberResults) {
-          newMembersByStage[stageId] = members;
-        }
-
-        // Pre-fill with each stage's already-assigned responsible (set at
-        // creation), but only when that user is still in the stage's team.
-        const initialAssignments: Record<string, string> = {};
-        for (const s of allStages) {
-          if (!s.assigneeId) continue;
-          const inTeam = newMembersByStage[s.id]?.some((m) => m.id === s.assigneeId);
-          if (inTeam) initialAssignments[s.id] = s.assigneeId;
-        }
-
-        setPreviewData(result);
-        setMembersByStage(newMembersByStage);
-        setAssignments(initialAssignments);
-      } catch {
-        // fail silently — the user can still confirm without assignments
-      } finally {
-        if (!cancelled) setPreviewLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [showConfirm, taskId, currentStageId]);
-
-  const handleAssignmentChange = (stageId: string, userId: string) => {
-    setAssignments((prev) => {
-      const next = { ...prev };
-      if (userId) {
-        next[stageId] = userId;
-      } else {
-        delete next[stageId];
-      }
-      return next;
-    });
-  };
 
   // Don't show button if there's no current stage
   if (!currentStageId) {
@@ -266,7 +190,7 @@ export function AdvanceStageButton({
                             teamName={stage.defaultTeam?.name ?? null}
                             members={membersByStage[stage.id] ?? []}
                             value={assignments[stage.id] ?? ""}
-                            onChange={(userId) => handleAssignmentChange(stage.id, userId)}
+                            onChange={(userId) => setAssignment(stage.id, userId)}
                           />
                         </li>
                       ))}
@@ -293,7 +217,7 @@ export function AdvanceStageButton({
                             teamName={stage.defaultTeam?.name ?? null}
                             members={membersByStage[stage.id] ?? []}
                             value={assignments[stage.id] ?? ""}
-                            onChange={(userId) => handleAssignmentChange(stage.id, userId)}
+                            onChange={(userId) => setAssignment(stage.id, userId)}
                           />
                         </li>
                       ))}
