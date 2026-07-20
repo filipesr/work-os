@@ -47,11 +47,44 @@
     "noDependencies": "Sem dependências",
     "blockedBy": "Bloqueada por",
     "completeAndAdvance": "Completar e Avançar",
+    "noActiveStage": "Nenhuma etapa ativa para concluir",
+    "completeStageButton": "Concluir Etapa",
+    "completing": "Concluindo...",
+    "confirmComplete": "Confirmar e Concluir",
     "advanceModal": {
       "loading": "Carregando próximas etapas...",
       "activatedTitle": "Etapas que serão ativadas:",
       "blockedTitle": "Etapas que serão bloqueadas:",
-      "orderLabel": "ordem {order}"
+      "orderLabel": "ordem {order}",
+      "title": "Concluir Etapa Atual",
+      "description": "Ao confirmar, a etapa atual será marcada como concluída e as próximas etapas dependentes serão ativadas automaticamente (fork/join).",
+      "whatHappensLabel": "O que acontecerá:",
+      "whatHappens1": "A etapa atual será concluída",
+      "whatHappens2": "Todas as etapas dependentes com dependências cumpridas serão <strong>ativadas</strong>",
+      "whatHappens3": "Etapas com dependências pendentes serão criadas como <strong>bloqueadas</strong>",
+      "whatHappens4": "Um log será adicionado ao histórico da tarefa",
+      "requirementLabel": "Requisito de contribuição:",
+      "requirementText": "Você precisa ter adicionado <strong>pelo menos 1 artefato ou 1 comentário</strong> nesta tarefa antes de concluir a etapa. (Admins e Gerentes podem ignorar este requisito.)"
+    },
+    "revertModal": {
+      "successToast": "Tarefa revertida para a etapa anterior",
+      "validationError": "Por favor, selecione uma etapa e forneça um comentário.",
+      "triggerButton": "Reverter Etapa",
+      "title": "Reverter para Etapa Anterior",
+      "description": "Envie esta tarefa de volta para uma etapa anterior (ex: necessita ajustes). Um comentário explicativo é obrigatório.",
+      "infoLabel": "Informação:",
+      "infoText": "Esta ação marcará a etapa atual como revertida e criará um novo log de entrada na etapa anterior.",
+      "selectStageLabel": "Reverter para a etapa:",
+      "mostRecent": "Mais recente",
+      "mostRecentDesc": "Etapa anterior mais recente",
+      "olderDesc": "Etapa anterior no histórico",
+      "reasonLabel": "Motivo da reversão: *",
+      "reasonPlaceholder": "Explique o motivo da reversão... (ex: 'Encontrados erros que precisam ser corrigidos')",
+      "reasonHint": "Este comentário será registrado no histórico da tarefa",
+      "oneStageAvailable": "1 etapa anterior disponível",
+      "manyStagesAvailable": "{count} etapas anteriores disponíveis",
+      "pending": "Revertendo...",
+      "confirmButton": "Reverter Tarefa"
     },
     "toasts": {
       "completedWithActivatedBlocked": "Etapa concluída! {activated} etapa(s) ativada(s), {blocked} etapa(s) bloqueada(s)",
@@ -59,6 +92,16 @@
       "completedWithBlocked": "Etapa concluída! {blocked} etapa(s) criada(s) como bloqueadas",
       "completed": "Etapa concluída com sucesso!"
     }
+  },
+  "workflowViz": {
+    "title": "Fluxo de Trabalho",
+    "current": "Atual",
+    "completedOn": "Concluído em {date}",
+    "startedOn": "Iniciado em {date}",
+    "team": "Time: {name}",
+    "completed": "Concluídas",
+    "inProgress": "Em andamento",
+    "pending": "Pendentes"
   },
   "comments": {
     "title": "Comentários",
@@ -91,10 +134,43 @@
     "addSuccess": "O link foi adicionado com sucesso",
     "adding": "Adicionando...",
     "submitButton": "Adicionar Link",
+    "addLinkTab": "Adicionar link",
+    "uploadNasTab": "Upload NAS",
+    "addedSuccess": "Artefato adicionado",
+    "titleInputPlaceholder": "Título",
+    "urlPlaceholder": "https://…",
+    "taskLabel": "Tarefa: {title}",
+    "updated": "Atualizado",
+    "created": "Criado",
+    "timeOn": "em {date}",
+    "reenviar": "Reenviar",
+    "reenviarPending": "Enviando…",
+    "remove": "Remover",
+    "hideVersions": "ocultar",
+    "viewVersions": "ver versões",
+    "newVersion": "Nova versão",
+    "newVersionHintBefore": "Título e tipo são mantidos de",
+    "newVersionHintAfter": "— informe apenas a nova URL.",
+    "newVersionPlaceholder": "https://… (nova versão)",
+    "saveNewVersion": "Salvar nova versão",
+    "open": "abrir",
+    "download": {
+      "unavailable": "Download do NAS indisponível neste ambiente.",
+      "agentNotFound": "Agente não encontrado — conecte-se à LAN/VPN para baixar.",
+      "label": "Baixar"
+    },
+    "nasStatus": {
+      "PENDING": "Pendente",
+      "UPLOADING": "Enviando",
+      "READY": "Pronto",
+      "FAILED": "Falhou",
+      "EXPIRED": "Expirado"
+    },
     "types": {
       "document": "Documento",
       "image": "Imagem",
       "video": "Vídeo",
+      "figma": "Figma",
       "link": "Link",
       "other": "Outro"
     }
@@ -102,16 +178,41 @@
   "timeLogs": {
     "title": "Tempo Registrado",
     "noLogs": "Nenhum registro de horas",
+    "noLogsYet": "Nenhum tempo registrado ainda",
     "totalHours": "{hours}h total",
     "loggedBy": "Registrado por",
     "stage": "Etapa",
+    "stageLabel": "Etapa {order}: {name}",
     "date": "Data",
     "hours": "Horas",
-    "description": "Descrição"
+    "description": "Descrição",
+    "form": {
+      "title": "Registrar Tempo",
+      "invalidHours": "Por favor, insira um valor válido para as horas gastas",
+      "selectDate": "Por favor, selecione uma data",
+      "success": "{hours} hora(s) registrada(s) com sucesso",
+      "hoursLabel": "Horas Gastas",
+      "hoursPlaceholder": "Ex: 2.5",
+      "hoursHint": "Use decimais para minutos (ex: 1.5 = 1 hora e 30 minutos)",
+      "dateLabel": "Data",
+      "descriptionLabel": "Descrição (opcional)",
+      "descriptionPlaceholder": "Descreva o trabalho realizado...",
+      "pending": "Registrando..."
+    }
   },
   "activity": {
     "title": "Histórico de Atividades",
     "noActivity": "Nenhuma atividade registrada",
+    "noActivityYet": "Nenhuma atividade ainda",
+    "addedArtifact": "adicionou um {type}",
+    "revertBadge": "Reversão",
+    "artifactTypes": {
+      "DOCUMENT": "Documento",
+      "IMAGE": "Imagem",
+      "VIDEO": "Vídeo",
+      "FIGMA": "Figma",
+      "OTHER": "Arquivo"
+    },
     "startWork": "Iniciar Tarefa",
     "stopWork": "Parar Tarefa",
     "starting": "Iniciando...",
@@ -152,6 +253,11 @@
     "edit": "Editar Tarefa",
     "delete": "Excluir Tarefa",
     "duplicate": "Duplicar Tarefa",
+    "duplicateShort": "Duplicar",
+    "markObsolete": "Marcar obsoleta",
+    "confirmObsolete": "Marcar esta tarefa como obsoleta? Ela sai dos pendentes e do % do projeto.",
+    "obsoleteSuccess": "Tarefa marcada como obsoleta",
+    "obsoleteError": "Erro ao marcar como obsoleta",
     "archive": "Arquivar Tarefa",
     "confirmDelete": "Tem certeza que deseja excluir esta tarefa?",
     "exportPdf": "Exportar PDF",
@@ -162,7 +268,29 @@
     "reopenTask": "Reabrir Tarefa",
     "unassignTask": "Liberar Tarefa",
     "unassignStage": "Liberar Etapa",
-    "logTime": "Registrar Tempo"
+    "logTime": "Registrar Tempo",
+    "completeDialog": {
+      "description": "Tem certeza que deseja marcar esta tarefa como concluída? Esta ação indica que todo o trabalho foi finalizado.",
+      "pending": "Concluindo...",
+      "success": "Tarefa concluída com sucesso!",
+      "infoActionLabel": "Ação:",
+      "infoActionText": "A tarefa será marcada como CONCLUÍDA",
+      "infoComment": "Um comentário será adicionado indicando que a tarefa foi concluída."
+    },
+    "unassignTaskDialog": {
+      "description": "Tem certeza que deseja desatribuir esta tarefa? A tarefa voltará para o backlog e ficará disponível para outros membros do time reivindicarem.",
+      "pending": "Desatribuindo...",
+      "success": "Tarefa desatribuída com sucesso",
+      "currentAssigneeLabel": "Responsável atual:",
+      "infoComment": "Um comentário será adicionado indicando que a tarefa foi desatribuída."
+    },
+    "unassignStageDialog": {
+      "description": "Tem certeza que deseja desatribuir esta etapa? A etapa voltará para o backlog e ficará disponível para outros membros do time reivindicarem.",
+      "pending": "Desatribuindo...",
+      "success": "Etapa desatribuída com sucesso",
+      "currentAssigneeLabel": "Responsável atual:",
+      "infoComment": "Um comentário será adicionado indicando que a etapa foi desatribuída."
+    }
   },
   "create": {
     "titleLabel": "Título da Tarefa *",

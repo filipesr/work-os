@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { revertTaskStage } from "@/lib/actions/task";
 import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -26,6 +27,8 @@ export function RevertStageButton({
   open: controlledOpen,
   onOpenChange,
 }: RevertStageButtonProps) {
+  const t = useTranslations("tasks.stages.revertModal");
+  const tCommon = useTranslations("common");
   const {
     open: isOpen,
     setOpen: setIsOpen,
@@ -34,7 +37,7 @@ export function RevertStageButton({
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const { run, isPending } = useServerAction(revertTaskStage, {
-    successMessage: "Tarefa revertida para a etapa anterior",
+    successMessage: t("successToast"),
     onSuccess: () => {
       setIsOpen(false);
       setComment("");
@@ -48,7 +51,7 @@ export function RevertStageButton({
 
   const handleRevert = () => {
     if (!selectedStageId || !comment.trim()) {
-      toast.error("Por favor, selecione uma etapa e forneça um comentário.");
+      toast.error(t("validationError"));
       return;
     }
     run(taskId, selectedStageId, comment);
@@ -62,7 +65,7 @@ export function RevertStageButton({
           disabled={isPending}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}← Revert Stage
+          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}← {t("triggerButton")}
         </button>
       )}
 
@@ -77,26 +80,22 @@ export function RevertStageButton({
             {/* Header */}
             <div className="mb-6">
               <h3 id="revert-stage-title" className="text-2xl font-bold text-foreground mb-2">
-                Reverter para Etapa Anterior
+                {t("title")}
               </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Envie esta tarefa de volta para uma etapa anterior (ex: necessita ajustes). Um
-                comentário explicativo é obrigatório.
-              </p>
+              <p className="text-muted-foreground text-sm leading-relaxed">{t("description")}</p>
             </div>
 
             {/* Info Badge */}
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs text-blue-800">
-                <strong>ℹ️ Informação:</strong> Esta ação marcará a etapa atual como revertida e
-                criará um novo log de entrada na etapa anterior.
+                <strong>ℹ️ {t("infoLabel")}</strong> {t("infoText")}
               </p>
             </div>
 
             {/* Stage Selection */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-foreground mb-3">
-                Reverter para a etapa:
+                {t("selectStageLabel")}
               </label>
               <div className="space-y-3 max-h-[300px] overflow-y-auto">
                 {previousStages.map((stage, index) => (
@@ -127,14 +126,12 @@ export function RevertStageButton({
                           </span>
                           {index === 0 && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              Mais recente
+                              {t("mostRecent")}
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {index === 0
-                            ? "Etapa anterior mais recente"
-                            : "Etapa anterior no histórico"}
+                          {index === 0 ? t("mostRecentDesc") : t("olderDesc")}
                         </p>
                       </div>
 
@@ -167,7 +164,7 @@ export function RevertStageButton({
             {/* Comment */}
             <div className="mb-6">
               <label className="block text-sm font-semibold text-foreground mb-2">
-                Motivo da reversão: *
+                {t("reasonLabel")}
               </label>
               <textarea
                 value={comment}
@@ -175,19 +172,17 @@ export function RevertStageButton({
                 rows={4}
                 disabled={isPending}
                 className="w-full px-4 py-3 border-2 border-input bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-input disabled:opacity-50 transition-all placeholder:text-muted-foreground"
-                placeholder="Explique o motivo da reversão... (ex: 'Encontrados erros que precisam ser corrigidos')"
+                placeholder={t("reasonPlaceholder")}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Este comentário será registrado no histórico da tarefa
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">{t("reasonHint")}</p>
             </div>
 
             {/* Footer */}
             <div className="flex gap-3 justify-between items-center pt-4 border-t border-gray-200">
               <p className="text-xs text-gray-500">
                 {previousStages.length === 1
-                  ? "1 etapa anterior disponível"
-                  : `${previousStages.length} etapas anteriores disponíveis`}
+                  ? t("oneStageAvailable")
+                  : t("manyStagesAvailable", { count: previousStages.length })}
               </p>
               <div className="flex gap-2">
                 <button
@@ -199,7 +194,7 @@ export function RevertStageButton({
                   disabled={isPending}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
                 >
-                  Cancelar
+                  {tCommon("buttons.cancel")}
                 </button>
                 <button
                   onClick={handleRevert}
@@ -207,7 +202,7 @@ export function RevertStageButton({
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {isPending ? "Revertendo..." : "Reverter Tarefa"}
+                  {isPending ? t("pending") : t("confirmButton")}
                 </button>
               </div>
             </div>

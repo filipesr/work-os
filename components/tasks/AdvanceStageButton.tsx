@@ -23,6 +23,7 @@ export function AdvanceStageButton({
   onOpenChange,
 }: AdvanceStageButtonProps) {
   const t = useTranslations("tasks.stages");
+  const tCommon = useTranslations("common");
 
   const {
     open: showConfirm,
@@ -80,7 +81,7 @@ export function AdvanceStageButton({
       <div className="border border-yellow-300 bg-yellow-50 rounded-lg p-4">
         <div className="flex items-center gap-2">
           <AlertCircle className="h-5 w-5 text-yellow-600" />
-          <p className="text-sm font-medium text-yellow-900">Nenhuma etapa ativa para concluir</p>
+          <p className="text-sm font-medium text-yellow-900">{t("noActiveStage")}</p>
         </div>
       </div>
     );
@@ -101,12 +102,12 @@ export function AdvanceStageButton({
           {isPending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Concluindo...
+              {t("completing")}
             </>
           ) : (
             <>
               <CheckCircle2 className="h-4 w-4" />
-              Concluir Etapa
+              {t("completeStageButton")}
             </>
           )}
         </button>
@@ -124,41 +125,43 @@ export function AdvanceStageButton({
             {/* Header */}
             <div className="mb-6">
               <h3 id="advance-stage-title" className="text-2xl font-bold text-foreground mb-2">
-                Concluir Etapa Atual
+                {t("advanceModal.title")}
               </h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Ao confirmar, a etapa atual será marcada como concluída e as próximas etapas
-                dependentes serão ativadas automaticamente (fork/join).
+                {t("advanceModal.description")}
               </p>
             </div>
 
             {/* Info Box */}
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                <strong>ℹ️ O que acontecerá:</strong>
+                <strong>ℹ️ {t("advanceModal.whatHappensLabel")}</strong>
               </p>
               <ul className="text-xs text-blue-700 mt-2 space-y-1 list-disc pl-5">
-                <li>A etapa atual será concluída</li>
+                <li>{t("advanceModal.whatHappens1")}</li>
                 <li>
-                  Todas as etapas dependentes com dependências cumpridas serão{" "}
-                  <strong>ativadas</strong>
+                  {t.rich("advanceModal.whatHappens2", {
+                    strong: (chunks) => <strong>{chunks}</strong>,
+                  })}
                 </li>
                 <li>
-                  Etapas com dependências pendentes serão criadas como <strong>bloqueadas</strong>
+                  {t.rich("advanceModal.whatHappens3", {
+                    strong: (chunks) => <strong>{chunks}</strong>,
+                  })}
                 </li>
-                <li>Um log será adicionado ao histórico da tarefa</li>
+                <li>{t("advanceModal.whatHappens4")}</li>
               </ul>
             </div>
 
             {/* Requirement Box */}
             <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-sm text-amber-900">
-                <strong>⚠️ Requisito de contribuição:</strong>
+                <strong>⚠️ {t("advanceModal.requirementLabel")}</strong>
               </p>
               <p className="text-xs text-amber-800 mt-2">
-                Você precisa ter adicionado <strong>pelo menos 1 artefato ou 1 comentário</strong>{" "}
-                nesta tarefa antes de concluir a etapa. (Admins e Gerentes podem ignorar este
-                requisito.)
+                {t.rich("advanceModal.requirementText", {
+                  strong: (chunks) => <strong>{chunks}</strong>,
+                })}
               </p>
             </div>
 
@@ -234,7 +237,7 @@ export function AdvanceStageButton({
                 disabled={isPending}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 font-medium"
               >
-                Cancelar
+                {tCommon("buttons.cancel")}
               </button>
               <button
                 onClick={handleComplete}
@@ -244,12 +247,12 @@ export function AdvanceStageButton({
                 {isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Concluindo...
+                    {t("completing")}
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="h-4 w-4" />
-                    Confirmar e Concluir
+                    {t("confirmComplete")}
                   </>
                 )}
               </button>

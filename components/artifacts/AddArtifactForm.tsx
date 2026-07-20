@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type TransitionStartFunction } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { ArtifactType } from "@prisma/client";
 import { Link2, Loader2, Upload } from "lucide-react";
@@ -9,12 +10,12 @@ import { addLinkArtifact } from "@/lib/actions/task";
 import { addScopedLinkArtifact } from "@/lib/actions/artifact";
 import { UploadArtifactForm } from "@/components/tasks/UploadArtifactForm";
 
-const TYPE_OPTIONS: { value: ArtifactType; label: string }[] = [
-  { value: "DOCUMENT", label: "Documento" },
-  { value: "IMAGE", label: "Imagem" },
-  { value: "VIDEO", label: "Vídeo" },
-  { value: "FIGMA", label: "Figma" },
-  { value: "OTHER", label: "Outro" },
+const TYPE_OPTIONS: { value: ArtifactType; typeKey: string }[] = [
+  { value: "DOCUMENT", typeKey: "document" },
+  { value: "IMAGE", typeKey: "image" },
+  { value: "VIDEO", typeKey: "video" },
+  { value: "FIGMA", typeKey: "figma" },
+  { value: "OTHER", typeKey: "other" },
 ];
 
 interface AddArtifactFormProps {
@@ -30,6 +31,8 @@ export function AddArtifactForm({
   isPending,
   startTransition,
 }: AddArtifactFormProps) {
+  const t = useTranslations("tasks.artifacts");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [mode, setMode] = useState<"link" | "upload">("link");
   const [title, setTitle] = useState("");
@@ -37,11 +40,11 @@ export function AddArtifactForm({
   const [type, setType] = useState<ArtifactType>("OTHER");
 
   const handleAddLink = () => {
-    if (!title.trim() || !url.trim()) return toast.error("Título e URL são obrigatórios.");
+    if (!title.trim() || !url.trim()) return toast.error(t("requiredFields"));
     try {
       new URL(url);
     } catch {
-      return toast.error("URL inválida.");
+      return toast.error(t("invalidUrl"));
     }
     startTransition(async () => {
       const res =
@@ -61,7 +64,7 @@ export function AddArtifactForm({
         setTitle("");
         setUrl("");
         setType("OTHER");
-        toast.success("Artefato adicionado");
+        toast.success(t("addedSuccess"));
         router.refresh();
       }
     });
@@ -79,7 +82,7 @@ export function AddArtifactForm({
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Link2 className="h-4 w-4" /> Adicionar link
+          <Link2 className="h-4 w-4" /> {t("addLinkTab")}
         </button>
         <button
           type="button"
@@ -90,7 +93,7 @@ export function AddArtifactForm({
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Upload className="h-4 w-4" /> Upload NAS
+          <Upload className="h-4 w-4" /> {t("uploadNasTab")}
         </button>
       </div>
 
@@ -108,7 +111,7 @@ export function AddArtifactForm({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Título"
+              placeholder={t("titleInputPlaceholder")}
               disabled={isPending}
               className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all"
             />
@@ -120,7 +123,7 @@ export function AddArtifactForm({
             >
               {TYPE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
-                  {o.label}
+                  {t(`types.${o.typeKey}`)}
                 </option>
               ))}
             </select>
@@ -129,7 +132,7 @@ export function AddArtifactForm({
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://…"
+            placeholder={t("urlPlaceholder")}
             disabled={isPending}
             className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all"
           />
@@ -140,7 +143,7 @@ export function AddArtifactForm({
             className="inline-flex h-11 items-center rounded-lg bg-primary px-6 font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Adicionar
+            {tCommon("buttons.add")}
           </button>
         </div>
       )}

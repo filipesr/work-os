@@ -13,12 +13,6 @@ import { StatCard } from "@/components/admin/StatCard";
 import { updateProject, deleteProject } from "@/lib/actions/project";
 import { EditProjectHeader } from "./edit-project-header";
 
-const COMPLETION_STATE_LABEL: Record<string, string> = {
-  empty: "Sem tarefas",
-  pending: "Pendente",
-  completed: "Concluído",
-};
-
 async function getProject(projectId: string) {
   await requireManagerOrAdmin();
   return await prisma.project.findUnique({
@@ -129,10 +123,10 @@ export default async function ProjectDetailPage({
       {/* Info Cards */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-6">
         <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
-          <p className="text-sm text-muted-foreground">Conclusão</p>
+          <p className="text-sm text-muted-foreground">{t("completion")}</p>
           <p className="text-3xl font-bold text-foreground mt-1">{completion.pct}%</p>
           <p className="text-xs font-semibold text-muted-foreground mt-1">
-            {COMPLETION_STATE_LABEL[completion.state]}
+            {t(`completionState.${completion.state}`)}
           </p>
         </div>
         <StatCard label={t("totalTasks")} value={project.tasks.length} />
@@ -225,7 +219,7 @@ export default async function ProjectDetailPage({
       </div>
 
       <div className="mt-6">
-        <StorageBreakdown title="Armazenamento no NAS — por tarefa" stats={taskStorage} />
+        <StorageBreakdown title={t("storageByTask")} stats={taskStorage} />
       </div>
 
       {/* Artefatos: Projeto + Tarefas do projeto (Origem por linha) */}

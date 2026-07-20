@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, Clock, ArrowRight } from "lucide-react";
@@ -38,6 +39,7 @@ export function StageWorkflowVisualization({
   allStages,
   stageLogs,
 }: StageWorkflowVisualizationProps) {
+  const t = useTranslations("tasks.workflowViz");
   // Get completed stage IDs
   const completedStageIds = new Set(
     stageLogs.filter((log) => log.exitedAt !== null).map((log) => log.stage.id)
@@ -73,7 +75,7 @@ export function StageWorkflowVisualization({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Fluxo de Trabalho</CardTitle>
+        <CardTitle className="text-lg">{t("title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-1">
@@ -132,7 +134,7 @@ export function StageWorkflowVisualization({
                         {stage.name}
                       </span>
                       {status === "current" && (
-                        <Badge className="bg-blue-600 text-white text-xs">Atual</Badge>
+                        <Badge className="bg-blue-600 text-white text-xs">{t("current")}</Badge>
                       )}
                     </div>
 
@@ -149,9 +151,10 @@ export function StageWorkflowVisualization({
                           )}
                         </div>
                         <div className="text-gray-600">
-                          Concluído em{" "}
-                          {format(new Date(log.exitedAt), "dd/MM/yyyy HH:mm", {
-                            locale: ptBR,
+                          {t("completedOn", {
+                            date: format(new Date(log.exitedAt), "dd/MM/yyyy HH:mm", {
+                              locale: ptBR,
+                            }),
                           })}
                         </div>
                       </div>
@@ -161,9 +164,10 @@ export function StageWorkflowVisualization({
                     {status === "current" && log && (
                       <div className="text-xs text-blue-700">
                         <div>
-                          Iniciado em{" "}
-                          {format(new Date(log.enteredAt), "dd/MM/yyyy HH:mm", {
-                            locale: ptBR,
+                          {t("startedOn", {
+                            date: format(new Date(log.enteredAt), "dd/MM/yyyy HH:mm", {
+                              locale: ptBR,
+                            }),
                           })}
                         </div>
                       </div>
@@ -171,7 +175,9 @@ export function StageWorkflowVisualization({
 
                     {/* Upcoming stage info */}
                     {status === "upcoming" && stage.defaultTeam && (
-                      <div className="text-xs text-gray-600">Time: {stage.defaultTeam.name}</div>
+                      <div className="text-xs text-gray-600">
+                        {t("team", { name: stage.defaultTeam.name })}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -198,17 +204,17 @@ export function StageWorkflowVisualization({
               <div className="font-semibold text-green-700">
                 {Array.from(completedStageIds).length}
               </div>
-              <div className="text-gray-600">Concluídas</div>
+              <div className="text-gray-600">{t("completed")}</div>
             </div>
             <div>
               <div className="font-semibold text-blue-700">{currentStageId ? 1 : 0}</div>
-              <div className="text-gray-600">Em andamento</div>
+              <div className="text-gray-600">{t("inProgress")}</div>
             </div>
             <div>
               <div className="font-semibold text-gray-700">
                 {allStages.length - Array.from(completedStageIds).length - (currentStageId ? 1 : 0)}
               </div>
-              <div className="text-gray-600">Pendentes</div>
+              <div className="text-gray-600">{t("pending")}</div>
             </div>
           </div>
         </div>

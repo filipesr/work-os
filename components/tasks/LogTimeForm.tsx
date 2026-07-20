@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +16,8 @@ interface LogTimeFormProps {
 }
 
 export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
+  const t = useTranslations("tasks.timeLogs.form");
+  const tCommon = useTranslations("common");
   const [hoursSpent, setHoursSpent] = useState("");
   const [logDate, setLogDate] = useState(
     new Date().toISOString().split("T")[0] // Default to today
@@ -28,12 +31,12 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
     const hours = parseFloat(hoursSpent);
 
     if (!hours || hours <= 0) {
-      toast.error("Por favor, insira um valor válido para as horas gastas");
+      toast.error(t("invalidHours"));
       return;
     }
 
     if (!logDate) {
-      toast.error("Por favor, selecione uma data");
+      toast.error(t("selectDate"));
       return;
     }
 
@@ -43,7 +46,7 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success(`${hours} hora(s) registrada(s) com sucesso`);
+        toast.success(t("success", { hours }));
         // Clear the form
         setHoursSpent("");
         setLogDate(new Date().toISOString().split("T")[0]);
@@ -61,7 +64,7 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Clock className="h-5 w-5" />
-          <h3 className="font-semibold text-lg">Registrar Tempo</h3>
+          <h3 className="font-semibold text-lg">{t("title")}</h3>
         </div>
         {onClose && (
           <Button
@@ -70,7 +73,7 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
             size="sm"
             onClick={onClose}
             disabled={isPending}
-            aria-label="Fechar"
+            aria-label={tCommon("buttons.close")}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -79,7 +82,7 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="hoursSpent">
-          Horas Gastas <span className="text-red-500">*</span>
+          {t("hoursLabel")} <span className="text-red-500">*</span>
         </Label>
         <Input
           id="hoursSpent"
@@ -88,18 +91,16 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
           min="0.5"
           value={hoursSpent}
           onChange={(e) => setHoursSpent(e.target.value)}
-          placeholder="Ex: 2.5"
+          placeholder={t("hoursPlaceholder")}
           disabled={isPending}
           required
         />
-        <p className="text-xs text-muted-foreground">
-          Use decimais para minutos (ex: 1.5 = 1 hora e 30 minutos)
-        </p>
+        <p className="text-xs text-muted-foreground">{t("hoursHint")}</p>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="logDate">
-          Data <span className="text-red-500">*</span>
+          {t("dateLabel")} <span className="text-red-500">*</span>
         </Label>
         <Input
           id="logDate"
@@ -112,12 +113,12 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Descrição (opcional)</Label>
+        <Label htmlFor="description">{t("descriptionLabel")}</Label>
         <Textarea
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Descreva o trabalho realizado..."
+          placeholder={t("descriptionPlaceholder")}
           disabled={isPending}
           rows={3}
           className="resize-none"
@@ -127,12 +128,12 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
       <div className="flex gap-2 justify-end">
         {onClose && (
           <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
-            Cancelar
+            {tCommon("buttons.cancel")}
           </Button>
         )}
         <Button type="submit" disabled={isPending || !hoursSpent || !logDate}>
           {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {isPending ? "Registrando..." : "Registrar Tempo"}
+          {isPending ? t("pending") : t("title")}
         </Button>
       </div>
     </form>

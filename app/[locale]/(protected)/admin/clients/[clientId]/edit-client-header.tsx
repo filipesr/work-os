@@ -101,14 +101,14 @@ export function EditClientHeader({
               htmlFor="folderName"
               className="block text-sm font-semibold text-foreground mb-2"
             >
-              Pasta no NAS
+              {t("folderLabel")}
             </label>
             {folderNameLocked ? (
               <>
                 <input type="hidden" name="folderName" value={client.folderName ?? ""} />
                 <p className="h-11 flex items-center rounded-lg border-2 border-input-border bg-muted px-4 text-base font-medium text-muted-foreground">
                   {client.folderName || "—"}{" "}
-                  <span className="ml-2 text-xs">(travado — já há arquivos no NAS)</span>
+                  <span className="ml-2 text-xs">{t("folderLocked")}</span>
                 </p>
               </>
             ) : (
@@ -117,13 +117,11 @@ export function EditClientHeader({
                 id="folderName"
                 name="folderName"
                 defaultValue={client.folderName ?? ""}
-                placeholder="deixe vazio para gerar a partir do nome"
+                placeholder={t("folderPlaceholder")}
                 className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
               />
             )}
-            <p className="text-xs text-muted-foreground mt-1">
-              Pasta-raiz do cliente no NAS. Gerada do nome se vazia; trava após o primeiro upload.
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t("folderHelp")}</p>
           </div>
           <div className="flex gap-3">
             <button
@@ -164,7 +162,8 @@ export function EditClientHeader({
             </p>
           )}
           <p className="text-sm text-muted-foreground">
-            Pasta no NAS: {client.folderName || <span className="italic">não definida</span>}
+            {t("folderLabel")}:{" "}
+            {client.folderName || <span className="italic">{t("folderNotSet")}</span>}
           </p>
         </div>
         <div className="ml-4 flex gap-3">

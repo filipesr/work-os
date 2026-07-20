@@ -54,12 +54,31 @@
     "no": "Não",
     "actions": "Ações",
     "details": "Detalhes",
-    "status": "Status"
+    "status": "Status",
+    "loadingLabel": "Carregando"
   },
   "pagination": {
     "previous": "Anterior",
     "next": "Próxima",
     "page": "Página {current} de {total}",
     "showing": "Mostrando {from}–{to} de {total}"
+  },
+  "home": {
+    "subtitle": "Sistema de Gestão de Operações",
+    "loginPrompt": "Faça login para começar",
+    "login": "Entrar",
+    "viewPresentation": "Ver Apresentação"
+  },
+  "notFound": {
+    "pageTitle": "Página não encontrada",
+    "pageDescription": "A página que você está procurando não existe ou foi movida.",
+    "toDashboard": "Ir ao Dashboard",
+    "client": "Cliente não encontrado.",
+    "project": "Projeto não encontrado.",
+    "team": "Equipe não encontrada.",
+    "user": "Usuário não encontrado.",
+    "backToClients": "Voltar para Clientes",
+    "backToTeams": "Voltar para Equipes",
+    "backToUsers": "Voltar para Usuários"
   }
 }

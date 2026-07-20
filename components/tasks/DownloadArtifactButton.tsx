@@ -5,6 +5,7 @@
 // 302-redirects to the agent (LAN direct, or the Cloudflare Tunnel when remote — CLIENTE only).
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Download, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { probeLanAgent, nasClientConfigured, NAS_ENDPOINT_CONFIG } from "@/lib/nas/endpoint";
@@ -17,12 +18,13 @@ export function DownloadArtifactButton({
   /** Só o ícone (usado nas linhas compactas do histórico de versões). */
   iconOnly?: boolean;
 }) {
+  const t = useTranslations("tasks.artifacts.download");
   const [busy, setBusy] = useState(false);
 
   async function go() {
     // Degrada com elegância em vez de navegar para o erro JSON cru da rota de download.
     if (!nasClientConfigured()) {
-      toast.error("Download do NAS indisponível neste ambiente.");
+      toast.error(t("unavailable"));
       return;
     }
     setBusy(true);
@@ -30,7 +32,7 @@ export function DownloadArtifactButton({
     // Sem agente na LAN e sem túnel configurado → não há como baixar. Avisa e não navega.
     if (!health?.ok && !NAS_ENDPOINT_CONFIG.TUNNEL_URL) {
       setBusy(false);
-      toast.error("Agente não encontrado — conecte-se à LAN/VPN para baixar.");
+      toast.error(t("agentNotFound"));
       return;
     }
     const net = health?.ok ? "lan" : "remote";
@@ -46,8 +48,8 @@ export function DownloadArtifactButton({
         type="button"
         onClick={go}
         disabled={busy}
-        title="Baixar"
-        aria-label="Baixar"
+        title={t("label")}
+        aria-label={t("label")}
         className="inline-flex items-center rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
       >
         {busy ? (
@@ -67,7 +69,7 @@ export function DownloadArtifactButton({
       className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-accent transition-colors disabled:opacity-50"
     >
       {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-      Baixar
+      {t("label")}
     </button>
   );
 }

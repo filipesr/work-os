@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { TimeLog, User, TemplateStage } from "@prisma/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
@@ -17,11 +18,12 @@ interface TimeLogsListProps {
 }
 
 export function TimeLogsList({ timeLogs }: TimeLogsListProps) {
+  const t = useTranslations("tasks.timeLogs");
   if (timeLogs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
         <Clock className="h-8 w-8 mb-2 opacity-50" />
-        <p className="text-sm">Nenhum tempo registrado ainda</p>
+        <p className="text-sm">{t("noLogsYet")}</p>
       </div>
     );
   }
@@ -62,7 +64,7 @@ export function TimeLogsList({ timeLogs }: TimeLogsListProps) {
           {log.stage && (
             <div className="mb-2">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-muted text-muted-foreground rounded text-xs">
-                Etapa {log.stage.order}: {log.stage.name}
+                {t("stageLabel", { order: log.stage.order, name: log.stage.name })}
               </span>
             </div>
           )}

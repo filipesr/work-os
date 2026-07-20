@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -12,20 +13,24 @@ import {
 import { DownloadArtifactButton } from "@/components/tasks/DownloadArtifactButton";
 
 // < 24h: "há cerca de X"; depois: "em dd/mm/yyyy às hh:mm".
-function formatArtifactTime(date: Date): string {
+function formatArtifactTime(
+  date: Date,
+  t: (key: any, values?: Record<string, string>) => string
+): string {
   const ageMs = Date.now() - date.getTime();
   if (ageMs < 24 * 60 * 60 * 1000) {
     return formatDistanceToNow(date, { addSuffix: true, locale: ptBR });
   }
-  return `em ${format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`;
+  return t("timeOn", { date: format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) });
 }
 
-const nasStatus: Record<string, { label: string; cls: string }> = {
-  PENDING: { label: "Pendente", cls: "bg-muted text-muted-foreground border-border" },
-  UPLOADING: { label: "Enviando", cls: "bg-blue-100 text-blue-800 border-blue-200" },
-  READY: { label: "Pronto", cls: "bg-green-100 text-green-800 border-green-200" },
-  FAILED: { label: "Falhou", cls: "bg-red-100 text-red-800 border-red-200" },
-  EXPIRED: { label: "Expirado", cls: "bg-muted text-muted-foreground border-border" },
+// CSS por status; o rótulo textual vem das traduções (nasStatus.<STATUS>).
+const nasStatusCls: Record<string, string> = {
+  PENDING: "bg-muted text-muted-foreground border-border",
+  UPLOADING: "bg-blue-100 text-blue-800 border-blue-200",
+  READY: "bg-green-100 text-green-800 border-green-200",
+  FAILED: "bg-red-100 text-red-800 border-red-200",
+  EXPIRED: "bg-muted text-muted-foreground border-border",
 };
 
 interface ArtifactRowProps {
@@ -73,6 +78,9 @@ export function ArtifactRow({
   onRemoveFailed,
   onRemove,
 }: ArtifactRowProps) {
+  const t = useTranslations("tasks.artifacts");
+  const nasLabel = (status: string) =>
+    t.has(`nasStatus.${status}`) ? t(`nasStatus.${status}`) : status;
   const showTaskBadge = a.taskId != null && a.taskId !== currentTaskId;
   const isNas = a.storageKind === "NAS_UPLOAD";
   return (
@@ -95,10 +103,10 @@ export function ArtifactRow({
                 <span className="truncate text-sm font-medium">{a.fileName || a.title}</span>
                 <span
                   className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${
-                    nasStatus[a.uploadStatus]?.cls ?? "bg-muted text-muted-foreground border-border"
+                    nasStatusCls[a.uploadStatus] ?? "bg-muted text-muted-foreground border-border"
                   }`}
                 >
-                  {nasStatus[a.uploadStatus]?.label ?? a.uploadStatus}
+                  {nasLabel(a.uploadStatus)}
                 </span>
               </span>
             ) : (
@@ -118,7 +126,7 @@ export function ArtifactRow({
             {showTaskBadge && (
               <>
                 <span>•</span>
-                <span className="truncate">Tarefa: {a.taskTitle}</span>
+                <span className="truncate">{t("taskLabel", { title: a.taskTitle ?? "" })}</span>
               </>
             )}
             {a.userName && (
@@ -129,7 +137,8 @@ export function ArtifactRow({
             )}
             <span>•</span>
             <span>
-              {a.version > 1 ? "Atualizado" : "Criado"} {formatArtifactTime(new Date(a.createdAt))}
+              {a.version > 1 ? t("updated") : t("created")}{" "}
+              {formatArtifactTime(new Date(a.createdAt), t)}
             </span>
           </div>
         </div>
@@ -144,7 +153,7 @@ export function ArtifactRow({
                 disabled={isPending || reenviarBusy !== null}
                 className="text-xs font-semibold text-primary hover:text-primary/80 disabled:opacity-50"
               >
-                {reenviarBusy === a.id ? "Enviando…" : "Reenviar"}
+                {reenviarBusy === a.id ? t("reenviarPending") : t("reenviar")}
               </button>
               <button
                 type="button"
@@ -152,7 +161,7 @@ export function ArtifactRow({
                 disabled={isPending || reenviarBusy !== null}
                 className="text-xs font-semibold text-muted-foreground hover:text-destructive disabled:opacity-50"
               >
-                Remover
+                {t("remove")}
               </button>
             </>
           )}
@@ -163,7 +172,7 @@ export function ArtifactRow({
               disabled={isPending}
               className="text-xs font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50"
             >
-              {historyFor === a.id ? "ocultar" : "ver versões"}
+              {historyFor === a.id ? t("hideVersions") : t("viewVersions")}
             </button>
           )}
           {canAdd && !isNas && a.origin === scope && (
@@ -173,7 +182,7 @@ export function ArtifactRow({
               disabled={isPending}
               className="text-xs font-semibold text-primary hover:text-primary/80 disabled:opacity-50"
             >
-              Nova versão
+              {t("newVersion")}
             </button>
           )}
           {canRemove && a.origin === scope && a.origin !== "TASK" && (
@@ -183,7 +192,7 @@ export function ArtifactRow({
               disabled={isPending}
               className="text-xs font-semibold text-muted-foreground hover:text-destructive disabled:opacity-50"
             >
-              Remover
+              {t("remove")}
             </button>
           )}
         </div>
@@ -193,14 +202,14 @@ export function ArtifactRow({
       {verId === a.id && (
         <div className="space-y-2 border-t border-border p-3">
           <p className="text-xs text-muted-foreground">
-            Título e tipo são mantidos de <span className="font-semibold">{a.title}</span> — informe
-            apenas a nova URL.
+            {t("newVersionHintBefore")} <span className="font-semibold">{a.title}</span>{" "}
+            {t("newVersionHintAfter")}
           </p>
           <input
             type="url"
             value={verUrl}
             onChange={(e) => onSetVerUrl(e.target.value)}
-            placeholder="https://… (nova versão)"
+            placeholder={t("newVersionPlaceholder")}
             disabled={isPending}
             className="h-10 w-full rounded-lg border-2 border-input-border bg-input px-3 text-sm font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none"
           />
@@ -211,7 +220,7 @@ export function ArtifactRow({
             className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar nova versão
+            {t("saveNewVersion")}
           </button>
         </div>
       )}
@@ -229,7 +238,7 @@ export function ArtifactRow({
                     <DownloadArtifactButton artifactId={h.id} iconOnly />
                   ) : (
                     <span className="shrink-0 text-muted-foreground">
-                      ({nasStatus[h.uploadStatus]?.label ?? h.uploadStatus})
+                      ({nasLabel(h.uploadStatus)})
                     </span>
                   )
                 ) : (
@@ -239,14 +248,14 @@ export function ArtifactRow({
                     rel="noopener noreferrer"
                     className="shrink-0 text-primary hover:underline"
                   >
-                    abrir
+                    {t("open")}
                   </a>
                 )}
                 {h.userName && (
                   <span className="shrink-0 text-muted-foreground">· {h.userName}</span>
                 )}
                 <span className="shrink-0 text-muted-foreground">
-                  {formatArtifactTime(new Date(h.createdAt))}
+                  {formatArtifactTime(new Date(h.createdAt), t)}
                 </span>
               </li>
             ))}
