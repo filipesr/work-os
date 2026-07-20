@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { requireAnyRole } from "@/lib/auth";
-import { UserRole } from "@prisma/client";
+import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getTranslations } from "next-intl/server";
 import { getUserProductivityReport } from "@/lib/actions/reporting";
 import { currentMonthSaoPaulo, monthRangeSaoPaulo, formatMonthLabel } from "@/lib/dates";
@@ -21,7 +20,7 @@ interface PageProps {
 
 export default async function UserReportPage({ params, searchParams }: PageProps) {
   try {
-    await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+    await requireManagerOrAdmin();
   } catch {
     redirect("/auth/signin");
   }

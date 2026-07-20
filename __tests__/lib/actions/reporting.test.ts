@@ -53,7 +53,7 @@ describe("reporting auth path", () => {
     mockAuth.mockResolvedValue(null as never);
     const { getOnTimeRate } = await import("@/lib/actions/reporting");
     await expect(getOnTimeRate({ from: new Date(), to: new Date() })).rejects.toThrow(
-      /Unauthorized/i
+      /Not Authenticated|Unauthorized/i
     );
   });
 

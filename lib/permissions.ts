@@ -9,6 +9,7 @@
 import { cache } from "react";
 import { auth } from "@/auth";
 import { UserRole } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
 /**
  * Get the currently authenticated user from the session.
@@ -85,4 +86,30 @@ export const getUserRole = async (): Promise<UserRole | null> => {
   } catch {
     return null;
   }
+};
+
+/** True if the current user has exactly `role`. False if unauthenticated. */
+export const hasRole = async (role: UserRole): Promise<boolean> => {
+  return (await getUserRole()) === role;
+};
+
+/** True if the current user has any of `roles`. False if unauthenticated. */
+export const hasAnyRole = async (roles: UserRole[]): Promise<boolean> => {
+  const role = await getUserRole();
+  return role !== null && roles.includes(role);
+};
+
+/** Team ids the current user belongs to (empty array if unauthenticated). */
+export const getUserTeamIds = async (): Promise<string[]> => {
+  let userId: string;
+  try {
+    userId = (await getSessionUser()).id;
+  } catch {
+    return [];
+  }
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { teams: { select: { id: true } } },
+  });
+  return user?.teams.map((t) => t.id) ?? [];
 };

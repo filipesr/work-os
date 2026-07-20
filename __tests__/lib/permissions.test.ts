@@ -16,7 +16,13 @@ vi.mock("@prisma/client", () => ({
   },
 }));
 
+// Mock the Prisma client (used by getUserTeamIds)
+vi.mock("@/lib/prisma", () => ({
+  default: { user: { findUnique: vi.fn() } },
+}));
+
 import { auth } from "@/auth";
+import prisma from "@/lib/prisma";
 import {
   getSessionUser,
   checkRole,
@@ -25,9 +31,13 @@ import {
   requireSupervisorOrHigher,
   requireMemberOrHigher,
   getUserRole,
+  hasRole,
+  hasAnyRole,
+  getUserTeamIds,
 } from "@/lib/permissions";
 
 const mockAuth = vi.mocked(auth);
+const mockFindUnique = vi.mocked(prisma.user.findUnique);
 
 describe("getSessionUser", () => {
   beforeEach(() => {
@@ -202,5 +212,70 @@ describe("getUserRole", () => {
 
     const role = await getUserRole();
     expect(role).toBeNull();
+  });
+});
+
+describe("hasRole", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns true when the user has the role", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "1", role: "ADMIN" } } as any);
+    expect(await hasRole("ADMIN" as any)).toBe(true);
+  });
+
+  it("returns false when the user has a different role", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "1", role: "MEMBER" } } as any);
+    expect(await hasRole("ADMIN" as any)).toBe(false);
+  });
+
+  it("returns false when not authenticated", async () => {
+    mockAuth.mockResolvedValue(null as any);
+    expect(await hasRole("ADMIN" as any)).toBe(false);
+  });
+});
+
+describe("hasAnyRole", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns true when the user has one of the roles", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "1", role: "MANAGER" } } as any);
+    expect(await hasAnyRole(["ADMIN", "MANAGER"] as any)).toBe(true);
+  });
+
+  it("returns false when the user has none of the roles", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "1", role: "VIEWER" } } as any);
+    expect(await hasAnyRole(["ADMIN", "MANAGER"] as any)).toBe(false);
+  });
+
+  it("returns false when not authenticated", async () => {
+    mockAuth.mockResolvedValue(null as any);
+    expect(await hasAnyRole(["ADMIN"] as any)).toBe(false);
+  });
+});
+
+describe("getUserTeamIds", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns [] when not authenticated", async () => {
+    mockAuth.mockResolvedValue(null as any);
+    expect(await getUserTeamIds()).toEqual([]);
+  });
+
+  it("returns the user's team ids when authenticated", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1", role: "MEMBER" } } as any);
+    mockFindUnique.mockResolvedValue({ teams: [{ id: "t1" }, { id: "t2" }] } as any);
+    expect(await getUserTeamIds()).toEqual(["t1", "t2"]);
+  });
+
+  it("returns [] when the user has no teams", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "u1", role: "MEMBER" } } as any);
+    mockFindUnique.mockResolvedValue({ teams: [] } as any);
+    expect(await getUserTeamIds()).toEqual([]);
   });
 });

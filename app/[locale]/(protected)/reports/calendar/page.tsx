@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { requireAnyRole } from "@/lib/auth";
-import { UserRole } from "@prisma/client";
+import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { getCalendarTasks } from "@/lib/actions/reporting";
@@ -27,7 +26,7 @@ interface PageProps {
 
 export default async function CalendarPage({ searchParams }: PageProps) {
   try {
-    await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+    await requireManagerOrAdmin();
   } catch {
     redirect("/auth/signin");
   }

@@ -2,8 +2,8 @@
 
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireAnyRole } from "@/lib/auth";
-import { Prisma, UserRole } from "@prisma/client";
+import { requireManagerOrAdmin } from "@/lib/permissions";
+import { Prisma } from "@prisma/client";
 import { formatISODate, currentMonthSaoPaulo, monthKeySaoPaulo } from "@/lib/dates";
 import {
   productivityFiltersSchema,
@@ -86,7 +86,7 @@ export interface HoursByStage {
  * records yet. Powers the month dropdown on the productivity report.
  */
 export async function getAvailableTimeLogMonths(): Promise<string[]> {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
 
   const logs = await prisma.timeLog.findMany({ select: { logDate: true } });
   const months = new Set<string>(logs.map((l) => monthKeySaoPaulo(l.logDate)));
@@ -100,7 +100,7 @@ export async function getAvailableTimeLogMonths(): Promise<string[]> {
  */
 export async function getHoursByUser(filters: ProductivityFilters = {}) {
   // Require MANAGER or ADMIN role
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   filters = productivityFiltersSchema.parse(filters);
 
   const where = buildTimeLogWhere(filters);
@@ -140,7 +140,7 @@ export async function getHoursByUser(filters: ProductivityFilters = {}) {
  * Get total hours logged grouped by project
  */
 export async function getHoursByProject(filters: ProductivityFilters = {}) {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   filters = productivityFiltersSchema.parse(filters);
 
   const where = buildTimeLogWhere(filters);
@@ -182,7 +182,7 @@ export async function getHoursByProject(filters: ProductivityFilters = {}) {
  * Get total hours logged grouped by client
  */
 export async function getHoursByClient(filters: ProductivityFilters = {}) {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   filters = productivityFiltersSchema.parse(filters);
 
   const where = buildTimeLogWhere(filters);
@@ -223,7 +223,7 @@ export async function getHoursByClient(filters: ProductivityFilters = {}) {
  * Get total hours logged grouped by workflow stage
  */
 export async function getHoursByStage(filters: ProductivityFilters = {}) {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   filters = productivityFiltersSchema.parse(filters);
 
   const where = buildTimeLogWhere(filters);
@@ -325,7 +325,7 @@ function buildLeadTimeWhere(filters: PerformanceFilters): Prisma.TaskWhereInput 
  * report (mirrors getAvailableTimeLogMonths for the productivity report).
  */
 export async function getAvailablePerformanceMonths(): Promise<string[]> {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
 
   const logs = await prisma.taskStageLog.findMany({ select: { enteredAt: true } });
   const months = new Set<string>(logs.map((l) => monthKeySaoPaulo(l.enteredAt)));
@@ -363,7 +363,7 @@ export interface LeadTimeMetrics {
  * This identifies bottlenecks in the workflow
  */
 export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   filters = performanceFiltersSchema.parse(filters);
 
   const where = buildStageLogWhere(filters);
@@ -431,7 +431,7 @@ export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
  * This measures quality and identifies problematic stages
  */
 export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   filters = performanceFiltersSchema.parse(filters);
 
   const where: Prisma.TaskStageLogWhereInput = {
@@ -502,7 +502,7 @@ export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
  * Calculate lead time metrics (time from task creation to completion)
  */
 export async function getLeadTimeMetrics(filters: PerformanceFilters = {}) {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   filters = performanceFiltersSchema.parse(filters);
 
   const where = buildLeadTimeWhere(filters);
@@ -586,7 +586,7 @@ export interface CalendarBuckets {
 }
 
 export async function getCalendarTasks(filters: CalendarFilters): Promise<CalendarBuckets> {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   filters = calendarFiltersSchema.parse(filters);
 
   const { weekStart, weekEnd, teamId, projectId, userId, showCompleted } = filters;
@@ -728,7 +728,7 @@ export async function getMonthlyCalendarDemands(range: {
   start: Date;
   end: Date;
 }): Promise<Record<string, MonthlyClientDemands[]>> {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   range = startEndRangeSchema.parse(range);
 
   const tasks = await prisma.task.findMany({
@@ -786,7 +786,7 @@ export async function getMonthlyCalendarDemands(range: {
 
 /** Users that have a birthday and/or admission date (for the event calendar). */
 export async function getTeamAnniversaries() {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   return prisma.user.findMany({
     where: { OR: [{ birthday: { not: null } }, { admissionDate: { not: null } }] },
     select: { id: true, name: true, email: true, birthday: true, admissionDate: true },
@@ -809,7 +809,7 @@ export interface TeamThroughputRow {
 }
 
 export async function getTeamThroughput(range: PeriodRange): Promise<TeamThroughputRow[]> {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   range = periodRangeSchema.parse(range);
 
   const spanMs = range.to.getTime() - range.from.getTime();
@@ -869,7 +869,7 @@ export interface TeamLoadRow {
 }
 
 export async function getTeamCurrentLoad(): Promise<TeamLoadRow[]> {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
 
   const { todayInSaoPaulo, daysUntil } = await import("@/lib/dates");
   const today = todayInSaoPaulo();
@@ -940,7 +940,7 @@ export interface StageDurationRow {
 }
 
 export async function getStageDuration(range: PeriodRange): Promise<StageDurationRow[]> {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   range = periodRangeSchema.parse(range);
 
   const MIN_SAMPLE = 3;
@@ -1001,7 +1001,7 @@ export interface OnTimeRateResult {
 }
 
 export async function getOnTimeRate(range: PeriodRange): Promise<OnTimeRateResult> {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   range = periodRangeSchema.parse(range);
 
   const spanMs = range.to.getTime() - range.from.getTime();
@@ -1095,7 +1095,7 @@ export async function getUserProductivityReport(
   userId: string,
   range: PeriodRange
 ): Promise<UserProductivityReport> {
-  await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requireManagerOrAdmin();
   const uid = z.string().min(1).parse(userId);
   range = periodRangeSchema.parse(range);
 

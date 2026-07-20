@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { requireAnyRole } from "@/lib/auth";
-import { UserRole } from "@prisma/client";
+import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getTranslations } from "next-intl/server";
 import {
   getTeamThroughput,
@@ -82,7 +81,7 @@ function SectionSkeleton() {
 
 export default async function TeamProductivityPage({ searchParams }: PageProps) {
   try {
-    await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+    await requireManagerOrAdmin();
   } catch {
     redirect("/auth/signin");
   }

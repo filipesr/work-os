@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { requireAnyRole } from "@/lib/auth";
-import { UserRole } from "@prisma/client";
+import { requireManagerOrAdmin } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Relatórios",
@@ -62,7 +61,7 @@ const REPORT_CARDS = [
 export default async function ReportsIndexPage() {
   // Check authorization
   try {
-    await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+    await requireManagerOrAdmin();
   } catch (error) {
     redirect("/auth/signin");
   }

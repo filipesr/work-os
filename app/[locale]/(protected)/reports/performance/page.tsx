@@ -1,7 +1,6 @@
 import { Suspense, cache } from "react";
 import Link from "next/link";
-import { requireAnyRole } from "@/lib/auth";
-import { UserRole } from "@prisma/client";
+import { requireManagerOrAdmin } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import {
   getAverageTimePerStage,
@@ -325,7 +324,7 @@ export default async function PerformanceReportPage({
 }) {
   // Check authorization
   try {
-    await requireAnyRole([UserRole.ADMIN, UserRole.MANAGER]);
+    await requireManagerOrAdmin();
   } catch {
     redirect("/auth/signin");
   }
