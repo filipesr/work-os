@@ -312,6 +312,9 @@ model TaskActiveStage {
   // Timestamps
   activatedAt DateTime  @default(now())
   completedAt DateTime?
+  // Fase 2 — timestamps precisos (antes proxied por activatedAt no cockpit admin).
+  blockedAt   DateTime? // Carimbado ao ENTRAR em BLOCKED — severidade de bloqueio.
+  assignedAt  DateTime? // Carimbado quando o assigneeId atual foi definido — data de atribuição.
 
   // Unique constraint: A task cannot have the same stage active twice
   @@unique([taskId, stageId])

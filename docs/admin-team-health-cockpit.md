@@ -57,7 +57,8 @@ Constantes em **`lib/actions/team-health.ts`** (fáceis de ajustar):
 
 - **Carga (WIP):** `count` = etapas `ACTIVE` atribuídas; quebra por prazo via `getDueState` (`lib/dates.ts`); **sobrecarregado** = `count >= OVERLOAD_CEILING || count >= median + OVERLOAD_MARGIN`; **ocioso** = `count <= IDLE_THRESHOLD`.
 - **Aging:** `ageHours = agora − activatedAt`; `slaHours = stage.expectedDurationHours ?? 72`; entra se `ageHours/slaHours >= 1` **ou** o prazo está vencido/próximo.
-- **Bloqueio:** severidade = tempo na etapa (`activatedAt`, proxy); `waitingOn` = pré-requisitos (`StageDependency`) não `COMPLETED` na task.
+- **Bloqueio:** severidade = tempo desde `blockedAt` (fallback `activatedAt` p/ linhas antigas); `waitingOn` = pré-requisitos (`StageDependency`) não `COMPLETED` na task.
+- **Atribuição (drawer):** "Atribuída em" = `assignedAt` (fallback `activatedAt`). `blockedAt`/`assignedAt` são carimbados ao ENTRAR no estado (transição→BLOCKED em `activateNextStages`; assign/claim/create-com-assignee).
 
 ## Camada de dados
 
@@ -83,7 +84,7 @@ Namespace `admin.health.*` em `locales/{pt-BR,es-ES}/admin.json`, mantido em par
 ## Pendências / próximos passos
 
 - **A. Smoke manual** (validação): rodar `/admin` como MANAGER/ADMIN com seed real — conferir os 3 blocos, estados vazios, filtro, drawer e trocar para es-ES. Nunca rodou (sem DB/auth no ambiente de dev usado). Promovível a E2E Playwright autenticado.
-- **B. Fase 2 (schema):** `blockedAt` em `TaskActiveStage` (duração real de bloqueio) e `assignedAt`/`claimedAt` (data exata de atribuição). Hoje **ambos usam `activatedAt` como proxy**.
+- **B. ✅ Fase 2 (schema) implementada** — `blockedAt` e `assignedAt` em `TaskActiveStage`, carimbados nas transições, com fallback p/ `activatedAt`. **Pendente de DEPLOY:** rodar `npx prisma migrate deploy` no ambiente com DB (migração `20260721120000_add_blocked_assigned_timestamps`, que já faz o backfill a partir de `activatedAt`). Antes do deploy, novas linhas ainda usam o fallback.
 - **C. Calibração (1 linha, com dados reais):** limiares (`OVERLOAD_CEILING`/`MARGIN`/`IDLE_THRESHOLD`), SLA default (72h), filtro default (`"all"` vs `"overloaded"` em `TeamLoadBalanceClient`), largura do menu (320px) vs o card de storage.
 - **D. Minors não-bloqueantes:** `getAgingStages` sem tiebreak de `dueDate` (ordem indeterminada em ratios iguais); teste de `getBlockedStages` usa 1 task (adicionar fixture com 2 tasks p/ blindar a chave por-task).
 - **E. Escopo RBAC (nota):** aging/blocked escopam por `stage.defaultTeamId` (time dono da etapa) vs carga por member-team — defensável por design.

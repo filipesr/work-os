@@ -167,6 +167,7 @@ export async function createTaskStages(
         stageId: stage.id,
         status: isStart ? "ACTIVE" : "INACTIVE",
         assigneeId,
+        ...(assigneeId ? { assignedAt: new Date() } : {}),
       },
     });
 

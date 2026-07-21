@@ -51,15 +51,18 @@ describe("getMemberActiveStages", () => {
     db.user.findFirst.mockResolvedValue({ id: "ana" } as never);
     const created = new Date(Date.now() - 10 * 864e5);
     const activated = new Date(Date.now() - 3 * 864e5);
+    const assigned = new Date(Date.now() - 2 * 864e5);
     const overdue = new Date(Date.now() - 5 * 864e5);
     db.taskActiveStage.findMany.mockResolvedValue([
       {
         activatedAt: activated,
+        assignedAt: assigned, // real assignment timestamp → preferred
         task: { id: "t1", title: "A", createdAt: created, dueDate: overdue },
         stage: { name: "Dev" },
       },
       {
         activatedAt: activated,
+        assignedAt: null, // no real timestamp → falls back to activatedAt
         task: { id: "t2", title: "B", createdAt: created, dueDate: null },
         stage: { name: "QC" },
       },
@@ -69,8 +72,9 @@ describe("getMemberActiveStages", () => {
     expect(res).toHaveLength(2);
     expect(res[0]).toMatchObject({ taskId: "t1", stageName: "Dev", dueState: "overdue" });
     expect(res[0].createdAt).toBe(created.toISOString());
-    expect(res[0].assignedAt).toBe(activated.toISOString());
+    expect(res[0].assignedAt).toBe(assigned.toISOString()); // real assignedAt preferred
     expect(res[0].dueDate).toBe(overdue.toISOString());
+    expect(res[1].assignedAt).toBe(activated.toISOString()); // fallback to activatedAt
     expect(res[1]).toMatchObject({ taskId: "t2", dueDate: null, dueState: "none" });
   });
 });

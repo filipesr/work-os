@@ -158,6 +158,7 @@ export async function getBlockedStages(teamIds?: string[]): Promise<BlockedItem[
     select: {
       stageId: true,
       activatedAt: true,
+      blockedAt: true,
       task: { select: { id: true, title: true } },
       stage: { select: { name: true } },
       assignee: { select: { name: true } },
@@ -214,7 +215,8 @@ export async function getBlockedStages(teamIds?: string[]): Promise<BlockedItem[
         taskTitle: b.task.title,
         stageName: b.stage.name,
         assigneeName: b.assignee?.name ?? null,
-        ageHours: (now - b.activatedAt.getTime()) / 3.6e6,
+        // Severidade = tempo desde que entrou em BLOCKED; fallback p/ activatedAt.
+        ageHours: (now - (b.blockedAt ?? b.activatedAt).getTime()) / 3.6e6,
         waitingOn,
       };
     })

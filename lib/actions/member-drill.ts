@@ -25,6 +25,7 @@ export async function getMemberActiveStages(userId: string): Promise<MemberStage
     where: { status: "ACTIVE", assigneeId: userId },
     select: {
       activatedAt: true,
+      assignedAt: true,
       task: { select: { id: true, title: true, createdAt: true, dueDate: true } },
       stage: { select: { name: true } },
     },
@@ -36,7 +37,8 @@ export async function getMemberActiveStages(userId: string): Promise<MemberStage
     taskTitle: s.task.title,
     stageName: s.stage.name,
     createdAt: s.task.createdAt.toISOString(),
-    assignedAt: s.activatedAt.toISOString(),
+    // Data real de atribuição; fallback p/ activatedAt (linhas antigas).
+    assignedAt: (s.assignedAt ?? s.activatedAt).toISOString(),
     dueDate: s.task.dueDate ? s.task.dueDate.toISOString() : null,
     dueState: getDueState(s.task.dueDate),
   }));

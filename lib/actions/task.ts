@@ -738,7 +738,8 @@ export async function activateNextStages(taskId: string, completedStageId: strin
       if (statusByStage.get(stageId) === next) continue; // no-op
       await prisma.taskActiveStage.updateMany({
         where: { taskId, stageId },
-        data: { status: next },
+        // Carimba blockedAt ao ENTRAR em BLOCKED (severidade real de bloqueio).
+        data: next === "BLOCKED" ? { status: next, blockedAt: new Date() } : { status: next },
       });
       const stage = stageById.get(stageId);
       if (!stage) continue;
@@ -879,7 +880,7 @@ export async function completeStageAndAdvance(
           if (stageTeam && isValidStageAssignee(stageTeam, requested)) {
             await prisma.taskActiveStage.update({
               where: { taskId_stageId: { taskId, stageId } },
-              data: { assigneeId: requested },
+              data: { assigneeId: requested, assignedAt: new Date() },
             });
           }
         }
@@ -1245,7 +1246,7 @@ export async function claimActiveStage(taskId: string, stageId: string) {
 
     await prisma.taskActiveStage.update({
       where: { id: activeStage.id },
-      data: { assigneeId: currentUserId },
+      data: { assigneeId: currentUserId, assignedAt: new Date() },
     });
 
     // Update Task status to IN_PROGRESS

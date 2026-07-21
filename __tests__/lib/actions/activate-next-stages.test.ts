@@ -119,7 +119,7 @@ describe("activateNextStages", () => {
       [{ id: "s1" }, { id: "s_other" }, { id: "s2", dependsOn: ["s1", "s_other"] }]
     );
     const s2 = transitionCalls(prisma as never).find((c) => c.where.stageId === "s2");
-    expect(s2?.data).toEqual({ status: "BLOCKED" });
+    expect(s2?.data).toEqual({ status: "BLOCKED", blockedAt: expect.any(Date) });
     expect(result.blocked.map((s) => s.id)).toEqual(["s2"]);
     expect(result.activated).toHaveLength(0);
   });
