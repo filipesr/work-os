@@ -84,9 +84,9 @@ Namespace `admin.health.*` em `locales/{pt-BR,es-ES}/admin.json`, mantido em par
 
 ## Pendências / próximos passos
 
-- **A. Smoke manual** (validação): rodar `/admin` como MANAGER/ADMIN com seed real — conferir os 3 blocos, estados vazios, filtro, drawer e trocar para es-ES. Nunca rodou (sem DB/auth no ambiente de dev usado). Promovível a E2E Playwright autenticado.
+- **A. Smoke — camada de dados ✅ (read-only, banco real):** os 3 blocos + drawer foram rodados contra o banco de produção e computam corretamente (colunas novas, backfill, `assignedAt` no drawer). **Falta só o visual autenticado** (login Google): abrir `/admin` como ADMIN/MANAGER, conferir pixels/estados vazios/filtro e trocar para es-ES. Auth é Google-only com sessão no banco — headless exigiria cunhar sessão (não feito em prod). Promovível a E2E Playwright com sessão semeada num DB de dev.
 - **B. ✅ Fase 2 (schema) — implementada e aplicada** — `blockedAt` e `assignedAt` em `TaskActiveStage`, carimbados nas transições; migração `20260721120000` + backfill de `activatedAt` **aplicados**. Timestamps exatos ativos (o fallback `?? activatedAt` cobre só eventuais linhas pré-backfill).
-- **C. Calibração (1 linha, com dados reais):** limiares (`OVERLOAD_CEILING`/`MARGIN`/`IDLE_THRESHOLD`), SLA default (72h), filtro default (`"all"` vs `"overloaded"` em `TeamLoadBalanceClient`), largura do menu (320px) vs o card de storage.
+- **C. Calibração — parcial ✅:** #1 regra relativa só com mediana ≥ `OVERLOAD_RELATIVE_MIN_MEDIAN` e #2 badge "Ocioso" some quando maioria — **aplicados** (validados no banco real: 0 falsos positivos). **Ainda em aberto:** SLA default (72h), filtro default (`"all"` vs `"overloaded"`), largura do menu (320px) vs storage — decidir olhando `/admin` com o time.
 - **D. Minors não-bloqueantes:** `getAgingStages` sem tiebreak de `dueDate` (ordem indeterminada em ratios iguais); teste de `getBlockedStages` usa 1 task (adicionar fixture com 2 tasks p/ blindar a chave por-task).
 - **E. Escopo RBAC (nota):** aging/blocked escopam por `stage.defaultTeamId` (time dono da etapa) vs carga por member-team — defensável por design.
 - **F. i18n residual:** título hardcoded do `StorageBreakdown` em `admin/page.tsx`; `sr-only "Close"` do `components/ui/dialog.tsx`.
