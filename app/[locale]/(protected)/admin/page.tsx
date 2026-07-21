@@ -4,6 +4,7 @@ import { TaskStatus } from "@prisma/client";
 import Link from "next/link";
 import { storageByClient } from "@/lib/nas/storage-stats";
 import { StorageBreakdown } from "@/components/nas/StorageBreakdown";
+import { AdminHealthSection } from "@/components/admin/AdminHealthSection";
 
 export const metadata: Metadata = {
   title: "Administração",
@@ -70,6 +71,9 @@ export default async function AdminDashboardPage() {
         <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
+
+      {/* Team-health cockpit */}
+      <AdminHealthSection />
 
       {/* Statistics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
