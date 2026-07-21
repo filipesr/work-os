@@ -491,7 +491,7 @@
       "empty": "Sin miembros en el equipo.",
       "overloaded": "Sobrecarga",
       "idle": "Ocioso",
-      "activeStages": "{count} activas"
+      "activeStages": "{count, plural, one {# activa} other {# activas}}"
     },
     "aging": {
       "title": "Envejeciendo / en riesgo",

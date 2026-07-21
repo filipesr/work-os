@@ -2,7 +2,11 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getAgingStages, QUEUE_LIMIT } from "@/lib/actions/team-health";
 import { formatAge } from "@/lib/team-health-format";
-import { taskStatusBadgeClass } from "@/lib/status-styles";
+
+const DUE_BADGE: Record<"overdue" | "dueSoon", string> = {
+  overdue: "bg-red-100 text-red-800 border-red-300",
+  dueSoon: "bg-yellow-100 text-yellow-800 border-yellow-300",
+};
 
 export default async function AgingQueue() {
   const t = await getTranslations("admin.health.aging");
@@ -42,7 +46,7 @@ export default async function AgingQueue() {
                   {i.assigneeName && <span>· {i.assigneeName}</span>}
                   {i.dueState !== "none" && (
                     <span
-                      className={`ml-auto rounded px-1.5 py-0.5 border ${taskStatusBadgeClass("IN_PROGRESS")}`}
+                      className={`ml-auto rounded px-1.5 py-0.5 border ${DUE_BADGE[i.dueState]}`}
                     >
                       {i.dueState === "overdue" ? "⚠" : "•"}
                     </span>
