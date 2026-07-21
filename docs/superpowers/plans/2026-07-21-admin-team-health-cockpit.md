@@ -78,11 +78,9 @@ Expected: FAIL — `median` is not exported / module not found.
 
 - [ ] **Step 3: Create the module with constants, types, `median`, `resolveTeamIds`**
 
-Create `lib/actions/team-health.ts`:
+Create `lib/actions/team-health.ts`. **Do NOT add a `"use server"` directive** — this is a server-only data module called directly by Server Components, and a `"use server"` file may export only async functions (it would reject the sync constants and `median`):
 
 ```ts
-"use server";
-
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin, getSessionUser } from "@/lib/permissions";
 
@@ -147,7 +145,7 @@ export async function resolveTeamIds(): Promise<string[]> {
 }
 ```
 
-> Note: `median` and the interfaces are pure/`type`-level and safe to export from a `"use server"` module. `resolveTeamIds` is async (allowed).
+> Note: with no `"use server"` directive, exporting sync constants, `median`, and the interfaces is fine, and the components can import `QUEUE_LIMIT` from this module. `getSessionUser`/`requireManagerOrAdmin` come from `@/lib/permissions` (also a plain server-only lib).
 
 - [ ] **Step 4: Run the test to verify it passes**
 
