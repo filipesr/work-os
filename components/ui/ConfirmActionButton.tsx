@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogTrigger,
@@ -52,7 +53,7 @@ export function ConfirmActionButton({
   description,
   confirmLabel,
   pendingLabel,
-  cancelLabel = "Cancelar",
+  cancelLabel,
   successMessage,
   confirmVariant = "default",
   confirmClassName,
@@ -62,6 +63,8 @@ export function ConfirmActionButton({
   onOpenChange,
   onSuccess,
 }: ConfirmActionButtonProps) {
+  const tCommon = useTranslations("common");
+  const resolvedCancelLabel = cancelLabel ?? tCommon("buttons.cancel");
   const { open: isOpen, setOpen } = useControllableOpen(open, onOpenChange);
   const { run, isPending } = useServerAction(action, {
     successMessage,
@@ -83,7 +86,7 @@ export function ConfirmActionButton({
         <DialogFooter className="gap-2">
           <DialogClose asChild>
             <Button variant="ghost" size="sm" disabled={isPending}>
-              {cancelLabel}
+              {resolvedCancelLabel}
             </Button>
           </DialogClose>
           <Button

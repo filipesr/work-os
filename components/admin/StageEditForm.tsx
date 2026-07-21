@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateTemplateStage } from "@/lib/actions/stage";
 import { DependencySelector } from "./DependencySelector";
+import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
 import type { Stage } from "@/lib/types/stages";
@@ -63,13 +64,12 @@ export function StageEditForm({
           >
             {t("nameLabel")}
           </label>
-          <input
+          <Input
             type="text"
             id={`edit-name-${stage.id}`}
             name="name"
             required
             defaultValue={stage.name}
-            className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
           />
         </div>
         <div>
@@ -79,14 +79,13 @@ export function StageEditForm({
           >
             {t("orderLabel")}
           </label>
-          <input
+          <Input
             type="number"
             id={`edit-order-${stage.id}`}
             name="order"
             required
             min="0"
             defaultValue={stage.order}
-            className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
           />
         </div>
         <div>
@@ -117,14 +116,13 @@ export function StageEditForm({
           >
             {t("slaLabel")}
           </label>
-          <input
+          <Input
             type="number"
             id={`edit-sla-${stage.id}`}
             name="expectedDurationHours"
             min="0"
             defaultValue={stage.expectedDurationHours ?? ""}
             placeholder={t("slaPlaceholder")}
-            className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
           />
         </div>
         <div className="flex items-end">
@@ -135,7 +133,7 @@ export function StageEditForm({
               defaultChecked={stage.optional}
               className="h-4 w-4"
             />
-            Etapa opcional
+            {t("optional")}
           </label>
         </div>
       </div>

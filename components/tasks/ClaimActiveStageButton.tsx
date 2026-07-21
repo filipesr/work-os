@@ -2,6 +2,7 @@
 
 import { claimActiveStage } from "@/lib/actions/task";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useServerAction } from "@/lib/hooks/useServerAction";
 
 interface ClaimActiveStageButtonProps {
@@ -16,13 +17,14 @@ export function ClaimActiveStageButton({
   isBlocked = false,
 }: ClaimActiveStageButtonProps) {
   const router = useRouter();
+  const t = useTranslations("tasks.claimStage");
   const { run, isPending } = useServerAction(claimActiveStage, {
     onSuccess: () => router.refresh(), // Refresh to show updated dashboard
   });
 
   // Don't allow claiming blocked stages
   if (isBlocked) {
-    return <div className="text-xs text-gray-500 italic">Bloqueado</div>;
+    return <div className="text-xs text-gray-500 italic">{t("blocked")}</div>;
   }
 
   return (
@@ -32,7 +34,7 @@ export function ClaimActiveStageButton({
         disabled={isPending}
         className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isPending ? "Pegando..." : "Pegar Etapa"}
+        {isPending ? t("claiming") : t("claim")}
       </button>
     </div>
   );

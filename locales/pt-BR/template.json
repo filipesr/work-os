@@ -32,7 +32,8 @@
     "errorMessage": "Erro ao criar etapa",
     "slaLabel": "SLA (horas)",
     "slaPlaceholder": "ex: 24",
-    "slaHelp": "Tempo-alvo na etapa. Deixe vazio para sem SLA."
+    "slaHelp": "Tempo-alvo na etapa. Deixe vazio para sem SLA.",
+    "optional": "Etapa opcional"
   },
   "stagesList": {
     "empty": "Ainda não há etapas. Crie sua primeira etapa acima.",
@@ -55,7 +56,19 @@
     "errorMessage": "Erro ao atualizar etapa",
     "slaLabel": "SLA (horas)",
     "slaPlaceholder": "ex: 24",
-    "slaHelp": "Tempo-alvo na etapa. Deixe vazio para sem SLA."
+    "slaHelp": "Tempo-alvo na etapa. Deixe vazio para sem SLA.",
+    "optional": "Etapa opcional"
+  },
+  "dependencyManager": {
+    "title": "Gerenciar Dependências: {stageName}",
+    "description": "Selecione quais etapas devem ser concluídas antes que \"{stageName}\" possa iniciar. Estes são os pré-requisitos desta etapa.",
+    "noStages": "Nenhuma outra etapa disponível para definir como dependência.",
+    "cancel": "Cancelar",
+    "saving": "Salvando...",
+    "save": "Salvar Dependências",
+    "noteLabel": "Observação:",
+    "noteSingle": "\"{stageName}\" só ficará disponível após 1 etapa ser concluída.",
+    "notePlural": "\"{stageName}\" só ficará disponível após {count} etapas serem concluídas."
   },
   "dependencies": {
     "noStagesAvailable": "Nenhuma etapa disponível para dependência",
@@ -80,6 +93,9 @@
     "team": "Time:",
     "requires": "Requer:",
     "or": "ou",
+    "legendStandard": "Etapa padrão",
+    "legendOptional": "Etapa opcional (vem desmarcada ao criar a demanda)",
+    "optionalBadge": "Opcional",
     "legendTitle": "Legenda:",
     "legendStage": "Cada caixa representa uma etapa do fluxo",
     "legendParallel": "Etapas na mesma linha podem ser trabalhadas simultaneamente",

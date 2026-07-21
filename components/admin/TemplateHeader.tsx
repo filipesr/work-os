@@ -4,6 +4,8 @@ import { useState } from "react";
 import { updateWorkflowTemplate, deleteWorkflowTemplate } from "@/lib/actions/template";
 import { useTranslations } from "next-intl";
 import { ConfirmActionButton } from "@/components/ui/ConfirmActionButton";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface TemplateHeaderProps {
   template: {
@@ -34,14 +36,7 @@ export function TemplateHeader({ template }: TemplateHeaderProps) {
             <label htmlFor="name" className="block text-sm font-semibold text-foreground mb-2">
               {t("nameLabel")}
             </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              required
-              defaultValue={template.name}
-              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
-            />
+            <Input type="text" id="name" name="name" required defaultValue={template.name} />
           </div>
           <div>
             <label
@@ -50,12 +45,11 @@ export function TemplateHeader({ template }: TemplateHeaderProps) {
             >
               {t("descriptionLabel")}
             </label>
-            <textarea
+            <Textarea
               id="description"
               name="description"
               rows={3}
               defaultValue={template.description || ""}
-              className="w-full rounded-lg border-2 border-input-border bg-input px-4 py-3 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all resize-none"
             />
           </div>
           <div className="flex gap-3">

@@ -1,13 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { TaskComment, TaskArtifact, User } from "@prisma/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Image, Video, Figma, File, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { dateFnsLocale } from "@/lib/date-locale";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 
 type CommentWithUser = TaskComment & {
@@ -77,6 +77,7 @@ export function ActivityFeed({ comments, artifacts }: ActivityFeedProps) {
 
 function CommentItem({ comment }: { comment: CommentWithUser }) {
   const t = useTranslations("tasks.activity");
+  const locale = useLocale();
   const isRevertComment = comment.content.startsWith("**REVERTED");
 
   return (
@@ -101,7 +102,7 @@ function CommentItem({ comment }: { comment: CommentWithUser }) {
           <span className="text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(comment.createdAt), {
               addSuffix: true,
-              locale: ptBR,
+              locale: dateFnsLocale(locale),
             })}
           </span>
         </div>
@@ -113,6 +114,7 @@ function CommentItem({ comment }: { comment: CommentWithUser }) {
 
 function ArtifactItem({ artifact }: { artifact: ArtifactWithUser }) {
   const t = useTranslations("tasks.activity");
+  const locale = useLocale();
   const Icon = artifactIcons[artifact.type];
 
   return (
@@ -131,7 +133,7 @@ function ArtifactItem({ artifact }: { artifact: ArtifactWithUser }) {
           <span className="text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(artifact.createdAt), {
               addSuffix: true,
-              locale: ptBR,
+              locale: dateFnsLocale(locale),
             })}
           </span>
         </div>

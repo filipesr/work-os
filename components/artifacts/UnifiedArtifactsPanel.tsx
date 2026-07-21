@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { removeScopedArtifact } from "@/lib/actions/artifact";
 import { type UnifiedArtifactRow, sortRows } from "@/lib/artifacts/unify";
@@ -31,6 +32,7 @@ export function UnifiedArtifactsPanel({
   canRemove,
 }: UnifiedArtifactsPanelProps) {
   const router = useRouter();
+  const t = useTranslations("tasks.artifacts");
   const [isPending, startTransition] = useTransition();
 
   const versions = useArtifactVersions(startTransition);
@@ -42,10 +44,10 @@ export function UnifiedArtifactsPanel({
     startTransition(async () => {
       const res = await removeScopedArtifact(id);
       if (res?.success) {
-        toast.success("Artefato removido");
+        toast.success(t("removedSuccess"));
         router.refresh();
       } else {
-        toast.error(res?.error ?? "Erro ao remover");
+        toast.error(res?.error ?? t("removeError"));
       }
     });
   };
@@ -61,9 +63,7 @@ export function UnifiedArtifactsPanel({
       />
       {/* Rows */}
       {sorted.length === 0 ? (
-        <div className="text-center py-8 text-sm text-muted-foreground">
-          Nenhum artefato. Adicione links ou arquivos relevantes.
-        </div>
+        <div className="text-center py-8 text-sm text-muted-foreground">{t("emptyPanel")}</div>
       ) : (
         <div className="space-y-2">
           {sorted.map((a) => (

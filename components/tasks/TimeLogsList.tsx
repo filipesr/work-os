@@ -1,12 +1,12 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { TimeLog, User, TemplateStage } from "@prisma/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { Clock } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { dateFnsLocale, atConnector } from "@/lib/date-locale";
 
 type TimeLogWithRelations = TimeLog & {
   user: Pick<User, "id" | "name" | "email" | "image">;
@@ -19,6 +19,7 @@ interface TimeLogsListProps {
 
 export function TimeLogsList({ timeLogs }: TimeLogsListProps) {
   const t = useTranslations("tasks.timeLogs");
+  const locale = useLocale();
   if (timeLogs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
@@ -48,8 +49,8 @@ export function TimeLogsList({ timeLogs }: TimeLogsListProps) {
                 {log.user.name || log.user.email}
               </p>
               <p className="text-xs text-muted-foreground">
-                {format(new Date(log.logDate), "dd/MM/yyyy 'às' HH:mm", {
-                  locale: ptBR,
+                {format(new Date(log.logDate), `dd/MM/yyyy '${atConnector(locale)}' HH:mm`, {
+                  locale: dateFnsLocale(locale),
                 })}
               </p>
             </div>

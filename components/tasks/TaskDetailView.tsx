@@ -44,7 +44,7 @@ const WorkflowHistoryModal = dynamic(
   { ssr: false }
 );
 import { format } from "date-fns";
-import { ptBR, es } from "date-fns/locale";
+import { dateFnsLocale } from "@/lib/date-locale";
 import { useTranslations, useLocale } from "next-intl";
 
 type TaskWithRelations = Task & {
@@ -116,7 +116,7 @@ export function TaskDetailView({
   const tArtifacts = useTranslations("tasks.artifacts");
   const tTimeLogs = useTranslations("tasks.timeLogs");
   const locale = useLocale();
-  const dateLocale = locale === "es-ES" ? es : ptBR;
+  const dateLocale = dateFnsLocale(locale);
 
   const priorityConfig = {
     LOW: { label: tPriority("low"), variant: "secondary" as const },
@@ -265,7 +265,7 @@ export function TaskDetailView({
                 <Separator />
                 <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-3">
                   <p className="text-xs font-semibold text-primary mb-1">
-                    Sobre o projeto · {task.project.name}
+                    {tDetail("aboutProject")} · {task.project.name}
                   </p>
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">
                     {task.project.description}
@@ -354,7 +354,7 @@ export function TaskDetailView({
               canRemove={canManageScoped}
             />
             <div className="mt-4">
-              <StorageBreakdown title="Armazenamento no NAS — por tipo" stats={typeStorage} />
+              <StorageBreakdown title={tDetail("storageByType")} stats={typeStorage} />
             </div>
           </CardContent>
         </Card>

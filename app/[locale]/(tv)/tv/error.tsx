@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 export default function TVError({
   error,
@@ -9,6 +10,8 @@ export default function TVError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("common");
+
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -16,13 +19,13 @@ export default function TVError({
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center space-y-4">
-        <h2 className="text-2xl font-bold text-foreground">Algo deu errado</h2>
+        <h2 className="text-2xl font-bold text-foreground">{t("errors.title")}</h2>
         <p className="text-sm text-muted-foreground">{error.message}</p>
         <button
           onClick={reset}
           className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
         >
-          Tente novamente
+          {t("errors.retry")}
         </button>
       </div>
     </div>

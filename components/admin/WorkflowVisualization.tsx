@@ -77,11 +77,11 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
       <div className="flex flex-wrap items-center gap-4 mb-6 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-4 rounded border-2 border-primary/30 bg-card" />
-          Etapa padrão
+          {t("legendStandard")}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-4 rounded border-2 border-dashed border-amber-400 bg-amber-50" />
-          Etapa opcional (vem desmarcada ao criar a demanda)
+          {t("legendOptional")}
         </span>
       </div>
 
@@ -124,7 +124,7 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
                         <h4 className="font-bold text-foreground text-sm">{stage.name}</h4>
                         {stage.optional && (
                           <span className="ml-auto rounded-full border border-amber-400 bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                            Opcional
+                            {t("optionalBadge")}
                           </span>
                         )}
                       </div>

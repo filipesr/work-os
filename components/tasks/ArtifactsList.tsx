@@ -1,20 +1,21 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
 import { TaskArtifact, User } from "@prisma/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { ExternalLink, FileText, Image, Video, Figma, File } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { dateFnsLocale } from "@/lib/date-locale";
 import { DownloadArtifactButton } from "./DownloadArtifactButton";
 
-// NAS upload status -> badge label + classes.
-const nasStatus: Record<string, { label: string; cls: string }> = {
-  PENDING: { label: "Pendente", cls: "bg-muted text-muted-foreground border-border" },
-  UPLOADING: { label: "Enviando", cls: "bg-blue-100 text-blue-800 border-blue-200" },
-  READY: { label: "Pronto", cls: "bg-green-100 text-green-800 border-green-200" },
-  FAILED: { label: "Falhou", cls: "bg-red-100 text-red-800 border-red-200" },
-  EXPIRED: { label: "Expirado", cls: "bg-muted text-muted-foreground border-border" },
+// NAS upload status -> badge classes (o rótulo textual vem de tasks.artifacts.nasStatus).
+const nasStatusCls: Record<string, string> = {
+  PENDING: "bg-muted text-muted-foreground border-border",
+  UPLOADING: "bg-blue-100 text-blue-800 border-blue-200",
+  READY: "bg-green-100 text-green-800 border-green-200",
+  FAILED: "bg-red-100 text-red-800 border-red-200",
+  EXPIRED: "bg-muted text-muted-foreground border-border",
 };
 
 type ArtifactWithUser = TaskArtifact & {
@@ -25,20 +26,21 @@ interface ArtifactsListProps {
   artifacts: ArtifactWithUser[];
 }
 
+// Ícone + cor por tipo (o rótulo textual vem de tasks.artifacts.types).
 const artifactTypeConfig = {
-  DOCUMENT: { icon: FileText, label: "Documento", color: "text-blue-500" },
-  IMAGE: { icon: Image, label: "Imagem", color: "text-green-500" },
-  VIDEO: { icon: Video, label: "Vídeo", color: "text-purple-500" },
-  FIGMA: { icon: Figma, label: "Figma", color: "text-pink-500" },
-  OTHER: { icon: File, label: "Outro", color: "text-gray-500" },
+  DOCUMENT: { icon: FileText, color: "text-blue-500" },
+  IMAGE: { icon: Image, color: "text-green-500" },
+  VIDEO: { icon: Video, color: "text-purple-500" },
+  FIGMA: { icon: Figma, color: "text-pink-500" },
+  OTHER: { icon: File, color: "text-gray-500" },
 };
 
 export function ArtifactsList({ artifacts }: ArtifactsListProps) {
+  const t = useTranslations("tasks.artifacts");
+  const locale = useLocale();
   if (artifacts.length === 0) {
     return (
-      <div className="text-center py-8 text-sm text-muted-foreground">
-        Nenhum artefato anexado. Adicione links ou arquivos relevantes.
-      </div>
+      <div className="text-center py-8 text-sm text-muted-foreground">{t("emptyAttached")}</div>
     );
   }
 
@@ -74,11 +76,13 @@ export function ArtifactsList({ artifacts }: ArtifactsListProps) {
                     </span>
                     <span
                       className={`flex-shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full border ${
-                        nasStatus[artifact.uploadStatus]?.cls ??
+                        nasStatusCls[artifact.uploadStatus] ??
                         "bg-muted text-muted-foreground border-border"
                       }`}
                     >
-                      {nasStatus[artifact.uploadStatus]?.label ?? artifact.uploadStatus}
+                      {t.has(`nasStatus.${artifact.uploadStatus}`)
+                        ? t(`nasStatus.${artifact.uploadStatus}`)
+                        : artifact.uploadStatus}
                     </span>
                   </div>
                 ) : (
@@ -113,7 +117,7 @@ export function ArtifactsList({ artifacts }: ArtifactsListProps) {
                 <span>•</span>
 
                 {/* Type */}
-                <span>{config.label}</span>
+                <span>{t(`types.${artifact.type.toLowerCase()}`)}</span>
 
                 <span>•</span>
 
@@ -121,7 +125,7 @@ export function ArtifactsList({ artifacts }: ArtifactsListProps) {
                 <span>
                   {formatDistanceToNow(new Date(artifact.createdAt), {
                     addSuffix: true,
-                    locale: ptBR,
+                    locale: dateFnsLocale(locale),
                   })}
                 </span>
               </div>

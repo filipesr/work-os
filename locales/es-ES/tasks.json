@@ -15,6 +15,8 @@
   "detail": {
     "backToTasks": "Volver a Tareas",
     "taskDetails": "Detalles de la Tarea",
+    "aboutProject": "Sobre el proyecto",
+    "storageByType": "Almacenamiento en el NAS — por tipo",
     "description": "Descripción",
     "noDescription": "Sin descripción",
     "client": "Cliente",
@@ -106,6 +108,8 @@
   "comments": {
     "title": "Comentarios",
     "noComments": "Aún no hay comentarios",
+    "emptyPrompt": "Aún no hay comentarios. ¡Sé el primero en comentar!",
+    "you": "Tú",
     "addComment": "Agregar Comentario",
     "placeholder": "Escribe tu comentario...",
     "postedBy": "Publicado por",
@@ -119,6 +123,23 @@
   "artifacts": {
     "title": "Artefactos",
     "noArtifacts": "Aún no hay artefactos",
+    "emptyPanel": "No hay artefactos. Agrega enlaces o archivos relevantes.",
+    "emptyAttached": "No hay artefactos adjuntos. Agrega enlaces o archivos relevantes.",
+    "removedSuccess": "Artefacto eliminado",
+    "removeError": "Error al eliminar",
+    "origin": {
+      "TASK": "Tarea",
+      "PROJECT": "Proyecto",
+      "CLIENT": "Cliente"
+    },
+    "mediaTypes": {
+      "VIDEOS": "Videos",
+      "FOTOS": "Fotos",
+      "DOCUMENTOS": "Documentos",
+      "LOGOS": "Logos",
+      "SOCIAL_MEDIA": "Social Media",
+      "OUTROS": "Otros"
+    },
     "addArtifact": "Agregar Enlace/Artefacto",
     "hideForm": "Ocultar Formulario",
     "name": "Nombre",
@@ -233,6 +254,41 @@
       "cancel": "Cancelar",
       "confirm": "Confirmar y Detener"
     }
+  },
+  "workflowHistory": {
+    "tooltip": "Ver historial completo del flujo de trabajo",
+    "title": "Historial del Flujo de Trabajo",
+    "description": "Visualiza todas las etapas completadas y el contenido agregado en cada una",
+    "noCompletedStages": "Aún no hay etapas completadas",
+    "completedOn": "Completada el {date}",
+    "team": "Equipo: {name}",
+    "completedBadge": "Completada",
+    "commentsCount": "Comentarios ({count})",
+    "artifactsCount": "Artefactos ({count})",
+    "noContent": "Ningún contenido agregado en esta etapa"
+  },
+  "upload": {
+    "checking": "Verificando agente en la red local…",
+    "blockedAgent": "Agente del NAS no encontrado en la red local. Conéctate a la LAN o a la VPN para enviar archivos.",
+    "blockedNotConfigured": "La subida al NAS no está configurada en este entorno.",
+    "selectFile": "Selecciona un archivo.",
+    "sent": "Enviado: {fileName}",
+    "fileLabel": "Archivo",
+    "mediaTypeLabel": "Tipo de medio",
+    "sensitivityLabel": "Sensibilidad",
+    "submit": "Enviar al NAS",
+    "failed": "falló",
+    "dismiss": "Descartar",
+    "sensitivities": {
+      "INTERNO": "Interno",
+      "CLIENTE": "Cliente",
+      "CONFIDENCIAL": "Confidencial"
+    }
+  },
+  "claimStage": {
+    "blocked": "Bloqueado",
+    "claim": "Tomar Etapa",
+    "claiming": "Tomando…"
   },
   "status": {
     "backlog": "Backlog",

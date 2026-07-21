@@ -9,6 +9,14 @@ import toast from "react-hot-toast";
 import { addLinkArtifact } from "@/lib/actions/task";
 import { addScopedLinkArtifact } from "@/lib/actions/artifact";
 import { UploadArtifactForm } from "@/components/tasks/UploadArtifactForm";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const TYPE_OPTIONS: { value: ArtifactType; typeKey: string }[] = [
   { value: "DOCUMENT", typeKey: "document" },
@@ -107,34 +115,36 @@ export function AddArtifactForm({
       ) : (
         <div className="space-y-3">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <input
+            <Input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t("titleInputPlaceholder")}
               disabled={isPending}
-              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all"
             />
-            <select
+            <Select
               value={type}
-              onChange={(e) => setType(e.target.value as ArtifactType)}
+              onValueChange={(v) => setType(v as ArtifactType)}
               disabled={isPending}
-              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base font-medium text-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all"
             >
-              {TYPE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {t(`types.${o.typeKey}`)}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TYPE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {t(`types.${o.typeKey}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <input
+          <Input
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder={t("urlPlaceholder")}
             disabled={isPending}
-            className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all"
           />
           <button
             type="button"

@@ -1,11 +1,11 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, Clock, ArrowRight } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { dateFnsLocale } from "@/lib/date-locale";
 import type { StageRef, StageTeamRef } from "@/lib/types/stages";
 
 interface StageLog {
@@ -40,6 +40,7 @@ export function StageWorkflowVisualization({
   stageLogs,
 }: StageWorkflowVisualizationProps) {
   const t = useTranslations("tasks.workflowViz");
+  const locale = useLocale();
   // Get completed stage IDs
   const completedStageIds = new Set(
     stageLogs.filter((log) => log.exitedAt !== null).map((log) => log.stage.id)
@@ -153,7 +154,7 @@ export function StageWorkflowVisualization({
                         <div className="text-gray-600">
                           {t("completedOn", {
                             date: format(new Date(log.exitedAt), "dd/MM/yyyy HH:mm", {
-                              locale: ptBR,
+                              locale: dateFnsLocale(locale),
                             }),
                           })}
                         </div>
@@ -166,7 +167,7 @@ export function StageWorkflowVisualization({
                         <div>
                           {t("startedOn", {
                             date: format(new Date(log.enteredAt), "dd/MM/yyyy HH:mm", {
-                              locale: ptBR,
+                              locale: dateFnsLocale(locale),
                             }),
                           })}
                         </div>

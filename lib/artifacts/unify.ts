@@ -60,6 +60,30 @@ export function artifactTypeLabel(
   return "—";
 }
 
+/**
+ * Chave i18n (relativa a `tasks.artifacts`) para o rótulo de origem.
+ * A UI resolve via `t(originLabelKey(origin))`.
+ */
+export function originLabelKey(origin: ArtifactOrigin): string {
+  return `origin.${origin}`;
+}
+
+/**
+ * Chave i18n (relativa a `tasks.artifacts`) para o rótulo de tipo:
+ * `mediaTypes.<MEDIA>` para NAS, `types.<type minúsculo>` para link.
+ * Retorna `null` quando não há tipo (a UI mostra "—"). O valor cru
+ * (`mediaType`/`type`) serve de fallback quando a chave não existe.
+ */
+export function artifactTypeLabelKey(
+  row: Pick<UnifiedArtifactRow, "storageKind" | "type" | "mediaType">
+): string | null {
+  if (row.storageKind === "NAS_UPLOAD" && row.mediaType) {
+    return `mediaTypes.${row.mediaType}`;
+  }
+  if (row.type) return `types.${row.type.toLowerCase()}`;
+  return null;
+}
+
 type RawArtifact = {
   id: string;
   title: string;

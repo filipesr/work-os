@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createTemplateStage } from "@/lib/actions/stage";
 import { DependencySelector } from "./DependencySelector";
+import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
 
@@ -78,28 +79,13 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
             <label htmlFor="name" className="block text-sm font-semibold text-foreground mb-2">
               {t("nameLabel")}
             </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              required
-              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
-              placeholder={t("namePlaceholder")}
-            />
+            <Input type="text" id="name" name="name" required placeholder={t("namePlaceholder")} />
           </div>
           <div>
             <label htmlFor="order" className="block text-sm font-semibold text-foreground mb-2">
               {t("orderLabel")}
             </label>
-            <input
-              type="number"
-              id="order"
-              name="order"
-              required
-              min="0"
-              defaultValue="0"
-              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
-            />
+            <Input type="number" id="order" name="order" required min="0" defaultValue="0" />
           </div>
           <div>
             <label
@@ -128,19 +114,18 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
             >
               {t("slaLabel")}
             </label>
-            <input
+            <Input
               type="number"
               id="expectedDurationHours"
               name="expectedDurationHours"
               min="0"
-              className="h-11 w-full rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 outline-none transition-all"
               placeholder={t("slaPlaceholder")}
             />
           </div>
           <div className="flex items-end">
             <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <input type="checkbox" name="optional" className="h-4 w-4" />
-              Etapa opcional
+              {t("optional")}
             </label>
           </div>
         </div>

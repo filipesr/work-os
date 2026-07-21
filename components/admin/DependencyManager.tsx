@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { updateStageDependencies } from "@/lib/actions/dependency";
 import {
   Dialog,
@@ -28,6 +29,7 @@ export function DependencyManager({
   currentDependencies,
   onClose,
 }: DependencyManagerProps) {
+  const t = useTranslations("template.dependencyManager");
   const [selectedDeps, setSelectedDeps] = useState<Set<string>>(new Set(currentDependencies));
 
   // Filter out the current stage from available dependencies
@@ -57,17 +59,12 @@ export function DependencyManager({
     >
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Manage Dependencies: {stageName}</DialogTitle>
-          <DialogDescription>
-            Select which stages must be completed before "{stageName}" can start. These are the
-            prerequisites for this stage.
-          </DialogDescription>
+          <DialogTitle>{t("title", { stageName })}</DialogTitle>
+          <DialogDescription>{t("description", { stageName })}</DialogDescription>
         </DialogHeader>
 
         {availableStages.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
-            No other stages available to set as dependencies.
-          </div>
+          <div className="text-center text-muted-foreground py-8">{t("noStages")}</div>
         ) : (
           <div className="space-y-3 mb-6">
             {availableStages.map((stage) => {
@@ -105,23 +102,24 @@ export function DependencyManager({
             disabled={isSaving}
             className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all disabled:opacity-50"
           >
-            Cancel
+            {t("cancel")}
           </button>
           <button
             onClick={() => handleSave()}
             disabled={isSaving}
             className="px-5 py-2.5 bg-accent text-accent-foreground font-semibold rounded-lg hover:bg-accent/80 transition-all disabled:opacity-50 shadow-sm"
           >
-            {isSaving ? "Saving..." : "Save Dependencies"}
+            {isSaving ? t("saving") : t("save")}
           </button>
         </div>
 
         {selectedDeps.size > 0 && (
           <div className="mt-4 p-4 bg-primary/5 border-2 border-primary/20 rounded-lg">
             <p className="text-sm text-foreground">
-              <span className="font-bold">Note:</span> "{stageName}" will only become available
-              after {selectedDeps.size === 1 ? "1 stage is" : `${selectedDeps.size} stages are`}{" "}
-              completed.
+              <span className="font-bold">{t("noteLabel")}</span>{" "}
+              {selectedDeps.size === 1
+                ? t("noteSingle", { stageName })
+                : t("notePlural", { stageName, count: selectedDeps.size })}
             </p>
           </div>
         )}

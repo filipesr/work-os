@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import type { CalendarBuckets, CalendarTask } from "@/lib/actions/reporting";
 import { weekRangeFromMonday, todayInSaoPaulo } from "@/lib/dates";
 import { TaskBar, spanForDueDate } from "./TaskBar";
@@ -67,7 +67,7 @@ function LaneShell({
 }
 
 export async function CalendarGrid({ buckets, weekStart }: CalendarGridProps) {
-  const t = await getTranslations("reportsCalendar");
+  const [t, locale] = await Promise.all([getTranslations("reportsCalendar"), getLocale()]);
   const range = weekRangeFromMonday(weekStart);
 
   const today = todayInSaoPaulo();
@@ -85,7 +85,7 @@ export async function CalendarGrid({ buckets, weekStart }: CalendarGridProps) {
     );
   }
 
-  const dayFormatter = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });
+  const dayFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" });
 
   return (
     <div className="bg-card border-2 border-border rounded-xl overflow-hidden">

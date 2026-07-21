@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { dateFnsLocale } from "@/lib/date-locale";
 
 type TaskCardProps = {
   task: Task & {
@@ -16,27 +16,24 @@ type TaskCardProps = {
   };
 };
 
-const priorityVariants: Record<
-  TaskPriority,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  LOW: "secondary",
-  MEDIUM: "default",
-  HIGH: "outline",
-  URGENT: "destructive",
-};
+const priorityVariants: Record<TaskPriority, "default" | "secondary" | "destructive" | "outline"> =
+  {
+    LOW: "secondary",
+    MEDIUM: "default",
+    HIGH: "outline",
+    URGENT: "destructive",
+  };
 
 export function TaskCard({ task }: TaskCardProps) {
   const t = useTranslations("projects");
+  const locale = useLocale();
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
 
   return (
     <Link href={`/tasks/${task.id}`}>
       <Card className="hover:shadow-md transition-shadow cursor-pointer">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium line-clamp-2">
-            {task.title}
-          </CardTitle>
+          <CardTitle className="text-base font-medium line-clamp-2">{task.title}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {/* Priority Badge */}
@@ -57,7 +54,7 @@ export function TaskCard({ task }: TaskCardProps) {
               <span className={isOverdue ? "text-destructive" : "text-muted-foreground"}>
                 {formatDistanceToNow(new Date(task.dueDate), {
                   addSuffix: true,
-                  locale: ptBR,
+                  locale: dateFnsLocale(locale),
                 })}
               </span>
             </div>
@@ -77,9 +74,7 @@ export function TaskCard({ task }: TaskCardProps) {
               </span>
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground italic">
-              {t("unassigned")}
-            </div>
+            <div className="text-sm text-muted-foreground italic">{t("unassigned")}</div>
           )}
         </CardContent>
       </Card>

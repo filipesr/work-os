@@ -43,6 +43,10 @@
     "light": "Tema claro",
     "dark": "Tema escuro"
   },
+  "errors": {
+    "title": "Algo deu errado",
+    "retry": "Tente novamente"
+  },
   "common": {
     "loading": "Carregando...",
     "noData": "Nenhum dado disponível",

@@ -7,6 +7,15 @@ import { getTemplateStagePreview } from "@/app/actions/templateActions";
 import { getClients } from "@/lib/actions/client";
 import { QuickCreateProject } from "@/components/quick-create/QuickCreateProject";
 import { StageAssigneeSelect } from "@/components/ui/StageAssigneeSelect";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 
@@ -70,9 +79,7 @@ export function CreateTaskForm({
   };
 
   // Handler for when the user selects a template
-  const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const templateId = e.target.value;
-
+  const handleTemplateChange = (templateId: string) => {
     if (!templateId) {
       setStagePreview([]);
       return;
@@ -90,12 +97,11 @@ export function CreateTaskForm({
         <label htmlFor="title" className="block text-sm font-semibold text-foreground mb-2">
           {t("create.titleLabel")}
         </label>
-        <input
+        <Input
           type="text"
           id="title"
           name="title"
           required
-          className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
           placeholder={t("create.titlePlaceholder")}
         />
       </div>
@@ -105,11 +111,10 @@ export function CreateTaskForm({
         <label htmlFor="description" className="block text-sm font-semibold text-foreground mb-2">
           {t("create.descriptionLabel")}
         </label>
-        <textarea
+        <Textarea
           id="description"
           name="description"
           rows={4}
-          className="w-full min-h-[100px] rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200 resize-none"
           placeholder={t("create.descriptionPlaceholder")}
         />
       </div>
@@ -127,20 +132,18 @@ export function CreateTaskForm({
             onProjectCreated={handleProjectCreated}
           />
         </div>
-        <select
-          id="projectId"
-          name="projectId"
-          required
-          defaultValue={defaultProjectId}
-          className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
-        >
-          <option value="">{t("create.projectPlaceholder")}</option>
-          {projects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.client.name} - {project.name}
-            </option>
-          ))}
-        </select>
+        <Select name="projectId" required defaultValue={defaultProjectId}>
+          <SelectTrigger id="projectId">
+            <SelectValue placeholder={t("create.projectPlaceholder")} />
+          </SelectTrigger>
+          <SelectContent>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.client.name} - {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {projects.length === 0 && (
           <p className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
             <span>{t("create.noProjectsAvailable")}</span>
@@ -160,20 +163,18 @@ export function CreateTaskForm({
         <label htmlFor="templateId" className="block text-sm font-semibold text-foreground mb-2">
           {t("create.templateLabel")}
         </label>
-        <select
-          id="templateId"
-          name="templateId"
-          required
-          onChange={handleTemplateChange}
-          className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
-        >
-          <option value="">{t("create.templatePlaceholder")}</option>
-          {templates.map((template) => (
-            <option key={template.id} value={template.id}>
-              {template.name} ({t("create.templateStages", { count: template._count.stages })})
-            </option>
-          ))}
-        </select>
+        <Select name="templateId" required onValueChange={handleTemplateChange}>
+          <SelectTrigger id="templateId">
+            <SelectValue placeholder={t("create.templatePlaceholder")} />
+          </SelectTrigger>
+          <SelectContent>
+            {templates.map((template) => (
+              <SelectItem key={template.id} value={template.id}>
+                {template.name} ({t("create.templateStages", { count: template._count.stages })})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {templates.length === 0 && (
           <p className="mt-2 text-sm text-destructive font-medium">
             {t("create.noTemplatesAvailable")}
@@ -243,18 +244,17 @@ export function CreateTaskForm({
         <label htmlFor="priority" className="block text-sm font-semibold text-foreground mb-2">
           {t("create.priorityLabel")}
         </label>
-        <select
-          id="priority"
-          name="priority"
-          required
-          defaultValue="MEDIUM"
-          className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
-        >
-          <option value="LOW">{tPriority("low")}</option>
-          <option value="MEDIUM">{tPriority("medium")}</option>
-          <option value="HIGH">{tPriority("high")}</option>
-          <option value="URGENT">{tPriority("urgent")}</option>
-        </select>
+        <Select name="priority" required defaultValue="MEDIUM">
+          <SelectTrigger id="priority">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="LOW">{tPriority("low")}</SelectItem>
+            <SelectItem value="MEDIUM">{tPriority("medium")}</SelectItem>
+            <SelectItem value="HIGH">{tPriority("high")}</SelectItem>
+            <SelectItem value="URGENT">{tPriority("urgent")}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Due Date */}
@@ -262,12 +262,7 @@ export function CreateTaskForm({
         <label htmlFor="dueDate" className="block text-sm font-semibold text-foreground mb-2">
           {t("create.dueDateLabel")}
         </label>
-        <input
-          type="date"
-          id="dueDate"
-          name="dueDate"
-          className="w-full h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
-        />
+        <Input type="date" id="dueDate" name="dueDate" />
       </div>
 
       {/* Submit Button */}

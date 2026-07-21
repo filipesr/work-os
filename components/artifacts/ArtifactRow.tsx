@@ -1,27 +1,33 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { dateFnsLocale, atConnector } from "@/lib/date-locale";
+import { Input } from "@/components/ui/input";
 import {
   type UnifiedArtifactRow,
-  ORIGIN_LABEL,
   ORIGIN_CHIP,
-  artifactTypeLabel,
+  originLabelKey,
+  artifactTypeLabelKey,
 } from "@/lib/artifacts/unify";
 import { DownloadArtifactButton } from "@/components/tasks/DownloadArtifactButton";
 
-// < 24h: "há cerca de X"; depois: "em dd/mm/yyyy às hh:mm".
+// < 24h: "há cerca de X"; depois: "em dd/mm/yyyy às hh:mm" (conector conforme locale).
 function formatArtifactTime(
   date: Date,
-  t: (key: any, values?: Record<string, string>) => string
+  t: (key: any, values?: Record<string, string>) => string,
+  locale: string
 ): string {
   const ageMs = Date.now() - date.getTime();
   if (ageMs < 24 * 60 * 60 * 1000) {
-    return formatDistanceToNow(date, { addSuffix: true, locale: ptBR });
+    return formatDistanceToNow(date, { addSuffix: true, locale: dateFnsLocale(locale) });
   }
-  return t("timeOn", { date: format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) });
+  return t("timeOn", {
+    date: format(date, `dd/MM/yyyy '${atConnector(locale)}' HH:mm`, {
+      locale: dateFnsLocale(locale),
+    }),
+  });
 }
 
 // CSS por status; o rótulo textual vem das traduções (nasStatus.<STATUS>).
@@ -79,8 +85,15 @@ export function ArtifactRow({
   onRemove,
 }: ArtifactRowProps) {
   const t = useTranslations("tasks.artifacts");
+  const locale = useLocale();
   const nasLabel = (status: string) =>
     t.has(`nasStatus.${status}`) ? t(`nasStatus.${status}`) : status;
+  const typeLabel = (row: UnifiedArtifactRow): string => {
+    const key = artifactTypeLabelKey(row);
+    if (!key) return "—";
+    if (t.has(key)) return t(key);
+    return row.storageKind === "NAS_UPLOAD" ? (row.mediaType ?? "—") : (row.type ?? "—");
+  };
   const showTaskBadge = a.taskId != null && a.taskId !== currentTaskId;
   const isNas = a.storageKind === "NAS_UPLOAD";
   return (
@@ -91,7 +104,7 @@ export function ArtifactRow({
             <span
               className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${ORIGIN_CHIP[a.origin]}`}
             >
-              {ORIGIN_LABEL[a.origin]}
+              {t(originLabelKey(a.origin))}
             </span>
             {a.version > 1 && (
               <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
@@ -122,7 +135,7 @@ export function ArtifactRow({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span>{artifactTypeLabel(a)}</span>
+            <span>{typeLabel(a)}</span>
             {showTaskBadge && (
               <>
                 <span>•</span>
@@ -138,7 +151,7 @@ export function ArtifactRow({
             <span>•</span>
             <span>
               {a.version > 1 ? t("updated") : t("created")}{" "}
-              {formatArtifactTime(new Date(a.createdAt), t)}
+              {formatArtifactTime(new Date(a.createdAt), t, locale)}
             </span>
           </div>
         </div>
@@ -205,13 +218,12 @@ export function ArtifactRow({
             {t("newVersionHintBefore")} <span className="font-semibold">{a.title}</span>{" "}
             {t("newVersionHintAfter")}
           </p>
-          <input
+          <Input
             type="url"
             value={verUrl}
             onChange={(e) => onSetVerUrl(e.target.value)}
             placeholder={t("newVersionPlaceholder")}
             disabled={isPending}
-            className="h-10 w-full rounded-lg border-2 border-input-border bg-input px-3 text-sm font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none"
           />
           <button
             type="button"
@@ -255,7 +267,7 @@ export function ArtifactRow({
                   <span className="shrink-0 text-muted-foreground">· {h.userName}</span>
                 )}
                 <span className="shrink-0 text-muted-foreground">
-                  {formatArtifactTime(new Date(h.createdAt), t)}
+                  {formatArtifactTime(new Date(h.createdAt), t, locale)}
                 </span>
               </li>
             ))}
