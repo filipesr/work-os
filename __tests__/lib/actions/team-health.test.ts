@@ -93,3 +93,57 @@ describe("getTeamMemberLoad", () => {
     expect(rows.find((r) => r.userId === "a")!.overloaded).toBe(true);
   });
 });
+
+import { getAgingStages } from "@/lib/actions/team-health";
+
+describe("getAgingStages", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("includes items past SLA and applies DEFAULT_SLA when stage has none; sorts by ratio desc", async () => {
+    asManager();
+    const hoursAgo = (h: number) => new Date(Date.now() - h * 3.6e6);
+    db.taskActiveStage.findMany.mockResolvedValue([
+      // 96h old, SLA 24 → ratio 4
+      {
+        activatedAt: hoursAgo(96),
+        task: { id: "t1", title: "A", dueDate: null },
+        stage: { name: "Dev", expectedDurationHours: 24 },
+        assignee: { name: "Ana" },
+      },
+      // 36h old, no SLA → default 72 → ratio 0.5 → excluded (not aging, no due risk)
+      {
+        activatedAt: hoursAgo(36),
+        task: { id: "t2", title: "B", dueDate: null },
+        stage: { name: "QC", expectedDurationHours: null },
+        assignee: null,
+      },
+      // 80h old, no SLA → default 72 → ratio ~1.11 → included
+      {
+        activatedAt: hoursAgo(80),
+        task: { id: "t3", title: "C", dueDate: null },
+        stage: { name: "SEO", expectedDurationHours: null },
+        assignee: null,
+      },
+    ] as never);
+
+    const items = await getAgingStages();
+    expect(items.map((i) => i.taskId)).toEqual(["t1", "t3"]); // t2 excluded, sorted by ratio desc
+    expect(items[0].agingRatio).toBeCloseTo(4, 1);
+    expect(items[1].slaHours).toBe(72);
+  });
+
+  it("includes on-SLA items that are overdue by due date", async () => {
+    asManager();
+    db.taskActiveStage.findMany.mockResolvedValue([
+      {
+        activatedAt: new Date(),
+        task: { id: "t9", title: "Z", dueDate: new Date(Date.now() - 864e5) },
+        stage: { name: "Dev", expectedDurationHours: 999999 },
+        assignee: null,
+      },
+    ] as never);
+    const items = await getAgingStages();
+    expect(items).toHaveLength(1);
+    expect(items[0].dueState).toBe("overdue");
+  });
+});

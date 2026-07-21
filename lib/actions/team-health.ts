@@ -112,3 +112,38 @@ export async function getTeamMemberLoad(teamIds?: string[]): Promise<MemberLoad[
     })
     .sort((a, b) => b.count - a.count);
 }
+
+export async function getAgingStages(teamIds?: string[]): Promise<AgingItem[]> {
+  await requireManagerOrAdmin();
+  const scope = teamIds ?? (await resolveTeamIds());
+  const { getDueState } = await import("@/lib/dates");
+  const now = Date.now();
+
+  const stages = await prisma.taskActiveStage.findMany({
+    where: { status: "ACTIVE", stage: { defaultTeamId: { in: scope } } },
+    select: {
+      activatedAt: true,
+      task: { select: { id: true, title: true, dueDate: true } },
+      stage: { select: { name: true, expectedDurationHours: true } },
+      assignee: { select: { name: true } },
+    },
+  });
+
+  return stages
+    .map((s): AgingItem => {
+      const ageHours = (now - s.activatedAt.getTime()) / 3.6e6;
+      const slaHours = s.stage.expectedDurationHours ?? DEFAULT_SLA_HOURS;
+      return {
+        taskId: s.task.id,
+        taskTitle: s.task.title,
+        stageName: s.stage.name,
+        assigneeName: s.assignee?.name ?? null,
+        ageHours,
+        slaHours,
+        agingRatio: ageHours / slaHours,
+        dueState: getDueState(s.task.dueDate),
+      };
+    })
+    .filter((i) => i.agingRatio >= AGING_ALERT_RATIO || i.dueState !== "none")
+    .sort((a, b) => b.agingRatio - a.agingRatio);
+}
