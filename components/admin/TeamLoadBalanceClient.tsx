@@ -1,0 +1,200 @@
+"use client";
+
+import { useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { loadSegments, type MemberStage } from "@/lib/team-health-format";
+import { getMemberActiveStages } from "@/lib/actions/member-drill";
+import { formatDisplayDate } from "@/lib/dates";
+import type { MemberLoad } from "@/lib/actions/team-health";
+
+const SEGMENT_COLOR: Record<"overdue" | "dueSoon" | "onTrack", string> = {
+  overdue: "bg-red-500",
+  dueSoon: "bg-yellow-500",
+  onTrack: "bg-green-500",
+};
+
+type Filter = "all" | "overloaded" | "idle" | "active";
+
+interface Summary {
+  total: number;
+  overloaded: number;
+  idle: number;
+  medianWip: number;
+}
+
+function Stat({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: number;
+  tone?: "default" | "red" | "muted";
+}) {
+  const color =
+    tone === "red"
+      ? "text-red-700"
+      : tone === "muted"
+        ? "text-muted-foreground"
+        : "text-foreground";
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className={`text-xl font-bold tabular-nums ${color}`}>{value}</dd>
+    </div>
+  );
+}
+
+export function TeamLoadBalanceClient({ rows, summary }: { rows: MemberLoad[]; summary: Summary }) {
+  const t = useTranslations("admin.health.load");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [selected, setSelected] = useState<MemberLoad | null>(null);
+  const [stages, setStages] = useState<MemberStage[]>([]);
+  const [isPending, startTransition] = useTransition();
+
+  const filtered = useMemo(() => {
+    switch (filter) {
+      case "overloaded":
+        return rows.filter((r) => r.overloaded);
+      case "idle":
+        return rows.filter((r) => r.idle && !r.overloaded);
+      case "active":
+        return rows.filter((r) => r.count > 0);
+      default:
+        return rows;
+    }
+  }, [rows, filter]);
+
+  const openMember = (m: MemberLoad) => {
+    setSelected(m);
+    setStages([]);
+    startTransition(async () => {
+      setStages(await getMemberActiveStages(m.userId));
+    });
+  };
+
+  const FILTERS: { key: Filter; label: string }[] = [
+    { key: "all", label: t("filters.all") },
+    { key: "overloaded", label: t("filters.overloaded") },
+    { key: "idle", label: t("filters.idle") },
+    { key: "active", label: t("filters.active") },
+  ];
+
+  return (
+    <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+      <h3 className="text-lg font-bold text-foreground mb-4">{t("title")}</h3>
+
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("empty")}</p>
+      ) : (
+        <>
+          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <Stat label={t("summary.total")} value={summary.total} />
+            <Stat label={t("summary.overloaded")} value={summary.overloaded} tone="red" />
+            <Stat label={t("summary.idle")} value={summary.idle} tone="muted" />
+            <Stat label={t("summary.medianWip")} value={summary.medianWip} />
+          </dl>
+
+          <div className="flex flex-wrap gap-2 mb-3">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setFilter(f.key)}
+                aria-pressed={filter === f.key}
+                className={`text-xs font-medium rounded-full px-3 py-1 border transition-colors ${
+                  filter === f.key
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card text-muted-foreground border-border hover:bg-accent"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">{t("noMatch")}</p>
+          ) : (
+            <ul className="max-h-80 overflow-y-auto divide-y divide-border">
+              {filtered.map((r) => (
+                <li key={r.userId}>
+                  <button
+                    type="button"
+                    onClick={() => openMember(r)}
+                    className="w-full flex items-center gap-3 px-2 py-2 text-left rounded-md hover:bg-accent"
+                  >
+                    <span className="w-32 truncate text-sm font-medium text-foreground">
+                      {r.name}
+                    </span>
+                    <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden flex">
+                      {loadSegments(r).map((s) => (
+                        <div
+                          key={s.key}
+                          className={SEGMENT_COLOR[s.key]}
+                          style={{ width: `${s.pct}%` }}
+                        />
+                      ))}
+                    </div>
+                    <span className="w-16 shrink-0 text-right text-sm tabular-nums text-muted-foreground">
+                      {t("activeStages", { count: r.count })}
+                    </span>
+                    {r.overloaded && (
+                      <span className="shrink-0 text-xs font-bold text-red-700 bg-red-100 border border-red-300 rounded px-2 py-0.5">
+                        {t("overloaded")}
+                      </span>
+                    )}
+                    {r.idle && !r.overloaded && (
+                      <span className="shrink-0 text-xs font-bold text-gray-600 bg-gray-100 border border-gray-300 rounded px-2 py-0.5">
+                        {t("idle")}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+
+      <Dialog open={selected !== null} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("drawer.title", { name: selected?.name ?? "" })}</DialogTitle>
+          </DialogHeader>
+          {isPending ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("drawer.loading")}
+            </div>
+          ) : stages.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">{t("drawer.empty")}</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {stages.map((s) => (
+                <li key={`${s.taskId}-${s.stageName}`} className="py-2">
+                  <Link
+                    href={`/tasks/${s.taskId}`}
+                    className="block rounded-md px-2 py-1 -mx-2 hover:bg-accent"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-medium text-foreground">
+                        {s.taskTitle}
+                      </span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {formatDisplayDate(s.dueDate)}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{s.stageName}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

@@ -5,11 +5,11 @@ import Link from "next/link";
 import { storageByClient } from "@/lib/nas/storage-stats";
 import { StorageBreakdown } from "@/components/nas/StorageBreakdown";
 import { AdminHealthSection } from "@/components/admin/AdminHealthSection";
+import { getTranslations } from "next-intl/server";
 
 export const metadata: Metadata = {
   title: "Administração",
 };
-import { getTranslations } from "next-intl/server";
 
 // StatCard Component
 function StatCard({ title, value }: { title: string; value: number }) {
@@ -25,8 +25,8 @@ function StatCard({ title, value }: { title: string; value: number }) {
   );
 }
 
-// Navigation Card Component
-function NavCard({
+// Compact navigation item for the right-hand menu
+function NavItem({
   href,
   title,
   description,
@@ -38,10 +38,10 @@ function NavCard({
   return (
     <Link
       href={href}
-      className="block bg-card shadow-lg rounded-xl border-2 border-border p-6 hover:border-primary hover:shadow-xl transition-all duration-200"
+      className="block rounded-lg border border-transparent px-3 py-2 transition-colors hover:bg-accent hover:border-border"
     >
-      <h3 className="text-lg font-bold text-foreground mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <span className="block text-sm font-semibold text-foreground">{title}</span>
+      <span className="block text-xs text-muted-foreground">{description}</span>
     </Link>
   );
 }
@@ -72,54 +72,57 @@ export default async function AdminDashboardPage() {
         <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      {/* Statistics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
-        <StatCard title={t("stats.users")} value={userCount} />
-        <StatCard title={t("stats.clients")} value={clientCount} />
-        <StatCard title={t("stats.projects")} value={projectCount} />
-        <StatCard title={t("stats.activeTasks")} value={activeTaskCount} />
-        <StatCard title={t("stats.templates")} value={templateCount} />
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start">
+        {/* Main column: counters + team-health cockpit */}
+        <div className="min-w-0">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+            <StatCard title={t("stats.users")} value={userCount} />
+            <StatCard title={t("stats.clients")} value={clientCount} />
+            <StatCard title={t("stats.projects")} value={projectCount} />
+            <StatCard title={t("stats.activeTasks")} value={activeTaskCount} />
+            <StatCard title={t("stats.templates")} value={templateCount} />
+          </div>
 
-      {/* Team-health cockpit */}
-      <AdminHealthSection />
+          <AdminHealthSection />
+        </div>
 
-      {/* Navigation Hub */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-4">{t("nav.title")}</h2>
-        <p className="text-sm text-muted-foreground mb-6">{t("nav.subtitle")}</p>
-      </div>
+        {/* Right menu (sticky): navigation + storage */}
+        <aside className="space-y-6 lg:sticky lg:top-6">
+          <nav className="bg-card shadow-lg rounded-xl border-2 border-border p-4">
+            <h2 className="px-3 mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              {t("nav.title")}
+            </h2>
+            <div className="flex flex-col gap-1">
+              <NavItem
+                href="/admin/users"
+                title={t("nav.users.title")}
+                description={t("nav.users.description")}
+              />
+              <NavItem
+                href="/admin/teams"
+                title={t("nav.teams.title")}
+                description={t("nav.teams.description")}
+              />
+              <NavItem
+                href="/admin/clients"
+                title={t("nav.clients.title")}
+                description={t("nav.clients.description")}
+              />
+              <NavItem
+                href="/admin/templates"
+                title={t("nav.templates.title")}
+                description={t("nav.templates.description")}
+              />
+              <NavItem
+                href="/admin/tasks"
+                title={t("nav.tasks.title")}
+                description={t("nav.tasks.description")}
+              />
+            </div>
+          </nav>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <NavCard
-          href="/admin/users"
-          title={t("nav.users.title")}
-          description={t("nav.users.description")}
-        />
-        <NavCard
-          href="/admin/teams"
-          title={t("nav.teams.title")}
-          description={t("nav.teams.description")}
-        />
-        <NavCard
-          href="/admin/clients"
-          title={t("nav.clients.title")}
-          description={t("nav.clients.description")}
-        />
-        <NavCard
-          href="/admin/templates"
-          title={t("nav.templates.title")}
-          description={t("nav.templates.description")}
-        />
-        <NavCard
-          href="/admin/tasks"
-          title={t("nav.tasks.title")}
-          description={t("nav.tasks.description")}
-        />
-      </div>
-
-      <div className="mt-10">
-        <StorageBreakdown title="Armazenamento no NAS — por cliente" stats={clientStorage} />
+          <StorageBreakdown title="Armazenamento no NAS — por cliente" stats={clientStorage} />
+        </aside>
       </div>
     </div>
   );

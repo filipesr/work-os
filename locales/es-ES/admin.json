@@ -501,13 +501,26 @@
       "overloadedTitle": "Sobrecargados ({count})",
       "idleTitle": "Ociosos ({count})",
       "balanced": "Carga equilibrada — nadie sobrecargado ni ocioso.",
-      "seeAll": "Ver todos ({count})"
+      "seeAll": "Ver todos ({count})",
+      "filters": {
+        "all": "Todos",
+        "overloaded": "Sobrecarga",
+        "idle": "Ociosos",
+        "active": "Activos"
+      },
+      "noMatch": "Ningún colaborador en ese filtro.",
+      "drawer": {
+        "title": "Tareas activas — {name}",
+        "loading": "Cargando…",
+        "empty": "Sin etapas activas."
+      }
     },
     "aging": {
       "title": "Envejeciendo / en riesgo",
       "empty": "Nada envejeciendo. 🎉",
       "seeAll": "Ver todos",
-      "slaMultiple": "{ratio}× el SLA"
+      "slaMultiple": "{ratio}× el SLA",
+      "legend": "SLA = tiempo esperado en la etapa (definido en la plantilla). \"Envejeciendo\" = tiempo en la etapa ÷ SLA; sin SLA definido, usa 3 días (72h). Rojo = atrasado; amarillo = vence pronto."
     },
     "blocked": {
       "title": "Bloqueados y esperando",

@@ -22,3 +22,13 @@ export function loadSegments(
     { key: "onTrack", pct: pct(row.onTrack) },
   ];
 }
+
+/** A collaborator's active stage, for the load drill-down drawer. */
+export interface MemberStage {
+  taskId: string;
+  taskTitle: string;
+  stageName: string;
+  /** ISO string (serialized across the server-action boundary), or null. */
+  dueDate: string | null;
+  dueState: "overdue" | "dueSoon" | "none";
+}

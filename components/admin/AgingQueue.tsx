@@ -57,6 +57,9 @@ export default async function AgingQueue() {
           ))}
         </ul>
       )}
+      <p className="mt-4 pt-3 border-t border-border text-[11px] leading-relaxed text-muted-foreground">
+        {t("legend")}
+      </p>
     </div>
   );
 }
