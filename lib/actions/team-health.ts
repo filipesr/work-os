@@ -43,6 +43,13 @@ export interface BlockedItem {
   waitingOn: string[];
 }
 
+export interface SystemConstraint {
+  stageId: string;
+  stageName: string;
+  blockedTaskCount: number; // distinct downstream tasks waiting on this stage
+  totalWaitHours: number; // accumulated wait of those blocked items
+}
+
 /** Median of a numeric list (0 for empty). Pure helper. */
 export function median(values: number[]): number {
   if (values.length === 0) return 0;
@@ -227,4 +234,99 @@ export async function getBlockedStages(teamIds?: string[]): Promise<BlockedItem[
       };
     })
     .sort((a, b) => b.ageHours - a.ageHours);
+}
+
+/**
+ * The system constraint (Theory of Constraints): the single UNFINISHED
+ * prerequisite stage that most blocks downstream work right now — i.e. the
+ * inversion of getBlockedStages' `waitingOn`. Each blocked item's wait time is
+ * attributed to each of its pending prerequisites; the prerequisite with the
+ * most accumulated downstream wait (tiebreak: most distinct tasks) is the
+ * constraint. Finishing work there unblocks the most/longest-waiting work,
+ * which — per ToC — is the fastest way to raise system throughput. Returns null
+ * when nothing is blocked (no active constraint). Scoped like getBlockedStages
+ * (by the blocked stage's team); the constraint itself may belong to any team.
+ */
+export async function getSystemConstraint(teamIds?: string[]): Promise<SystemConstraint | null> {
+  await requireManagerOrAdmin();
+  const scope = teamIds ?? (await resolveTeamIds());
+  const now = Date.now();
+
+  const blocked = await prisma.taskActiveStage.findMany({
+    where: { status: "BLOCKED", stage: { defaultTeamId: { in: scope } } },
+    select: {
+      stageId: true,
+      activatedAt: true,
+      blockedAt: true,
+      task: { select: { id: true } },
+    },
+  });
+  if (blocked.length === 0) return null;
+
+  const taskIds = [...new Set(blocked.map((b) => b.task.id))];
+  const blockedStageIds = [...new Set(blocked.map((b) => b.stageId))];
+
+  const [completedRows, prereqRows] = await Promise.all([
+    prisma.taskActiveStage.findMany({
+      where: { taskId: { in: taskIds }, status: "COMPLETED" },
+      select: { taskId: true, stageId: true },
+    }),
+    prisma.stageDependency.findMany({
+      where: { stageId: { in: blockedStageIds } },
+      select: { stageId: true, dependsOnStageId: true },
+    }),
+  ]);
+
+  const completedByTask = new Map<string, Set<string>>();
+  for (const c of completedRows) {
+    const set = completedByTask.get(c.taskId) ?? new Set<string>();
+    set.add(c.stageId);
+    completedByTask.set(c.taskId, set);
+  }
+  const prereqsByStage = new Map<string, string[]>();
+  for (const p of prereqRows) {
+    const arr = prereqsByStage.get(p.stageId) ?? [];
+    arr.push(p.dependsOnStageId);
+    prereqsByStage.set(p.stageId, arr);
+  }
+
+  // Attribute each blocked item's wait to each of its PENDING prerequisites.
+  const tally = new Map<string, { tasks: Set<string>; waitHours: number }>();
+  for (const b of blocked) {
+    const completed = completedByTask.get(b.task.id) ?? new Set<string>();
+    const waitHours = (now - (b.blockedAt ?? b.activatedAt).getTime()) / 3.6e6;
+    const pending = (prereqsByStage.get(b.stageId) ?? []).filter((dep) => !completed.has(dep));
+    for (const depId of pending) {
+      const agg = tally.get(depId) ?? { tasks: new Set<string>(), waitHours: 0 };
+      agg.tasks.add(b.task.id);
+      agg.waitHours += waitHours;
+      tally.set(depId, agg);
+    }
+  }
+  if (tally.size === 0) return null;
+
+  let bestId: string | null = null;
+  let best = { tasks: new Set<string>(), waitHours: 0 };
+  for (const [id, agg] of tally) {
+    const wins =
+      agg.waitHours > best.waitHours ||
+      (agg.waitHours === best.waitHours && agg.tasks.size > best.tasks.size);
+    if (wins) {
+      bestId = id;
+      best = agg;
+    }
+  }
+  if (!bestId) return null;
+
+  const stage = await prisma.templateStage.findUnique({
+    where: { id: bestId },
+    select: { name: true },
+  });
+
+  return {
+    stageId: bestId,
+    stageName: stage?.name ?? "—",
+    blockedTaskCount: best.tasks.size,
+    totalWaitHours: best.waitHours,
+  };
 }

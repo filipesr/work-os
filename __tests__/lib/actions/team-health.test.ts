@@ -7,7 +7,7 @@ vi.mock("@/lib/prisma", () => ({
     team: { findMany: vi.fn() },
     taskActiveStage: { findMany: vi.fn() },
     stageDependency: { findMany: vi.fn() },
-    templateStage: { findMany: vi.fn() },
+    templateStage: { findMany: vi.fn(), findUnique: vi.fn() },
   },
 }));
 vi.mock("@prisma/client", () => ({
@@ -214,5 +214,65 @@ describe("getBlockedStages", () => {
     expect(qc.waitingOn).toEqual(["Dev"]); // Dev not completed
     const seo = items.find((i) => i.stageName === "SEO")!;
     expect(seo.waitingOn).toEqual([]); // Design completed
+  });
+});
+
+import { getSystemConstraint } from "@/lib/actions/team-health";
+
+describe("getSystemConstraint", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns null when nothing is blocked", async () => {
+    asManager();
+    db.taskActiveStage.findMany.mockResolvedValueOnce([] as never);
+    expect(await getSystemConstraint()).toBeNull();
+  });
+
+  it("picks the pending prerequisite with the most accumulated downstream wait", async () => {
+    asManager();
+    const h = (n: number) => new Date(Date.now() - n * 3.6e6);
+    // Two tasks blocked; both wait on sDev (unmet). t1 also waits on sArt.
+    db.taskActiveStage.findMany
+      // blocked stages in scope
+      .mockResolvedValueOnce([
+        { stageId: "sQC", activatedAt: h(100), blockedAt: h(30), task: { id: "t1" } },
+        { stageId: "sQC", activatedAt: h(100), blockedAt: h(20), task: { id: "t2" } },
+      ] as never)
+      // completed stages for involved tasks (none)
+      .mockResolvedValueOnce([] as never);
+    db.stageDependency.findMany.mockResolvedValue([
+      { stageId: "sQC", dependsOnStageId: "sDev" },
+      { stageId: "sQC", dependsOnStageId: "sArt" },
+    ] as never);
+    db.templateStage.findUnique.mockResolvedValue({ name: "Dev" } as never);
+
+    const c = await getSystemConstraint();
+    // sDev blocks both t1+t2 (30+20=50h); sArt blocks both too (same) — but only
+    // the winner is returned; tiebreak by task count is equal, so waitHours ties.
+    // Here sDev and sArt both = 50h/2 tasks; Map insertion order keeps first (sDev).
+    expect(c).not.toBeNull();
+    expect(c!.stageName).toBe("Dev");
+    expect(c!.blockedTaskCount).toBe(2);
+    expect(Math.round(c!.totalWaitHours)).toBe(50);
+  });
+
+  it("excludes prerequisites already completed for that task", async () => {
+    asManager();
+    const h = (n: number) => new Date(Date.now() - n * 3.6e6);
+    db.taskActiveStage.findMany
+      .mockResolvedValueOnce([
+        { stageId: "sQC", activatedAt: h(100), blockedAt: h(40), task: { id: "t1" } },
+      ] as never)
+      // sDone already completed for t1 → not a blocker
+      .mockResolvedValueOnce([{ taskId: "t1", stageId: "sDone" }] as never);
+    db.stageDependency.findMany.mockResolvedValue([
+      { stageId: "sQC", dependsOnStageId: "sDone" },
+      { stageId: "sQC", dependsOnStageId: "sDev" },
+    ] as never);
+    db.templateStage.findUnique.mockResolvedValue({ name: "Dev" } as never);
+
+    const c = await getSystemConstraint();
+    expect(c!.stageName).toBe("Dev"); // sDone excluded
+    expect(c!.blockedTaskCount).toBe(1);
   });
 });

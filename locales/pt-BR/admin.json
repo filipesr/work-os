@@ -530,6 +530,11 @@
       "empty": "Nada bloqueado. 🎉",
       "waitingOn": "Aguardando: {stages}",
       "waitingGeneric": "Aguardando etapas anteriores"
+    },
+    "constraint": {
+      "title": "Restrição do sistema",
+      "detail": "{tasks} tarefa(s) represada(s) · {wait} de espera acumulada",
+      "hint": "Priorize concluir trabalho nesta etapa: é o que mais destrava o fluxo agora."
     }
   }
 }
