@@ -491,7 +491,17 @@
       "empty": "Sem membros no time.",
       "overloaded": "Sobrecarga",
       "idle": "Ocioso",
-      "activeStages": "{count, plural, one {# ativa} other {# ativas}}"
+      "activeStages": "{count, plural, one {# ativa} other {# ativas}}",
+      "summary": {
+        "total": "Colaboradores",
+        "overloaded": "Sobrecarga",
+        "idle": "Ociosos",
+        "medianWip": "WIP (mediana)"
+      },
+      "overloadedTitle": "Sobrecarregados ({count})",
+      "idleTitle": "Ociosos ({count})",
+      "balanced": "Carga equilibrada — ninguém sobrecarregado ou ocioso.",
+      "seeAll": "Ver todos ({count})"
     },
     "aging": {
       "title": "Envelhecendo / em risco",

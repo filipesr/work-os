@@ -72,9 +72,6 @@ export default async function AdminDashboardPage() {
         <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      {/* Team-health cockpit */}
-      <AdminHealthSection />
-
       {/* Statistics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
         <StatCard title={t("stats.users")} value={userCount} />
@@ -83,6 +80,9 @@ export default async function AdminDashboardPage() {
         <StatCard title={t("stats.activeTasks")} value={activeTaskCount} />
         <StatCard title={t("stats.templates")} value={templateCount} />
       </div>
+
+      {/* Team-health cockpit */}
+      <AdminHealthSection />
 
       {/* Navigation Hub */}
       <div className="mb-8">
