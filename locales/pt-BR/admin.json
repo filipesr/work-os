@@ -529,7 +529,14 @@
       "title": "Bloqueados & esperando",
       "empty": "Nada bloqueado. 🎉",
       "waitingOn": "Aguardando: {stages}",
-      "waitingGeneric": "Aguardando etapas anteriores"
+      "waitingGeneric": "Aguardando etapas anteriores",
+      "risk": {
+        "low": "Risco baixo",
+        "medium": "Risco médio",
+        "high": "Risco alto",
+        "deps": "{count} dependência(s)",
+        "tooltip": "Cada dependência pendente compõe a chance de atraso — quanto mais, maior o risco."
+      }
     },
     "constraint": {
       "title": "Restrição do sistema",

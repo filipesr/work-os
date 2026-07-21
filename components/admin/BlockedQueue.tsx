@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getBlockedStages, QUEUE_LIMIT } from "@/lib/actions/team-health";
-import { formatAge } from "@/lib/team-health-format";
+import { formatAge, dependencyRiskLevel } from "@/lib/team-health-format";
+
+const RISK_CLASS: Record<"low" | "medium" | "high", string> = {
+  low: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+  medium: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  high: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+};
 
 export default async function BlockedQueue() {
   const t = await getTranslations("admin.health.blocked");
@@ -24,8 +30,17 @@ export default async function BlockedQueue() {
                   <span className="truncate text-sm font-medium text-foreground">
                     {i.taskTitle}
                   </span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {formatAge(i.ageHours)}
+                  <span className="flex shrink-0 items-center gap-2">
+                    {i.waitingOn.length > 0 && (
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${RISK_CLASS[dependencyRiskLevel(i.waitingOn.length)]}`}
+                        title={t("risk.tooltip")}
+                      >
+                        {t(`risk.${dependencyRiskLevel(i.waitingOn.length)}`)} ·{" "}
+                        {t("risk.deps", { count: i.waitingOn.length })}
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground">{formatAge(i.ageHours)}</span>
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground">

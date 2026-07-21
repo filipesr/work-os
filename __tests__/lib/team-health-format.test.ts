@@ -1,5 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { formatAge, loadSegments, stageAgingRatio } from "@/lib/team-health-format";
+import {
+  formatAge,
+  loadSegments,
+  stageAgingRatio,
+  dependencyRiskLevel,
+} from "@/lib/team-health-format";
+
+describe("dependencyRiskLevel", () => {
+  it("0–1 pending → low", () => {
+    expect(dependencyRiskLevel(0)).toBe("low");
+    expect(dependencyRiskLevel(1)).toBe("low");
+  });
+  it("2 pending → medium", () => expect(dependencyRiskLevel(2)).toBe("medium"));
+  it("3+ pending → high", () => {
+    expect(dependencyRiskLevel(3)).toBe("high");
+    expect(dependencyRiskLevel(7)).toBe("high");
+  });
+});
 
 describe("stageAgingRatio", () => {
   const now = Date.now();

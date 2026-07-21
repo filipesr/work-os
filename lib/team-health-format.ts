@@ -8,6 +8,20 @@ export function formatAge(hours: number): string {
   return `${d}d ${h}h`;
 }
 
+/**
+ * Dependency risk for a blocked item, from the number of PENDING prerequisites
+ * it is still waiting on. Grounded in the compounding-dependency heuristic
+ * (Magennis, via DeGrandis): each unmet dependency multiplies the chance of
+ * being late, so more pending prerequisites = disproportionately higher risk.
+ * Qualitative on purpose — we surface a signal, not a false-precision estimate.
+ *   0–1 pending → low · 2 → medium · 3+ → high
+ */
+export function dependencyRiskLevel(pendingDeps: number): "low" | "medium" | "high" {
+  if (pendingDeps >= 3) return "high";
+  if (pendingDeps === 2) return "medium";
+  return "low";
+}
+
 type LoadRow = { count: number; onTrack: number; dueSoon: number; overdue: number };
 
 /** Bar segments (percent of the person's WIP) ordered overdue → dueSoon → onTrack. */
