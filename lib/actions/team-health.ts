@@ -60,3 +60,55 @@ export async function resolveTeamIds(): Promise<string[]> {
   });
   return dbUser?.teams.map((t) => t.id) ?? [];
 }
+
+export async function getTeamMemberLoad(teamIds?: string[]): Promise<MemberLoad[]> {
+  await requireManagerOrAdmin();
+  const scope = teamIds ?? (await resolveTeamIds());
+  const { getDueState } = await import("@/lib/dates");
+
+  const members = await prisma.user.findMany({
+    where: { teams: { some: { id: { in: scope } } } },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  const memberIds = members.map((m) => m.id);
+
+  const stages = await prisma.taskActiveStage.findMany({
+    where: { status: "ACTIVE", assigneeId: { in: memberIds } },
+    select: { assigneeId: true, task: { select: { dueDate: true } } },
+  });
+
+  const tally = new Map<
+    string,
+    { count: number; onTrack: number; dueSoon: number; overdue: number }
+  >();
+  for (const m of members) tally.set(m.id, { count: 0, onTrack: 0, dueSoon: 0, overdue: 0 });
+  for (const s of stages) {
+    if (!s.assigneeId) continue;
+    const b = tally.get(s.assigneeId);
+    if (!b) continue;
+    b.count++;
+    const state = getDueState(s.task.dueDate);
+    if (state === "overdue") b.overdue++;
+    else if (state === "dueSoon") b.dueSoon++;
+    else b.onTrack++;
+  }
+
+  const med = median(members.map((m) => tally.get(m.id)!.count));
+
+  return members
+    .map((m) => {
+      const b = tally.get(m.id)!;
+      return {
+        userId: m.id,
+        name: m.name ?? "—",
+        count: b.count,
+        onTrack: b.onTrack,
+        dueSoon: b.dueSoon,
+        overdue: b.overdue,
+        overloaded: b.count >= OVERLOAD_CEILING || b.count >= med + OVERLOAD_MARGIN,
+        idle: b.count <= IDLE_THRESHOLD,
+      };
+    })
+    .sort((a, b) => b.count - a.count);
+}
