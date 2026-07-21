@@ -512,7 +512,10 @@
       "drawer": {
         "title": "Tareas activas — {name}",
         "loading": "Cargando…",
-        "empty": "Sin etapas activas."
+        "empty": "Sin etapas activas.",
+        "createdAt": "Creada el",
+        "assignedAt": "Asignada el",
+        "dueDate": "Vencimiento"
       }
     },
     "aging": {

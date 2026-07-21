@@ -28,7 +28,12 @@ export interface MemberStage {
   taskId: string;
   taskTitle: string;
   stageName: string;
-  /** ISO string (serialized across the server-action boundary), or null. */
+  /** Task creation date (ISO string). */
+  createdAt: string;
+  /** When this stage was activated for the collaborator — proxy for the
+   * assignment date (ISO string). */
+  assignedAt: string;
+  /** Task due date (ISO string), or null. */
   dueDate: string | null;
   dueState: "overdue" | "dueSoon" | "none";
 }

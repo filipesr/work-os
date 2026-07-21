@@ -174,20 +174,51 @@ export function TeamLoadBalanceClient({ rows, summary }: { rows: MemberLoad[]; s
           ) : (
             <ul className="divide-y divide-border">
               {stages.map((s) => (
-                <li key={`${s.taskId}-${s.stageName}`} className="py-2">
+                <li key={`${s.taskId}-${s.stageName}`} className="py-3">
                   <Link
                     href={`/tasks/${s.taskId}`}
-                    className="block rounded-md px-2 py-1 -mx-2 hover:bg-accent"
+                    className="block rounded-md px-2 py-1.5 -mx-2 hover:bg-accent"
                   >
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
                       <span className="truncate text-sm font-medium text-foreground">
                         {s.taskTitle}
                       </span>
                       <span className="shrink-0 text-xs text-muted-foreground">
-                        {formatDisplayDate(s.dueDate)}
+                        · {s.stageName}
                       </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">{s.stageName}</span>
+                    <dl className="mt-1.5 grid grid-cols-3 gap-2">
+                      <div>
+                        <dt className="text-[11px] text-muted-foreground">
+                          {t("drawer.createdAt")}
+                        </dt>
+                        <dd className="text-xs font-medium text-foreground">
+                          {formatDisplayDate(s.createdAt)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] text-muted-foreground">
+                          {t("drawer.assignedAt")}
+                        </dt>
+                        <dd className="text-xs font-medium text-foreground">
+                          {formatDisplayDate(s.assignedAt)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] text-muted-foreground">{t("drawer.dueDate")}</dt>
+                        <dd
+                          className={`text-xs font-medium ${
+                            s.dueState === "overdue"
+                              ? "text-red-700"
+                              : s.dueState === "dueSoon"
+                                ? "text-yellow-700"
+                                : "text-foreground"
+                          }`}
+                        >
+                          {formatDisplayDate(s.dueDate)}
+                        </dd>
+                      </div>
+                    </dl>
                   </Link>
                 </li>
               ))}

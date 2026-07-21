@@ -512,7 +512,10 @@
       "drawer": {
         "title": "Tarefas ativas — {name}",
         "loading": "Carregando…",
-        "empty": "Sem etapas ativas."
+        "empty": "Sem etapas ativas.",
+        "createdAt": "Criada em",
+        "assignedAt": "Atribuída em",
+        "dueDate": "Vencimento"
       }
     },
     "aging": {
