@@ -90,13 +90,20 @@ export async function createTask(formData: FormData) {
       },
     });
 
-    await createTaskStages(tx, {
+    const { initialAssigned } = await createTaskStages(tx, {
       taskId: newTask.id,
       templateId,
       userId,
       assignments,
       selectedStageIds,
     });
+
+    // Pré-atribuir a etapa inicial na criação já coloca a tarefa em andamento:
+    // o fluxo de "reivindicar" (que promove BACKLOG→IN_PROGRESS) não roda quando
+    // a etapa já nasce com responsável, então a tarefa ficaria presa em BACKLOG.
+    if (initialAssigned) {
+      await tx.task.update({ where: { id: newTask.id }, data: { status: "IN_PROGRESS" } });
+    }
 
     return newTask;
   });

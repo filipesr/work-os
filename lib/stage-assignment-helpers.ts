@@ -126,7 +126,7 @@ export async function createTaskStages(
     assignments?: Record<string, string>;
     selectedStageIds?: ReadonlySet<string>;
   }
-): Promise<void> {
+): Promise<{ initialAssigned: boolean }> {
   const { taskId, templateId, userId, assignments = {}, selectedStageIds } = args;
 
   const stages = await tx.templateStage.findMany({
@@ -155,11 +155,13 @@ export async function createTaskStages(
 
   // Lowest order among the INCLUDED stages (already sorted asc) is the entry point.
   const startStageId = included[0].id;
+  let initialAssigned = false;
 
   for (const stage of included) {
     const isStart = stage.id === startStageId;
     const requested = assignments[stage.id];
     const assigneeId = requested && isValidStageAssignee(stage, requested) ? requested : null;
+    if (isStart && assigneeId) initialAssigned = true;
 
     await tx.taskActiveStage.create({
       data: {
@@ -177,4 +179,6 @@ export async function createTaskStages(
       });
     }
   }
+
+  return { initialAssigned };
 }

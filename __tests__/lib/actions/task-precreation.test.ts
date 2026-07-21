@@ -72,4 +72,36 @@ describe("createTaskStages", () => {
     expect(created[0].assigneeId).toBe("u1");
     expect(created[1].assigneeId).toBe(null);
   });
+
+  it("retorna initialAssigned=true quando a etapa inicial nasce atribuída a um membro válido", async () => {
+    const tx = makeTx(stages);
+    const result = await createTaskStages(tx, {
+      taskId: "task1",
+      templateId: "tmpl1",
+      userId: "creator",
+      assignments: { s1: "u1" },
+    });
+    expect(result).toEqual({ initialAssigned: true });
+  });
+
+  it("retorna initialAssigned=false sem atribuição na etapa inicial", async () => {
+    const tx = makeTx(stages);
+    const result = await createTaskStages(tx, {
+      taskId: "task1",
+      templateId: "tmpl1",
+      userId: "creator",
+    });
+    expect(result).toEqual({ initialAssigned: false });
+  });
+
+  it("retorna initialAssigned=false quando a atribuição da inicial é inválida (não-membro)", async () => {
+    const tx = makeTx(stages);
+    const result = await createTaskStages(tx, {
+      taskId: "task1",
+      templateId: "tmpl1",
+      userId: "creator",
+      assignments: { s1: "stranger" },
+    });
+    expect(result).toEqual({ initialAssigned: false });
+  });
 });
