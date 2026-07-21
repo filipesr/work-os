@@ -26,6 +26,14 @@
     "days": "días",
     "hours": "horas"
   },
+  "flowEfficiency": {
+    "title": "Eficiencia de Flujo por Etapa",
+    "description": "De la vida de la etapa, cuánto fue trabajo activo vs. espera por dependencias. Baja eficiencia = la etapa pasa la mayor parte del tiempo detenida esperando, no siendo trabajada.",
+    "noData": "Aún sin datos de flujo (las transiciones se registran a partir de ahora)",
+    "stageHeader": "Etapa",
+    "efficiencyHeader": "Eficiencia",
+    "waitingHours": "{hours}h esperando"
+  },
   "avgTimePerStage": {
     "title": "Tiempo Promedio por Etapa",
     "noData": "No se encontraron datos de etapa",

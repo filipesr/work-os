@@ -16,6 +16,7 @@ import {
   isValidStageAssignee,
   computeStageReadiness,
 } from "@/lib/stage-assignment-helpers";
+import { recordStageTransition, recordStageTransitions } from "@/lib/stage-transitions";
 import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
 // Re-export types for backward compatibility
@@ -694,6 +695,7 @@ export async function activateNextStages(taskId: string, completedStageId: strin
       where: { taskId, stageId: completedStageId, status: "ACTIVE" },
       data: { status: "COMPLETED", completedAt: new Date() },
     });
+    await recordStageTransition(prisma, taskId, completedStageId, "COMPLETED");
 
     // 2. Current rows for this task = the INCLUDED stages. A template stage
     //    without a row here was left out of the task (optional/deselected).
@@ -748,6 +750,7 @@ export async function activateNextStages(taskId: string, completedStageId: strin
         // Carimba blockedAt ao ENTRAR em BLOCKED (severidade real de bloqueio).
         data: next === "BLOCKED" ? { status: next, blockedAt: new Date() } : { status: next },
       });
+      await recordStageTransition(prisma, taskId, stageId, next);
       const stage = stageById.get(stageId);
       if (!stage) continue;
       if (next === "ACTIVE") activated.push(stage);
@@ -1589,16 +1592,27 @@ export async function revertTaskStage(taskId: string, revertToStageId: string, c
       }
 
       // 4b. Resetar TODAS as etapas a partir da alvo (inclusive posteriores) para INACTIVE.
+      const resetRows = await tx.taskActiveStage.findMany({
+        where: { taskId, stage: { order: { gt: targetStage.order } } },
+        select: { stageId: true },
+      });
       await tx.taskActiveStage.updateMany({
         where: { taskId, stage: { order: { gt: targetStage.order } } },
         data: { status: "INACTIVE", completedAt: null },
       });
+      await recordStageTransitions(
+        tx,
+        taskId,
+        resetRows.map((r) => r.stageId),
+        "INACTIVE"
+      );
 
       // 4c. Reativar a etapa-alvo (volta ao backlog: assignee preservado pode confundir → limpa).
       await tx.taskActiveStage.update({
         where: { taskId_stageId: { taskId, stageId: revertToStageId } },
         data: { status: "ACTIVE", assigneeId: null, completedAt: null },
       });
+      await recordStageTransition(tx, taskId, revertToStageId, "ACTIVE");
 
       // 4d. Novo log de entrada na etapa-alvo (em andamento → status null).
       await tx.taskStageLog.create({

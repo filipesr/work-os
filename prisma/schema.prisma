@@ -243,11 +243,12 @@ model TemplateStage {
   // Relations
   dependencies   StageDependency[] @relation("DependsOn")
   dependents     StageDependency[] @relation("Stage")
-  activeTasks    TaskActiveStage[] @relation("ActiveTasks")
-  stageLogs      TaskStageLog[]
-  timeLogs       TimeLog[]
-  activityLogs   ActivityLog[]
-  stageArtifacts TaskArtifact[]
+  activeTasks      TaskActiveStage[] @relation("ActiveTasks")
+  stageLogs        TaskStageLog[]
+  timeLogs         TimeLog[]
+  activityLogs     ActivityLog[]
+  stageArtifacts   TaskArtifact[]
+  stageTransitions StageTransition[]
 }
 
 // This table defines the dependencies: "Stage A must be complete before Stage B"
@@ -283,12 +284,13 @@ model Task {
   assignee   User?   @relation("Assignee", fields: [assigneeId], references: [id], onUpdate: NoAction, onDelete: SetNull)
 
   // Task History (all in separate tables)
-  activeStages TaskActiveStage[]
-  comments     TaskComment[]
-  artifacts    TaskArtifact[]
-  stageLogs    TaskStageLog[]
-  timeLogs     TimeLog[]
-  activityLogs ActivityLog[]
+  activeStages     TaskActiveStage[]
+  comments         TaskComment[]
+  artifacts        TaskArtifact[]
+  stageLogs        TaskStageLog[]
+  timeLogs         TimeLog[]
+  activityLogs     ActivityLog[]
+  stageTransitions StageTransition[]
 }
 
 // TaskActiveStage: Represents active/blocked/completed stages for a task
@@ -494,6 +496,28 @@ model TaskStageLog {
   stage   TemplateStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
   userId  String // The user who moved the task into this stage
   user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// StageTransition: append-only log of every ActiveStageStatus change for a
+// (task, stage). One row is written each time a stage ENTERS a status (incl.
+// creation). Durations in each status are reconstructed by pairing consecutive
+// rows ordered by `at` (see lib/stage-transitions.ts). This is what enables the
+// exact flow-efficiency metric (ACTIVE "touched" vs BLOCKED "waiting"), which
+// the single overwritable timestamps on TaskActiveStage cannot retain across
+// multiple block/unblock or revert cycles.
+model StageTransition {
+  id     String            @id @default(cuid())
+  status ActiveStageStatus // the status the stage entered at `at`
+  at     DateTime          @default(now())
+
+  taskId  String
+  task    Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  stageId String
+  stage   TemplateStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  // Reconstruction always scopes by (taskId, stageId) ordered by `at`.
+  @@index([taskId, stageId, at])
+  @@index([stageId])
 }
 
 // --- 6. Real-time Activity Tracking Model ---

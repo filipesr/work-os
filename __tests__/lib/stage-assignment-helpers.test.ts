@@ -34,6 +34,10 @@ describe("createTaskStages — seleção de etapas", () => {
       templateStage: { findMany: vi.fn().mockResolvedValue(stages) },
       taskActiveStage: { create },
       taskStageLog: { create: vi.fn().mockResolvedValue({}) },
+      stageTransition: {
+        create: vi.fn().mockResolvedValue({}),
+        createMany: vi.fn().mockResolvedValue({}),
+      },
     };
     const createdData = () =>
       create.mock.calls.map((c) => c[0].data as { stageId: string; status: string });

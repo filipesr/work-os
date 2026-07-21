@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { Prisma } from "@prisma/client";
 import { formatISODate, currentMonthSaoPaulo, monthKeySaoPaulo } from "@/lib/dates";
+import { statusDurations, type TransitionRow } from "@/lib/stage-transitions";
 import {
   productivityFiltersSchema,
   performanceFiltersSchema,
@@ -358,6 +359,16 @@ export interface LeadTimeMetrics {
   count: number;
 }
 
+export interface FlowEfficiencyByStage {
+  stageId: string;
+  stageName: string;
+  templateName: string;
+  flowEfficiency: number; // 0..1 — Σ ACTIVE ÷ Σ (ACTIVE + BLOCKED), throughput-weighted
+  activeHours: number; // total "touched" time across instances
+  blockedHours: number; // total "waiting on dependencies" time across instances
+  count: number; // stage instances contributing (with reached time > 0)
+}
+
 /**
  * Calculate average time spent in each workflow stage
  * This identifies bottlenecks in the workflow
@@ -424,6 +435,126 @@ export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
 
   // Sort by average duration (descending) to show bottlenecks first
   return results.sort((a, b) => b.averageDurationHours - a.averageDurationHours);
+}
+
+/**
+ * Flow efficiency per stage: of the time a stage was "reached", what fraction
+ * was ACTIVE ("touched") vs BLOCKED ("waiting on dependencies"). Reconstructed
+ * from the StageTransition log (statusDurations), aggregated throughput-weighted
+ * per stage template. A LOW number means the stage spends most of its life
+ * waiting, not being worked — the opposite fix from a stage that is simply slow.
+ *
+ * When a date window is set, only instances COMPLETED within it are counted
+ * (mirrors lead-time-by-completion); without a window, every reached instance
+ * counts (including still-open ones, which accrue up to now). Sorted worst
+ * (lowest efficiency = most waiting) first.
+ */
+export async function getFlowEfficiencyByStage(filters: PerformanceFilters = {}) {
+  await requireManagerOrAdmin();
+  filters = performanceFiltersSchema.parse(filters);
+
+  const stageFilter: Prisma.TemplateStageWhereInput = {};
+  if (filters.templateId) stageFilter.templateId = filters.templateId;
+  if (filters.teamId) stageFilter.defaultTeamId = filters.teamId;
+
+  const taskFilter: Prisma.TaskWhereInput = {};
+  if (filters.projectId) taskFilter.projectId = filters.projectId;
+  if (filters.clientId) taskFilter.project = { clientId: filters.clientId };
+
+  const where: Prisma.StageTransitionWhereInput = {};
+  if (Object.keys(stageFilter).length > 0) where.stage = stageFilter;
+  if (Object.keys(taskFilter).length > 0) where.task = taskFilter;
+
+  const rows = await prisma.stageTransition.findMany({
+    where,
+    select: {
+      taskId: true,
+      stageId: true,
+      status: true,
+      at: true,
+      stage: { select: { name: true, template: { select: { name: true } } } },
+    },
+    orderBy: { at: "asc" },
+  });
+
+  // Group transitions by stage INSTANCE (task + stage).
+  type Instance = {
+    stageId: string;
+    stageName: string;
+    templateName: string;
+    rows: TransitionRow[];
+  };
+  const byInstance = new Map<string, Instance>();
+  for (const r of rows) {
+    const key = `${r.taskId}::${r.stageId}`;
+    let inst = byInstance.get(key);
+    if (!inst) {
+      inst = {
+        stageId: r.stageId,
+        stageName: r.stage.name,
+        templateName: r.stage.template.name,
+        rows: [],
+      };
+      byInstance.set(key, inst);
+    }
+    inst.rows.push({ status: r.status, at: r.at });
+  }
+
+  const now = Date.now();
+  const hasWindow = Boolean(filters.startDate || filters.endDate);
+  const perStage = new Map<
+    string,
+    {
+      stageId: string;
+      stageName: string;
+      templateName: string;
+      active: number;
+      blocked: number;
+      count: number;
+    }
+  >();
+
+  for (const inst of byInstance.values()) {
+    if (hasWindow) {
+      // Only instances completed within the window count in a windowed report.
+      const completed = [...inst.rows].reverse().find((r) => r.status === "COMPLETED");
+      if (!completed) continue;
+      const t = completed.at.getTime();
+      if (filters.startDate && t < filters.startDate.getTime()) continue;
+      if (filters.endDate && t > filters.endDate.getTime()) continue;
+    }
+
+    const d = statusDurations(inst.rows, now);
+    if (d.ACTIVE + d.BLOCKED <= 0) continue;
+
+    let agg = perStage.get(inst.stageId);
+    if (!agg) {
+      agg = {
+        stageId: inst.stageId,
+        stageName: inst.stageName,
+        templateName: inst.templateName,
+        active: 0,
+        blocked: 0,
+        count: 0,
+      };
+      perStage.set(inst.stageId, agg);
+    }
+    agg.active += d.ACTIVE;
+    agg.blocked += d.BLOCKED;
+    agg.count += 1;
+  }
+
+  const results: FlowEfficiencyByStage[] = Array.from(perStage.values()).map((a) => ({
+    stageId: a.stageId,
+    stageName: a.stageName,
+    templateName: a.templateName,
+    flowEfficiency: a.active / (a.active + a.blocked),
+    activeHours: a.active / 3.6e6,
+    blockedHours: a.blocked / 3.6e6,
+    count: a.count,
+  }));
+
+  return results.sort((a, b) => a.flowEfficiency - b.flowEfficiency);
 }
 
 /**

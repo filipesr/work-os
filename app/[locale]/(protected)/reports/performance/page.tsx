@@ -6,11 +6,12 @@ import {
   getAverageTimePerStage,
   getReworkRateByStage,
   getLeadTimeMetrics,
+  getFlowEfficiencyByStage,
   getAvailablePerformanceMonths,
   type PerformanceFilters,
 } from "@/lib/actions/reporting";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, TrendingDown, AlertTriangle, Timer, Activity } from "lucide-react";
+import { ArrowLeft, TrendingDown, AlertTriangle, Timer, Activity, Gauge } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { ExportButtons } from "@/components/reports/ExportButtons";
 import { ReportFilterBar } from "@/components/reports/ReportFilterBar";
@@ -192,6 +193,60 @@ async function AvgTimeSection({ filters, t }: { filters: PerformanceFilters; t: 
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+async function FlowEfficiencySection({ filters, t }: { filters: PerformanceFilters; t: T }) {
+  const flowByStage = await getFlowEfficiencyByStage(filters);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Gauge className="h-5 w-5" />
+          <CardTitle>{t("flowEfficiency.title")}</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground mb-4">{t("flowEfficiency.description")}</p>
+        {flowByStage.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("flowEfficiency.noData")}</p>
+        ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-2 pb-2 border-b font-semibold text-sm">
+              <div className="col-span-2">{t("flowEfficiency.stageHeader")}</div>
+              <div className="text-right">{t("flowEfficiency.efficiencyHeader")}</div>
+            </div>
+            {flowByStage.map((stage) => {
+              const pct = Math.round(stage.flowEfficiency * 100);
+              // Low efficiency = mostly waiting = the problem to surface.
+              const tone =
+                pct < 40
+                  ? "text-rose-600 dark:text-rose-400"
+                  : pct < 70
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-emerald-600 dark:text-emerald-400";
+              return (
+                <div key={stage.stageId} className="grid grid-cols-3 gap-2 text-sm items-center">
+                  <div className="col-span-2">
+                    <div className="font-medium truncate">{stage.stageName}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {stage.templateName} • {stage.count}x •{" "}
+                      {t("flowEfficiency.waitingHours", {
+                        hours: stage.blockedHours.toFixed(0),
+                      })}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-lg font-bold ${tone}`}>{pct}%</div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </CardContent>
@@ -384,9 +439,13 @@ export default async function PerformanceReportPage({
           <AvgTimeSection filters={filters} t={t} />
         </Suspense>
         <Suspense fallback={<CardSkeleton />}>
-          <ReworkSection filters={filters} t={t} />
+          <FlowEfficiencySection filters={filters} t={t} />
         </Suspense>
       </div>
+
+      <Suspense fallback={<CardSkeleton />}>
+        <ReworkSection filters={filters} t={t} />
+      </Suspense>
 
       {/* Quality Issues Alert */}
       <Suspense fallback={null}>

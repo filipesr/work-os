@@ -15,6 +15,10 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn().mockResolvedValue({ templateId: "tpl" }),
       findMany: vi.fn().mockResolvedValue([]),
     },
+    stageTransition: {
+      create: vi.fn().mockResolvedValue({}),
+      createMany: vi.fn().mockResolvedValue({}),
+    },
   },
   prisma: {},
 }));

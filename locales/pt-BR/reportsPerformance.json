@@ -32,6 +32,14 @@
     "stageHeader": "Etapa",
     "timeHeader": "Tempo Médio"
   },
+  "flowEfficiency": {
+    "title": "Eficiência de Fluxo por Etapa",
+    "description": "Da vida da etapa, quanto foi trabalho ativo vs. espera por dependências. Baixa eficiência = a etapa passa a maior parte do tempo parada esperando, não sendo trabalhada.",
+    "noData": "Ainda sem dados de fluxo (as transições são registradas a partir de agora)",
+    "stageHeader": "Etapa",
+    "efficiencyHeader": "Eficiência",
+    "waitingHours": "{hours}h esperando"
+  },
   "reworkRate": {
     "title": "Taxa de Retrabalho por Etapa",
     "noData": "Nenhum dado de retrabalho encontrado",

@@ -15,6 +15,10 @@ function makeTx(stages: any[]) {
     templateStage: { findMany: vi.fn().mockResolvedValue(stages) },
     taskActiveStage: { create: vi.fn().mockResolvedValue({}) },
     taskStageLog: { create: vi.fn().mockResolvedValue({}) },
+    stageTransition: {
+      create: vi.fn().mockResolvedValue({}),
+      createMany: vi.fn().mockResolvedValue({}),
+    },
   } as any;
 }
 

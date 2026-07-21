@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { recordStageTransition } from "@/lib/stage-transitions";
 
 // Pure / server-only helpers for stage assignment. NOT a "use server" module:
 // it exports synchronous functions and a transaction-scoped helper that are
@@ -172,6 +173,9 @@ export async function createTaskStages(
         ...(assigneeId ? { assignedAt: new Date() } : {}),
       },
     });
+    // Anchor the transition log at creation so the first real transition pairs
+    // correctly (the entry stage starts ACTIVE; the rest start INACTIVE).
+    await recordStageTransition(tx, taskId, stage.id, isStart ? "ACTIVE" : "INACTIVE");
 
     if (isStart) {
       await tx.taskStageLog.create({

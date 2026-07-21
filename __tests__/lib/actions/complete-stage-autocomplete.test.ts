@@ -21,6 +21,10 @@ vi.mock("@/lib/prisma", () => ({
     },
     taskStageLog: { findFirst: vi.fn().mockResolvedValue(null), update: vi.fn() },
     taskComment: { create: vi.fn().mockResolvedValue({}) },
+    stageTransition: {
+      create: vi.fn().mockResolvedValue({}),
+      createMany: vi.fn().mockResolvedValue({}),
+    },
     user: { findUnique: vi.fn() },
   },
   prisma: {},
