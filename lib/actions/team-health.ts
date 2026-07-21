@@ -147,3 +147,76 @@ export async function getAgingStages(teamIds?: string[]): Promise<AgingItem[]> {
     .filter((i) => i.agingRatio >= AGING_ALERT_RATIO || i.dueState !== "none")
     .sort((a, b) => b.agingRatio - a.agingRatio);
 }
+
+export async function getBlockedStages(teamIds?: string[]): Promise<BlockedItem[]> {
+  await requireManagerOrAdmin();
+  const scope = teamIds ?? (await resolveTeamIds());
+  const now = Date.now();
+
+  const blocked = await prisma.taskActiveStage.findMany({
+    where: { status: "BLOCKED", stage: { defaultTeamId: { in: scope } } },
+    select: {
+      stageId: true,
+      activatedAt: true,
+      task: { select: { id: true, title: true } },
+      stage: { select: { name: true } },
+      assignee: { select: { name: true } },
+    },
+  });
+  if (blocked.length === 0) return [];
+
+  const taskIds = [...new Set(blocked.map((b) => b.task.id))];
+  const blockedStageIds = [...new Set(blocked.map((b) => b.stageId))];
+
+  const [completedRows, prereqRows] = await Promise.all([
+    prisma.taskActiveStage.findMany({
+      where: { taskId: { in: taskIds }, status: "COMPLETED" },
+      select: { taskId: true, stageId: true },
+    }),
+    prisma.stageDependency.findMany({
+      where: { stageId: { in: blockedStageIds } },
+      select: { stageId: true, dependsOnStageId: true },
+    }),
+  ]);
+
+  // task -> set of completed stage ids
+  const completedByTask = new Map<string, Set<string>>();
+  for (const c of completedRows) {
+    const set = completedByTask.get(c.taskId) ?? new Set<string>();
+    set.add(c.stageId);
+    completedByTask.set(c.taskId, set);
+  }
+  // blocked stage -> its prerequisite stage ids
+  const prereqsByStage = new Map<string, string[]>();
+  for (const p of prereqRows) {
+    const arr = prereqsByStage.get(p.stageId) ?? [];
+    arr.push(p.dependsOnStageId);
+    prereqsByStage.set(p.stageId, arr);
+  }
+  // names for prerequisite stages
+  const prereqIds = [...new Set(prereqRows.map((p) => p.dependsOnStageId))];
+  const names = prereqIds.length
+    ? await prisma.templateStage.findMany({
+        where: { id: { in: prereqIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const nameById = new Map(names.map((n) => [n.id, n.name]));
+
+  return blocked
+    .map((b): BlockedItem => {
+      const completed = completedByTask.get(b.task.id) ?? new Set<string>();
+      const waitingOn = (prereqsByStage.get(b.stageId) ?? [])
+        .filter((depId) => !completed.has(depId))
+        .map((depId) => nameById.get(depId) ?? "—");
+      return {
+        taskId: b.task.id,
+        taskTitle: b.task.title,
+        stageName: b.stage.name,
+        assigneeName: b.assignee?.name ?? null,
+        ageHours: (now - b.activatedAt.getTime()) / 3.6e6,
+        waitingOn,
+      };
+    })
+    .sort((a, b) => b.ageHours - a.ageHours);
+}

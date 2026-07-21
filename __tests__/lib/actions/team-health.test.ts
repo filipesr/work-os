@@ -147,3 +147,50 @@ describe("getAgingStages", () => {
     expect(items[0].dueState).toBe("overdue");
   });
 });
+
+import { getBlockedStages } from "@/lib/actions/team-health";
+
+describe("getBlockedStages", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("lists blocked stages with unmet prerequisites as waitingOn, sorted by age desc", async () => {
+    asManager();
+    const hoursAgo = (h: number) => new Date(Date.now() - h * 3.6e6);
+    // blocked stages query
+    db.taskActiveStage.findMany
+      .mockResolvedValueOnce([
+        {
+          stageId: "sQC",
+          activatedAt: hoursAgo(10),
+          task: { id: "t1", title: "A" },
+          stage: { name: "QC" },
+          assignee: { name: "Ana" },
+        },
+        {
+          stageId: "sSEO",
+          activatedAt: hoursAgo(50),
+          task: { id: "t1", title: "A" },
+          stage: { name: "SEO" },
+          assignee: null,
+        },
+      ] as never)
+      // completed stages for involved tasks
+      .mockResolvedValueOnce([{ taskId: "t1", stageId: "sDesign" }] as never);
+    // prerequisites: QC depends on Dev (unmet) ; SEO depends on Design (met)
+    db.stageDependency.findMany.mockResolvedValue([
+      { stageId: "sQC", dependsOnStageId: "sDev" },
+      { stageId: "sSEO", dependsOnStageId: "sDesign" },
+    ] as never);
+    db.templateStage.findMany.mockResolvedValue([
+      { id: "sDev", name: "Dev" },
+      { id: "sDesign", name: "Design" },
+    ] as never);
+
+    const items = await getBlockedStages();
+    expect(items.map((i) => i.stageName)).toEqual(["SEO", "QC"]); // 50h before 10h
+    const qc = items.find((i) => i.stageName === "QC")!;
+    expect(qc.waitingOn).toEqual(["Dev"]); // Dev not completed
+    const seo = items.find((i) => i.stageName === "SEO")!;
+    expect(seo.waitingOn).toEqual([]); // Design completed
+  });
+});
