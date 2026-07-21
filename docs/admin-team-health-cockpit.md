@@ -91,4 +91,4 @@ Namespace `admin.health.*` em `locales/{pt-BR,es-ES}/admin.json`, mantido em par
 - **E. Escopo RBAC (nota):** aging/blocked escopam por `stage.defaultTeamId` (time dono da etapa) vs carga por member-team — defensável por design.
 - **F. i18n residual:** título hardcoded do `StorageBreakdown` em `admin/page.tsx`; `sr-only "Close"` do `components/ui/dialog.tsx`.
 - **G. Cobertura de teste:** `TeamLoadBalanceClient` e os Server Components do cockpit não têm smoke RTL (só data functions + helpers puros).
-- **H. Fase 2 (produto):** espelhar os sinais no **dashboard pessoal** (Personal Kanban); bloco de **throughput/CFD** (despriorizado; os dados existem via `getTeamThroughput`).
+- **H. Fase 2 (produto) — parcial ✅:** **dashboard pessoal "Meu foco"** (Personal Kanban) implementado (commit `78afa5a`) — reusa `getMyFocus`/`stageAgingRatio` com o mesmo cálculo, escopado a `assigneeId=eu`: resumo (meu WIP · envelhecendo · em risco) + nudge leve de WIP + lista "precisa de atenção" + KPI de aging no StatsCards + flag ⏳ nas minhas etapas. **Ainda:** bloco de **throughput/CFD** (despriorizado; dados via `getTeamThroughput`).
