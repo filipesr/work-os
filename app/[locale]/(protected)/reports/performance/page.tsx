@@ -7,11 +7,20 @@ import {
   getReworkRateByStage,
   getLeadTimeMetrics,
   getFlowEfficiencyByStage,
+  getCycleTimePercentiles,
   getAvailablePerformanceMonths,
   type PerformanceFilters,
 } from "@/lib/actions/reporting";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, TrendingDown, AlertTriangle, Timer, Activity, Gauge } from "lucide-react";
+import {
+  ArrowLeft,
+  TrendingDown,
+  AlertTriangle,
+  Timer,
+  Activity,
+  Gauge,
+  Target,
+} from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { ExportButtons } from "@/components/reports/ExportButtons";
 import { ReportFilterBar } from "@/components/reports/ReportFilterBar";
@@ -194,6 +203,116 @@ async function AvgTimeSection({ filters, t }: { filters: PerformanceFilters; t: 
               </div>
             ))}
           </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Static SVG scatterplot of cycle times with p50/p85/p95 reference lines.
+// Server-rendered — no charting library, no client JS.
+function CycleScatter({
+  points,
+  p50,
+  p85,
+  p95,
+  t,
+}: {
+  points: { days: number }[];
+  p50: number;
+  p85: number;
+  p95: number;
+  t: T;
+}) {
+  const W = 320;
+  const H = 140;
+  const padL = 8;
+  const padR = 40; // room for percentile labels
+  const padY = 8;
+  // Cap the y-axis so a rare outlier doesn't squash the bulk; clip above.
+  const yMax = Math.max(p95 * 1.25, 1);
+  const x = (i: number) =>
+    padL + (points.length <= 1 ? 0 : (i / (points.length - 1)) * (W - padL - padR));
+  const y = (d: number) => padY + (1 - Math.min(d, yMax) / yMax) * (H - padY * 2);
+  const line = (d: number, color: string, label: string, key: string) => (
+    <g key={key}>
+      <line
+        x1={padL}
+        y1={y(d)}
+        x2={W - padR}
+        y2={y(d)}
+        stroke={color}
+        strokeDasharray="3 3"
+        strokeWidth={1}
+      />
+      <text x={W - padR + 3} y={y(d) + 3} fontSize={9} fill={color}>
+        {label} {d.toFixed(1)}d
+      </text>
+    </g>
+  );
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="w-full h-auto"
+      role="img"
+      aria-label={t("cycleTime.title")}
+    >
+      {line(p95, "#e11d48", "p95", "l95")}
+      {line(p85, "#7c3aed", "p85", "l85")}
+      {line(p50, "#0891b2", "p50", "l50")}
+      {points.map((pt, i) => (
+        <circle key={i} cx={x(i)} cy={y(pt.days)} r={2} fill="#64748b" fillOpacity={0.55} />
+      ))}
+    </svg>
+  );
+}
+
+async function CycleTimeSection({ filters, t }: { filters: PerformanceFilters; t: T }) {
+  const cycle = await getCycleTimePercentiles(filters);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Target className="h-5 w-5" />
+          <CardTitle>{t("cycleTime.title")}</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground mb-4">{t("cycleTime.description")}</p>
+        {cycle.count === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("cycleTime.noData")}</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="rounded-lg border p-3 text-center">
+                <div className="text-xs text-cyan-600 dark:text-cyan-400">{t("cycleTime.p50")}</div>
+                <div className="text-xl font-bold">{cycle.p50.toFixed(1)}d</div>
+              </div>
+              <div className="rounded-lg border-2 border-violet-400 dark:border-violet-500 p-3 text-center">
+                <div className="text-xs text-violet-600 dark:text-violet-400">
+                  {t("cycleTime.p85")}
+                </div>
+                <div className="text-xl font-bold text-violet-700 dark:text-violet-300">
+                  {cycle.p85.toFixed(1)}d
+                </div>
+              </div>
+              <div className="rounded-lg border p-3 text-center">
+                <div className="text-xs text-rose-600 dark:text-rose-400">{t("cycleTime.p95")}</div>
+                <div className="text-xl font-bold">{cycle.p95.toFixed(1)}d</div>
+              </div>
+            </div>
+            <CycleScatter
+              points={cycle.points}
+              p50={cycle.p50}
+              p85={cycle.p85}
+              p95={cycle.p95}
+              t={t}
+            />
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t("cycleTime.footnote", { count: cycle.count })}
+            </p>
+          </>
         )}
       </CardContent>
     </Card>
@@ -427,6 +546,11 @@ export default async function PerformanceReportPage({
       {/* Lead Time Metrics */}
       <Suspense fallback={<MetricsSkeleton />}>
         <LeadTimeSection filters={filters} t={t} />
+      </Suspense>
+
+      {/* Cycle-time percentiles (forecast basis) */}
+      <Suspense fallback={<CardSkeleton />}>
+        <CycleTimeSection filters={filters} t={t} />
       </Suspense>
 
       {/* Bottlenecks Alert */}

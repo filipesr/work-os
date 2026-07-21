@@ -32,6 +32,15 @@
     "stageHeader": "Etapa",
     "timeHeader": "Tempo Médio"
   },
+  "cycleTime": {
+    "title": "Cycle Time (Percentis)",
+    "description": "Distribuição do tempo de conclusão das tarefas (criação → concluída). Comprometa-se com o p85 — o prazo que você cumpre ~85% das vezes — em vez da média.",
+    "noData": "Nenhuma tarefa concluída no período",
+    "p50": "p50 (mediana)",
+    "p85": "p85 (confiável)",
+    "p95": "p95",
+    "footnote": "Base: {count} tarefa(s) concluída(s)"
+  },
   "flowEfficiency": {
     "title": "Eficiência de Fluxo por Etapa",
     "description": "Da vida da etapa, quanto foi trabalho ativo vs. espera por dependências. Baixa eficiência = a etapa passa a maior parte do tempo parada esperando, não sendo trabalhada.",

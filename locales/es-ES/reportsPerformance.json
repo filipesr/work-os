@@ -26,6 +26,15 @@
     "days": "días",
     "hours": "horas"
   },
+  "cycleTime": {
+    "title": "Cycle Time (Percentiles)",
+    "description": "Distribución del tiempo de conclusión de las tareas (creación → completada). Comprométete con el p85 — el plazo que cumples ~85% de las veces — en vez del promedio.",
+    "noData": "Ninguna tarea completada en el período",
+    "p50": "p50 (mediana)",
+    "p85": "p85 (confiable)",
+    "p95": "p95",
+    "footnote": "Base: {count} tarea(s) completada(s)"
+  },
   "flowEfficiency": {
     "title": "Eficiencia de Flujo por Etapa",
     "description": "De la vida de la etapa, cuánto fue trabajo activo vs. espera por dependencias. Baja eficiencia = la etapa pasa la mayor parte del tiempo detenida esperando, no siendo trabajada.",

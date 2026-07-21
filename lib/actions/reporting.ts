@@ -6,6 +6,7 @@ import { requireManagerOrAdmin } from "@/lib/permissions";
 import { Prisma } from "@prisma/client";
 import { formatISODate, currentMonthSaoPaulo, monthKeySaoPaulo } from "@/lib/dates";
 import { statusDurations, type TransitionRow } from "@/lib/stage-transitions";
+import { percentile } from "@/lib/stats";
 import {
   productivityFiltersSchema,
   performanceFiltersSchema,
@@ -674,6 +675,59 @@ export async function getLeadTimeMetrics(filters: PerformanceFilters = {}) {
     averageLeadTimeDays,
     medianLeadTimeDays,
     count: tasks.length,
+  };
+}
+
+export interface CycleTimePercentiles {
+  count: number;
+  p50: number; // days
+  p85: number; // days — the "confident date" to commit to
+  p95: number; // days
+  points: { days: number; at: string }[]; // scatter (ISO completion date), newest-capped
+}
+
+// Bound the scatter payload; percentiles still use the full population.
+const CYCLE_SCATTER_CAP = 300;
+
+/**
+ * Cycle-time distribution for completed tasks (createdAt → completedAt), in
+ * days, with p50/p85/p95. Probabilistic forecasting starts here: instead of an
+ * average, commit to the 85th-percentile duration — the date you hit ~85% of
+ * the time. `points` powers a scatterplot (capped to the most recent
+ * CYCLE_SCATTER_CAP completions); percentiles use the full population.
+ */
+export async function getCycleTimePercentiles(
+  filters: PerformanceFilters = {}
+): Promise<CycleTimePercentiles> {
+  await requireManagerOrAdmin();
+  filters = performanceFiltersSchema.parse(filters);
+
+  const where = buildLeadTimeWhere(filters);
+  const tasks = await prisma.task.findMany({
+    where,
+    select: { createdAt: true, completedAt: true },
+    orderBy: { completedAt: "desc" },
+  });
+
+  if (tasks.length === 0) {
+    return { count: 0, p50: 0, p85: 0, p95: 0, points: [] };
+  }
+
+  const days = tasks.map(
+    (t) => (new Date(t.completedAt!).getTime() - new Date(t.createdAt).getTime()) / 8.64e7
+  );
+
+  const points = tasks.slice(0, CYCLE_SCATTER_CAP).map((t, i) => ({
+    days: days[i],
+    at: new Date(t.completedAt!).toISOString(),
+  }));
+
+  return {
+    count: tasks.length,
+    p50: percentile(days, 0.5),
+    p85: percentile(days, 0.85),
+    p95: percentile(days, 0.95),
+    points,
   };
 }
 
