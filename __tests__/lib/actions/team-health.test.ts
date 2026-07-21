@@ -78,19 +78,41 @@ describe("getTeamMemberLoad", () => {
     expect(rows[0].userId).toBe("a"); // sorted by count desc
   });
 
-  it("flags relative overload (> median + margin) even below ceiling", async () => {
+  it("flags relative overload (> median + margin) only when the median is meaningful", async () => {
+    asManager();
+    db.user.findMany.mockResolvedValue([
+      { id: "a", name: "Ana" },
+      { id: "b", name: "Bruno" },
+      { id: "c", name: "Caio" },
+      { id: "d", name: "Dora" },
+      { id: "e", name: "Edu" },
+    ] as never);
+    // counts: a=7, b=c=d=e=3 → median 3 (>= MIN_MEDIAN); 7 >= 3 + 3 → overloaded (< ceiling 8)
+    const stages = [
+      ...Array.from({ length: 7 }, () => ({ assigneeId: "a", task: { dueDate: null } })),
+      ...["b", "c", "d", "e"].flatMap((id) =>
+        Array.from({ length: 3 }, () => ({ assigneeId: id, task: { dueDate: null } }))
+      ),
+    ];
+    db.taskActiveStage.findMany.mockResolvedValue(stages as never);
+    const rows = await getTeamMemberLoad();
+    expect(rows.find((r) => r.userId === "a")!.overloaded).toBe(true);
+    expect(rows.find((r) => r.userId === "b")!.overloaded).toBe(false); // at the median
+  });
+
+  it("does NOT flag relative overload on a mostly-idle team (median ~0)", async () => {
     asManager();
     db.user.findMany.mockResolvedValue([
       { id: "a", name: "Ana" },
       { id: "b", name: "Bruno" },
       { id: "c", name: "Caio" },
     ] as never);
-    // counts: Ana 5, Bruno 0, Caio 0 → median 0; 5 >= 0 + 3 → overloaded
+    // a=3, rest 0 → median 0 < MIN_MEDIAN → relative rule off; 3 < ceiling 8 → not overloaded
     db.taskActiveStage.findMany.mockResolvedValue(
-      Array.from({ length: 5 }, () => ({ assigneeId: "a", task: { dueDate: null } })) as never
+      Array.from({ length: 3 }, () => ({ assigneeId: "a", task: { dueDate: null } })) as never
     );
     const rows = await getTeamMemberLoad();
-    expect(rows.find((r) => r.userId === "a")!.overloaded).toBe(true);
+    expect(rows.find((r) => r.userId === "a")!.overloaded).toBe(false);
   });
 });
 

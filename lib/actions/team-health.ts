@@ -3,6 +3,10 @@ import { requireManagerOrAdmin, getSessionUser } from "@/lib/permissions";
 
 export const OVERLOAD_CEILING = 8;
 export const OVERLOAD_MARGIN = 3;
+// A regra relativa (acima da mediana) só vale quando a mediana do time é
+// significativa — evita flagar "sobrecarga" num time majoritariamente ocioso
+// (mediana ~0, onde qualquer um com poucas etapas viraria falso positivo).
+export const OVERLOAD_RELATIVE_MIN_MEDIAN = 2;
 export const IDLE_THRESHOLD = 1;
 export const DEFAULT_SLA_HOURS = 72;
 export const AGING_ALERT_RATIO = 1.0;
@@ -106,7 +110,9 @@ export async function getTeamMemberLoad(teamIds?: string[]): Promise<MemberLoad[
         onTrack: b.onTrack,
         dueSoon: b.dueSoon,
         overdue: b.overdue,
-        overloaded: b.count >= OVERLOAD_CEILING || b.count >= med + OVERLOAD_MARGIN,
+        overloaded:
+          b.count >= OVERLOAD_CEILING ||
+          (med >= OVERLOAD_RELATIVE_MIN_MEDIAN && b.count >= med + OVERLOAD_MARGIN),
         idle: b.count <= IDLE_THRESHOLD,
       };
     })

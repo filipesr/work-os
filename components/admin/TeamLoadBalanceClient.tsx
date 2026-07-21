@@ -68,6 +68,10 @@ export function TeamLoadBalanceClient({ rows, summary }: { rows: MemberLoad[]; s
     }
   }, [rows, filter]);
 
+  // Quando quase todo mundo está ocioso, o badge "Ocioso" vira ruído (é a norma,
+  // não exceção) — só mostra quando ociosos NÃO são maioria.
+  const idleIsMajority = summary.total > 0 && summary.idle > summary.total / 2;
+
   const openMember = (m: MemberLoad) => {
     setSelected(m);
     setStages([]);
@@ -147,7 +151,7 @@ export function TeamLoadBalanceClient({ rows, summary }: { rows: MemberLoad[]; s
                         {t("overloaded")}
                       </span>
                     )}
-                    {r.idle && !r.overloaded && (
+                    {r.idle && !r.overloaded && !idleIsMajority && (
                       <span className="shrink-0 text-xs font-bold text-gray-600 bg-gray-100 border border-gray-300 rounded px-2 py-0.5">
                         {t("idle")}
                       </span>

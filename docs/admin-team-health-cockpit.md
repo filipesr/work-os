@@ -46,16 +46,17 @@ e o que está bloqueado. Ancorado em abordagens documentadas:
 
 Constantes em **`lib/actions/team-health.ts`** (fáceis de ajustar):
 
-| Constante           | Valor | Uso                                                            |
-| ------------------- | ----- | -------------------------------------------------------------- |
-| `OVERLOAD_CEILING`  | 8     | teto absoluto de etapas ativas → sempre sinaliza sobrecarga    |
-| `OVERLOAD_MARGIN`   | 3     | acima da mediana do time por esta margem → sobrecarga relativa |
-| `IDLE_THRESHOLD`    | 1     | `count <=` isto → ocioso                                       |
-| `DEFAULT_SLA_HOURS` | 72    | SLA usado quando a etapa não tem `expectedDurationHours`       |
-| `AGING_ALERT_RATIO` | 1.0   | `ageHours/slaHours >=` isto → envelhecendo                     |
-| `QUEUE_LIMIT`       | 6     | itens no topo das filas de aging/bloqueados                    |
+| Constante                      | Valor | Uso                                                                                        |
+| ------------------------------ | ----- | ------------------------------------------------------------------------------------------ |
+| `OVERLOAD_CEILING`             | 8     | teto absoluto de etapas ativas → sempre sinaliza sobrecarga                                |
+| `OVERLOAD_MARGIN`              | 3     | acima da mediana do time por esta margem → sobrecarga relativa                             |
+| `OVERLOAD_RELATIVE_MIN_MEDIAN` | 2     | a regra relativa só vale se a mediana do time ≥ isto (evita falso positivo em time ocioso) |
+| `IDLE_THRESHOLD`               | 1     | `count <=` isto → ocioso                                                                   |
+| `DEFAULT_SLA_HOURS`            | 72    | SLA usado quando a etapa não tem `expectedDurationHours`                                   |
+| `AGING_ALERT_RATIO`            | 1.0   | `ageHours/slaHours >=` isto → envelhecendo                                                 |
+| `QUEUE_LIMIT`                  | 6     | itens no topo das filas de aging/bloqueados                                                |
 
-- **Carga (WIP):** `count` = etapas `ACTIVE` atribuídas; quebra por prazo via `getDueState` (`lib/dates.ts`); **sobrecarregado** = `count >= OVERLOAD_CEILING || count >= median + OVERLOAD_MARGIN`; **ocioso** = `count <= IDLE_THRESHOLD`.
+- **Carga (WIP):** `count` = etapas `ACTIVE` atribuídas; quebra por prazo via `getDueState` (`lib/dates.ts`); **sobrecarregado** = `count >= OVERLOAD_CEILING || (median >= OVERLOAD_RELATIVE_MIN_MEDIAN && count >= median + OVERLOAD_MARGIN)`; **ocioso** = `count <= IDLE_THRESHOLD`. O badge "Ocioso" some quando ociosos são maioria (deixa de ser exceção).
 - **Aging:** `ageHours = agora − activatedAt`; `slaHours = stage.expectedDurationHours ?? 72`; entra se `ageHours/slaHours >= 1` **ou** o prazo está vencido/próximo.
 - **Bloqueio:** severidade = tempo desde `blockedAt` (fallback `activatedAt` p/ linhas antigas); `waitingOn` = pré-requisitos (`StageDependency`) não `COMPLETED` na task.
 - **Atribuição (drawer):** "Atribuída em" = `assignedAt` (fallback `activatedAt`). `blockedAt`/`assignedAt` são carimbados ao ENTRAR no estado (transição→BLOCKED em `activateNextStages`; assign/claim/create-com-assignee).
