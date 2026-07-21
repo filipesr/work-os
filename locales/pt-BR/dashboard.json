@@ -5,7 +5,8 @@
     "activeTasks": "Tarefas Ativas",
     "completedWeek": "Concluídas (Semana)",
     "hoursToday": "Horas Hoje",
-    "upcomingDeadlines": "Prazos Próximos"
+    "upcomingDeadlines": "Prazos Próximos",
+    "aging": "Envelhecendo"
   },
   "priority": {
     "URGENT": "URGENTE",
@@ -32,7 +33,18 @@
   "tooltips": {
     "taskOverdue": "Tarefa atrasada",
     "deadlineSoon": "Prazo próximo",
-    "stageBlocked": "Etapa bloqueada"
+    "stageBlocked": "Etapa bloqueada",
+    "stageAging": "Envelhecendo (passou do SLA)"
+  },
+  "myFocus": {
+    "title": "Meu foco",
+    "wip": "Minhas ativas",
+    "aging": "Envelhecendo",
+    "atRisk": "Em risco",
+    "nudge": "Você está com {count} etapas ativas — foque em fechar antes de pegar mais.",
+    "attentionTitle": "Precisa de atenção",
+    "empty": "Nada precisando de atenção agora. 🎉",
+    "slaMultiple": "{ratio}× o SLA"
   },
   "badges": {
     "new": "NOVO"

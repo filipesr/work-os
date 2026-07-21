@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { priorityBadgeClass, taskStatusBadgeClass } from "@/lib/status-styles";
 import { formatDisplayDate, getDueState } from "@/lib/dates";
+import { stageAgingRatio } from "@/lib/team-health-format";
+import { DEFAULT_SLA_HOURS, AGING_ALERT_RATIO } from "@/lib/actions/team-health";
 import { ClaimActiveStageButton } from "@/components/tasks/ClaimActiveStageButton";
 import { UnassignActiveStageButton } from "@/components/tasks/UnassignActiveStageButton";
 import { TaskPriority, TaskStatus, ActiveStageStatus } from "@prisma/client";
@@ -35,6 +37,7 @@ export type ActiveStageWithDetails = {
     id: string;
     name: string;
     order: number;
+    expectedDurationHours?: number | null;
     defaultTeam: {
       id: string;
       name: string;
@@ -56,11 +59,13 @@ function ActiveStageRow({
   t,
   showClaimButton = false,
   showUnassignButton = false,
+  showAging = false,
 }: {
   activeStage: ActiveStageWithDetails;
   t: DashboardTranslator;
   showClaimButton?: boolean;
   showUnassignButton?: boolean;
+  showAging?: boolean;
 }) {
   const task = activeStage.task;
   const stage = activeStage.stage;
@@ -69,6 +74,10 @@ function ActiveStageRow({
   const isDueSoon = dueState === "dueSoon";
   const isNew = Date.now() - new Date(task.createdAt).getTime() < 24 * 60 * 60 * 1000; // 24 hours
   const isBlocked = activeStage.status === "BLOCKED";
+  const isAging =
+    showAging &&
+    stageAgingRatio(activeStage.activatedAt, stage.expectedDurationHours ?? DEFAULT_SLA_HOURS) >=
+      AGING_ALERT_RATIO;
 
   return (
     <tr
@@ -94,6 +103,11 @@ function ActiveStageRow({
           {isBlocked && (
             <span title={t("tooltips.stageBlocked")} className="text-base">
               🔒
+            </span>
+          )}
+          {isAging && (
+            <span title={t("tooltips.stageAging")} className="text-base">
+              ⏳
             </span>
           )}
           <Link
@@ -180,12 +194,14 @@ export function ActiveStagesTable({
   t,
   showClaim = false,
   showUnassign = false,
+  showAging = false,
   emptyText,
 }: {
   stages: ActiveStageWithDetails[];
   t: DashboardTranslator;
   showClaim?: boolean;
   showUnassign?: boolean;
+  showAging?: boolean;
   emptyText: string;
 }) {
   if (stages.length === 0) {
@@ -232,6 +248,7 @@ export function ActiveStagesTable({
               t={t}
               showClaimButton={showClaim}
               showUnassignButton={showUnassign}
+              showAging={showAging}
             />
           ))}
         </tbody>

@@ -34,6 +34,7 @@ export async function MyActiveStagesWidget() {
         stages={myActiveStages}
         t={t}
         showUnassign={true}
+        showAging={true}
         emptyText={t("emptyStates.noActiveStages")}
       />
     </div>

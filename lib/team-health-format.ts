@@ -23,6 +23,20 @@ export function loadSegments(
   ];
 }
 
+/**
+ * ageHours / slaHours para uma etapa ativa — `>= 1` significa que passou do SLA
+ * (envelhecendo). Puro; o caller resolve o SLA (ex.: `expectedDurationHours ??
+ * DEFAULT_SLA_HOURS`). Compartilhado por getAgingStages/getMyFocus, StatsCards e
+ * a tabela de etapas.
+ */
+export function stageAgingRatio(
+  activatedAt: Date,
+  slaHours: number,
+  now: number = Date.now()
+): number {
+  return (now - activatedAt.getTime()) / 3.6e6 / slaHours;
+}
+
 /** A collaborator's active stage, for the load drill-down drawer. */
 export interface MemberStage {
   taskId: string;

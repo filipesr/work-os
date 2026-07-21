@@ -1,5 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { formatAge, loadSegments } from "@/lib/team-health-format";
+import { formatAge, loadSegments, stageAgingRatio } from "@/lib/team-health-format";
+
+describe("stageAgingRatio", () => {
+  const now = Date.now();
+  it("1.0 when age equals the SLA", () => {
+    const activatedAt = new Date(now - 24 * 3.6e6); // 24h ago
+    expect(stageAgingRatio(activatedAt, 24, now)).toBeCloseTo(1, 5);
+  });
+  it("2.0 when age is twice the SLA", () => {
+    const activatedAt = new Date(now - 48 * 3.6e6);
+    expect(stageAgingRatio(activatedAt, 24, now)).toBeCloseTo(2, 5);
+  });
+});
 
 describe("formatAge", () => {
   it("hours only under a day", () => expect(formatAge(5)).toBe("5h"));
