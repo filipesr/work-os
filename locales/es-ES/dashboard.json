@@ -56,6 +56,8 @@
     "priority": "Prioridad",
     "status": "Estado",
     "dueDate": "Fecha de Entrega",
+    "createdAge": "Creada hace",
+    "mineAge": "Conmigo hace",
     "action": "Acción"
   },
   "myActiveStages": {

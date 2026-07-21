@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { priorityBadgeClass, taskStatusBadgeClass } from "@/lib/status-styles";
 import { formatDisplayDate, getDueState } from "@/lib/dates";
-import { stageAgingRatio } from "@/lib/team-health-format";
+import { stageAgingRatio, formatAge } from "@/lib/team-health-format";
 import { DEFAULT_SLA_HOURS, AGING_ALERT_RATIO } from "@/lib/actions/team-health";
 import { ClaimActiveStageButton } from "@/components/tasks/ClaimActiveStageButton";
 import { UnassignActiveStageButton } from "@/components/tasks/UnassignActiveStageButton";
@@ -20,6 +20,7 @@ export type ActiveStageWithDetails = {
   stageId: string;
   assigneeId: string | null;
   activatedAt: Date;
+  assignedAt?: Date | null;
   completedAt: Date | null;
   task: {
     id: string;
@@ -69,15 +70,22 @@ function ActiveStageRow({
 }) {
   const task = activeStage.task;
   const stage = activeStage.stage;
+  const now = Date.now();
   const dueState = getDueState(task.dueDate);
   const isOverdue = dueState === "overdue";
   const isDueSoon = dueState === "dueSoon";
-  const isNew = Date.now() - new Date(task.createdAt).getTime() < 24 * 60 * 60 * 1000; // 24 hours
+  const isNew = now - new Date(task.createdAt).getTime() < 24 * 60 * 60 * 1000; // 24 hours
   const isBlocked = activeStage.status === "BLOCKED";
   const isAging =
     showAging &&
-    stageAgingRatio(activeStage.activatedAt, stage.expectedDurationHours ?? DEFAULT_SLA_HOURS) >=
-      AGING_ALERT_RATIO;
+    stageAgingRatio(
+      activeStage.activatedAt,
+      stage.expectedDurationHours ?? DEFAULT_SLA_HOURS,
+      now
+    ) >= AGING_ALERT_RATIO;
+  const createdAgeHours = (now - new Date(task.createdAt).getTime()) / 3.6e6;
+  const mineAgeHours =
+    (now - new Date(activeStage.assignedAt ?? activeStage.activatedAt).getTime()) / 3.6e6;
 
   return (
     <tr
@@ -137,29 +145,30 @@ function ActiveStageRow({
           <span className="text-sm text-muted-foreground">{stage.name}</span>
         </div>
       </td>
+      {/* Status unificado: prioridade + status */}
       <td className="px-4 py-3">
-        <span
-          className={`px-2 py-1 text-xs font-medium rounded-md border ${priorityBadgeClass(
-            task.priority
-          )}`}
-        >
-          {t(`priority.${task.priority}`)}
-        </span>
-      </td>
-      <td className="px-4 py-3">
-        {isBlocked ? (
-          <span className="px-2 py-1 text-xs font-medium rounded-md border bg-gray-100 text-gray-800 border-gray-300">
-            {t("status.BLOCKED")}
-          </span>
-        ) : (
+        <div className="flex flex-col items-start gap-1">
           <span
-            className={`px-2 py-1 text-xs font-medium rounded-md border ${taskStatusBadgeClass(
-              task.status
+            className={`px-2 py-0.5 text-xs font-medium rounded-md border ${priorityBadgeClass(
+              task.priority
             )}`}
           >
-            {t(`status.${task.status}`)}
+            {t(`priority.${task.priority}`)}
           </span>
-        )}
+          {isBlocked ? (
+            <span className="px-2 py-0.5 text-xs font-medium rounded-md border bg-gray-100 text-gray-800 border-gray-300">
+              {t("status.BLOCKED")}
+            </span>
+          ) : (
+            <span
+              className={`px-2 py-0.5 text-xs font-medium rounded-md border ${taskStatusBadgeClass(
+                task.status
+              )}`}
+            >
+              {t(`status.${task.status}`)}
+            </span>
+          )}
+        </div>
       </td>
       <td className="px-4 py-3">
         <span
@@ -168,6 +177,18 @@ function ActiveStageRow({
           }`}
         >
           {formatDisplayDate(task.dueDate, t("dates.noDueDate"))}
+        </span>
+      </td>
+      {/* Tempo desde a criação da tarefa */}
+      <td className="px-4 py-3">
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {formatAge(createdAgeHours)}
+        </span>
+      </td>
+      {/* Tempo que a etapa é minha (desde a atribuição) */}
+      <td className="px-4 py-3">
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {activeStage.assigneeId ? formatAge(mineAgeHours) : "—"}
         </span>
       </td>
       {showClaimButton && (
@@ -212,32 +233,22 @@ export function ActiveStagesTable({
     );
   }
 
+  const th =
+    "px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider";
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead className="bg-muted/30">
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {t("table.task")}
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {t("table.project")}
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {t("table.currentStage")}
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {t("table.priority")}
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {t("table.status")}
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {t("table.dueDate")}
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {t("table.action")}
-            </th>
+            <th className={th}>{t("table.task")}</th>
+            <th className={th}>{t("table.project")}</th>
+            <th className={th}>{t("table.currentStage")}</th>
+            <th className={th}>{t("table.status")}</th>
+            <th className={th}>{t("table.dueDate")}</th>
+            <th className={th}>{t("table.createdAge")}</th>
+            <th className={th}>{t("table.mineAge")}</th>
+            <th className={th}>{t("table.action")}</th>
           </tr>
         </thead>
         <tbody>

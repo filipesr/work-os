@@ -6,7 +6,6 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { MyActiveStagesWidget, TeamBacklogWidget } from "@/components/dashboard/ActiveStagesWidget";
-import { MyFocusWidget } from "@/components/dashboard/MyFocusWidget";
 import { StatsCardSkeleton, TableSkeleton } from "@/components/dashboard/DashboardSkeleton";
 
 export const metadata: Metadata = {
@@ -98,12 +97,7 @@ export default async function DashboardPage() {
 
       {/* Dashboard Widgets - Each streams independently */}
       <div className="space-y-8">
-        {/* Meu foco (Personal Kanban) — meu WIP + envelhecendo/em risco */}
-        <Suspense fallback={<TableSkeleton rows={2} />}>
-          <MyFocusWidget />
-        </Suspense>
-
-        {/* Widget 1: My Active Stages */}
+        {/* Widget 1: My Active Stages (com resumo "Meu foco" no topo) */}
         <Suspense fallback={<TableSkeleton rows={3} />}>
           <MyActiveStagesWidget />
         </Suspense>
