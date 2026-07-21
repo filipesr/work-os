@@ -6,7 +6,8 @@
     "completedWeek": "Completadas (Semana)",
     "hoursToday": "Horas Hoy",
     "upcomingDeadlines": "Plazos Próximos",
-    "aging": "Envejeciendo"
+    "aging": "Envejeciendo",
+    "atRisk": "En riesgo"
   },
   "priority": {
     "URGENT": "URGENTE",
