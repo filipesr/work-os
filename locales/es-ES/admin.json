@@ -483,5 +483,27 @@
         "LOW": "Baja"
       }
     }
+  },
+  "health": {
+    "title": "Salud del equipo",
+    "load": {
+      "title": "Balance de carga",
+      "empty": "Sin miembros en el equipo.",
+      "overloaded": "Sobrecarga",
+      "idle": "Ocioso",
+      "activeStages": "{count} activas"
+    },
+    "aging": {
+      "title": "Envejeciendo / en riesgo",
+      "empty": "Nada envejeciendo. 🎉",
+      "seeAll": "Ver todos",
+      "slaMultiple": "{ratio}× el SLA"
+    },
+    "blocked": {
+      "title": "Bloqueados y esperando",
+      "empty": "Nada bloqueado. 🎉",
+      "waitingOn": "Esperando: {stages}",
+      "waitingGeneric": "Esperando etapas anteriores"
+    }
   }
 }
