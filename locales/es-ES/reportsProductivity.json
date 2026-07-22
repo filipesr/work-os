@@ -19,7 +19,8 @@
     "noData": "No se encontraron registros de tiempo",
     "userHeader": "Usuario",
     "hoursHeader": "Horas",
-    "noName": "Sin nombre"
+    "noName": "Sin nombre",
+    "utilizationHeader": "Utilización"
   },
   "hoursByProject": {
     "title": "Horas por Proyecto",

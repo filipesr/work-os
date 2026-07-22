@@ -61,6 +61,10 @@ export interface HoursByUser {
   userName: string | null;
   userEmail: string | null;
   totalHours: number;
+  weeklyCapacityHours: number | null;
+  // Logged hours ÷ capacity prorated to the selected period. Null when no
+  // capacity target is set or no date range is selected (no denominator).
+  utilization: number | null;
 }
 
 export interface HoursByProject {
@@ -116,10 +120,18 @@ export async function getHoursByUser(filters: ProductivityFilters = {}) {
           id: true,
           name: true,
           email: true,
+          weeklyCapacityHours: true,
         },
       },
     },
   });
+
+  // Prorate the weekly capacity to the selected period. Utilization needs a date
+  // range; without one there is no denominator.
+  const periodWeeks =
+    filters.startDate && filters.endDate
+      ? Math.max((filters.endDate.getTime() - filters.startDate.getTime()) / (7 * DAY_MS), 1 / 7)
+      : null;
 
   // Group by user
   const grouped = timeLogs.reduce((acc: Record<string, HoursByUser>, log) => {
@@ -130,11 +142,19 @@ export async function getHoursByUser(filters: ProductivityFilters = {}) {
         userName: log.user.name,
         userEmail: log.user.email,
         totalHours: 0,
+        weeklyCapacityHours: log.user.weeklyCapacityHours,
+        utilization: null,
       };
     }
     acc[userId].totalHours += log.hoursSpent;
     return acc;
   }, {});
+
+  for (const row of Object.values(grouped)) {
+    if (row.weeklyCapacityHours && periodWeeks) {
+      row.utilization = row.totalHours / (row.weeklyCapacityHours * periodWeeks);
+    }
+  }
 
   return Object.values(grouped) as HoursByUser[];
 }

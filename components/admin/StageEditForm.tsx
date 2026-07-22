@@ -125,6 +125,22 @@ export function StageEditForm({
             placeholder={t("slaPlaceholder")}
           />
         </div>
+        <div>
+          <label
+            htmlFor={`edit-wip-${stage.id}`}
+            className="block text-sm font-semibold text-foreground mb-2"
+          >
+            {t("wipLabel")}
+          </label>
+          <Input
+            type="number"
+            id={`edit-wip-${stage.id}`}
+            name="wipLimit"
+            min="1"
+            defaultValue={stage.wipLimit ?? ""}
+            placeholder={t("wipPlaceholder")}
+          />
+        </div>
         <div className="flex items-end">
           <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <input

@@ -216,6 +216,7 @@ export default async function UsersPage({
                       admissionDate: user.admissionDate
                         ? user.admissionDate.toISOString().slice(0, 10)
                         : null,
+                      weeklyCapacityHours: user.weeklyCapacityHours,
                     }}
                     teams={teams}
                     updateUser={updateUserRoleAndTeams}

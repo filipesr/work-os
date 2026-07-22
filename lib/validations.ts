@@ -172,6 +172,11 @@ export const templateStageSchema = z.object({
     (v) => (v === "" || v === null || v === undefined ? undefined : v),
     z.coerce.number().int("Valid hours required").min(0).optional()
   ),
+  // WIP limit (max concurrent ACTIVE instances). Empty form values → undefined.
+  wipLimit: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : v),
+    z.coerce.number().int("Valid limit required").min(1).optional()
+  ),
   // Etapa opcional: aparece desmarcada na criação da tarefa. Checkbox → "on"/ausente.
   optional: z.preprocess((v) => v === "on" || v === true, z.boolean()).default(false),
   dependencies: z.array(z.string()).optional().default([]),

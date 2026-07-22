@@ -12,6 +12,8 @@ export async function updateUserRoleAndTeams(formData: FormData) {
   const teamIds = formData.getAll("teamIds").map(String);
   const birthdayRaw = formData.get("birthday") as string | null;
   const admissionRaw = formData.get("admissionDate") as string | null;
+  const capacityRaw = formData.get("weeklyCapacityHours") as string | null;
+  const weeklyCapacityHours = capacityRaw && capacityRaw.trim() !== "" ? Number(capacityRaw) : null;
   if (!id || !role) return;
 
   // Detect whether the team set actually changed (to avoid unassigning stages
@@ -79,6 +81,12 @@ export async function updateUserRoleAndTeams(formData: FormData) {
       teams: { set: teamIds.map((tid) => ({ id: tid })) },
       birthday: birthdayRaw ? new Date(birthdayRaw) : null,
       admissionDate: admissionRaw ? new Date(admissionRaw) : null,
+      weeklyCapacityHours:
+        weeklyCapacityHours != null &&
+        Number.isFinite(weeklyCapacityHours) &&
+        weeklyCapacityHours > 0
+          ? Math.round(weeklyCapacityHours)
+          : null,
     },
   });
 

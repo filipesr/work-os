@@ -57,7 +57,9 @@
     "slaLabel": "SLA (horas)",
     "slaPlaceholder": "ej: 24",
     "slaHelp": "Tiempo objetivo en la etapa. Deja vacío para sin SLA.",
-    "optional": "Etapa opcional"
+    "optional": "Etapa opcional",
+    "wipLabel": "Límite de WIP (opcional)",
+    "wipPlaceholder": "ej.: 3"
   },
   "dependencyManager": {
     "title": "Gestionar Dependencias: {stageName}",

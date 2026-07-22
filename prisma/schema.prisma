@@ -157,6 +157,11 @@ model User {
   admissionDate DateTime? // Contract / admission date
   lastSeenAt    DateTime? // Track last activity for online presence
 
+  // Capacity target: planned working hours per week. Null = no target set. The
+  // productivity report divides logged TimeLog hours by this (prorated to the
+  // period) to compute utilization — the denominator the app lacked before.
+  weeklyCapacityHours Int?
+
   // Relations
   assignedTasks Task[]            @relation("Assignee")
   activeStages  TaskActiveStage[] @relation("StageAssignee")
@@ -232,6 +237,12 @@ model TemplateStage {
   // SLA: expected time-in-stage in hours. Null = no SLA defined. Used by the
   // performance report to flag stages whose average duration exceeds the target.
   expectedDurationHours Int?
+
+  // WIP limit: max concurrent ACTIVE instances of this stage (Kanban column
+  // limit). Null = no limit. Enforced as a PULL constraint — claiming work in a
+  // stage already at/over its limit is blocked; automatic dependency-driven
+  // activation is never blocked (it may breach the limit, surfaced in the cockpit).
+  wipLimit Int?
 
   defaultTeamId String? // The team auto-assigned (e.g., "QC")
   defaultTeam   Team?   @relation(fields: [defaultTeamId], references: [id], onUpdate: NoAction, onDelete: SetNull)

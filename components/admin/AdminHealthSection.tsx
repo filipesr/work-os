@@ -4,6 +4,7 @@ import TeamLoadBalance from "@/components/admin/TeamLoadBalance";
 import AgingQueue from "@/components/admin/AgingQueue";
 import BlockedQueue from "@/components/admin/BlockedQueue";
 import SystemConstraint from "@/components/admin/SystemConstraint";
+import WipLimits from "@/components/admin/WipLimits";
 
 function CardSkeleton() {
   return <div className="bg-card rounded-xl border-2 border-border p-6 h-48 animate-pulse" />;
@@ -31,6 +32,11 @@ export async function AdminHealthSection() {
         <Suspense fallback={<CardSkeleton />}>
           <BlockedQueue />
         </Suspense>
+        <div className="lg:col-span-2">
+          <Suspense fallback={null}>
+            <WipLimits />
+          </Suspense>
+        </div>
       </div>
     </section>
   );

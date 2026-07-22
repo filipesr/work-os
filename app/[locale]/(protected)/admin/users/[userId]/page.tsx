@@ -106,6 +106,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
                 admissionDate: user.admissionDate
                   ? user.admissionDate.toISOString().slice(0, 10)
                   : null,
+                weeklyCapacityHours: user.weeklyCapacityHours,
               }}
               teams={teams}
               updateUser={updateUserRoleAndTeams}

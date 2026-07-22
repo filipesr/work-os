@@ -81,18 +81,35 @@ async function HoursByUserSection({ filters, t }: { filters: ProductivityFilters
           <p className="text-sm text-muted-foreground">{t("hoursByUser.noData")}</p>
         ) : (
           <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2 pb-2 border-b font-semibold text-sm">
+            <div className="grid grid-cols-3 gap-2 pb-2 border-b font-semibold text-sm">
               <div>{t("hoursByUser.userHeader")}</div>
               <div className="text-right">{t("hoursByUser.hoursHeader")}</div>
+              <div className="text-right">{t("hoursByUser.utilizationHeader")}</div>
             </div>
-            {hoursByUser.map((user) => (
-              <div key={user.userId} className="grid grid-cols-2 gap-2 text-sm">
-                <div className="truncate">
-                  {user.userName || user.userEmail || t("hoursByUser.noName")}
+            {hoursByUser.map((user) => {
+              const pct = user.utilization != null ? Math.round(user.utilization * 100) : null;
+              // Indicative band (agency utilization benchmarks were not
+              // adversarially verified) — a signal, not an alarm.
+              const tone =
+                pct == null
+                  ? "text-muted-foreground"
+                  : pct > 90
+                    ? "text-rose-600 dark:text-rose-400"
+                    : pct >= 60
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-amber-600 dark:text-amber-400";
+              return (
+                <div key={user.userId} className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="truncate">
+                    {user.userName || user.userEmail || t("hoursByUser.noName")}
+                  </div>
+                  <div className="text-right font-medium">{user.totalHours.toFixed(1)}h</div>
+                  <div className={`text-right font-medium ${tone}`}>
+                    {pct != null ? `${pct}%` : "—"}
+                  </div>
                 </div>
-                <div className="text-right font-medium">{user.totalHours.toFixed(1)}h</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

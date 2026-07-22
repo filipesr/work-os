@@ -180,21 +180,69 @@ i18n `reportsPerformance.{forecast,throughput,cfd}` (pt+es).
 `CFD_WINDOW_DAYS=56` e escopo por filtro. Se crescer, materializar numa tabela
 de snapshot depois — mas hoje roda sem.
 
-## Verificação (P0 + P1)
+---
 
-- `tsc --noEmit` 0 erros · `vitest` 339/339 · `next build` limpo · paridade i18n 45/45.
+# WIP limits & capacidade/utilização (P2)
+
+Fecha o loop "medir → **limitar** → gerir" (§1.2) e dá o denominador que faltava
+para utilização. Dois campos aditivos/nullable (migração `20260721140000`).
+
+## 7. WIP limits configuráveis + enforcement — P2.7
+
+**O que é.** Teto de WIP por etapa (`TemplateStage.wipLimit`) — o limite da
+"coluna" Kanban. Configurável no editor de etapa (admin).
+
+**Semântica (definida no build).** WIP = instâncias `ACTIVE` **atribuídas** (em
+progresso) da etapa. Enforcement como **restrição de pull**:
+
+- `claimActiveStage` **bloqueia** reivindicar quando `emProgresso ≥ wipLimit`
+  (erro claro). WIP=1 funciona (0 atribuídas → permite → 1 → próxima bloqueia).
+- A **ativação automática por dependência nunca bloqueia** (só cria linhas
+  `ACTIVE` não-atribuídas, que não contam como WIP em progresso) — o motor de
+  workflow nunca trava.
+- **Violação** (`over`) só surge de atribuição direta por admin ou de baixar o
+  limite; `full` = exatamente no limite.
+
+**Visibilidade.** `team-health.getWipStatus` retorna etapas `full`/`over` (via
+`groupBy` de ACTIVE+atribuídas); componente `WipLimits` no cockpit admin
+(render `null` se tudo dentro do limite). i18n `admin.health.wip.*` +
+`template.stagesList.wip*`.
+
+**Nota de erro i18n.** A mensagem de bloqueio no `claimActiveStage` é literal
+pt-BR, seguindo a convenção das demais mensagens de erro do arquivo
+`lib/actions/task.ts` (i18n de erros de server action é um resíduo pré-existente).
+
+## 8. Capacidade & utilização em horas — P2.8
+
+**O que é.** `User.weeklyCapacityHours` (meta h/semana) → **utilização** = horas
+apontadas (`TimeLog`) ÷ capacidade prorrateada ao período selecionado.
+
+**Cálculo.** `reporting.getHoursByUser` calcula `utilization` quando há meta E
+janela de datas (`periodWeeks = (fim − início)/7d`); `null` sem denominador.
+Coluna **"Utilização"** no relatório de produtividade, colorida por faixa
+**indicativa** (>90% vermelho, 60–90% verde, <60% âmbar). Config no edit de
+usuário. i18n `admin.users.edit.capacity*` + `reportsProductivity.hoursByUser.utilizationHeader`.
+
+**Caveat (registrado).** Os benchmarks de utilização de agência (60–80%
+saudável, 85%+ risco) **não passaram na verificação adversarial** da pesquisa —
+por isso é faixa indicativa, sem alarme, e a meta é por-pessoa (não global).
+
+## Verificação (P0 + P1 + P2)
+
+- `tsc --noEmit` 0 erros · `vitest` 341/341 · `next build` limpo · paridade i18n 45/45.
 - Testes puros novos: `statusDurations`, `flowEfficiencyRatio`, `statusAt`,
-  `getSystemConstraint` (3 casos), `dependencyRiskLevel`, `percentile`,
-  `mulberry32`, `forecastWhen`, `forecastHowMany`.
-- Mocks de transação atualizados para `stageTransition` (create/createMany).
+  `getSystemConstraint` (3), `dependencyRiskLevel`, `percentile`, `mulberry32`,
+  `forecastWhen`, `forecastHowMany`, `getWipStatus` (full/over/within).
+- Mocks atualizados: `stageTransition` (create/createMany), `taskActiveStage.groupBy`.
 
 ## Pendências / próximos passos
 
-- **Migração `StageTransition` aplicada** em produção — feito.
-- **Validação com dados reais:** `/reports/performance` fica vazio até haver
-  tarefas concluídas e transições acumuladas; validar quando o fluxo rodar.
-- **P2 (próximo no roadmap):** WIP limits configuráveis + enforcement;
-  capacidade/utilização em horas (meta por pessoa).
-- **Refinamentos:** subdividir `ACTIVE` por `assignedAt` (fila-de-prontos vs.
-  trabalho); materializar o CFD se o replay ficar pesado; backfill exato do
-  histórico pré-migração é impossível (assumido).
+- **Migrações aplicadas:** `StageTransition` (P0.1) — feito. **`20260721140000`
+  (wipLimit + weeklyCapacityHours) — aplicar em produção** (`prisma migrate deploy`).
+- **Configurar dados:** WIP limits por etapa (editor de template) e capacidade
+  por pessoa (edit de usuário) começam nulos — nada aparece até configurar.
+- **Validação com dados reais:** cards de fluxo/forecast enchem conforme o fluxo roda.
+- **P3 (próximo no roadmap):** sinais de burnout (sobrecarga sustentada + horas
+  acima da meta) e rotinas guiadas (revisão semanal de WIP/aging, 1:1, health checks).
+- **Refinamentos:** subdividir `ACTIVE` por `assignedAt`; materializar o CFD se o
+  replay ficar pesado; backfill exato do histórico pré-migração é impossível.

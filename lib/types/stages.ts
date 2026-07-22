@@ -34,6 +34,7 @@ export interface Stage {
   name: string;
   order: number;
   expectedDurationHours: number | null;
+  wipLimit: number | null;
   defaultTeamId: string | null;
   optional: boolean;
   defaultTeam: StageTeamRef | null;

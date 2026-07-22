@@ -1254,6 +1254,21 @@ export async function claimActiveStage(taskId: string, stageId: string) {
       return { error: "Esta etapa já está atribuída" };
     }
 
+    // WIP limit enforced as a PULL constraint: block claiming when this stage
+    // already has `wipLimit` items in progress (ACTIVE + assigned). Automatic
+    // dependency-driven activation is never blocked (it only creates unassigned
+    // ACTIVE rows, which do not count as in-progress WIP).
+    if (activeStage.stage.wipLimit != null) {
+      const inProgress = await prisma.taskActiveStage.count({
+        where: { stageId, status: "ACTIVE", assigneeId: { not: null } },
+      });
+      if (inProgress >= activeStage.stage.wipLimit) {
+        return {
+          error: `Etapa no limite de WIP (${inProgress}/${activeStage.stage.wipLimit}). Conclua trabalho aqui antes de pegar mais.`,
+        };
+      }
+    }
+
     await prisma.taskActiveStage.update({
       where: { id: activeStage.id },
       data: { assigneeId: currentUserId, assignedAt: new Date() },

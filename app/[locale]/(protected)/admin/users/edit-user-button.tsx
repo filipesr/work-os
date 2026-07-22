@@ -12,6 +12,7 @@ interface User {
   teams: { id: string; name: string }[];
   birthday: string | null; // yyyy-mm-dd
   admissionDate: string | null; // yyyy-mm-dd
+  weeklyCapacityHours: number | null;
 }
 
 interface Team {
@@ -35,6 +36,9 @@ export default function EditUserButton({ user, teams, updateUser }: EditUserButt
   );
   const [birthday, setBirthday] = useState(user.birthday ?? "");
   const [admissionDate, setAdmissionDate] = useState(user.admissionDate ?? "");
+  const [weeklyCapacityHours, setWeeklyCapacityHours] = useState(
+    user.weeklyCapacityHours != null ? String(user.weeklyCapacityHours) : ""
+  );
 
   const toggleTeam = (id: string) => {
     setSelectedTeams((prev) => {
@@ -134,6 +138,24 @@ export default function EditUserButton({ user, teams, updateUser }: EditUserButt
                       type="date"
                       value={admissionDate}
                       onChange={(e) => setAdmissionDate(e.target.value)}
+                      className={fieldClass}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="weeklyCapacityHours"
+                      className="block text-sm font-semibold text-foreground mb-2"
+                    >
+                      {t("capacityLabel")}
+                    </label>
+                    <input
+                      id="weeklyCapacityHours"
+                      name="weeklyCapacityHours"
+                      type="number"
+                      min="1"
+                      value={weeklyCapacityHours}
+                      onChange={(e) => setWeeklyCapacityHours(e.target.value)}
+                      placeholder={t("capacityPlaceholder")}
                       className={fieldClass}
                     />
                   </div>

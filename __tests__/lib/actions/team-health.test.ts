@@ -5,7 +5,7 @@ vi.mock("@/lib/prisma", () => ({
   default: {
     user: { findMany: vi.fn(), findUnique: vi.fn() },
     team: { findMany: vi.fn() },
-    taskActiveStage: { findMany: vi.fn() },
+    taskActiveStage: { findMany: vi.fn(), groupBy: vi.fn() },
     stageDependency: { findMany: vi.fn() },
     templateStage: { findMany: vi.fn(), findUnique: vi.fn() },
   },
@@ -274,5 +274,41 @@ describe("getSystemConstraint", () => {
     const c = await getSystemConstraint();
     expect(c!.stageName).toBe("Dev"); // sDone excluded
     expect(c!.blockedTaskCount).toBe(1);
+  });
+});
+
+import { getWipStatus } from "@/lib/actions/team-health";
+
+describe("getWipStatus", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns empty when no stage has a WIP limit", async () => {
+    asManager();
+    db.templateStage.findMany.mockResolvedValue([] as never);
+    expect(await getWipStatus()).toEqual([]);
+  });
+
+  it("flags stages at (full) and over (breached) their limit; hides within-limit", async () => {
+    asManager();
+    db.templateStage.findMany.mockResolvedValue([
+      { id: "sA", name: "QC", wipLimit: 3, defaultTeam: { name: "Quality" } },
+      { id: "sB", name: "Design", wipLimit: 2, defaultTeam: { name: "Creative" } },
+      { id: "sC", name: "Dev", wipLimit: 5, defaultTeam: null },
+    ] as never);
+    db.taskActiveStage.groupBy.mockResolvedValue([
+      { stageId: "sA", _count: { _all: 3 } }, // == limit → full
+      { stageId: "sB", _count: { _all: 4 } }, // > limit → over
+      { stageId: "sC", _count: { _all: 2 } }, // < limit → hidden
+    ] as never);
+
+    const rows = await getWipStatus();
+    expect(rows.map((r) => r.stageName)).toEqual(["Design", "QC"]); // over first
+    const design = rows.find((r) => r.stageName === "Design")!;
+    expect(design.state).toBe("over");
+    expect(design.inProgress).toBe(4);
+    expect(design.limit).toBe(2);
+    const qc = rows.find((r) => r.stageName === "QC")!;
+    expect(qc.state).toBe("full");
+    expect(rows.some((r) => r.stageName === "Dev")).toBe(false); // within limit
   });
 });

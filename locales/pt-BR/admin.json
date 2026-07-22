@@ -99,7 +99,9 @@
       "noTeam": "Sem Equipe",
       "cancel": "Cancelar",
       "saveChanges": "Salvar Alterações",
-      "saving": "Salvando..."
+      "saving": "Salvando...",
+      "capacityLabel": "Capacidade (h/semana)",
+      "capacityPlaceholder": "ex.: 40"
     },
     "detail": {
       "backToUsers": "Voltar para Usuários",
@@ -542,6 +544,11 @@
       "title": "Restrição do sistema",
       "detail": "{tasks} tarefa(s) represada(s) · {wait} de espera acumulada",
       "hint": "Priorize concluir trabalho nesta etapa: é o que mais destrava o fluxo agora."
+    },
+    "wip": {
+      "title": "Limites de WIP",
+      "full": "no limite",
+      "over": "acima do limite"
     }
   }
 }

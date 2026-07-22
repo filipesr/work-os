@@ -50,6 +50,15 @@ export interface SystemConstraint {
   totalWaitHours: number; // accumulated wait of those blocked items
 }
 
+export interface WipStageStatus {
+  stageId: string;
+  stageName: string;
+  teamName: string | null;
+  inProgress: number; // ACTIVE + assigned instances of this stage
+  limit: number;
+  state: "full" | "over"; // full = at limit, over = breached
+}
+
 /** Median of a numeric list (0 for empty). Pure helper. */
 export function median(values: number[]): number {
   if (values.length === 0) return 0;
@@ -234,6 +243,52 @@ export async function getBlockedStages(teamIds?: string[]): Promise<BlockedItem[
       };
     })
     .sort((a, b) => b.ageHours - a.ageHours);
+}
+
+/**
+ * WIP-limit status for stages that have a limit set: how many items are in
+ * progress (ACTIVE + assigned) vs the limit. Returns only stages at (`full`) or
+ * over (`over`) their limit — the breaches worth surfacing. Auto-activation
+ * never blocks, so `over` arises from direct admin assignment or a lowered
+ * limit. Scoped by the stage's team.
+ */
+export async function getWipStatus(teamIds?: string[]): Promise<WipStageStatus[]> {
+  await requireManagerOrAdmin();
+  const scope = teamIds ?? (await resolveTeamIds());
+
+  const stages = await prisma.templateStage.findMany({
+    where: { wipLimit: { not: null }, defaultTeamId: { in: scope } },
+    select: { id: true, name: true, wipLimit: true, defaultTeam: { select: { name: true } } },
+  });
+  if (stages.length === 0) return [];
+
+  const counts = await prisma.taskActiveStage.groupBy({
+    by: ["stageId"],
+    where: {
+      stageId: { in: stages.map((s) => s.id) },
+      status: "ACTIVE",
+      assigneeId: { not: null },
+    },
+    _count: { _all: true },
+  });
+  const countByStage = new Map(counts.map((c) => [c.stageId, c._count._all]));
+
+  return stages
+    .map((s): WipStageStatus | null => {
+      const limit = s.wipLimit!;
+      const inProgress = countByStage.get(s.id) ?? 0;
+      if (inProgress < limit) return null; // within limit — nothing to surface
+      return {
+        stageId: s.id,
+        stageName: s.name,
+        teamName: s.defaultTeam?.name ?? null,
+        inProgress,
+        limit,
+        state: inProgress > limit ? "over" : "full",
+      };
+    })
+    .filter((s): s is WipStageStatus => s !== null)
+    .sort((a, b) => b.inProgress - b.limit - (a.inProgress - a.limit));
 }
 
 /**
