@@ -1,15 +1,10 @@
-import {
-  PrismaClient,
-  UserRole,
-  TaskStatus,
-  TaskPriority,
-  ActiveStageStatus,
-  StageLogStatus,
-} from "@prisma/client";
+import { PrismaClient, Prisma, UserRole, TaskStatus, TaskPriority } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
+
+const NOW = new Date();
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -66,6 +61,12 @@ function randomDateBetween(start: Date, end: Date): Date {
   return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 }
 
+/** Clamp a chained stage date into the past (in-flight stages must have activated
+ * before now — the naïve duration chain can overshoot for recently-created tasks). */
+function pastify(d: Date, fallbackMaxDays: number): Date {
+  return d.getTime() > NOW.getTime() - 3.6e6 ? daysAgo(randomInt(1, fallbackMaxDays)) : d;
+}
+
 function pickPriority(): TaskPriority {
   const r = Math.random();
   if (r < 0.2) return "LOW";
@@ -77,20 +78,30 @@ function pickPriority(): TaskPriority {
 function pickDueDate(_createdAt: Date): Date | null {
   const r = Math.random();
   const now = new Date();
-  // Concentrado pra demo/piloto: 70% das tarefas têm prazo na semana corrente
-  // ou imediatamente vizinha (mais visibilidade no Gantt + métricas relevantes).
-  if (r < 0.08) return null; // 8% sem prazo (alimenta linha "Sem prazo" do Gantt)
-  if (r < 0.3) return addDays(now, -randomInt(1, 6)); // 22% atrasadas (≤ 6 dias)
+  if (r < 0.08) return null; // 8% sem prazo
+  if (r < 0.3) return addDays(now, -randomInt(1, 6)); // 22% atrasadas
   if (r < 0.5) return addDays(now, randomInt(0, 2)); // 20% próximos 3 dias
-  if (r < 0.75) return addDays(now, randomInt(3, 7)); // 25% no restante da semana
+  if (r < 0.75) return addDays(now, randomInt(3, 7)); // 25% resto da semana
   if (r < 0.92) return addDays(now, randomInt(8, 14)); // 17% próxima semana
   return addDays(now, randomInt(15, 35)); // 8% futuro distante
+}
+
+/** A stage whose name suggests a review/quality gate — where we concentrate the
+ * system constraint (more blocking, more aging, tighter WIP limit → ToC). */
+function isBottleneckStageName(name: string): boolean {
+  const n = name.toLowerCase();
+  return ["design", "quality", "revis", "qc", "aprova"].some((h) => n.includes(h));
 }
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
 
 const DEMO_EMAIL_DOMAIN = "@demo.workos.fake";
 const DEMO_CLIENT_PREFIX = "[DEMO] ";
+
+// Real users promoted to rich per-person history (their contributions live on
+// DEMO tasks, so demo-cleanup removes them via task cascade; only their
+// weeklyCapacityHours — a field on the real User — is reset by cleanup).
+const RICH_REAL_EMAILS = ["movimento.jant@gmail.com", "leligoonmkt@gmail.com"];
 
 interface TeamUserSpec {
   team: string;
@@ -99,39 +110,33 @@ interface TeamUserSpec {
   roles: UserRole[];
 }
 
+// Enxuto (~19) e concentrado nos times REAIS usados pelos templates semeados
+// (Vídeo Curto, Post Carrossel, Campanha de Tráfego, Landing Page).
 const TEAM_USERS: TeamUserSpec[] = [
+  {
+    team: "Designers",
+    slug: "design",
+    count: 3,
+    roles: [...Array(2).fill("MEMBER" as UserRole), "SUPERVISOR"],
+  },
+  { team: "Software Engineer", slug: "dev", count: 2, roles: Array(2).fill("MEMBER" as UserRole) },
+  { team: "Video-makers", slug: "video", count: 2, roles: Array(2).fill("MEMBER" as UserRole) },
   {
     team: "Quality Control",
     slug: "qc",
-    count: 8,
-    roles: [...Array(7).fill("MEMBER" as UserRole), "SUPERVISOR"],
+    count: 3,
+    roles: [...Array(2).fill("MEMBER" as UserRole), "SUPERVISOR"],
   },
   {
     team: "Traffic Manager",
     slug: "traffic",
-    count: 8,
-    roles: [...Array(7).fill("MEMBER" as UserRole), "SUPERVISOR"],
+    count: 3,
+    roles: Array(3).fill("MEMBER" as UserRole),
   },
-  {
-    team: "Social Media",
-    slug: "social",
-    count: 7,
-    roles: [...Array(6).fill("MEMBER" as UserRole), "SUPERVISOR"],
-  },
-  {
-    team: "Designers",
-    slug: "design",
-    count: 7,
-    roles: [...Array(6).fill("MEMBER" as UserRole), "SUPERVISOR"],
-  },
-  { team: "Video-makers", slug: "video", count: 5, roles: Array(5).fill("MEMBER" as UserRole) },
-  { team: "Copywriting", slug: "copy", count: 5, roles: Array(5).fill("MEMBER" as UserRole) },
-  { team: "Software Engineer", slug: "dev", count: 5, roles: Array(5).fill("MEMBER" as UserRole) },
-  { team: "SEO", slug: "seo", count: 4, roles: Array(4).fill("MEMBER" as UserRole) },
-  { team: "Manager", slug: "mgr", count: 4, roles: Array(4).fill("MANAGER" as UserRole) },
-  { team: "Supervisor", slug: "sup", count: 3, roles: Array(3).fill("SUPERVISOR" as UserRole) },
-  { team: "Call Center", slug: "call", count: 2, roles: Array(2).fill("MEMBER" as UserRole) },
-  { team: "HR", slug: "hr", count: 2, roles: Array(2).fill("MEMBER" as UserRole) },
+  { team: "Social Media", slug: "social", count: 2, roles: Array(2).fill("MEMBER" as UserRole) },
+  { team: "Briefing", slug: "brief", count: 1, roles: ["MEMBER" as UserRole] },
+  { team: "Proofreading", slug: "proof", count: 1, roles: ["MEMBER" as UserRole] },
+  { team: "Manager", slug: "mgr", count: 2, roles: Array(2).fill("MANAGER" as UserRole) },
 ];
 
 const BRAZILIAN_NAMES = [
@@ -151,50 +156,12 @@ const BRAZILIAN_NAMES = [
   "Nicolas Gonçalves",
   "Olívia Ribeiro",
   "Pedro Carvalho",
-  "Quitéria Moraes",
   "Rafael Nascimento",
   "Sara Mendes",
   "Thiago Correia",
-  "Ursula Teixeira",
-  "Vinícius Cardoso",
-  "Wanda Pinto",
-  "Xavier Rocha",
-  "Yasmin Monteiro",
-  "Arthur Dias",
-  "Bianca Nunes",
-  "Caio Machado",
-  "Débora Freitas",
-  "Enzo Moreira",
-  "Fernanda Castro",
-  "Gustavo Campos",
-  "Helena Vieira",
-  "Igor Rezende",
-  "Juliana Andrade",
-  "Kevin Lopes",
-  "Larissa Duarte",
-  "Mateus Ramos",
-  "Natália Guimarães",
-  "Otávio Medeiros",
-  "Patrícia Amaral",
-  "Raul Fonseca",
-  "Simone Cavalcanti",
-  "Tomás Miranda",
   "Valentina Alves",
   "Wagner Batista",
-  "Ximena Cruz",
-  "Yuri Barros",
-  "Zélia Pinheiro",
-  "Amanda Gomes",
-  "Bernardo Leite",
-  "Cecília Amorim",
-  "Diego Tavares",
-  "Elisa Borges",
-  "Fabiana Dantas",
-  "Guilherme Melo",
-  "Heloísa Reis",
-  "Ian Figueiredo",
-  "Joana Assis",
-  "Leonardo Nogueira",
+  "Yasmin Monteiro",
 ];
 
 interface DemoClient {
@@ -206,13 +173,8 @@ const DEMO_CLIENTS: DemoClient[] = [
   { name: "Nova Saúde", projects: ["Campanha Verão 2025", "Portal do Paciente"] },
   { name: "TechFit", projects: ["Lançamento App 3.0", "Black Friday 2025"] },
   { name: "Café Artesanal", projects: ["Rebranding 2025", "Social Media Mensal"] },
-  { name: "EduPlus", projects: ["LP Curso Python", "Campanha Matrículas"] },
-  { name: "AutoElite", projects: ["Feirão de Outubro", "Instagram Semanal"] },
-  { name: "PetAmigo", projects: ["E-commerce Launch", "Conteúdo Redes"] },
-  { name: "Construtora Horizonte", projects: ["Lançamento Residencial Aurora"] },
 ];
 
-// Task titles per template type
 const VIDEO_TITLES = [
   "Reels Promo Verão",
   "TikTok Behind Scenes",
@@ -232,23 +194,6 @@ const VIDEO_TITLES = [
   "Story Enquete Produto",
   "Reels Desafio Marca",
   "TikTok Collab Creator",
-  "Reels Data Comemorativa",
-  "Story Oferta Relâmpago",
-  "Reels Bastidores Equipe",
-  "TikTok Antes e Depois",
-  "Reels Apresentação Time",
-  "Story Mini-doc",
-  "Reels Review Produto",
-  "TikTok Dia a Dia",
-  "Reels Lançamento Feature",
-  "Story Rotina Empresa",
-  "Reels Dica Rápida",
-  "TikTok Transformação",
-  "Reels Agradecimento",
-  "Story Flash Sale",
-  "Reels Q&A Rápido",
-  "TikTok Hack Produto",
-  "Reels Parceria Especial",
 ];
 
 const CARROSSEL_TITLES = [
@@ -270,23 +215,6 @@ const CARROSSEL_TITLES = [
   "Carrossel Storytelling Case",
   "Carrossel Produtos Destaque",
   "Carrossel Mini Tutorial",
-  "Carrossel Tendências 2025",
-  "Carrossel Mitos e Verdades",
-  "Carrossel Benefícios Produto",
-  "Carrossel Processo Criativo",
-  "Carrossel Ranking Mensal",
-  "Carrossel Data Especial",
-  "Carrossel Equipe Apresentação",
-  "Carrossel Dúvidas Comuns",
-  "Carrossel Transformação",
-  "Carrossel Receita da Semana",
-  "Carrossel Promoção Sazonal",
-  "Carrossel Curiosidades",
-  "Carrossel Resumo Evento",
-  "Carrossel KPIs do Mês",
-  "Carrossel Parceiros",
-  "Carrossel Sustentabilidade",
-  "Carrossel Review Serviço",
 ];
 
 const LP_TITLES = [
@@ -305,16 +233,6 @@ const LP_TITLES = [
   "LP Congresso Digital",
   "LP Pré-Venda Produto",
   "LP Captação Leads B2B",
-  "LP Imersão Fitness",
-  "LP Pacote Corporativo",
-  "LP Demo Gratuita",
-  "LP Matrícula Antecipada",
-  "LP Upgrade Plano",
-  "LP Franchise Info",
-  "LP Case Study Download",
-  "LP Newsletter VIP",
-  "LP Reserva Antecipada",
-  "LP Workshop Intensivo",
 ];
 
 const TRAFEGO_TITLES = [
@@ -333,34 +251,99 @@ const TRAFEGO_TITLES = [
   "Google Ads Search Brand",
   "Meta Ads Conversão Loja",
   "Pinterest Ads Lifestyle",
-  "Google Ads Display Network",
-  "Meta Ads Evento Local",
-  "Spotify Ads Podcast",
-  "Google Ads Performance Max",
-  "Meta Ads Lookalike",
-  "Twitter Ads Engagement",
-  "Google Shopping Produtos",
-  "Meta Ads Video Views",
-  "LinkedIn InMail Campaign",
-  "Google Ads App Install",
 ];
+
+const REWORK_REASONS = [
+  "Cliente pediu ajuste no tom da copy após revisão.",
+  "Cores fora do manual da marca — refazer arte.",
+  "Faltou CTA no layout aprovado; devolvido para correção.",
+  "Erro de dado no criativo (preço desatualizado).",
+  "Enquadramento do vídeo cortou o logo — reeditar.",
+  "Texto com erro de português apontado no QC.",
+  "Briefing mudou de direção; versão anterior descartada.",
+  "Link da LP quebrado no ambiente de homologação.",
+  "Cliente mudou a oferta principal na última hora.",
+  "Ajuste de responsividade mobile solicitado pelo QC.",
+];
+
+const ONE_ON_ONE_NOTES = [
+  "Alinhamento de prioridades da semana; sem bloqueios.",
+  "Feedback sobre última entrega; combinamos foco em qualidade.",
+  "Conversa sobre carga de trabalho — redistribuir 1 demanda.",
+  "Desenvolvimento: interesse em assumir tarefas de motion.",
+  "Check-in rápido; tudo fluindo bem.",
+  "Revisamos os gargalos recentes na etapa de aprovação.",
+];
+
+// ─── StageTransition emission ────────────────────────────────────────────────────
+
+type TransitionInput = Prisma.StageTransitionCreateManyInput;
+
+/** Emit the transition log for a COMPLETED stage instance. ~fraction of stages
+ * get a BLOCKED span in the middle → flow efficiency < 100% for that stage. */
+async function emitCompletedTransitions(
+  taskId: string,
+  stageId: string,
+  activatedAt: Date,
+  completedAt: Date,
+  blocked: boolean
+): Promise<void> {
+  const rows: TransitionInput[] = [{ taskId, stageId, status: "ACTIVE", at: activatedAt }];
+  if (blocked && completedAt.getTime() > activatedAt.getTime()) {
+    const total = completedAt.getTime() - activatedAt.getTime();
+    rows.push({
+      taskId,
+      stageId,
+      status: "BLOCKED",
+      at: new Date(activatedAt.getTime() + total * 0.3),
+    });
+    rows.push({
+      taskId,
+      stageId,
+      status: "ACTIVE",
+      at: new Date(activatedAt.getTime() + total * 0.6),
+    });
+  }
+  rows.push({ taskId, stageId, status: "COMPLETED", at: completedAt });
+  await prisma.stageTransition.createMany({ data: rows });
+}
+
+/** Emit the transition log for a currently-open stage (ACTIVE, optionally then
+ * BLOCKED — the last status accrues to `now` in the flow-efficiency reconstruction). */
+async function emitOpenTransitions(
+  taskId: string,
+  stageId: string,
+  activatedAt: Date,
+  blockedAt: Date | null
+): Promise<void> {
+  const rows: TransitionInput[] = [{ taskId, stageId, status: "ACTIVE", at: activatedAt }];
+  if (blockedAt) rows.push({ taskId, stageId, status: "BLOCKED", at: blockedAt });
+  await prisma.stageTransition.createMany({ data: rows });
+}
 
 // ─── Main Seed Logic ───────────────────────────────────────────────────────────
 
 async function main() {
   console.log("🌱 Starting demo seed...\n");
 
-  // ─── 1. Fetch existing teams ─────────────────────────────────────────────────
+  // ─── 1. Teams + real rich users ──────────────────────────────────────────────
 
   const allTeams = await prisma.team.findMany();
   const teamMap = new Map(allTeams.map((t) => [t.name, t.id]));
   console.log(`Found ${allTeams.length} teams.`);
 
-  // ─── 2. Create demo users ────────────────────────────────────────────────────
+  const richReal = await prisma.user.findMany({
+    where: { email: { in: RICH_REAL_EMAILS } },
+    select: { id: true, email: true },
+  });
+  const richRealIds = richReal.map((u) => u.id);
+  console.log(`Rich real users resolved: ${richReal.map((u) => u.email).join(", ") || "(none)"}`);
+
+  // ─── 2. Demo users (with weekly capacity) ────────────────────────────────────
 
   const namePool = shuffle(BRAZILIAN_NAMES);
   let nameIdx = 0;
-  const usersByTeam = new Map<string, string[]>(); // teamName → userId[]
+  const usersByTeam = new Map<string, string[]>();
   const allUserIds: string[] = [];
 
   for (const spec of TEAM_USERS) {
@@ -374,11 +357,21 @@ async function main() {
       const email = `demo-${spec.slug}-${String(i).padStart(2, "0")}${DEMO_EMAIL_DOMAIN}`;
       const name = namePool[nameIdx++] || `Demo User ${nameIdx}`;
       const role = spec.roles[i - 1];
-
       const user = await prisma.user.upsert({
         where: { email },
-        update: { name, role, teams: { set: [{ id: teamId }] } },
-        create: { email, name, role, teams: { connect: { id: teamId } } },
+        update: {
+          name,
+          role,
+          weeklyCapacityHours: randomInt(30, 40),
+          teams: { set: [{ id: teamId }] },
+        },
+        create: {
+          email,
+          name,
+          role,
+          weeklyCapacityHours: randomInt(30, 40),
+          teams: { connect: { id: teamId } },
+        },
       });
       ids.push(user.id);
       allUserIds.push(user.id);
@@ -387,35 +380,39 @@ async function main() {
   }
   console.log(`Created ${allUserIds.length} demo users.\n`);
 
-  // ─── 3. Set lastSeenAt for presence ──────────────────────────────────────────
+  const managerPool = [...(usersByTeam.get("Manager") ?? []), ...richRealIds];
+  const managerIds = managerPool.length > 0 ? managerPool : allUserIds;
+
+  // Give the rich real users a capacity target too (reset by demo-cleanup).
+  for (const id of richRealIds) {
+    await prisma.user.update({ where: { id }, data: { weeklyCapacityHours: 40 } });
+  }
+
+  // ─── 3. Presence (lastSeenAt) ────────────────────────────────────────────────
 
   const shuffledUsers = shuffle(allUserIds);
   const presenceBuckets: { count: number; fn: () => Date | null }[] = [
-    { count: 12, fn: () => minutesAgo(randomInt(0, 5)) }, // Online agora
-    { count: 10, fn: () => hoursAgo(randomFloat(1, 4)) }, // Recente
-    { count: 10, fn: () => hoursAgo(randomFloat(5, 12)) }, // Hoje cedo
-    { count: 8, fn: () => daysAgo(1) }, // Ontem
-    { count: 10, fn: () => daysAgo(randomInt(2, 14)) }, // Dias atrás
-    { count: 10, fn: () => null }, // Nunca visto
+    { count: 4, fn: () => minutesAgo(randomInt(0, 5)) },
+    { count: 3, fn: () => hoursAgo(randomFloat(1, 4)) },
+    { count: 3, fn: () => hoursAgo(randomFloat(5, 12)) },
+    { count: 2, fn: () => daysAgo(1) },
+    { count: 3, fn: () => daysAgo(randomInt(2, 14)) },
+    { count: 3, fn: () => null },
   ];
-
   let presIdx = 0;
   for (const bucket of presenceBuckets) {
     for (let i = 0; i < bucket.count && presIdx < shuffledUsers.length; i++, presIdx++) {
-      const lastSeenAt = bucket.fn();
       await prisma.user.update({
         where: { id: shuffledUsers[presIdx] },
-        data: { lastSeenAt },
+        data: { lastSeenAt: bucket.fn() },
       });
     }
   }
   console.log("Set lastSeenAt for presence simulation.");
 
-  // ─── 4. Create demo clients & projects ───────────────────────────────────────
+  // ─── 4. Clients & projects ───────────────────────────────────────────────────
 
   const projectIds: string[] = [];
-  const projectMap = new Map<string, string>(); // projectName → projectId
-
   for (const c of DEMO_CLIENTS) {
     const client = await prisma.client.upsert({
       where: { name: `${DEMO_CLIENT_PREFIX}${c.name}` },
@@ -427,7 +424,6 @@ async function main() {
         phone: `(11) 9${randomInt(1000, 9999)}-${randomInt(1000, 9999)}`,
       },
     });
-
     for (const projName of c.projects) {
       const project = await prisma.project.create({
         data: {
@@ -437,19 +433,30 @@ async function main() {
         },
       });
       projectIds.push(project.id);
-      projectMap.set(projName, project.id);
     }
   }
   console.log(`Created ${DEMO_CLIENTS.length} clients and ${projectIds.length} projects.\n`);
 
-  // ─── 5. Fetch templates & stages ─────────────────────────────────────────────
+  // ─── 5. Templates + WIP limits ───────────────────────────────────────────────
 
   const templates = await prisma.workflowTemplate.findMany({
     include: { stages: { orderBy: { order: "asc" } } },
   });
   const templateByName = new Map(templates.map((t) => [t.name, t]));
 
-  // ─── 6. Create tasks ─────────────────────────────────────────────────────────
+  // Set wipLimit on real template stages (reset to null by demo-cleanup). The
+  // bottleneck stage gets a tight limit so its WIP meter reads over-limit.
+  let wipStagesSet = 0;
+  for (const tpl of templates) {
+    for (const stage of tpl.stages) {
+      const limit = isBottleneckStageName(stage.name) ? 2 : randomInt(4, 5);
+      await prisma.templateStage.update({ where: { id: stage.id }, data: { wipLimit: limit } });
+      wipStagesSet++;
+    }
+  }
+  console.log(`Set wipLimit on ${wipStagesSet} template stages.`);
+
+  // ─── 6. Tasks (3 trajectories) ───────────────────────────────────────────────
 
   interface TaskPlan {
     templateName: string;
@@ -458,34 +465,29 @@ async function main() {
     cancelledCount?: number;
   }
 
-  // For 3-stage templates (Video, Carrossel, Tráfego):
-  // stage 1: 8, stage 2: 8, stage 3: 6, completed: 7, backlog: 4, paused: 2
   const threeStage35: TaskPlan["distribution"] = [
-    { stage: 1, count: 8, status: "IN_PROGRESS", hasAssignee: true },
-    { stage: 2, count: 8, status: "IN_PROGRESS", hasAssignee: true },
-    { stage: 3, count: 6, status: "IN_PROGRESS", hasAssignee: true },
-    { stage: -1, count: 7, status: "COMPLETED", hasAssignee: true }, // -1 = all completed
-    { stage: 1, count: 4, status: "BACKLOG", hasAssignee: false },
-    { stage: 1, count: 2, status: "PAUSED", hasAssignee: true },
+    { stage: 1, count: 6, status: "IN_PROGRESS", hasAssignee: true },
+    { stage: 2, count: 6, status: "IN_PROGRESS", hasAssignee: true },
+    { stage: 3, count: 4, status: "IN_PROGRESS", hasAssignee: true },
+    { stage: -1, count: 12, status: "COMPLETED", hasAssignee: true },
+    { stage: 1, count: 3, status: "BACKLOG", hasAssignee: false },
+    { stage: 2, count: 2, status: "PAUSED", hasAssignee: true },
   ];
 
   const threeStage25: TaskPlan["distribution"] = [
-    { stage: 1, count: 5, status: "IN_PROGRESS", hasAssignee: true },
-    { stage: 2, count: 6, status: "IN_PROGRESS", hasAssignee: true },
-    { stage: 3, count: 4, status: "IN_PROGRESS", hasAssignee: true },
-    { stage: -1, count: 5, status: "COMPLETED", hasAssignee: true },
-    { stage: 1, count: 3, status: "BACKLOG", hasAssignee: false },
-    { stage: 1, count: 2, status: "PAUSED", hasAssignee: true },
+    { stage: 1, count: 4, status: "IN_PROGRESS", hasAssignee: true },
+    { stage: 2, count: 5, status: "IN_PROGRESS", hasAssignee: true },
+    { stage: 3, count: 3, status: "IN_PROGRESS", hasAssignee: true },
+    { stage: -1, count: 10, status: "COMPLETED", hasAssignee: true },
+    { stage: 1, count: 2, status: "BACKLOG", hasAssignee: false },
+    { stage: 1, count: 1, status: "PAUSED", hasAssignee: true },
   ];
 
-  // For 5-stage LP template:
-  // stage 1: 4, stage 2: 4, stage 3: 4, stage 4+5 parallel: 4, completed: 4, backlog: 2, paused: 1, cancelled: 2
-  const fiveStageLP: TaskPlan["distribution"] = [
-    { stage: 1, count: 4, status: "IN_PROGRESS", hasAssignee: true },
+  const fourStageLP: TaskPlan["distribution"] = [
+    { stage: 1, count: 3, status: "IN_PROGRESS", hasAssignee: true },
     { stage: 2, count: 4, status: "IN_PROGRESS", hasAssignee: true },
-    { stage: 3, count: 4, status: "IN_PROGRESS", hasAssignee: true },
-    { stage: 4, count: 4, status: "IN_PROGRESS", hasAssignee: true }, // 4 = parallel QC+SEO
-    { stage: -1, count: 4, status: "COMPLETED", hasAssignee: true },
+    { stage: 3, count: 3, status: "IN_PROGRESS", hasAssignee: true },
+    { stage: -1, count: 12, status: "COMPLETED", hasAssignee: true },
     { stage: 1, count: 2, status: "BACKLOG", hasAssignee: false },
     { stage: 2, count: 1, status: "PAUSED", hasAssignee: true },
   ];
@@ -500,16 +502,35 @@ async function main() {
     {
       templateName: "Landing Page",
       titles: LP_TITLES,
-      distribution: fiveStageLP,
+      distribution: fourStageLP,
       cancelledCount: 2,
     },
     { templateName: "Campanha de Tráfego", titles: TRAFEGO_TITLES, distribution: threeStage25 },
   ];
 
+  // Rework candidates: completed stage instances we can later attribute a defect to.
+  interface ReworkCandidate {
+    taskId: string;
+    sourceStageId: string;
+    sourceAssigneeId: string;
+    isBottleneck: boolean;
+    taskCreatedAt: Date;
+    taskCompletedAt: Date | null;
+  }
+  const reworkCandidates: ReworkCandidate[] = [];
+  const activityLogCandidates: { userId: string; taskId: string; stageId: string }[] = [];
+  const recentTimeLogTargets: { userId: string; taskId: string; stageId: string }[] = [];
+
   let totalTasks = 0;
   let totalTimeLogs = 0;
-  const onlineUserIds = shuffledUsers.slice(0, 12); // Users marked online
-  const activityLogCandidates: { userId: string; taskId: string; stageId: string }[] = [];
+  let totalTransitions = 0;
+  let blockedNow = 0;
+
+  const pickAssignee = (stageUsers: string[]): string => {
+    const pool = stageUsers.length > 0 ? stageUsers : allUserIds;
+    if (richRealIds.length > 0 && Math.random() < 0.22) return pick(richRealIds);
+    return pick(pool);
+  };
 
   for (const plan of taskPlans) {
     const template = templateByName.get(plan.templateName);
@@ -517,48 +538,82 @@ async function main() {
       console.warn(`Template "${plan.templateName}" not found, skipping.`);
       continue;
     }
-
-    const stages = template.stages; // already sorted by order
+    const stages = template.stages;
     const titlePool = shuffle(plan.titles);
     let titleIdx = 0;
 
-    // Get users per stage based on defaultTeam
     const stageUserMap = new Map<string, string[]>();
     for (const stage of stages) {
       if (stage.defaultTeamId) {
         const team = allTeams.find((t) => t.id === stage.defaultTeamId);
-        if (team) {
-          stageUserMap.set(stage.id, usersByTeam.get(team.name) || []);
-        }
+        if (team) stageUserMap.set(stage.id, usersByTeam.get(team.name) || []);
       }
     }
+
+    // Create a single currently-open stage (ACTIVE or BLOCKED) for an in-flight task.
+    const createOpenStage = async (
+      taskId: string,
+      stage: (typeof stages)[number],
+      chainedStart: Date,
+      hasAssignee: boolean
+    ): Promise<void> => {
+      const stageUsers = stageUserMap.get(stage.id) || [];
+      const assignee = hasAssignee ? pickAssignee(stageUsers) : null;
+      const bottleneck = isBottleneckStageName(stage.name);
+      const activatedAt = pastify(chainedStart, bottleneck ? 16 : 10);
+      const blocked = bottleneck ? Math.random() < 0.5 : Math.random() < 0.2;
+      let blockedAt: Date | null = null;
+      if (blocked) {
+        const span = NOW.getTime() - activatedAt.getTime();
+        blockedAt = new Date(activatedAt.getTime() + span * randomFloat(0.3, 0.7, 3));
+        blockedNow++;
+      }
+      await prisma.taskActiveStage.create({
+        data: {
+          taskId,
+          stageId: stage.id,
+          status: blocked ? "BLOCKED" : "ACTIVE",
+          assigneeId: assignee,
+          activatedAt,
+          assignedAt: assignee ? activatedAt : null,
+          blockedAt,
+          completedAt: null,
+        },
+      });
+      await prisma.taskStageLog.create({
+        data: {
+          taskId,
+          stageId: stage.id,
+          enteredAt: activatedAt,
+          exitedAt: null,
+          status: null,
+          userId: assignee || pickAssignee(stageUsers),
+        },
+      });
+      await emitOpenTransitions(taskId, stage.id, activatedAt, blockedAt);
+      totalTransitions += blockedAt ? 2 : 1;
+      if (assignee) {
+        activityLogCandidates.push({ userId: assignee, taskId, stageId: stage.id });
+        if (!blocked) recentTimeLogTargets.push({ userId: assignee, taskId, stageId: stage.id });
+      }
+    };
 
     for (const dist of plan.distribution) {
       for (let i = 0; i < dist.count; i++) {
         const title = titlePool[titleIdx++ % titlePool.length];
         const projectId = pick(projectIds);
-        const createdAt = daysAgo(randomInt(5, 45));
+        const createdAt = daysAgo(randomInt(5, 80));
         const priority = pickPriority();
         const dueDate = pickDueDate(createdAt);
 
-        // Determine how many stages are completed
         let completedStageCount: number;
-        let isParallelLP = false;
+        if (dist.status === "COMPLETED") completedStageCount = stages.length;
+        else completedStageCount = dist.stage - 1;
 
-        if (dist.status === "COMPLETED") {
-          completedStageCount = stages.length;
-        } else if (dist.stage === 4 && plan.templateName === "Landing Page") {
-          // Parallel QC + SEO — 3 stages completed (Copy, Design, Dev), 2 active (QC, SEO)
-          completedStageCount = 3;
-          isParallelLP = true;
-        } else {
-          completedStageCount = dist.stage - 1;
-        }
-
-        // Build task data
+        // Cycle time (completed tasks): smooth-ish distribution per stage count.
         const completedAt =
           dist.status === "COMPLETED"
-            ? addDays(createdAt, randomInt(completedStageCount * 2, completedStageCount * 5 + 10))
+            ? addDays(createdAt, randomInt(completedStageCount * 2, completedStageCount * 5 + 8))
             : null;
 
         const task = await prisma.task.create({
@@ -571,21 +626,19 @@ async function main() {
             dueDate,
             completedAt,
             projectId,
+            workflowTemplateId: template.id,
           },
         });
         totalTasks++;
 
-        // Build stage timestamps chain
         let stageStartDate = addDays(createdAt, randomFloat(0, 1));
 
-        // Create completed stages
         for (let s = 0; s < completedStageCount && s < stages.length; s++) {
           const stage = stages[s];
-          const mappedStageUsers = stageUserMap.get(stage.id);
-          const stageUsers =
-            mappedStageUsers && mappedStageUsers.length > 0 ? mappedStageUsers : allUserIds;
-          const assignee = pick(stageUsers);
-          const stageDuration = randomInt(1, 5);
+          const stageUsers = stageUserMap.get(stage.id) || [];
+          const assignee = pickAssignee(stageUsers);
+          const bottleneck = isBottleneckStageName(stage.name);
+          const stageDuration = randomInt(1, bottleneck ? 7 : 5);
           const stageEndDate = addDays(stageStartDate, stageDuration);
 
           await prisma.taskActiveStage.create({
@@ -595,10 +648,10 @@ async function main() {
               status: "COMPLETED",
               assigneeId: assignee,
               activatedAt: stageStartDate,
+              assignedAt: stageStartDate,
               completedAt: stageEndDate,
             },
           });
-
           await prisma.taskStageLog.create({
             data: {
               taskId: task.id,
@@ -610,7 +663,10 @@ async function main() {
             },
           });
 
-          // TimeLogs for ~60% of tasks on completed stages
+          const blocked = bottleneck ? Math.random() < 0.45 : Math.random() < 0.25;
+          await emitCompletedTransitions(task.id, stage.id, stageStartDate, stageEndDate, blocked);
+          totalTransitions += blocked ? 4 : 2;
+
           if (Math.random() < 0.6) {
             const logCount = randomInt(1, 3);
             for (let l = 0; l < logCount; l++) {
@@ -628,102 +684,40 @@ async function main() {
             }
           }
 
+          // Track as a possible defect source (bias to bottleneck/quality stages).
+          reworkCandidates.push({
+            taskId: task.id,
+            sourceStageId: stage.id,
+            sourceAssigneeId: assignee,
+            isBottleneck: bottleneck,
+            taskCreatedAt: createdAt,
+            taskCompletedAt: completedAt,
+          });
+
           stageStartDate = addDays(stageEndDate, randomFloat(0, 0.5));
         }
 
-        // Create current active stage(s)
-        if (dist.status !== "COMPLETED") {
-          if (isParallelLP) {
-            // Both QC (stage[3]) and SEO (stage[4]) active
-            for (const parallelIdx of [3, 4]) {
-              const stage = stages[parallelIdx];
-              const mappedStageUsers = stageUserMap.get(stage.id);
-              const stageUsers =
-                mappedStageUsers && mappedStageUsers.length > 0 ? mappedStageUsers : allUserIds;
-              const assignee = dist.hasAssignee ? pick(stageUsers) : null;
-
-              await prisma.taskActiveStage.create({
-                data: {
-                  taskId: task.id,
-                  stageId: stage.id,
-                  status: "ACTIVE",
-                  assigneeId: assignee,
-                  activatedAt: stageStartDate,
-                  completedAt: null,
-                },
-              });
-
-              await prisma.taskStageLog.create({
-                data: {
-                  taskId: task.id,
-                  stageId: stage.id,
-                  enteredAt: stageStartDate,
-                  exitedAt: null,
-                  status: null,
-                  userId: assignee || pick(stageUsers),
-                },
-              });
-
-              if (assignee) {
-                activityLogCandidates.push({
-                  userId: assignee,
-                  taskId: task.id,
-                  stageId: stage.id,
-                });
-              }
-            }
-          } else {
-            // Single active stage
-            const activeStageIdx = completedStageCount;
-            if (activeStageIdx < stages.length) {
-              const stage = stages[activeStageIdx];
-              const mappedStageUsers = stageUserMap.get(stage.id);
-              const stageUsers =
-                mappedStageUsers && mappedStageUsers.length > 0 ? mappedStageUsers : allUserIds;
-              const assignee = dist.hasAssignee ? pick(stageUsers) : null;
-
-              await prisma.taskActiveStage.create({
-                data: {
-                  taskId: task.id,
-                  stageId: stage.id,
-                  status: "ACTIVE",
-                  assigneeId: assignee,
-                  activatedAt: stageStartDate,
-                  completedAt: null,
-                },
-              });
-
-              await prisma.taskStageLog.create({
-                data: {
-                  taskId: task.id,
-                  stageId: stage.id,
-                  enteredAt: stageStartDate,
-                  exitedAt: null,
-                  status: null,
-                  userId: assignee || pick(stageUsers),
-                },
-              });
-
-              if (assignee) {
-                activityLogCandidates.push({
-                  userId: assignee,
-                  taskId: task.id,
-                  stageId: stage.id,
-                });
-              }
-            }
+        // Current open stage for in-flight/paused tasks.
+        if (dist.status !== "COMPLETED" && dist.status !== "BACKLOG") {
+          const activeStageIdx = completedStageCount;
+          if (activeStageIdx < stages.length) {
+            await createOpenStage(
+              task.id,
+              stages[activeStageIdx],
+              stageStartDate,
+              dist.hasAssignee
+            );
           }
         }
       }
     }
 
-    // Create cancelled tasks for LP
+    // Cancelled tasks (LP): first stage completed, then cancelled.
     if (plan.cancelledCount) {
       for (let i = 0; i < plan.cancelledCount; i++) {
         const title = `${titlePool[titleIdx++ % titlePool.length]} (Cancelado)`;
         const projectId = pick(projectIds);
-        const createdAt = daysAgo(randomInt(10, 40));
-
+        const createdAt = daysAgo(randomInt(10, 60));
         const task = await prisma.task.create({
           data: {
             title,
@@ -733,17 +727,14 @@ async function main() {
             createdAt,
             dueDate: null,
             projectId,
+            workflowTemplateId: template.id,
           },
         });
         totalTasks++;
-
-        // Cancelled after first stage
         const stage = stages[0];
-        const mappedStageUsers = stageUserMap.get(stage.id);
-        const stageUsers =
-          mappedStageUsers && mappedStageUsers.length > 0 ? mappedStageUsers : allUserIds;
-        const assignee = pick(stageUsers);
-
+        const stageUsers = stageUserMap.get(stage.id) || [];
+        const assignee = pickAssignee(stageUsers);
+        const endDate = addDays(createdAt, randomInt(1, 3));
         await prisma.taskActiveStage.create({
           data: {
             taskId: task.id,
@@ -751,20 +742,22 @@ async function main() {
             status: "COMPLETED",
             assigneeId: assignee,
             activatedAt: createdAt,
-            completedAt: addDays(createdAt, randomInt(1, 3)),
+            assignedAt: createdAt,
+            completedAt: endDate,
           },
         });
-
         await prisma.taskStageLog.create({
           data: {
             taskId: task.id,
             stageId: stage.id,
             enteredAt: createdAt,
-            exitedAt: addDays(createdAt, randomInt(1, 3)),
+            exitedAt: endDate,
             status: "COMPLETED",
             userId: assignee,
           },
         });
+        await emitCompletedTransitions(task.id, stage.id, createdAt, endDate, false);
+        totalTransitions += 2;
       }
     }
 
@@ -773,14 +766,95 @@ async function main() {
 
   console.log(`\nTotal tasks: ${totalTasks}`);
   console.log(`Total time logs: ${totalTimeLogs}`);
+  console.log(`Total stage transitions: ${totalTransitions}`);
+  console.log(`Currently blocked stages: ${blockedNow}`);
 
-  // ─── 7. Activity Logs ────────────────────────────────────────────────────────
+  // ─── 7. Rework events (defect-at-source, internal vs client) ──────────────────
 
-  // 5-8 online users with open ActivityLog (endedAt=null)
+  let reworkCount = 0;
+  const usedTaskForRework = new Set<string>();
+  // Prefer bottleneck-stage sources; sample ~30 events across distinct tasks.
+  const reworkPool = shuffle(reworkCandidates).sort(
+    (a, b) => Number(b.isBottleneck) - Number(a.isBottleneck)
+  );
+  for (const cand of reworkPool) {
+    if (reworkCount >= 30) break;
+    if (usedTaskForRework.has(cand.taskId)) continue;
+    if (Math.random() > (cand.isBottleneck ? 0.5 : 0.18)) continue;
+    usedTaskForRework.add(cand.taskId);
+
+    const kind: "INTERNAL" | "CLIENT" = Math.random() < 0.7 ? "INTERNAL" : "CLIENT";
+    const rc = Math.random();
+    const reworkClass: "DEFECT" | "LEGITIMATE" | null =
+      rc < 0.7 ? "DEFECT" : rc < 0.9 ? "LEGITIMATE" : null;
+    const upper = cand.taskCompletedAt ?? NOW;
+    const at = randomDateBetween(cand.taskCreatedAt, upper > cand.taskCreatedAt ? upper : NOW);
+    await prisma.reworkEvent.create({
+      data: {
+        at,
+        kind,
+        reason: pick(REWORK_REASONS),
+        taskId: cand.taskId,
+        sourceStageId: cand.sourceStageId,
+        byUserId: pick(managerIds),
+        reworkClass,
+        sourceAssigneeId: cand.sourceAssigneeId,
+      },
+    });
+    reworkCount++;
+  }
+  console.log(`Created ${reworkCount} rework events.`);
+
+  // ─── 8. 1:1 cadence (some recent, some overdue) ──────────────────────────────
+
+  const oneOnOneSubjects = shuffle([...allUserIds, ...richRealIds]);
+  let oneOnOneCount = 0;
+  for (const userId of oneOnOneSubjects) {
+    if (Math.random() > 0.6) continue; // ~40% left with no 1:1 → overdue
+    const logs = randomInt(1, 3);
+    for (let l = 0; l < logs; l++) {
+      const manager = pick(managerIds.filter((m) => m !== userId)) ?? pick(managerIds);
+      await prisma.oneOnOneLog.create({
+        data: {
+          userId,
+          managerId: manager,
+          occurredAt: daysAgo(randomInt(1, 30) + l * 14),
+          notes: pick(ONE_ON_ONE_NOTES),
+        },
+      });
+      oneOnOneCount++;
+    }
+  }
+  console.log(`Created ${oneOnOneCount} one-on-one logs.`);
+
+  // ─── 9. Recent time logs (current utilization for open work) ─────────────────
+
+  let recentLogs = 0;
+  for (const target of shuffle(recentTimeLogTargets).slice(0, 40)) {
+    const n = randomInt(1, 3);
+    for (let l = 0; l < n; l++) {
+      await prisma.timeLog.create({
+        data: {
+          taskId: target.taskId,
+          stageId: target.stageId,
+          userId: target.userId,
+          hoursSpent: randomFloat(1, 6),
+          logDate: daysAgo(randomInt(0, 6)),
+          description: null,
+        },
+      });
+      recentLogs++;
+      totalTimeLogs++;
+    }
+  }
+  console.log(`Created ${recentLogs} recent time logs.`);
+
+  // ─── 10. Activity logs (live sessions) ───────────────────────────────────────
+
+  const onlineUserIds = shuffledUsers.slice(0, 4);
   const onlineCandidates = activityLogCandidates.filter((c) => onlineUserIds.includes(c.userId));
-  const activeWorkers = shuffle(onlineCandidates).slice(0, randomInt(5, 8));
+  const activeWorkers = shuffle(onlineCandidates).slice(0, randomInt(3, 6));
   let activityLogCount = 0;
-
   for (const worker of activeWorkers) {
     await prisma.activityLog.create({
       data: {
@@ -793,16 +867,10 @@ async function main() {
     });
     activityLogCount++;
   }
-
-  // ~30-50 closed activity logs (past work sessions)
-  const closedCount = randomInt(25, 42);
-  const closedCandidates = shuffle(activityLogCandidates).slice(0, closedCount);
-
+  const closedCandidates = shuffle(activityLogCandidates).slice(0, randomInt(20, 35));
   for (const candidate of closedCandidates) {
-    const startedAt = hoursAgo(randomInt(1, 168)); // up to a week ago
-    const duration = randomFloat(0.25, 4); // 15 min to 4 hours
-    const endedAt = addHours(startedAt, duration);
-
+    const startedAt = hoursAgo(randomInt(1, 168));
+    const endedAt = addHours(startedAt, randomFloat(0.25, 4));
     await prisma.activityLog.create({
       data: {
         userId: candidate.userId,
@@ -814,18 +882,18 @@ async function main() {
     });
     activityLogCount++;
   }
-
   console.log(`Created ${activityLogCount} activity logs.`);
 
   // ─── Summary ─────────────────────────────────────────────────────────────────
 
   console.log("\n✅ Demo seed complete!");
-  console.log(`   Users: ${allUserIds.length}`);
-  console.log(`   Clients: ${DEMO_CLIENTS.length}`);
-  console.log(`   Projects: ${projectIds.length}`);
-  console.log(`   Tasks: ${totalTasks}`);
-  console.log(`   Time Logs: ${totalTimeLogs}`);
-  console.log(`   Activity Logs: ${activityLogCount}`);
+  console.log(`   Demo users: ${allUserIds.length} (+ ${richRealIds.length} real enriched)`);
+  console.log(`   Clients: ${DEMO_CLIENTS.length} · Projects: ${projectIds.length}`);
+  console.log(
+    `   Tasks: ${totalTasks} · Transitions: ${totalTransitions} · Blocked now: ${blockedNow}`
+  );
+  console.log(`   Rework events: ${reworkCount} · 1:1 logs: ${oneOnOneCount}`);
+  console.log(`   Time logs: ${totalTimeLogs} · Activity logs: ${activityLogCount}`);
 }
 
 main()

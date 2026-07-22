@@ -4,6 +4,10 @@ const prisma = new PrismaClient();
 
 const DEMO_EMAIL_DOMAIN = "@demo.workos.fake";
 const DEMO_CLIENT_PREFIX = "[DEMO] ";
+// Real users the seed enriches with demo history (their per-person data lives on
+// demo tasks → removed via task cascade; only their weeklyCapacityHours, a field
+// on the real User, is reset here).
+const RICH_REAL_EMAILS = ["movimento.jant@gmail.com", "leligoonmkt@gmail.com"];
 
 async function main() {
   console.log("🧹 Starting demo cleanup...\n");
@@ -16,6 +20,12 @@ async function main() {
   });
   const demoUserIds = demoUsers.map((u) => u.id);
   console.log(`Found ${demoUsers.length} demo users.`);
+
+  const richRealUsers = await prisma.user.findMany({
+    where: { email: { in: RICH_REAL_EMAILS } },
+    select: { id: true },
+  });
+  const richRealIds = richRealUsers.map((u) => u.id);
 
   const demoClients = await prisma.client.findMany({
     where: { name: { startsWith: DEMO_CLIENT_PREFIX } },
@@ -102,6 +112,16 @@ async function main() {
     console.log(`Deleted ${clients.count} clients.`);
   }
 
+  // 1:1 logs: those tying two REAL users (rich subject + rich manager) don't cascade
+  // from demo-user deletion, so remove any log touching a demo OR rich user.
+  const oneOnOneScope = [...demoUserIds, ...richRealIds];
+  if (oneOnOneScope.length > 0) {
+    const oneOnOnes = await prisma.oneOnOneLog.deleteMany({
+      where: { OR: [{ userId: { in: oneOnOneScope } }, { managerId: { in: oneOnOneScope } }] },
+    });
+    console.log(`Deleted ${oneOnOnes.count} one-on-one logs.`);
+  }
+
   // Demo users (delete any remaining user-owned logs first)
   if (demoUserIds.length > 0) {
     // Clean up any orphaned user records (activity logs by user, not by task)
@@ -116,6 +136,24 @@ async function main() {
     });
     console.log(`Deleted ${users.count} users.`);
   }
+
+  // ─── 3. Reset fields the seed set on REAL/shared entities ──────────────────
+
+  // Rich real users' capacity target (field on the real User, not cascaded).
+  if (richRealIds.length > 0) {
+    const reset = await prisma.user.updateMany({
+      where: { id: { in: richRealIds } },
+      data: { weeklyCapacityHours: null },
+    });
+    console.log(`Reset weeklyCapacityHours for ${reset.count} real users.`);
+  }
+
+  // wipLimit on shared real template stages.
+  const wipReset = await prisma.templateStage.updateMany({
+    where: { wipLimit: { not: null } },
+    data: { wipLimit: null },
+  });
+  console.log(`Reset wipLimit on ${wipReset.count} template stages.`);
 
   console.log("\n✅ Demo cleanup complete! Teams, templates, and real data were preserved.");
 }
