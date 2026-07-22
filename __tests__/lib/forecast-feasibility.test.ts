@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { assessFeasibility, idealStartOffsetDays } from "@/lib/forecast-feasibility";
+import { assessFeasibility, idealStartOffsetDays, confidentDays } from "@/lib/forecast-feasibility";
 
 describe("assessFeasibility", () => {
   it("unknown when no class data (p85 <= 0)", () => {
@@ -23,5 +23,12 @@ describe("idealStartOffsetDays", () => {
   it("rounds p85 up, floored at 0", () => {
     expect(idealStartOffsetDays(8.2)).toBe(9);
     expect(idealStartOffsetDays(0)).toBe(0);
+  });
+});
+
+describe("confidentDays", () => {
+  it("experiente → p85; novo → p95", () => {
+    expect(confidentDays(9, 14, true)).toBe(9);
+    expect(confidentDays(9, 14, false)).toBe(14);
   });
 });

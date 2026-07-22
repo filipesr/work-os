@@ -21,3 +21,10 @@ export function assessFeasibility(daysAvailable: number, p50: number, p85: numbe
 export function idealStartOffsetDays(p85: number): number {
   return Math.max(0, Math.ceil(p85));
 }
+
+/** Dias do percentil "confiável" segundo a experiência do responsável no tipo:
+ * experiente → p85; novo/desconhecido → p95 (banda mais larga). Puro.
+ * Experiência é LARGURA DE BANDA (P4), nunca nota individual. */
+export function confidentDays(p85: number, p95: number, experienced: boolean): number {
+  return experienced ? p85 : p95;
+}
