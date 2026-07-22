@@ -103,14 +103,14 @@ export default async function DashboardPage() {
           <MyActiveStagesWidget />
         </Suspense>
 
-        {/* Widget: Minha evolução (privado, auto-referenciado) */}
-        <Suspense fallback={<TableSkeleton rows={2} />}>
-          <MyGrowthWidget userId={userId} />
-        </Suspense>
-
         {/* Widget 2: Team Backlog */}
         <Suspense fallback={<TableSkeleton rows={3} />}>
           <TeamBacklogWidget teamIds={teamIds} />
+        </Suspense>
+
+        {/* Widget: Minha evolução (privado, auto-referenciado) — ao fim da página */}
+        <Suspense fallback={<TableSkeleton rows={2} />}>
+          <MyGrowthWidget userId={userId} />
         </Suspense>
       </div>
     </div>

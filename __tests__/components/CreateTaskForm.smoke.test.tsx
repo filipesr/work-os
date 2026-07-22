@@ -25,6 +25,12 @@ vi.mock("@/app/actions/templateActions", () => ({
   getTemplateStagePreview: vi.fn().mockResolvedValue([]),
 }));
 vi.mock("@/lib/actions/client", () => ({ getClients: vi.fn().mockResolvedValue([]) }));
+// v2/subsistema-1 server actions — stubbed so the real "use server" modules
+// (which pull in next-auth → next/server, unresolvable under Vitest) never load.
+vi.mock("@/lib/actions/reporting", () => ({ getTypeForecast: vi.fn().mockResolvedValue(null) }));
+vi.mock("@/lib/actions/assignee-experience", () => ({
+  getAssigneeTypeExperience: vi.fn().mockResolvedValue({ completed: 0, experienced: false }),
+}));
 vi.mock("@/components/quick-create/QuickCreateProject", () => ({
   QuickCreateProject: () => <div />,
 }));
