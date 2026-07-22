@@ -61,6 +61,17 @@ export const requireManagerOrAdmin = async () => {
 };
 
 /**
+ * Permite acesso se o chamador é a PRÓPRIA pessoa (`userId`) OU manager/admin.
+ * Fail-closed: lança se for outro membro. Base das métricas por pessoa (3a):
+ * a pessoa vê o próprio dashboard; o gestor vê /admin/users/[id].
+ */
+export const requireSelfOrManager = async (userId: string) => {
+  const user = await getSessionUser();
+  if (user.id === userId) return user;
+  return checkRole([UserRole.ADMIN, UserRole.MANAGER]);
+};
+
+/**
  * Check if the current user is a Supervisor or higher (Supervisor, Manager, or Admin).
  * Used e.g. for creating/revoking external share links of CLIENTE artifacts.
  */

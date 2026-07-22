@@ -5,6 +5,7 @@ import {
   medianMarkerPct,
   stageAgingRatio,
   dependencyRiskLevel,
+  utilizationRatio,
 } from "@/lib/team-health-format";
 
 describe("dependencyRiskLevel", () => {
@@ -69,5 +70,17 @@ describe("medianMarkerPct", () => {
   });
   it("clamps to 100% when median exceeds the ceiling", () => {
     expect(medianMarkerPct(12, 8)).toBe(100);
+  });
+});
+
+describe("utilizationRatio", () => {
+  it("hours ÷ (capacity × weeks)", () => {
+    expect(utilizationRatio(60, 40, 2)).toBeCloseTo(0.75); // 60 / 80
+  });
+  it("null when no capacity, non-positive, or no period", () => {
+    expect(utilizationRatio(10, null, 2)).toBeNull();
+    expect(utilizationRatio(10, 0, 2)).toBeNull();
+    expect(utilizationRatio(10, 40, null)).toBeNull();
+    expect(utilizationRatio(10, 40, 0)).toBeNull();
   });
 });

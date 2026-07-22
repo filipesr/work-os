@@ -56,6 +56,19 @@ export function medianMarkerPct(medianWip: number, ceiling: number): number {
   return Math.min(medianWip / safeCeiling, 1) * 100;
 }
 
+/** Utilização = horas ÷ (capacidade semanal × semanas do período). Null quando
+ * não há meta de capacidade ou período válido — indefinido, não 0. Puro. */
+export function utilizationRatio(
+  hours: number,
+  weeklyCapacityHours: number | null,
+  periodWeeks: number | null
+): number | null {
+  if (!weeklyCapacityHours || weeklyCapacityHours <= 0 || !periodWeeks || periodWeeks <= 0) {
+    return null;
+  }
+  return hours / (weeklyCapacityHours * periodWeeks);
+}
+
 /**
  * ageHours / slaHours para uma etapa ativa — `>= 1` significa que passou do SLA
  * (envelhecendo). Puro; o caller resolve o SLA (ex.: `expectedDurationHours ??

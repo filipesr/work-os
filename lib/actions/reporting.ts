@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { Prisma } from "@prisma/client";
 import { formatISODate, currentMonthSaoPaulo, monthKeySaoPaulo } from "@/lib/dates";
+import { utilizationRatio } from "@/lib/team-health-format";
 import { statusDurations, statusAt, type TransitionRow } from "@/lib/stage-transitions";
 import { percentile } from "@/lib/stats";
 import { forecastWhen, forecastHowMany, type ForecastResult } from "@/lib/monte-carlo";
@@ -152,9 +153,7 @@ export async function getHoursByUser(filters: ProductivityFilters = {}) {
   }, {});
 
   for (const row of Object.values(grouped)) {
-    if (row.weeklyCapacityHours && periodWeeks) {
-      row.utilization = row.totalHours / (row.weeklyCapacityHours * periodWeeks);
-    }
+    row.utilization = utilizationRatio(row.totalHours, row.weeklyCapacityHours, periodWeeks);
   }
 
   return Object.values(grouped) as HoursByUser[];
