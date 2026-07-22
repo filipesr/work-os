@@ -356,7 +356,9 @@ export function CreateTaskForm({
               </span>
             )}
             {entryAssigneeId && entryExperienced === false && (
-              <span className="block">{t("create.feasibility.newToTypeNote")}</span>
+              <span className="block">
+                {t("create.feasibility.newToTypeNote", { days: Math.ceil(band) })}
+              </span>
             )}
             {idealStartPassed && idealStart && (
               <span className="block">

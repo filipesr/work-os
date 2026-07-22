@@ -12,6 +12,10 @@ type Member = { id: string; name: string | null; email: string | null };
  * **Controlled mode** (Task 10 — advance modal): provide both `value` and
  *   `onChange`. The `name` attribute is omitted; state is managed by the parent.
  *
+ * **Uncontrolled + observable** (v2 create-form entry stage): provide `onChange`
+ *   WITHOUT `value`. Keeps `name` (still posts with the form) AND notifies the
+ *   parent on change.
+ *
  * Renders a "no team" text span when the stage has no team (nothing to assign to).
  */
 export function StageAssigneeSelect({
