@@ -653,6 +653,135 @@ export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
   return results.sort((a, b) => b.reworkRate - a.reworkRate);
 }
 
+export interface ReworkBySourceStage {
+  stageId: string;
+  stageName: string;
+  templateName: string;
+  internal: number;
+  client: number;
+  total: number;
+}
+
+/** Where para ReworkEvent: janela (por `at`) + template (sourceStage.templateId,
+ * coerente com buildStageLogWhere) + project/client (task). */
+function buildReworkWhere(filters: PerformanceFilters): Prisma.ReworkEventWhereInput {
+  const where: Prisma.ReworkEventWhereInput = {};
+  if (filters.startDate || filters.endDate) {
+    const at: Prisma.DateTimeFilter = {};
+    if (filters.startDate) at.gte = filters.startDate;
+    if (filters.endDate) at.lte = filters.endDate;
+    where.at = at;
+  }
+  if (filters.templateId) where.sourceStage = { templateId: filters.templateId };
+  const taskFilter: Prisma.TaskWhereInput = {};
+  if (filters.projectId) taskFilter.projectId = filters.projectId;
+  if (filters.clientId) taskFilter.project = { clientId: filters.clientId };
+  if (Object.keys(taskFilter).length > 0) where.task = taskFilter;
+  return where;
+}
+
+/**
+ * Retrabalho agrupado por etapa-ORIGEM, com split interno vs cliente. Responde
+ * "qual etapa mais injeta defeito a jusante, e está sendo pego dentro (bom) ou
+ * escapando pro cliente (custoso)". Sinal de PROCESSO — nunca por pessoa.
+ */
+export async function getReworkBySourceStage(
+  filters: PerformanceFilters = {}
+): Promise<ReworkBySourceStage[]> {
+  await requireManagerOrAdmin();
+  filters = performanceFiltersSchema.parse(filters);
+
+  const events = await prisma.reworkEvent.findMany({
+    where: buildReworkWhere(filters),
+    select: {
+      kind: true,
+      sourceStage: { select: { id: true, name: true, template: { select: { name: true } } } },
+    },
+  });
+
+  const byStage = new Map<string, ReworkBySourceStage>();
+  for (const e of events) {
+    const s = e.sourceStage;
+    let row = byStage.get(s.id);
+    if (!row) {
+      row = {
+        stageId: s.id,
+        stageName: s.name,
+        templateName: s.template.name,
+        internal: 0,
+        client: 0,
+        total: 0,
+      };
+      byStage.set(s.id, row);
+    }
+    if (e.kind === "INTERNAL") row.internal += 1;
+    else row.client += 1;
+    row.total += 1;
+  }
+  return Array.from(byStage.values()).sort((a, b) => b.total - a.total);
+}
+
+export interface FirstTimeRightByStage {
+  stageId: string;
+  stageName: string;
+  templateName: string;
+  completed: number;
+  reworkedTo: number;
+  firstTimeRight: number; // 0..1 = 1 − reworkedTo/completed (clamp)
+}
+
+/**
+ * First-time-right por etapa: das etapas concluídas na janela, fração que NUNCA
+ * virou alvo de retorno. Aproximação process-level (razão de janela, não
+ * pareamento 1:1 completo↔retorno). Pior (menor FTR) primeiro.
+ */
+export async function getFirstTimeRightByStage(
+  filters: PerformanceFilters = {}
+): Promise<FirstTimeRightByStage[]> {
+  await requireManagerOrAdmin();
+  filters = performanceFiltersSchema.parse(filters);
+
+  const [completedLogs, reworkEvents] = await Promise.all([
+    prisma.taskStageLog.findMany({
+      where: { ...buildStageLogWhere(filters), status: "COMPLETED" },
+      select: {
+        stageId: true,
+        stage: { select: { name: true, template: { select: { name: true } } } },
+      },
+    }),
+    prisma.reworkEvent.findMany({
+      where: buildReworkWhere(filters),
+      select: { sourceStageId: true },
+    }),
+  ]);
+
+  const reworkByStage = new Map<string, number>();
+  for (const e of reworkEvents)
+    reworkByStage.set(e.sourceStageId, (reworkByStage.get(e.sourceStageId) ?? 0) + 1);
+
+  const agg = new Map<string, FirstTimeRightByStage>();
+  for (const log of completedLogs) {
+    let row = agg.get(log.stageId);
+    if (!row) {
+      row = {
+        stageId: log.stageId,
+        stageName: log.stage.name,
+        templateName: log.stage.template.name,
+        completed: 0,
+        reworkedTo: 0,
+        firstTimeRight: 1,
+      };
+      agg.set(log.stageId, row);
+    }
+    row.completed += 1;
+  }
+  for (const row of agg.values()) {
+    row.reworkedTo = reworkByStage.get(row.stageId) ?? 0;
+    row.firstTimeRight = Math.max(0, Math.min(1, 1 - row.reworkedTo / row.completed));
+  }
+  return Array.from(agg.values()).sort((a, b) => a.firstTimeRight - b.firstTimeRight);
+}
+
 /**
  * Calculate lead time metrics (time from task creation to completion)
  */
