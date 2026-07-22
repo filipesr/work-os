@@ -127,20 +127,74 @@ de chart) com linhas de referência p50/p85/p95. i18n `reportsPerformance.cycleT
 
 ---
 
-## Verificação
+---
 
-- `tsc --noEmit` 0 erros · `vitest` 330/330 · `next build` limpo · paridade i18n 45/45.
-- Testes puros novos: `statusDurations`, `flowEfficiencyRatio`, `getSystemConstraint`
-  (3 casos), `dependencyRiskLevel`, `percentile`.
+# Séries temporais & forecasting (P1)
+
+Grande decisão de arquitetura do P1: **nenhum schema novo, nenhum cron.** O
+`StageTransition` (P0.1) já é o event stream necessário — throughput e CFD
+reconstroem dele; o Monte Carlo usa o histórico de `completedAt`. Tudo só
+reflete dados **a partir da migração `20260721130000`**.
+
+## 5. Forecasting Monte Carlo — P1.6
+
+**O que é.** Em vez de estimativa determinística, simula milhares de cenários
+amostrando o throughput histórico → distribuição de resultados. Comprometa-se
+com o **p85** (§1.3 da pesquisa).
+
+**Núcleo puro.** `lib/monte-carlo.ts` (testado, RNG seedável):
+
+- `mulberry32(seed)` — PRNG determinístico (forecasts reproduzíveis em teste).
+- `forecastWhen(samples, backlog, {trials, rng})` → p50/p85/p95 de **dias** para
+  escoar o backlog (amostra 1 dia de throughput por iteração até drenar);
+  `null` quando o histórico nunca conclui (todo sample 0). Percentil maior =
+  data mais tarde (pessimista).
+- `forecastHowMany(samples, horizonDias, opts)` → p50/p85/p95 de **quantos**
+  itens saem no horizonte (soma `horizonDias` sorteios). Percentil maior = mais
+  itens (otimista).
+
+**Dados & superfície.** `reporting.getDeliveryForecast(filters)` amostra as
+últimas ~12 semanas de throughput diário (`task.completedAt`, incluindo dias
+zero) + conta o backlog aberto (`BACKLOG/IN_PROGRESS/PAUSED`) e roda a simulação
+**server-side**. Card **"Previsão de Entrega (Monte Carlo)"** em
+`/reports/performance`: backlog, "concluir backlog (p85)" e "entregas em 30 dias".
+
+## 6. Throughput no tempo + CFD por status — P1.5
+
+**O que é.** Série temporal de conclusões (tendência) + **Cumulative Flow
+Diagram por status** (§1.5): quantas etapas em cada status por dia.
+
+**Reconstrução sem snapshot.** `stage-transitions.statusAt(rows, t)` (puro,
+testado) devolve o status de uma instância no instante `t` (última transição ≤
+t). `getFlowCfdSeries(filters)` agrupa transições por instância e, para cada dia
+da janela (~8 semanas), conta instâncias por status via `statusAt` — replay do
+log, sem tabela de snapshot nem cron. `getThroughputSeries(filters)` bucketa
+conclusões por semana.
+
+**Superfície.** `components/reports/FlowCharts.tsx` — `ThroughputLine` (polyline
+SVG) e `StatusCfd` (áreas empilhadas SVG, bottom→top: Concluída/Ativa/Bloqueada/
+Não iniciada, com legenda). Banda de bloqueadas alargando = trabalho represando.
+i18n `reportsPerformance.{forecast,throughput,cfd}` (pt+es).
+
+**Custo.** O replay do CFD percorre transições × dias; janela capada em
+`CFD_WINDOW_DAYS=56` e escopo por filtro. Se crescer, materializar numa tabela
+de snapshot depois — mas hoje roda sem.
+
+## Verificação (P0 + P1)
+
+- `tsc --noEmit` 0 erros · `vitest` 339/339 · `next build` limpo · paridade i18n 45/45.
+- Testes puros novos: `statusDurations`, `flowEfficiencyRatio`, `statusAt`,
+  `getSystemConstraint` (3 casos), `dependencyRiskLevel`, `percentile`,
+  `mulberry32`, `forecastWhen`, `forecastHowMany`.
 - Mocks de transação atualizados para `stageTransition` (create/createMany).
 
 ## Pendências / próximos passos
 
-- **Aplicar `prisma migrate deploy`** em produção (tabela `StageTransition`) — feito.
+- **Migração `StageTransition` aplicada** em produção — feito.
 - **Validação com dados reais:** `/reports/performance` fica vazio até haver
   tarefas concluídas e transições acumuladas; validar quando o fluxo rodar.
-- **P1 (próximo):** throughput ao longo do tempo + CFD (precisa de snapshots
-  diários por etapa) e forecasting Monte Carlo sobre o histórico de cycle time.
+- **P2 (próximo no roadmap):** WIP limits configuráveis + enforcement;
+  capacidade/utilização em horas (meta por pessoa).
 - **Refinamentos:** subdividir `ACTIVE` por `assignedAt` (fila-de-prontos vs.
-  trabalho); backfill exato do split ativo/bloqueado é impossível para o
-  histórico pré-migração (assumido).
+  trabalho); materializar o CFD se o replay ficar pesado; backfill exato do
+  histórico pré-migração é impossível (assumido).
