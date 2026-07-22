@@ -40,7 +40,8 @@ export function StageAssigneeSelect({
   return (
     <select
       {...(!isControlled ? { name: `assignee:${stageId}`, defaultValue: "" } : {})}
-      {...(isControlled ? { value, onChange: (e) => onChange(e.target.value) } : {})}
+      {...(isControlled ? { value } : {})}
+      {...(onChange ? { onChange: (e) => onChange(e.target.value) } : {})}
       aria-label={t("ariaLabel", { team: teamName })}
       className="h-8 rounded-md border border-input-border bg-input px-2 text-sm text-foreground focus-visible:outline-none focus-visible:border-primary"
     >
