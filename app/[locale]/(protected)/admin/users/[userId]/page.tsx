@@ -12,9 +12,12 @@ import {
   getPersonThroughputSeries,
   getPersonWorkload,
   getPersonUtilization,
+  getPersonQuality,
+  getPersonReworkEvents,
 } from "@/lib/actions/person-metrics";
 import { ThroughputLine } from "@/components/reports/FlowCharts";
 import { monthRangeSaoPaulo, currentMonthSaoPaulo } from "@/lib/dates";
+import ReworkClassifyToggle from "@/components/people/ReworkClassifyToggle";
 
 async function getUser(userId: string) {
   await requireAdmin();
@@ -53,11 +56,12 @@ async function getTeams() {
 
 export default async function UserDetailPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
-  const [user, teams, t, tRoles] = await Promise.all([
+  const [user, teams, t, tRoles, tQuality] = await Promise.all([
     getUser(userId),
     getTeams(),
     getTranslations("admin.users.detail"),
     getTranslations("admin.users.roles"),
+    getTranslations("admin.users.quality"),
   ]);
 
   if (!user) {
@@ -65,10 +69,12 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
   }
 
   const { start: monthStart, end: monthEnd } = monthRangeSaoPaulo(currentMonthSaoPaulo());
-  const [throughput, workload, util] = await Promise.all([
+  const [throughput, workload, util, quality, reworkItems] = await Promise.all([
     getPersonThroughputSeries(userId, 8),
     getPersonWorkload(userId),
     getPersonUtilization(userId, { from: monthStart, to: monthEnd }),
+    getPersonQuality(userId, { from: monthStart, to: monthEnd }),
+    getPersonReworkEvents(userId, 20),
   ]);
 
   const totalHours = user.timeLogs.reduce((sum, log) => sum + Number(log.hoursSpent), 0);
@@ -177,6 +183,49 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
             })()
           )}
         </div>
+      </div>
+
+      {/* Qualidade (defeito-only, 3b.T3/T4) */}
+      <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mt-6">
+        <h2 className="text-lg font-bold text-foreground mb-1">{tQuality("qualityTitle")}</h2>
+        <p className="text-xs text-muted-foreground mb-4">{tQuality("qualityConfoundNote")}</p>
+        <div className="flex flex-wrap gap-6 mb-4">
+          <div>
+            <div className="text-xs text-muted-foreground">{tQuality("ftrLabel")}</div>
+            <div className="text-2xl font-bold">
+              {quality.firstTimeRight == null
+                ? "—"
+                : `${Math.round(quality.firstTimeRight * 100)}%`}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">{tQuality("defectsLabel")}</div>
+            <div className="text-sm">
+              {tQuality("defectsSplit", { internal: quality.internal, client: quality.client })}
+            </div>
+          </div>
+        </div>
+        {reworkItems.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{tQuality("noReturns")}</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {reworkItems.map((r) => (
+              <li key={r.id} className="py-2 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">{r.taskTitle}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {r.sourceStageName} ·{" "}
+                    {tQuality(r.kind === "INTERNAL" ? "kindInternal" : "kindClient")}
+                  </div>
+                  {r.reason && (
+                    <div className="text-xs italic text-muted-foreground">“{r.reason}”</div>
+                  )}
+                </div>
+                <ReworkClassifyToggle reworkEventId={r.id} current={r.reworkClass} />
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Active Stages Table */}

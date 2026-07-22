@@ -130,6 +130,18 @@
       "utilizationNoTarget": "Sem meta de capacidade definida.",
       "utilizationDetail": "{hours}h de {capacity}h/semana previstas"
     },
+    "quality": {
+      "qualityTitle": "Qualidade",
+      "qualityConfoundNote": "Boa parte da variação é do sistema; leia com os motivos, não como nota.",
+      "ftrLabel": "Certo da primeira vez",
+      "defectsLabel": "Retornos por defeito",
+      "defectsSplit": "{internal} interno · {client} cliente",
+      "noReturns": "Nenhum retorno no período.",
+      "kindInternal": "Interno",
+      "kindClient": "Cliente",
+      "classDefect": "Defeito",
+      "classLegitimate": "Legítimo"
+    },
     "filters": {
       "button": "Filtrar",
       "title": "Filtrar usuários",
