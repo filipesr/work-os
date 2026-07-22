@@ -1,6 +1,6 @@
 // Métricas de carga/entrega por pessoa, auto-referenciadas (nunca comparativas).
 // NÃO "use server": consumidas por Server Components (perfil admin + dashboard).
-// Fail-closed via requireSelfOrManager. SEM qualidade (é 3b).
+// Fail-closed via requireSelfOrManager. Inclui qualidade (defeito-only, 3b.T3).
 import prisma from "@/lib/prisma";
 import { requireSelfOrManager } from "@/lib/permissions";
 import { stageAgingRatio, utilizationRatio } from "@/lib/team-health-format";
@@ -90,4 +90,83 @@ export async function getPersonUtilization(
     weeklyCapacityHours,
     utilization: utilizationRatio(hours, weeklyCapacityHours, periodWeeks),
   };
+}
+
+// Predicado defeito-only reutilizado (null + DEFECT contam; LEGITIMATE não).
+const DEFECT_ONLY = [{ reworkClass: null }, { reworkClass: "DEFECT" as const }];
+
+export interface PersonQuality {
+  completed: number;
+  defectReturns: number;
+  firstTimeRight: number | null;
+  internal: number;
+  client: number;
+}
+
+/** Qualidade da pessoa na janela: FTR defeito-only + split interno/cliente.
+ * Auto-referenciado (nunca comparativo). Atribuição confundida → tendência+contexto. */
+export async function getPersonQuality(
+  userId: string,
+  range: { from: Date; to: Date }
+): Promise<PersonQuality> {
+  await requireSelfOrManager(userId);
+  const [completed, defects] = await Promise.all([
+    prisma.taskActiveStage.count({
+      where: {
+        assigneeId: userId,
+        status: "COMPLETED",
+        completedAt: { gte: range.from, lte: range.to },
+      },
+    }),
+    prisma.reworkEvent.findMany({
+      where: { sourceAssigneeId: userId, at: { gte: range.from, lte: range.to }, OR: DEFECT_ONLY },
+      select: { kind: true },
+    }),
+  ]);
+  const internal = defects.filter((d) => d.kind === "INTERNAL").length;
+  const client = defects.length - internal;
+  const firstTimeRight =
+    completed === 0 ? null : Math.max(0, Math.min(1, 1 - defects.length / completed));
+  return { completed, defectReturns: defects.length, firstTimeRight, internal, client };
+}
+
+export interface PersonReworkItem {
+  id: string;
+  at: string;
+  taskTitle: string;
+  sourceStageName: string;
+  kind: "INTERNAL" | "CLIENT";
+  reason: string;
+  reworkClass: "DEFECT" | "LEGITIMATE" | null;
+}
+
+/** Retornos atribuídos à pessoa (todas as classes, p/ o gestor reclassificar). */
+export async function getPersonReworkEvents(
+  userId: string,
+  limit = 20
+): Promise<PersonReworkItem[]> {
+  await requireSelfOrManager(userId);
+  const rows = await prisma.reworkEvent.findMany({
+    where: { sourceAssigneeId: userId },
+    orderBy: { at: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      at: true,
+      kind: true,
+      reason: true,
+      reworkClass: true,
+      sourceStage: { select: { name: true } },
+      task: { select: { title: true } },
+    },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    at: r.at.toISOString(),
+    taskTitle: r.task.title,
+    sourceStageName: r.sourceStage.name,
+    kind: r.kind,
+    reason: r.reason,
+    reworkClass: r.reworkClass,
+  }));
 }
