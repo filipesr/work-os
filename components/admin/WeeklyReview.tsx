@@ -1,19 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { ClipboardCheck, ChevronDown, ChevronRight } from "lucide-react";
+import { ClipboardCheck, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+
+export type ReviewStep = { label: string; href?: string };
 
 // Guided weekly review (traffic management cadence): a checklist that walks the
-// manager through the cockpit signals below. Pure client state — the counts
-// live in each block; this frames the routine ("measure → manage → adjust").
+// manager through the signals, each linking (new tab) to the screen where that
+// info is checked. Pure client state — the counts live in each block/report.
 export default function WeeklyReview({
   steps,
   title,
   subtitle,
+  openLabel,
 }: {
-  steps: string[];
+  steps: ReviewStep[];
   title: string;
   subtitle: string;
+  openLabel: string;
 }) {
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState<boolean[]>(() => steps.map(() => false));
@@ -46,22 +50,32 @@ export default function WeeklyReview({
           <p className="mt-2 text-xs text-muted-foreground">{subtitle}</p>
           <ul className="mt-3 space-y-2">
             {steps.map((step, i) => (
-              <li key={i}>
-                <label className="flex cursor-pointer items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={checked[i]}
-                    onChange={() => toggle(i)}
-                    className="h-4 w-4"
-                  />
-                  <span
-                    className={
-                      checked[i] ? "text-muted-foreground line-through" : "text-foreground"
-                    }
-                  >
-                    {step}
-                  </span>
+              <li key={i} className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={checked[i]}
+                  onChange={() => toggle(i)}
+                  className="mt-0.5 h-4 w-4 shrink-0"
+                  id={`review-step-${i}`}
+                />
+                <label
+                  htmlFor={`review-step-${i}`}
+                  className={`cursor-pointer ${checked[i] ? "text-muted-foreground line-through" : "text-foreground"}`}
+                >
+                  {step.label}
                 </label>
+                {step.href && (
+                  <a
+                    href={step.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={openLabel}
+                    aria-label={openLabel}
+                    className="ml-auto shrink-0 text-muted-foreground hover:text-foreground"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                )}
               </li>
             ))}
           </ul>

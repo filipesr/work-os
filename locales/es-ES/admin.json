@@ -565,7 +565,9 @@
       "daysSince": "hace {days} días",
       "overdue": "atrasado",
       "logButton": "Registrar 1:1",
-      "logged": "1:1 registrado"
+      "logged": "1:1 registrado",
+      "last": "Último: {date}",
+      "historyToggle": "Ver {count} registro(s)"
     },
     "review": {
       "title": "Revisión semanal",
@@ -576,7 +578,8 @@
       "wip": "Límites de WIP: ¿alguna etapa por encima del tope?",
       "load": "Carga del equipo: sobrecarga vs ociosos.",
       "burnout": "Señales de sobrecarga: ¿alguien en riesgo sostenido?",
-      "oneOnOne": "1:1s: ¿quién está atrasado?"
+      "oneOnOne": "1:1s: ¿quién está atrasado?",
+      "open": "Abrir pantalla en nueva pestaña"
     }
   }
 }
