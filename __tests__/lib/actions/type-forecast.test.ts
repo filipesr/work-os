@@ -7,7 +7,8 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import prisma from "@/lib/prisma";
-import { getTypeForecast, MIN_CLASS_SAMPLES } from "@/lib/actions/reporting";
+import { getTypeForecast } from "@/lib/actions/reporting";
+import { MIN_CLASS_SAMPLES } from "@/lib/reporting-constants";
 
 const db = vi.mocked(prisma, true);
 const daysAgo = (createdOffset: number, completedOffset: number) => ({

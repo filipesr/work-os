@@ -8,6 +8,7 @@ import { formatISODate, currentMonthSaoPaulo, monthKeySaoPaulo } from "@/lib/dat
 import { statusDurations, statusAt, type TransitionRow } from "@/lib/stage-transitions";
 import { percentile } from "@/lib/stats";
 import { forecastWhen, forecastHowMany, type ForecastResult } from "@/lib/monte-carlo";
+import { MIN_CLASS_SAMPLES } from "@/lib/reporting-constants";
 import {
   productivityFiltersSchema,
   performanceFiltersSchema,
@@ -711,10 +712,6 @@ export interface CycleTimePercentiles {
 
 // Bound the scatter payload; percentiles still use the full population.
 const CYCLE_SCATTER_CAP = 300;
-
-// Below this many completed samples, percentiles are indicative only — flagged
-// via `lowConfidence` rather than hidden, since informational is the point.
-export const MIN_CLASS_SAMPLES = 8;
 
 /**
  * Cycle-time distribution for completed tasks (createdAt → completedAt), in
