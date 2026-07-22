@@ -6,7 +6,12 @@ import { createTask } from "@/lib/actions/task";
 import { getTemplateStagePreview } from "@/app/actions/templateActions";
 import { getClients } from "@/lib/actions/client";
 import { getTypeForecast } from "@/lib/actions/reporting";
-import { assessFeasibility, idealStartOffsetDays, confidentDays } from "@/lib/forecast-feasibility";
+import {
+  assessFeasibility,
+  idealStartOffsetDays,
+  confidentDays,
+  firstIncludedStageId,
+} from "@/lib/forecast-feasibility";
 import { getAssigneeTypeExperience } from "@/lib/actions/assignee-experience";
 import { QuickCreateProject } from "@/components/quick-create/QuickCreateProject";
 import { StageAssigneeSelect } from "@/components/ui/StageAssigneeSelect";
@@ -71,7 +76,10 @@ export function CreateTaskForm({
     count: number;
     lowConfidence: boolean;
   } | null>(null);
-  const [entryAssigneeId, setEntryAssigneeId] = useState<string>("");
+  // Per-stage form state so the "entry stage" can respect optional-unchecked:
+  // which stages are included (checkbox) and who is assigned to each.
+  const [checkedStages, setCheckedStages] = useState<Record<string, boolean>>({});
+  const [stageAssignees, setStageAssignees] = useState<Record<string, string>>({});
   const [entryExperienced, setEntryExperienced] = useState<boolean | null>(null);
 
   // Load clients for QuickCreateProject
@@ -96,7 +104,8 @@ export function CreateTaskForm({
   // Handler for when the user selects a template
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplateId(templateId);
-    setEntryAssigneeId("");
+    setCheckedStages({});
+    setStageAssignees({});
     setEntryExperienced(null);
     if (!templateId) {
       setStagePreview([]);
@@ -110,9 +119,19 @@ export function CreateTaskForm({
         getTypeForecast(templateId),
       ]);
       setStagePreview(stages);
+      // Optional stages start unchecked (defaultChecked={!optional}); mirror that
+      // in state so the entry-stage derivation below sees the real inclusion set.
+      setCheckedStages(Object.fromEntries(stages.map((s) => [s.id, !s.optional])));
       setForecast(f);
     });
   };
+
+  // Entry stage = the FIRST stage still checked in the preview. Optional stages
+  // start unchecked, so an optional stage[0] hands the entry to the next included
+  // stage (and unchecking a stage re-derives it live). Its assignee drives the
+  // confidence band — bandwidth only, never a person score.
+  const entryStageId = firstIncludedStageId(stagePreview, checkedStages);
+  const entryAssigneeId = entryStageId ? (stageAssignees[entryStageId] ?? "") : "";
 
   // Fetch the entry-stage assignee's experience with this work type — widens
   // the confidence band (p85 → p95) when they're new to it. Bandwidth only,
@@ -271,7 +290,10 @@ export function CreateTaskForm({
                     <input
                       type="checkbox"
                       name={`stage:${stage.id}`}
-                      defaultChecked={!stage.optional}
+                      checked={checkedStages[stage.id] ?? !stage.optional}
+                      onChange={(e) =>
+                        setCheckedStages((prev) => ({ ...prev, [stage.id]: e.target.checked }))
+                      }
                       className="h-4 w-4 shrink-0"
                       aria-label={stage.name}
                     />
@@ -293,7 +315,9 @@ export function CreateTaskForm({
                     stageId={stage.id}
                     teamName={stage.defaultTeam?.name ?? null}
                     members={stage.defaultTeam?.members ?? []}
-                    {...(index === 0 ? { onChange: (v: string) => setEntryAssigneeId(v) } : {})}
+                    onChange={(v: string) =>
+                      setStageAssignees((prev) => ({ ...prev, [stage.id]: v }))
+                    }
                   />
                 </li>
               ))}

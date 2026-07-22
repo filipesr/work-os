@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { assessFeasibility, idealStartOffsetDays, confidentDays } from "@/lib/forecast-feasibility";
+import {
+  assessFeasibility,
+  idealStartOffsetDays,
+  confidentDays,
+  firstIncludedStageId,
+} from "@/lib/forecast-feasibility";
 
 describe("assessFeasibility", () => {
   it("unknown when no class data (p85 <= 0)", () => {
@@ -30,5 +35,28 @@ describe("confidentDays", () => {
   it("experiente → p85; novo → p95", () => {
     expect(confidentDays(9, 14, true)).toBe(9);
     expect(confidentDays(9, 14, false)).toBe(14);
+  });
+});
+
+describe("firstIncludedStageId", () => {
+  const stages = [{ id: "a" }, { id: "b" }, { id: "c" }];
+
+  it("é a primeira etapa quando ela está incluída", () => {
+    expect(firstIncludedStageId(stages, { a: true, b: true, c: true })).toBe("a");
+  });
+  it("pula a primeira quando ela está desmarcada (opcional-desmarcada)", () => {
+    expect(firstIncludedStageId(stages, { a: false, b: true, c: true })).toBe("b");
+  });
+  it("pula todas as desmarcadas até a primeira incluída", () => {
+    expect(firstIncludedStageId(stages, { a: false, b: false, c: true })).toBe("c");
+  });
+  it("null quando nenhuma está incluída", () => {
+    expect(firstIncludedStageId(stages, { a: false, b: false, c: false })).toBeNull();
+  });
+  it("null para preview vazio", () => {
+    expect(firstIncludedStageId([], {})).toBeNull();
+  });
+  it("trata ausência no mapa como não-incluída", () => {
+    expect(firstIncludedStageId(stages, { b: true })).toBe("b");
   });
 });

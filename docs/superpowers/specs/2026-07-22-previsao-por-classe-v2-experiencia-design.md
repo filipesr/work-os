@@ -135,5 +135,9 @@ Namespace `tasks` → `create.feasibility.newToTypeNote` (pt-BR + es-ES, paridad
 
 - Nenhuma migração. Encerra o tema "previsibilidade & qualidade em trabalho criativo"
   (subsistemas 1+v2, 2, 3a, 3b).
-- Refinamento futuro possível: entrada real (respeitando opcional-desmarcada) em vez
-  de `stagePreview[0]`.
+- ~~Refinamento futuro possível: entrada real (respeitando opcional-desmarcada) em vez
+  de `stagePreview[0]`.~~ **Feito (2026-07-22):** a entrada agora é a **primeira etapa
+  ainda marcada** (`firstIncludedStageId` em `lib/forecast-feasibility.ts`, puro +
+  testado). O `CreateTaskForm` passou a controlar checkboxes (`checkedStages`) e
+  responsáveis por etapa (`stageAssignees`); desmarcar a 1ª etapa re-deriva a banda
+  ao vivo. Continua bandwidth-only (P4), nunca bloqueia/armazena/ranqueia.

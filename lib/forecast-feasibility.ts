@@ -22,6 +22,17 @@ export function idealStartOffsetDays(p85: number): number {
   return Math.max(0, Math.ceil(p85));
 }
 
+/** Etapa de "entrada" real para a seleção da banda: a primeira etapa AINDA
+ * incluída na ordem do preview. Etapas opcionais nascem desmarcadas, então uma
+ * primeira etapa opcional passa a entrada para a próxima incluída; desmarcar uma
+ * etapa re-deriva ao vivo. Retorna null quando nenhuma está incluída. Puro. */
+export function firstIncludedStageId(
+  stages: ReadonlyArray<{ id: string }>,
+  included: Record<string, boolean>
+): string | null {
+  return stages.find((s) => included[s.id])?.id ?? null;
+}
+
 /** Dias do percentil "confiável" segundo a experiência do responsável no tipo:
  * experiente → p85; novo/desconhecido → p95 (banda mais larga). Puro.
  * Experiência é LARGURA DE BANDA (P4), nunca nota individual. */
