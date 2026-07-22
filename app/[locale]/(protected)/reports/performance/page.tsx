@@ -603,6 +603,7 @@ async function FirstTimeRightSection({ filters, t }: { filters: PerformanceFilte
             })}
           </div>
         )}
+        <p className="mt-3 text-[11px] text-muted-foreground">{t("firstTimeRight.legend")}</p>
       </CardContent>
     </Card>
   );

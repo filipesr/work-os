@@ -662,8 +662,9 @@ export interface ReworkBySourceStage {
   total: number;
 }
 
-/** Where para ReworkEvent: janela (por `at`) + template (sourceStage.templateId,
- * coerente com buildStageLogWhere) + project/client (task). */
+/** Where para ReworkEvent: janela (por `at`) + template/time via sourceStage
+ * (sourceStage.templateId / sourceStage.defaultTeamId, coerente com
+ * buildStageLogWhere) + project/client via task. */
 function buildReworkWhere(filters: PerformanceFilters): Prisma.ReworkEventWhereInput {
   const where: Prisma.ReworkEventWhereInput = {};
   if (filters.startDate || filters.endDate) {

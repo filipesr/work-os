@@ -93,7 +93,8 @@
     "title": "First-Time-Right por Etapa",
     "description": "Das etapas concluídas, fração que não voltou para revisão. Alto = entrega certa de primeira.",
     "noData": "Sem dados de retrabalho no período.",
-    "counts": "{completed} concluídas · {reworked} retornos"
+    "counts": "{completed} concluídas · {reworked} retornos",
+    "legend": "Sinal de processo por etapa — não de pessoa."
   },
   "reworkBySource": {
     "title": "Retrabalho por Etapa-Origem",
