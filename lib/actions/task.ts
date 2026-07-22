@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
-import { Prisma, type ActiveStageStatus } from "@prisma/client";
+import { Prisma, type ActiveStageStatus, type ReworkKind } from "@prisma/client";
 import { auth } from "@/auth";
 import { requireMemberOrHigher, requireManagerOrAdmin, getSessionUser } from "@/lib/permissions";
 import { createTaskSchema } from "@/lib/validations";
@@ -1534,13 +1534,22 @@ export async function advanceTaskStage(taskId: string, nextStageId: string) {
  * 2. Creates a new ACTIVE stage for the reverted-to stage
  * 3. Logs the reversion with a comment
  */
-export async function revertTaskStage(taskId: string, revertToStageId: string, comment: string) {
+export async function revertTaskStage(
+  taskId: string,
+  revertToStageId: string,
+  comment: string,
+  kind: ReworkKind
+) {
   const user = await requireMemberOrHigher();
   const currentUserId = user.id as string;
   const userRole = user.role;
 
   if (!comment || comment.trim().length === 0) {
     return { error: "Um comentário explicando a reversão é obrigatório." };
+  }
+
+  if (kind !== "INTERNAL" && kind !== "CLIENT") {
+    return { error: "Origem do retorno inválida (interno ou cliente)." };
   }
 
   try {
@@ -1630,6 +1639,17 @@ export async function revertTaskStage(taskId: string, revertToStageId: string, c
         data: { status: "ACTIVE", assigneeId: null, completedAt: null },
       });
       await recordStageTransition(tx, taskId, revertToStageId, "ACTIVE");
+
+      // 4c-bis. Registrar o retrabalho atribuído à etapa-origem (a etapa-alvo).
+      await tx.reworkEvent.create({
+        data: {
+          taskId,
+          sourceStageId: revertToStageId,
+          kind,
+          reason: comment.trim(),
+          byUserId: currentUserId,
+        },
+      });
 
       // 4d. Novo log de entrada na etapa-alvo (em andamento → status null).
       await tx.taskStageLog.create({

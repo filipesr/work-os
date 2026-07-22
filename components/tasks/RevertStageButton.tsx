@@ -36,12 +36,14 @@ export function RevertStageButton({
   } = useControllableOpen(controlledOpen, onOpenChange);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
+  const [kind, setKind] = useState<"INTERNAL" | "CLIENT" | null>(null);
   const { run, isPending } = useServerAction(revertTaskStage, {
     successMessage: t("successToast"),
     onSuccess: () => {
       setIsOpen(false);
       setComment("");
       setSelectedStageId(null);
+      setKind(null);
     },
   });
 
@@ -50,11 +52,11 @@ export function RevertStageButton({
   }
 
   const handleRevert = () => {
-    if (!selectedStageId || !comment.trim()) {
+    if (!selectedStageId || !comment.trim() || !kind) {
       toast.error(t("validationError"));
       return;
     }
-    run(taskId, selectedStageId, comment);
+    run(taskId, selectedStageId, comment, kind);
   };
 
   return (
@@ -177,6 +179,32 @@ export function RevertStageButton({
               <p className="text-xs text-muted-foreground mt-1">{t("reasonHint")}</p>
             </div>
 
+            {/* Origem do retorno (interno vs cliente) */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-foreground mb-2">
+                {t("originLabel")}
+              </label>
+              <div className="flex gap-3">
+                {(["INTERNAL", "CLIENT"] as const).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setKind(k)}
+                    disabled={isPending}
+                    aria-pressed={kind === k}
+                    className={`flex-1 rounded-lg border-2 px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
+                      kind === k
+                        ? "border-blue-400 bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-200"
+                        : "border-border text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {t(k === "INTERNAL" ? "originInternal" : "originClient")}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">{t("originHint")}</p>
+            </div>
+
             {/* Footer */}
             <div className="flex gap-3 justify-between items-center pt-4 border-t border-gray-200">
               <p className="text-xs text-gray-500">
@@ -190,6 +218,7 @@ export function RevertStageButton({
                     setIsOpen(false);
                     setComment("");
                     setSelectedStageId(null);
+                    setKind(null);
                   }}
                   disabled={isPending}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
@@ -198,7 +227,7 @@ export function RevertStageButton({
                 </button>
                 <button
                   onClick={handleRevert}
-                  disabled={isPending || !selectedStageId || !comment.trim()}
+                  disabled={isPending || !selectedStageId || !comment.trim() || !kind}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
