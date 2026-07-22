@@ -79,19 +79,12 @@ export interface BurnoutSignal {
   risk: "medium" | "high";
 }
 
-export interface OneOnOneEntry {
-  occurredAt: string; // ISO
-  managerName: string | null;
-  notes: string | null;
-}
-
 export interface OneOnOneCadenceRow {
   userId: string;
   name: string;
   lastOneOnOne: string | null; // ISO date, or null if never
   daysSince: number | null;
   overdue: boolean;
-  recent: OneOnOneEntry[]; // most recent 1:1s (newest first) for viewing history
 }
 
 /** Median of a numeric list (0 for empty). Pure helper. */
@@ -518,8 +511,8 @@ export async function getOneOnOneCadence(teamIds?: string[]): Promise<OneOnOneCa
       name: true,
       oneOnOnesReceived: {
         orderBy: { occurredAt: "desc" },
-        take: 5,
-        select: { occurredAt: true, notes: true, manager: { select: { name: true } } },
+        take: 1,
+        select: { occurredAt: true },
       },
     },
     orderBy: { name: "asc" },
@@ -530,14 +523,8 @@ export async function getOneOnOneCadence(teamIds?: string[]): Promise<OneOnOneCa
     .map((m): OneOnOneCadenceRow => {
       const last = m.oneOnOnesReceived[0]?.occurredAt ?? null;
       const daysSince = last ? Math.floor((now - last.getTime()) / 8.64e7) : null;
-      const recent: OneOnOneEntry[] = m.oneOnOnesReceived.map((o) => ({
-        occurredAt: o.occurredAt.toISOString(),
-        managerName: o.manager?.name ?? null,
-        notes: o.notes ?? null,
-      }));
       return {
         userId: m.id,
-        recent,
         name: m.name ?? "—",
         lastOneOnOne: last ? last.toISOString() : null,
         daysSince,
