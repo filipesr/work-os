@@ -5,8 +5,9 @@ import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { Prisma } from "@prisma/client";
 import { formatISODate, currentMonthSaoPaulo, monthKeySaoPaulo } from "@/lib/dates";
-import { statusDurations, type TransitionRow } from "@/lib/stage-transitions";
+import { statusDurations, statusAt, type TransitionRow } from "@/lib/stage-transitions";
 import { percentile } from "@/lib/stats";
+import { forecastWhen, forecastHowMany, type ForecastResult } from "@/lib/monte-carlo";
 import {
   productivityFiltersSchema,
   performanceFiltersSchema,
@@ -729,6 +730,181 @@ export async function getCycleTimePercentiles(
     p95: percentile(days, 0.95),
     points,
   };
+}
+
+// ========== Time-series & Forecasting (P1) ==========
+
+const DAY_MS = 8.64e7;
+const THROUGHPUT_WINDOW_DAYS = 84; // ~12 weeks of history feeds the forecast
+const CFD_WINDOW_DAYS = 56; // ~8 weeks of daily flow snapshots
+const FORECAST_HORIZON_DAYS = 30; // "how many ship in the next 30 days"
+
+/** Open (in-flight) tasks in scope — the forecast backlog. Team scope = a task
+ * with an active/blocked stage owned by that team. */
+function buildOpenTaskWhere(filters: PerformanceFilters): Prisma.TaskWhereInput {
+  const where: Prisma.TaskWhereInput = {
+    status: { in: ["BACKLOG", "IN_PROGRESS", "PAUSED"] },
+  };
+  if (filters.projectId) where.projectId = filters.projectId;
+  if (filters.clientId) where.project = { clientId: filters.clientId };
+  if (filters.teamId) {
+    where.activeStages = {
+      some: { status: { in: ["ACTIVE", "BLOCKED"] }, stage: { defaultTeamId: filters.teamId } },
+    };
+  }
+  return where;
+}
+
+/** Per-day completion counts (INCLUDING zero days) over the last N days — the
+ * throughput distribution the Monte Carlo forecast samples from. */
+async function dailyThroughputSamples(
+  filters: PerformanceFilters,
+  windowDays: number,
+  now: number
+): Promise<number[]> {
+  const from = new Date(now - windowDays * DAY_MS);
+  const where = buildLeadTimeWhere({ ...filters, startDate: from, endDate: new Date(now) });
+  const tasks = await prisma.task.findMany({ where, select: { completedAt: true } });
+
+  const buckets = new Array(windowDays).fill(0);
+  const startDay = Math.floor(from.getTime() / DAY_MS);
+  for (const t of tasks) {
+    if (!t.completedAt) continue;
+    const idx = Math.floor(t.completedAt.getTime() / DAY_MS) - startDay;
+    if (idx >= 0 && idx < windowDays) buckets[idx] += 1;
+  }
+  return buckets;
+}
+
+export interface DeliveryForecast {
+  backlog: number;
+  sampleDays: number; // history depth used
+  totalThroughput: number; // items completed in the window
+  when: ForecastResult | null; // days to drain the backlog (null if no throughput)
+  horizonDays: number;
+  howMany: ForecastResult; // items shipped within horizonDays
+}
+
+/**
+ * Monte Carlo delivery forecast: samples the last ~12 weeks of daily throughput
+ * to answer, probabilistically, "when is the current backlog done?" (commit at
+ * p85) and "how many items ship in the next 30 days?". Reuses only history that
+ * already exists (task.completedAt). Runs the simulation server-side.
+ */
+export async function getDeliveryForecast(
+  filters: PerformanceFilters = {}
+): Promise<DeliveryForecast> {
+  await requireManagerOrAdmin();
+  filters = performanceFiltersSchema.parse(filters);
+  const now = Date.now();
+
+  const [samples, backlog] = await Promise.all([
+    dailyThroughputSamples(filters, THROUGHPUT_WINDOW_DAYS, now),
+    prisma.task.count({ where: buildOpenTaskWhere(filters) }),
+  ]);
+
+  return {
+    backlog,
+    sampleDays: THROUGHPUT_WINDOW_DAYS,
+    totalThroughput: samples.reduce((a, b) => a + b, 0),
+    when: forecastWhen(samples, backlog),
+    horizonDays: FORECAST_HORIZON_DAYS,
+    howMany: forecastHowMany(samples, FORECAST_HORIZON_DAYS),
+  };
+}
+
+export interface ThroughputPoint {
+  weekStart: string; // ISO date of the week bucket start
+  count: number;
+}
+
+/** Weekly completion counts over the last ~12 weeks — the throughput trend line. */
+export async function getThroughputSeries(
+  filters: PerformanceFilters = {}
+): Promise<ThroughputPoint[]> {
+  await requireManagerOrAdmin();
+  filters = performanceFiltersSchema.parse(filters);
+  const now = Date.now();
+
+  const weeks = Math.ceil(THROUGHPUT_WINDOW_DAYS / 7);
+  const daily = await dailyThroughputSamples(filters, weeks * 7, now);
+  const startDay = Math.floor((now - weeks * 7 * DAY_MS) / DAY_MS);
+
+  const points: ThroughputPoint[] = [];
+  for (let w = 0; w < weeks; w++) {
+    let count = 0;
+    for (let d = 0; d < 7; d++) count += daily[w * 7 + d] ?? 0;
+    points.push({ weekStart: new Date((startDay + w * 7) * DAY_MS).toISOString(), count });
+  }
+  return points;
+}
+
+export interface CfdPoint {
+  date: string; // ISO date (end of day)
+  INACTIVE: number;
+  BLOCKED: number;
+  ACTIVE: number;
+  COMPLETED: number;
+}
+
+/**
+ * Status-band Cumulative Flow Diagram: for each of the last ~8 weeks of days,
+ * how many stage instances were in each status at end of day — reconstructed by
+ * replaying the StageTransition log (no snapshot table, no cron). Only reflects
+ * data from the transition log's start (the P0.1 migration) onward. A BLOCKED
+ * band widening over time = work piling up waiting; COMPLETED grows cumulatively.
+ */
+export async function getFlowCfdSeries(filters: PerformanceFilters = {}): Promise<CfdPoint[]> {
+  await requireManagerOrAdmin();
+  filters = performanceFiltersSchema.parse(filters);
+  const now = Date.now();
+  const windowStart = now - CFD_WINDOW_DAYS * DAY_MS;
+
+  const stageFilter: Prisma.TemplateStageWhereInput = {};
+  if (filters.templateId) stageFilter.templateId = filters.templateId;
+  if (filters.teamId) stageFilter.defaultTeamId = filters.teamId;
+  const taskFilter: Prisma.TaskWhereInput = {};
+  if (filters.projectId) taskFilter.projectId = filters.projectId;
+  if (filters.clientId) taskFilter.project = { clientId: filters.clientId };
+
+  const where: Prisma.StageTransitionWhereInput = { at: { lte: new Date(now) } };
+  if (Object.keys(stageFilter).length > 0) where.stage = stageFilter;
+  if (Object.keys(taskFilter).length > 0) where.task = taskFilter;
+
+  const rows = await prisma.stageTransition.findMany({
+    where,
+    select: { taskId: true, stageId: true, status: true, at: true },
+    orderBy: { at: "asc" },
+  });
+
+  // Group transitions per (task, stage) instance.
+  const byInstance = new Map<string, TransitionRow[]>();
+  for (const r of rows) {
+    const key = `${r.taskId}::${r.stageId}`;
+    const arr = byInstance.get(key) ?? [];
+    arr.push({ status: r.status, at: r.at });
+    byInstance.set(key, arr);
+  }
+  const instances = Array.from(byInstance.values());
+
+  const startDay = Math.floor(windowStart / DAY_MS);
+  const points: CfdPoint[] = [];
+  for (let d = 0; d < CFD_WINDOW_DAYS; d++) {
+    const dayEnd = (startDay + d + 1) * DAY_MS - 1; // end-of-day ms
+    const point: CfdPoint = {
+      date: new Date(dayEnd).toISOString(),
+      INACTIVE: 0,
+      BLOCKED: 0,
+      ACTIVE: 0,
+      COMPLETED: 0,
+    };
+    for (const inst of instances) {
+      const s = statusAt(inst, dayEnd);
+      if (s) point[s] += 1;
+    }
+    points.push(point);
+  }
+  return points;
 }
 
 // ========== Calendar (Gantt) ==========

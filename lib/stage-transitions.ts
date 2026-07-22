@@ -71,6 +71,21 @@ export function statusDurations(rows: TransitionRow[], now: number = Date.now())
 }
 
 /**
+ * The status of ONE (task, stage) instance as of time `t` (ms): the status of
+ * the latest transition at or before `t`, or null if the instance had not been
+ * created yet. Powers the status-band CFD (count instances per status per day
+ * by replaying the transition log). Rows need not be pre-sorted.
+ */
+export function statusAt(rows: TransitionRow[], t: number): ActiveStageStatus | null {
+  let best: TransitionRow | null = null;
+  for (const r of rows) {
+    const ms = r.at.getTime();
+    if (ms <= t && (best === null || ms > best.at.getTime())) best = r;
+  }
+  return best ? best.status : null;
+}
+
+/**
  * Flow efficiency = ACTIVE ÷ (ACTIVE + BLOCKED) — the fraction of "reached"
  * time the item was workable vs. waiting on dependencies. INACTIVE (not yet
  * reached) and COMPLETED (terminal) are excluded by construction. Returns null

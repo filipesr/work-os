@@ -62,5 +62,28 @@
     "completed": "completo",
     "reverted": "revertido",
     "rework": "retrabalho"
+  },
+  "forecast": {
+    "title": "Previsão de Entrega (Monte Carlo)",
+    "description": "Simula milhares de cenários amostrando o throughput histórico. Comprometa-se com o p85 — a data cumprida ~85% das vezes.",
+    "noData": "Sem histórico de conclusão suficiente para prever",
+    "backlog": "Backlog atual",
+    "whenP85": "Concluir backlog (p85)",
+    "days": "{days} dias",
+    "howMany": "Entregas em {days} dias (p50)"
+  },
+  "throughput": {
+    "title": "Throughput no Tempo",
+    "description": "Tarefas concluídas por semana (últimas ~12 semanas).",
+    "noData": "Nenhuma conclusão no período"
+  },
+  "cfd": {
+    "title": "Diagrama de Fluxo Acumulado (CFD)",
+    "description": "Contagem de etapas por status ao longo do tempo. Banda de bloqueadas alargando = trabalho represando; concluídas crescem acumuladas. (A partir do registro de transições.)",
+    "noData": "Ainda sem dados de fluxo no período",
+    "completed": "Concluída",
+    "active": "Ativa",
+    "blocked": "Bloqueada",
+    "inactive": "Não iniciada"
   }
 }

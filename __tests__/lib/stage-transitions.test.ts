@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { statusDurations, flowEfficiencyRatio, type TransitionRow } from "@/lib/stage-transitions";
+import {
+  statusDurations,
+  flowEfficiencyRatio,
+  statusAt,
+  type TransitionRow,
+} from "@/lib/stage-transitions";
 
 const H = 3.6e6; // ms per hour
 const base = new Date("2026-07-01T00:00:00.000Z").getTime();
@@ -58,6 +63,27 @@ describe("statusDurations", () => {
     const d = statusDurations(rows, at(99).getTime());
     expect(d.BLOCKED).toBe((1 + 3) * H); // 0→1 and 3→6
     expect(d.ACTIVE).toBe((2 + 4) * H); // 1→3 and 6→10
+  });
+});
+
+describe("statusAt", () => {
+  const rows: TransitionRow[] = [
+    { status: "INACTIVE", at: at(0) },
+    { status: "BLOCKED", at: at(2) },
+    { status: "ACTIVE", at: at(5) },
+    { status: "COMPLETED", at: at(11) },
+  ];
+
+  it("null before the instance existed", () => {
+    expect(statusAt(rows, at(-1).getTime())).toBeNull();
+  });
+
+  it("returns the status of the latest transition at or before t", () => {
+    expect(statusAt(rows, at(0).getTime())).toBe("INACTIVE");
+    expect(statusAt(rows, at(3).getTime())).toBe("BLOCKED");
+    expect(statusAt(rows, at(5).getTime())).toBe("ACTIVE");
+    expect(statusAt(rows, at(10).getTime())).toBe("ACTIVE");
+    expect(statusAt(rows, at(50).getTime())).toBe("COMPLETED");
   });
 });
 

@@ -8,9 +8,13 @@ import {
   getLeadTimeMetrics,
   getFlowEfficiencyByStage,
   getCycleTimePercentiles,
+  getDeliveryForecast,
+  getThroughputSeries,
+  getFlowCfdSeries,
   getAvailablePerformanceMonths,
   type PerformanceFilters,
 } from "@/lib/actions/reporting";
+import { ThroughputLine, StatusCfd } from "@/components/reports/FlowCharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ArrowLeft,
@@ -20,6 +24,9 @@ import {
   Activity,
   Gauge,
   Target,
+  Dice5,
+  LineChart,
+  Layers,
 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { ExportButtons } from "@/components/reports/ExportButtons";
@@ -319,6 +326,116 @@ async function CycleTimeSection({ filters, t }: { filters: PerformanceFilters; t
   );
 }
 
+async function ForecastSection({ filters, t }: { filters: PerformanceFilters; t: T }) {
+  const f = await getDeliveryForecast(filters);
+
+  return (
+    <Card className="border-2 border-violet-300 dark:border-violet-700 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950 dark:to-indigo-950">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Dice5 className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+          <CardTitle className="text-violet-800 dark:text-violet-200">
+            {t("forecast.title")}
+          </CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-violet-700 dark:text-violet-300 mb-4">
+          {t("forecast.description")}
+        </p>
+        {f.totalThroughput === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("forecast.noData")}</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-lg border bg-card p-3">
+              <div className="text-xs text-muted-foreground">{t("forecast.backlog")}</div>
+              <div className="text-2xl font-bold">{f.backlog}</div>
+            </div>
+            <div className="rounded-lg border-2 border-violet-400 dark:border-violet-500 p-3">
+              <div className="text-xs text-violet-600 dark:text-violet-400">
+                {t("forecast.whenP85")}
+              </div>
+              <div className="text-2xl font-bold text-violet-700 dark:text-violet-300">
+                {f.when ? t("forecast.days", { days: Math.ceil(f.when.p85) }) : "—"}
+              </div>
+              {f.when && (
+                <div className="text-xs text-muted-foreground">
+                  p50 {Math.ceil(f.when.p50)}d · p95 {Math.ceil(f.when.p95)}d
+                </div>
+              )}
+            </div>
+            <div className="rounded-lg border bg-card p-3">
+              <div className="text-xs text-muted-foreground">
+                {t("forecast.howMany", { days: f.horizonDays })}
+              </div>
+              <div className="text-2xl font-bold">{Math.floor(f.howMany.p50)}</div>
+              <div className="text-xs text-muted-foreground">
+                p85 ≥ {Math.floor(f.howMany.p85)} · p95 ≥ {Math.floor(f.howMany.p95)}
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+async function ThroughputSection({ filters, t }: { filters: PerformanceFilters; t: T }) {
+  const points = await getThroughputSeries(filters);
+  const hasData = points.some((p) => p.count > 0);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <LineChart className="h-5 w-5" />
+          <CardTitle>{t("throughput.title")}</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground mb-4">{t("throughput.description")}</p>
+        {hasData ? (
+          <ThroughputLine points={points} label={t("throughput.title")} />
+        ) : (
+          <p className="text-sm text-muted-foreground">{t("throughput.noData")}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+async function CfdSection({ filters, t }: { filters: PerformanceFilters; t: T }) {
+  const points = await getFlowCfdSeries(filters);
+  const hasData = points.some((p) => p.COMPLETED + p.ACTIVE + p.BLOCKED + p.INACTIVE > 0);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Layers className="h-5 w-5" />
+          <CardTitle>{t("cfd.title")}</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground mb-4">{t("cfd.description")}</p>
+        {hasData ? (
+          <StatusCfd
+            points={points}
+            labels={{
+              COMPLETED: t("cfd.completed"),
+              ACTIVE: t("cfd.active"),
+              BLOCKED: t("cfd.blocked"),
+              INACTIVE: t("cfd.inactive"),
+            }}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">{t("cfd.noData")}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 async function FlowEfficiencySection({ filters, t }: { filters: PerformanceFilters; t: T }) {
   const flowByStage = await getFlowEfficiencyByStage(filters);
 
@@ -552,6 +669,21 @@ export default async function PerformanceReportPage({
       <Suspense fallback={<CardSkeleton />}>
         <CycleTimeSection filters={filters} t={t} />
       </Suspense>
+
+      {/* Monte Carlo delivery forecast */}
+      <Suspense fallback={<CardSkeleton />}>
+        <ForecastSection filters={filters} t={t} />
+      </Suspense>
+
+      {/* Time-series: throughput trend + status CFD */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Suspense fallback={<CardSkeleton />}>
+          <ThroughputSection filters={filters} t={t} />
+        </Suspense>
+        <Suspense fallback={<CardSkeleton />}>
+          <CfdSection filters={filters} t={t} />
+        </Suspense>
+      </div>
 
       {/* Bottlenecks Alert */}
       <Suspense fallback={null}>
