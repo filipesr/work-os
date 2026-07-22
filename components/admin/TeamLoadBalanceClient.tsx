@@ -5,15 +5,21 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { loadSegments, type MemberStage } from "@/lib/team-health-format";
+import {
+  loadMeter,
+  medianMarkerPct,
+  type LoadTier,
+  type MemberStage,
+} from "@/lib/team-health-format";
 import { getMemberActiveStages } from "@/lib/actions/member-drill";
 import { formatDisplayDate } from "@/lib/dates";
 import type { MemberLoad } from "@/lib/actions/team-health";
 
-const SEGMENT_COLOR: Record<"overdue" | "dueSoon" | "onTrack", string> = {
-  overdue: "bg-red-500",
-  dueSoon: "bg-yellow-500",
-  onTrack: "bg-green-500",
+const TIER_COLOR: Record<LoadTier, string> = {
+  idle: "bg-muted-foreground/30",
+  healthy: "bg-green-500",
+  high: "bg-amber-500",
+  overloaded: "bg-red-500",
 };
 
 type Filter = "all" | "overloaded" | "idle" | "active";
@@ -23,6 +29,7 @@ interface Summary {
   overloaded: number;
   idle: number;
   medianWip: number;
+  ceiling: number;
 }
 
 function Stat({
@@ -123,43 +130,59 @@ export function TeamLoadBalanceClient({ rows, summary }: { rows: MemberLoad[]; s
           {filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4">{t("noMatch")}</p>
           ) : (
-            <ul className="max-h-80 overflow-y-auto divide-y divide-border">
-              {filtered.map((r) => (
-                <li key={r.userId}>
-                  <button
-                    type="button"
-                    onClick={() => openMember(r)}
-                    className="w-full flex items-center gap-3 px-2 py-2 text-left rounded-md hover:bg-accent"
-                  >
-                    <span className="w-32 truncate text-sm font-medium text-foreground">
-                      {r.name}
-                    </span>
-                    <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden flex">
-                      {loadSegments(r).map((s) => (
-                        <div
-                          key={s.key}
-                          className={SEGMENT_COLOR[s.key]}
-                          style={{ width: `${s.pct}%` }}
-                        />
-                      ))}
-                    </div>
-                    <span className="w-16 shrink-0 text-right text-sm tabular-nums text-muted-foreground">
-                      {t("activeStages", { count: r.count })}
-                    </span>
-                    {r.overloaded && (
-                      <span className="shrink-0 text-xs font-bold text-red-700 bg-red-100 border border-red-300 rounded px-2 py-0.5">
-                        {t("overloaded")}
-                      </span>
-                    )}
-                    {r.idle && !r.overloaded && !idleIsMajority && (
-                      <span className="shrink-0 text-xs font-bold text-gray-600 bg-gray-100 border border-gray-300 rounded px-2 py-0.5">
-                        {t("idle")}
-                      </span>
-                    )}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="max-h-80 overflow-y-auto divide-y divide-border">
+                {filtered.map((r) => {
+                  const meter = loadMeter(r, summary.ceiling);
+                  return (
+                    <li key={r.userId}>
+                      <button
+                        type="button"
+                        onClick={() => openMember(r)}
+                        className="w-full flex items-center gap-3 px-2 py-2 text-left rounded-md hover:bg-accent"
+                      >
+                        <span className="w-32 truncate text-sm font-medium text-foreground">
+                          {r.name}
+                        </span>
+                        {/* WIP load meter: fill = WIP ÷ overload ceiling, colored
+                            by load tier; the vertical marker is the team median. */}
+                        <div className="relative flex-1 h-3 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className={`h-full ${TIER_COLOR[meter.tier]}`}
+                            style={{ width: `${meter.fillPct}%` }}
+                          />
+                          {summary.medianWip > 0 && (
+                            <span
+                              className="absolute top-0 h-full w-px bg-foreground/50"
+                              style={{
+                                left: `${medianMarkerPct(summary.medianWip, summary.ceiling)}%`,
+                              }}
+                              title={t("medianMarker", { median: summary.medianWip })}
+                            />
+                          )}
+                        </div>
+                        <span className="w-16 shrink-0 text-right text-sm tabular-nums text-muted-foreground">
+                          {t("activeStages", { count: r.count })}
+                        </span>
+                        {r.overloaded && (
+                          <span className="shrink-0 text-xs font-bold text-red-700 bg-red-100 border border-red-300 rounded px-2 py-0.5">
+                            {t("overloaded")}
+                          </span>
+                        )}
+                        {r.idle && !r.overloaded && !idleIsMajority && (
+                          <span className="shrink-0 text-xs font-bold text-gray-600 bg-gray-100 border border-gray-300 rounded px-2 py-0.5">
+                            {t("idle")}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                {t("meterLegend", { ceiling: summary.ceiling })}
+              </p>
+            </>
           )}
         </>
       )}

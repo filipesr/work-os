@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   formatAge,
-  loadSegments,
+  loadMeter,
+  medianMarkerPct,
   stageAgingRatio,
   dependencyRiskLevel,
 } from "@/lib/team-health-format";
@@ -36,15 +37,37 @@ describe("formatAge", () => {
   it("whole days", () => expect(formatAge(48)).toBe("2d"));
 });
 
-describe("loadSegments", () => {
-  it("splits into percentages summing to 100 when count > 0", () => {
-    const segs = loadSegments({ count: 4, onTrack: 2, dueSoon: 1, overdue: 1 });
-    const total = segs.reduce((s, x) => s + x.pct, 0);
-    expect(Math.round(total)).toBe(100);
-    expect(segs.find((s) => s.key === "overdue")!.pct).toBe(25);
+describe("loadMeter", () => {
+  const ceiling = 8;
+  it("idle tier + 0% fill when no WIP", () => {
+    expect(loadMeter({ count: 0, overloaded: false }, ceiling)).toEqual({
+      fillPct: 0,
+      tier: "idle",
+    });
   });
-  it("all zero when count is 0", () => {
-    const segs = loadSegments({ count: 0, onTrack: 0, dueSoon: 0, overdue: 0 });
-    expect(segs.every((s) => s.pct === 0)).toBe(true);
+  it("healthy tier below 75% of the ceiling", () => {
+    const m = loadMeter({ count: 3, overloaded: false }, ceiling);
+    expect(m.tier).toBe("healthy");
+    expect(m.fillPct).toBeCloseTo(37.5);
+  });
+  it("high tier at/above 75% of the ceiling", () => {
+    expect(loadMeter({ count: 6, overloaded: false }, ceiling).tier).toBe("high");
+  });
+  it("overloaded tier wins regardless of count; fill clamps to 100%", () => {
+    const m = loadMeter({ count: 20, overloaded: true }, ceiling);
+    expect(m.tier).toBe("overloaded");
+    expect(m.fillPct).toBe(100);
+  });
+  it("guards a non-positive ceiling", () => {
+    expect(loadMeter({ count: 2, overloaded: false }, 0).fillPct).toBe(100);
+  });
+});
+
+describe("medianMarkerPct", () => {
+  it("positions the median on the 0..ceiling scale", () => {
+    expect(medianMarkerPct(4, 8)).toBe(50);
+  });
+  it("clamps to 100% when median exceeds the ceiling", () => {
+    expect(medianMarkerPct(12, 8)).toBe(100);
   });
 });

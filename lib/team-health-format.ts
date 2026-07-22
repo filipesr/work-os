@@ -22,19 +22,38 @@ export function dependencyRiskLevel(pendingDeps: number): "low" | "medium" | "hi
   return "low";
 }
 
-type LoadRow = { count: number; onTrack: number; dueSoon: number; overdue: number };
+export type LoadTier = "idle" | "healthy" | "high" | "overloaded";
 
-/** Bar segments (percent of the person's WIP) ordered overdue → dueSoon → onTrack. */
-export function loadSegments(
-  row: LoadRow
-): { key: "overdue" | "dueSoon" | "onTrack"; pct: number }[] {
-  const denom = row.count || 1;
-  const pct = (n: number) => (row.count === 0 ? 0 : (n / denom) * 100);
-  return [
-    { key: "overdue", pct: pct(row.overdue) },
-    { key: "dueSoon", pct: pct(row.dueSoon) },
-    { key: "onTrack", pct: pct(row.onTrack) },
-  ];
+/**
+ * Load meter for one member's WIP, coherent with the card's summary (WIP /
+ * overload / median). `fillPct` is the WIP as a fraction of the overload
+ * ceiling (clamped to 100% — anyone at/over the ceiling fills the bar). `tier`
+ * colors it by load magnitude:
+ *   - overloaded: the row is flagged overloaded (absolute ceiling OR relative rule)
+ *   - high: approaching the ceiling (≥ 75% of it)
+ *   - idle: no active WIP
+ *   - healthy: everything else
+ * Pure — the caller passes the ceiling (OVERLOAD_CEILING) so this file stays
+ * free of server imports.
+ */
+export function loadMeter(
+  row: { count: number; overloaded: boolean },
+  ceiling: number
+): { fillPct: number; tier: LoadTier } {
+  const safeCeiling = ceiling > 0 ? ceiling : 1;
+  const fillPct = Math.min(row.count / safeCeiling, 1) * 100;
+  let tier: LoadTier;
+  if (row.overloaded) tier = "overloaded";
+  else if (row.count === 0) tier = "idle";
+  else if (row.count >= Math.ceil(safeCeiling * 0.75)) tier = "high";
+  else tier = "healthy";
+  return { fillPct, tier };
+}
+
+/** Position (percent) of the team-median marker on the same 0..ceiling scale. */
+export function medianMarkerPct(medianWip: number, ceiling: number): number {
+  const safeCeiling = ceiling > 0 ? ceiling : 1;
+  return Math.min(medianWip / safeCeiling, 1) * 100;
 }
 
 /**

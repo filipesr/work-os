@@ -518,7 +518,9 @@
         "createdAt": "Creada el",
         "assignedAt": "Asignada el",
         "dueDate": "Vencimiento"
-      }
+      },
+      "meterLegend": "La barra muestra la carga (WIP) de cada uno respecto al tope de sobrecarga ({ceiling}); la marca vertical es la mediana del equipo. Verde = saludable, ámbar = cerca del tope, rojo = sobrecarga.",
+      "medianMarker": "Mediana del equipo: {median}"
     },
     "aging": {
       "title": "Envejeciendo / en riesgo",

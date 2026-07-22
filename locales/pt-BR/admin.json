@@ -518,7 +518,9 @@
         "createdAt": "Criada em",
         "assignedAt": "Atribuída em",
         "dueDate": "Vencimento"
-      }
+      },
+      "meterLegend": "A barra mostra a carga (WIP) de cada um em relação ao teto de sobrecarga ({ceiling}); a marca vertical é a mediana do time. Verde = saudável, âmbar = perto do teto, vermelho = sobrecarga.",
+      "medianMarker": "Mediana do time: {median}"
     },
     "aging": {
       "title": "Envelhecendo / em risco",
