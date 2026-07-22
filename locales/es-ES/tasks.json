@@ -371,6 +371,14 @@
       "unassigned": "Sin responsable",
       "noTeam": "Sin equipo",
       "ariaLabel": "Responsable de la etapa (equipo {team})"
+    },
+    "feasibility": {
+      "comfortable": "Plazo cómodo",
+      "tight": "Plazo ajustado",
+      "atRisk": "Plazo en riesgo",
+      "summary": "{type}: p50 {p50}d · p85 {p85}d (base {count}). Tienes {days}d.",
+      "lowConfidence": "Base pequeña (N={count}) — confianza baja.",
+      "idealStart": "El inicio ideal sería {date}."
     }
   }
 }

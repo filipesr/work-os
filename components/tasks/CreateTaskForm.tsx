@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { createTask } from "@/lib/actions/task";
 import { getTemplateStagePreview } from "@/app/actions/templateActions";
 import { getClients } from "@/lib/actions/client";
+import { getTypeForecast } from "@/lib/actions/reporting";
+import { assessFeasibility, idealStartOffsetDays } from "@/lib/forecast-feasibility";
 import { QuickCreateProject } from "@/components/quick-create/QuickCreateProject";
 import { StageAssigneeSelect } from "@/components/ui/StageAssigneeSelect";
 import { Input } from "@/components/ui/input";
@@ -16,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Loader2 } from "lucide-react";
 
 interface Project {
@@ -53,11 +55,20 @@ export function CreateTaskForm({
 }: CreateTaskFormProps) {
   const t = useTranslations("tasks");
   const tPriority = useTranslations("tasks.priority");
+  const locale = useLocale();
   const router = useRouter();
   const [projects, setProjects] = useState(initialProjects);
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
   const [stagePreview, setStagePreview] = useState<StagePreviewItem[]>([]);
   const [isPreviewLoading, startPreviewTransition] = useTransition();
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [dueDate, setDueDate] = useState<string>("");
+  const [forecast, setForecast] = useState<{
+    p50: number;
+    p85: number;
+    count: number;
+    lowConfidence: boolean;
+  } | null>(null);
 
   // Load clients for QuickCreateProject
   useEffect(() => {
@@ -80,16 +91,40 @@ export function CreateTaskForm({
 
   // Handler for when the user selects a template
   const handleTemplateChange = (templateId: string) => {
+    setSelectedTemplateId(templateId);
     if (!templateId) {
       setStagePreview([]);
+      setForecast(null);
       return;
     }
 
     startPreviewTransition(async () => {
-      const stages = await getTemplateStagePreview(templateId);
+      const [stages, f] = await Promise.all([
+        getTemplateStagePreview(templateId),
+        getTypeForecast(templateId),
+      ]);
       setStagePreview(stages);
+      setForecast(f);
     });
   };
+
+  const selectedTemplate = templates.find((tmpl) => tmpl.id === selectedTemplateId);
+  const daysAvailable = dueDate
+    ? Math.ceil((new Date(dueDate).getTime() - new Date().setHours(0, 0, 0, 0)) / 8.64e7)
+    : NaN;
+  const feasibility =
+    forecast && forecast.count > 0 && dueDate
+      ? assessFeasibility(daysAvailable, forecast.p50, forecast.p85)
+      : "unknown";
+  const idealStart =
+    forecast && forecast.p85 > 0 && dueDate
+      ? new Date(new Date(dueDate).getTime() - idealStartOffsetDays(forecast.p85) * 8.64e7)
+      : null;
+  const idealStartPassed = idealStart
+    ? idealStart.getTime() < new Date().setHours(0, 0, 0, 0)
+    : false;
+  const fmtDate = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit" });
+
   return (
     <form action={createTask} className="space-y-6">
       {/* Title */}
@@ -262,7 +297,43 @@ export function CreateTaskForm({
         <label htmlFor="dueDate" className="block text-sm font-semibold text-foreground mb-2">
           {t("create.dueDateLabel")}
         </label>
-        <Input type="date" id="dueDate" name="dueDate" />
+        <Input
+          type="date"
+          id="dueDate"
+          name="dueDate"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+        />
+        {feasibility !== "unknown" && selectedTemplate && forecast && (
+          <div
+            className={`mt-2 rounded-md border p-2 text-xs ${
+              feasibility === "comfortable"
+                ? "border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
+                : feasibility === "tight"
+                  ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                  : "border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200"
+            }`}
+          >
+            <span className="font-semibold">{t(`create.feasibility.${feasibility}`)}</span>{" "}
+            {t("create.feasibility.summary", {
+              type: selectedTemplate.name,
+              p50: forecast.p50.toFixed(0),
+              p85: forecast.p85.toFixed(0),
+              count: forecast.count,
+              days: Number.isFinite(daysAvailable) ? daysAvailable : 0,
+            })}
+            {forecast.lowConfidence && (
+              <span className="block">
+                {t("create.feasibility.lowConfidence", { count: forecast.count })}
+              </span>
+            )}
+            {idealStartPassed && idealStart && (
+              <span className="block">
+                {t("create.feasibility.idealStart", { date: fmtDate.format(idealStart) })}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Submit Button */}
