@@ -672,7 +672,10 @@ function buildReworkWhere(filters: PerformanceFilters): Prisma.ReworkEventWhereI
     if (filters.endDate) at.lte = filters.endDate;
     where.at = at;
   }
-  if (filters.templateId) where.sourceStage = { templateId: filters.templateId };
+  const stageFilter: Prisma.TemplateStageWhereInput = {};
+  if (filters.templateId) stageFilter.templateId = filters.templateId;
+  if (filters.teamId) stageFilter.defaultTeamId = filters.teamId;
+  if (Object.keys(stageFilter).length > 0) where.sourceStage = stageFilter;
   const taskFilter: Prisma.TaskWhereInput = {};
   if (filters.projectId) taskFilter.projectId = filters.projectId;
   if (filters.clientId) taskFilter.project = { clientId: filters.clientId };
