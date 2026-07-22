@@ -59,6 +59,18 @@ ruído; Microsoft o abandonou (2013).
 **Exige/proíbe.** PROÍBE: ranking individual por output/defeito. EXIGE: atribuir
 ao **processo/etapa**; individual só como leitura de coaching com contexto.
 
+> **Exceção registrada (3b).** Existe UMA métrica de qualidade ligada à pessoa — o
+> **FTR por pessoa** — decisão deliberada e informada do dono do produto, **cercada**
+> pelas salvaguardas que a tornam defensável: (1) auto-referenciada, **nunca
+> comparativa** (não ordena/rankeia/compara pessoas); (2) **defeito-only via
+> reclassificação humana** (só o gestor marca defeito vs. mudança legítima; não-
+> classificado conta como defeito até revisado); (3) **motivos sempre à vista** (o
+> `reason` de cada retorno é o material de coaching — o número nunca fica sozinho);
+> (4) **reclassificação só do gestor/admin** (a pessoa vê, não reclassifica — evita
+> gaming); (5) **acesso fail-closed** (`requireSelfOrManager`; só a própria pessoa e
+> o gestor); (6) **zero pay/rank**. Fora dessas salvaguardas, P2 continua valendo
+> integralmente. Ver `docs/superpowers/specs/2026-07-22-visao-de-pessoas-3b-design.md`.
+
 ### P3 — Previsibilidade é probabilística, não determinística
 
 **Afirmação.** Não se estima a tarefa criativa individual em horas; mede-se a
@@ -244,17 +256,17 @@ Cada superfície e a razão de existir **daquela forma**.
 
 ## 5. O que deliberadamente NÃO fazemos (anti-features)
 
-| Não fazemos                                                                          | Por quê (princípio)                                         |
-| ------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| Score de desempenho **composto** (qualidade×tempo×volume)                            | P1 — número único é gameável e esconde a história           |
-| **Ranking** individual / leaderboard por velocidade ou defeito                       | P1/P2 — degrada qualidade e colaboração; ≈ ruído do sistema |
-| Vínculo de métrica a **remuneração**                                                 | P1 — transforma informacional em motivacional               |
-| **Estimativa em horas** apresentada como prazo certo                                 | P3 — variabilidade irredutível; use percentis               |
-| **Bloquear** o usuário com base num sinal (ex.: não deixar criar com prazo apertado) | P1 — informa, não impõe                                     |
-| Descontar **volume/ócio** da nota de **qualidade**                                   | P7 — ócio é capacidade/roteamento, dimensão separada        |
-| Contar retrabalho como **revert genérico** indistinto                                | P5 — apaga interno-vs-cliente e a etapa-origem              |
-| **Média** como métrica principal de duração                                          | P3 — distribuição enviesada; percentis                      |
-| Capacidade em horas como **ferramenta de planejamento**                              | P7 — throughput por classe é a medida certa                 |
+| Não fazemos                                                                                                                                                        | Por quê (princípio)                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Score de desempenho **composto** (qualidade×tempo×volume)                                                                                                          | P1 — número único é gameável e esconde a história           |
+| **Ranking** individual / leaderboard por velocidade ou defeito _(exceto o FTR-por-pessoa **auto-referenciado** da 3b — não é ranking: não compara/ordena pessoas)_ | P1/P2 — degrada qualidade e colaboração; ≈ ruído do sistema |
+| Vínculo de métrica a **remuneração**                                                                                                                               | P1 — transforma informacional em motivacional               |
+| **Estimativa em horas** apresentada como prazo certo                                                                                                               | P3 — variabilidade irredutível; use percentis               |
+| **Bloquear** o usuário com base num sinal (ex.: não deixar criar com prazo apertado)                                                                               | P1 — informa, não impõe                                     |
+| Descontar **volume/ócio** da nota de **qualidade**                                                                                                                 | P7 — ócio é capacidade/roteamento, dimensão separada        |
+| Contar retrabalho como **revert genérico** indistinto                                                                                                              | P5 — apaga interno-vs-cliente e a etapa-origem              |
+| **Média** como métrica principal de duração                                                                                                                        | P3 — distribuição enviesada; percentis                      |
+| Capacidade em horas como **ferramenta de planejamento**                                                                                                            | P7 — throughput por classe é a medida certa                 |
 
 ---
 
