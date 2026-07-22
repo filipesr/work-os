@@ -58,6 +58,23 @@ export async function MyGrowthWidget({ userId }: { userId: string }) {
                 <div className="text-sm font-medium truncate">{r.taskTitle}</div>
                 <div className="text-xs text-muted-foreground">
                   {r.sourceStageName} · {t(r.kind === "INTERNAL" ? "kindInternal" : "kindClient")}
+                  <span
+                    className={`ml-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                      r.reworkClass === "DEFECT"
+                        ? "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
+                        : r.reworkClass === "LEGITIMATE"
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {t(
+                      r.reworkClass === "DEFECT"
+                        ? "classDefect"
+                        : r.reworkClass === "LEGITIMATE"
+                          ? "classLegitimate"
+                          : "classUnclassified"
+                    )}
+                  </span>
                 </div>
                 {r.reason && (
                   <div className="text-xs italic text-muted-foreground">“{r.reason}”</div>

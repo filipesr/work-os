@@ -135,6 +135,9 @@
     "ftr": "Certo da primeira vez",
     "noReturns": "Nenhum retorno no período.",
     "kindInternal": "Interno",
-    "kindClient": "Cliente"
+    "kindClient": "Cliente",
+    "classDefect": "Defeito",
+    "classLegitimate": "Legítimo",
+    "classUnclassified": "Não classificado"
   }
 }
