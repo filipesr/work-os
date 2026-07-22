@@ -97,6 +97,11 @@ enum ReworkKind {
   CLIENT // rejeição do cliente (escapou) — custosa
 }
 
+enum ReworkClass {
+  DEFECT     // falha de qualidade real (conta contra o FTR)
+  LEGITIMATE // mudança legítima (ex.: cliente mudou direção) — NÃO conta
+}
+
 enum ActiveStageStatus {
   INACTIVE // Pre-created but not yet reached (no predecessor completed)
   ACTIVE // Ready to work - all dependencies met
@@ -185,6 +190,7 @@ model User {
   oneOnOnesReceived OneOnOneLog[] @relation("OneOnOneSubject")
   oneOnOnesGiven    OneOnOneLog[] @relation("OneOnOneManager")
   reworkEventsBy    ReworkEvent[] @relation("ReworkBy")
+  reworkEventsAsSource ReworkEvent[] @relation("ReworkSourceAssignee")
 }
 
 model Team {
@@ -570,8 +576,19 @@ model ReworkEvent {
   byUserId String
   byUser   User   @relation("ReworkBy", fields: [byUserId], references: [id], onDelete: Cascade)
 
+  // Classificação humana (gestor/admin). Nulo = não-classificado → conta como
+  // defeito até revisado (pessimista). LEGITIMATE sai da conta do FTR.
+  reworkClass ReworkClass?
+
+  // Quem executou a etapa-origem (assignee capturado na reversão). Base do FTR
+  // por pessoa (exceção deliberada a P2 — ver spec). Nulo p/ eventos antigos ou
+  // etapa sem assignee. NUNCA usado para ranking/comparação.
+  sourceAssigneeId String?
+  sourceAssignee   User?   @relation("ReworkSourceAssignee", fields: [sourceAssigneeId], references: [id], onDelete: SetNull)
+
   @@index([sourceStageId, at])
   @@index([taskId])
+  @@index([sourceAssigneeId, at])
 }
 
 // OneOnOneLog: a recorded 1:1 between a manager and a team member. Powers the
