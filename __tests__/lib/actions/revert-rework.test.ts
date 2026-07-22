@@ -17,6 +17,7 @@ const tx = {
   },
   taskActiveStage: {
     findMany: vi.fn().mockResolvedValue([]),
+    findUnique: vi.fn().mockResolvedValue({ assigneeId: "worker1" }),
     updateMany: vi.fn().mockResolvedValue({}),
     update: vi.fn().mockResolvedValue({}),
   },
@@ -88,6 +89,14 @@ describe("revertTaskStage — ReworkEvent", () => {
       kind: "CLIENT",
       reason: "brief incompleto",
       byUserId: "u1",
+      sourceAssigneeId: "worker1",
     });
+  });
+
+  it("captura sourceAssigneeId do assignee da etapa-alvo", async () => {
+    setupValidRevert();
+    tx.taskActiveStage.findUnique.mockResolvedValue({ assigneeId: "worker1" });
+    await revertTaskStage("t1", "sTarget", "motivo", "INTERNAL");
+    expect(tx.reworkEvent.create.mock.calls[0][0].data.sourceAssigneeId).toBe("worker1");
   });
 });

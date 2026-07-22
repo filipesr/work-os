@@ -37,6 +37,13 @@ describe("getReworkBySourceStage", () => {
     expect(rows[1].stageId).toBe("s2");
     expect(rows[1].total).toBe(1);
   });
+
+  it("conta não-classificado + DEFECT, exclui LEGITIMATE (defeito-only)", async () => {
+    db.reworkEvent.findMany.mockResolvedValue([]);
+    await getReworkBySourceStage({});
+    const where = db.reworkEvent.findMany.mock.calls[0][0].where;
+    expect(where.OR).toEqual([{ reworkClass: null }, { reworkClass: "DEFECT" }]);
+  });
 });
 
 describe("getFirstTimeRightByStage", () => {

@@ -1633,6 +1633,14 @@ export async function revertTaskStage(
         "INACTIVE"
       );
 
+      // Captura quem executou a etapa-alvo ANTES de limpar o assignee (base do
+      // FTR por pessoa — exceção deliberada a P2; nunca usado p/ ranking).
+      const targetInstance = await tx.taskActiveStage.findUnique({
+        where: { taskId_stageId: { taskId, stageId: revertToStageId } },
+        select: { assigneeId: true },
+      });
+      const sourceAssigneeId = targetInstance?.assigneeId ?? null;
+
       // 4c. Reativar a etapa-alvo (volta ao backlog: assignee preservado pode confundir → limpa).
       await tx.taskActiveStage.update({
         where: { taskId_stageId: { taskId, stageId: revertToStageId } },
@@ -1648,6 +1656,7 @@ export async function revertTaskStage(
           kind,
           reason: comment.trim(),
           byUserId: currentUserId,
+          sourceAssigneeId,
         },
       });
 

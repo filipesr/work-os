@@ -680,6 +680,9 @@ function buildReworkWhere(filters: PerformanceFilters): Prisma.ReworkEventWhereI
   if (filters.projectId) taskFilter.projectId = filters.projectId;
   if (filters.clientId) taskFilter.project = { clientId: filters.clientId };
   if (Object.keys(taskFilter).length > 0) where.task = taskFilter;
+  // Defeito-only: não-classificado (null) + DEFECT contam; LEGITIMATE não.
+  // (Prisma `not` sobre nullable não inclui null, por isso o OR explícito.)
+  where.OR = [{ reworkClass: null }, { reworkClass: "DEFECT" }];
   return where;
 }
 
