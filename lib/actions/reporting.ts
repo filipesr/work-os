@@ -338,6 +338,7 @@ function buildLeadTimeWhere(filters: PerformanceFilters): Prisma.TaskWhereInput 
   if (filters.projectId) where.projectId = filters.projectId;
   if (filters.clientId) where.project = { clientId: filters.clientId };
   if (filters.teamId) where.stageLogs = { some: { stage: { defaultTeamId: filters.teamId } } };
+  if (filters.templateId) where.workflowTemplateId = filters.templateId;
 
   return where;
 }
@@ -705,10 +706,15 @@ export interface CycleTimePercentiles {
   p85: number; // days — the "confident date" to commit to
   p95: number; // days
   points: { days: number; at: string }[]; // scatter (ISO completion date), newest-capped
+  lowConfidence: boolean; // sample size below MIN_CLASS_SAMPLES — treat percentiles as indicative only
 }
 
 // Bound the scatter payload; percentiles still use the full population.
 const CYCLE_SCATTER_CAP = 300;
+
+// Below this many completed samples, percentiles are indicative only — flagged
+// via `lowConfidence` rather than hidden, since informational is the point.
+export const MIN_CLASS_SAMPLES = 8;
 
 /**
  * Cycle-time distribution for completed tasks (createdAt → completedAt), in
@@ -731,7 +737,7 @@ export async function getCycleTimePercentiles(
   });
 
   if (tasks.length === 0) {
-    return { count: 0, p50: 0, p85: 0, p95: 0, points: [] };
+    return { count: 0, p50: 0, p85: 0, p95: 0, points: [], lowConfidence: true };
   }
 
   const days = tasks.map(
@@ -749,6 +755,38 @@ export async function getCycleTimePercentiles(
     p85: percentile(days, 0.85),
     p95: percentile(days, 0.95),
     points,
+    lowConfidence: tasks.length < MIN_CLASS_SAMPLES,
+  };
+}
+
+/**
+ * Lightweight reference-class forecast for ONE work type (template): cycle-time
+ * percentiles (days) over that template's completed tasks. Powers the live
+ * feasibility check on the task-creation form. Informational only.
+ */
+export async function getTypeForecast(templateId: string): Promise<{
+  p50: number;
+  p85: number;
+  p95: number;
+  count: number;
+  lowConfidence: boolean;
+}> {
+  await requireManagerOrAdmin();
+  if (!templateId) return { p50: 0, p85: 0, p95: 0, count: 0, lowConfidence: true };
+
+  const tasks = await prisma.task.findMany({
+    where: { workflowTemplateId: templateId, completedAt: { not: null } },
+    select: { createdAt: true, completedAt: true },
+  });
+  if (tasks.length === 0) return { p50: 0, p85: 0, p95: 0, count: 0, lowConfidence: true };
+
+  const days = tasks.map((t) => (t.completedAt!.getTime() - t.createdAt.getTime()) / 8.64e7);
+  return {
+    p50: percentile(days, 0.5),
+    p85: percentile(days, 0.85),
+    p95: percentile(days, 0.95),
+    count: tasks.length,
+    lowConfidence: tasks.length < MIN_CLASS_SAMPLES,
   };
 }
 
@@ -772,6 +810,7 @@ function buildOpenTaskWhere(filters: PerformanceFilters): Prisma.TaskWhereInput 
       some: { status: { in: ["ACTIVE", "BLOCKED"] }, stage: { defaultTeamId: filters.teamId } },
     };
   }
+  if (filters.templateId) where.workflowTemplateId = filters.templateId;
   return where;
 }
 
