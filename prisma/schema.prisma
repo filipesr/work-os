@@ -228,6 +228,7 @@ model WorkflowTemplate {
   description String?
   createdAt   DateTime        @default(now())
   stages      TemplateStage[]
+  tasks       Task[]
 }
 
 model TemplateStage {
@@ -305,6 +306,14 @@ model Task {
   timeLogs         TimeLog[]
   activityLogs     ActivityLog[]
   stageTransitions StageTransition[]
+
+  // Tipo de trabalho: o template que a tarefa instancia. Denormalizado (fixo na
+  // criação) p/ agregação/segmentação por tipo (reference-class forecasting).
+  // Nullable só por causa do backfill de dados antigos.
+  workflowTemplateId String?
+  workflowTemplate   WorkflowTemplate? @relation(fields: [workflowTemplateId], references: [id], onDelete: SetNull)
+
+  @@index([workflowTemplateId, completedAt])
 }
 
 // TaskActiveStage: Represents active/blocked/completed stages for a task

@@ -88,6 +88,7 @@ export async function createTask(formData: FormData) {
         status: "BACKLOG",
         projectId,
         assigneeId: null,
+        workflowTemplateId: templateId,
       },
     });
 
@@ -161,6 +162,7 @@ export async function createTasksBatch(input: {
           status: "BACKLOG",
           projectId,
           assigneeId: null,
+          workflowTemplateId: input.templateId,
         },
       });
       await createTaskStages(tx, { taskId: task.id, templateId: input.templateId, userId });
