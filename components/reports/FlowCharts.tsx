@@ -5,11 +5,110 @@ import type { CfdPoint, ThroughputPoint } from "@/lib/actions/reporting";
 // Diagram. Both are pure presentational — data is fetched by the page sections.
 
 const W = 640;
-const H = 200;
-const PAD_L = 8;
-const PAD_R = 8;
+const H = 210;
+const PAD_L = 30; // room for Y-axis labels
+const PAD_R = 10;
 const PAD_T = 10;
-const PAD_B = 18;
+const PAD_B = 26; // room for X-axis (date) labels
+
+// ─── Axis helpers (shared by both charts) ────────────────────────────────────────
+
+/** ISO date → "dd/MM" (UTC, locale-neutral — matches the bucket construction). */
+export function fmtDayMonth(iso: string): string {
+  const d = new Date(iso);
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}`;
+}
+
+/** Up to `count` evenly-spaced indices across [0, n-1] (deduped). */
+export function pickTickIndices(n: number, count: number): number[] {
+  if (n <= 0) return [];
+  if (n <= count) return Array.from({ length: n }, (_, i) => i);
+  const out: number[] = [];
+  for (let k = 0; k < count; k++) out.push(Math.round((k / (count - 1)) * (n - 1)));
+  return Array.from(new Set(out));
+}
+
+/** Y-axis tick values: 0, midpoint, max (integers, deduped). */
+function yTickValues(max: number): number[] {
+  if (max <= 1) return [0, Math.max(1, max)];
+  return Array.from(new Set([0, Math.round(max / 2), max]));
+}
+
+export type XLabel = { i: number; text: string; anchor: "start" | "middle" | "end" };
+
+export function xLabelsFor(dates: string[], count = 5): XLabel[] {
+  return pickTickIndices(dates.length, count).map((i) => ({
+    i,
+    text: fmtDayMonth(dates[i]),
+    anchor: i === 0 ? "start" : i === dates.length - 1 ? "end" : "middle",
+  }));
+}
+
+/** Draws Y gridlines + labels, the Y/X axis lines, and X (date) tick labels.
+ * `yFn(yMax)` is the top edge, `yFn(0)` the baseline. */
+function ChartAxes({
+  yMax,
+  yFn,
+  xFn,
+  xLabels,
+}: {
+  yMax: number;
+  yFn: (v: number) => number;
+  xFn: (i: number) => number;
+  xLabels: XLabel[];
+}) {
+  return (
+    <g>
+      {yTickValues(yMax).map((v) => (
+        <g key={v}>
+          <line
+            x1={PAD_L}
+            y1={yFn(v)}
+            x2={W - PAD_R}
+            y2={yFn(v)}
+            stroke="currentColor"
+            strokeOpacity={v === 0 ? 0.25 : 0.08}
+          />
+          <text
+            x={PAD_L - 5}
+            y={yFn(v) + 3}
+            fontSize={9}
+            textAnchor="end"
+            fill="currentColor"
+            fillOpacity={0.55}
+          >
+            {v}
+          </text>
+        </g>
+      ))}
+      <line
+        x1={PAD_L}
+        y1={yFn(yMax)}
+        x2={PAD_L}
+        y2={yFn(0)}
+        stroke="currentColor"
+        strokeOpacity={0.25}
+      />
+      {xLabels.map((l) => (
+        <text
+          key={l.i}
+          x={xFn(l.i)}
+          y={H - 7}
+          fontSize={9}
+          textAnchor={l.anchor}
+          fill="currentColor"
+          fillOpacity={0.55}
+        >
+          {l.text}
+        </text>
+      ))}
+    </g>
+  );
+}
+
+// ─── Charts ──────────────────────────────────────────────────────────────────────
 
 export function ThroughputLine({ points, label }: { points: ThroughputPoint[]; label: string }) {
   if (points.length === 0) return null;
@@ -21,21 +120,11 @@ export function ThroughputLine({ points, label }: { points: ThroughputPoint[]; l
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label={label}>
-      <line
-        x1={PAD_L}
-        y1={y(0)}
-        x2={W - PAD_R}
-        y2={y(0)}
-        stroke="currentColor"
-        strokeOpacity={0.15}
-      />
+      <ChartAxes yMax={max} yFn={y} xFn={x} xLabels={xLabelsFor(points.map((p) => p.weekStart))} />
       <path d={path} fill="none" stroke="#2563eb" strokeWidth={2} />
       {points.map((p, i) => (
         <circle key={i} cx={x(i)} cy={y(p.count)} r={2.5} fill="#2563eb" />
       ))}
-      <text x={PAD_L} y={y(max) - 2} fontSize={9} fill="currentColor" fillOpacity={0.5}>
-        {max}
-      </text>
     </svg>
   );
 }
@@ -84,9 +173,7 @@ export function StatusCfd({
         {polys.map((poly) => (
           <path key={poly.key} d={poly.d} fill={poly.color} fillOpacity={0.75} />
         ))}
-        <text x={PAD_L} y={y(max) - 2} fontSize={9} fill="currentColor" fillOpacity={0.5}>
-          {max}
-        </text>
+        <ChartAxes yMax={max} yFn={y} xFn={x} xLabels={xLabelsFor(points.map((p) => p.date))} />
       </svg>
       <div className="mt-2 flex flex-wrap gap-3 text-xs">
         {BANDS.map((b) => (

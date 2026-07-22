@@ -16,7 +16,7 @@ import {
   getFirstTimeRightByStage,
   type PerformanceFilters,
 } from "@/lib/actions/reporting";
-import { ThroughputLine, StatusCfd } from "@/components/reports/FlowCharts";
+import { ThroughputLine, StatusCfd, xLabelsFor } from "@/components/reports/FlowCharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ArrowLeft,
@@ -227,22 +227,25 @@ function CycleScatter({
   p95,
   t,
 }: {
-  points: { days: number }[];
+  points: { days: number; at: string }[];
   p50: number;
   p85: number;
   p95: number;
   t: T;
 }) {
   const W = 320;
-  const H = 140;
-  const padL = 8;
-  const padR = 40; // room for percentile labels
-  const padY = 8;
+  const H = 160;
+  const padL = 24; // room for Y-axis (days) labels
+  const padR = 42; // room for percentile labels
+  const padT = 8;
+  const padB = 20; // room for X-axis (date) labels
   // Cap the y-axis so a rare outlier doesn't squash the bulk; clip above.
   const yMax = Math.max(p95 * 1.25, 1);
+  // Oldest → newest left-to-right so the X axis reads chronologically.
+  const sorted = [...points].sort((a, b) => a.at.localeCompare(b.at));
   const x = (i: number) =>
-    padL + (points.length <= 1 ? 0 : (i / (points.length - 1)) * (W - padL - padR));
-  const y = (d: number) => padY + (1 - Math.min(d, yMax) / yMax) * (H - padY * 2);
+    padL + (sorted.length <= 1 ? 0 : (i / (sorted.length - 1)) * (W - padL - padR));
+  const y = (d: number) => padT + (1 - Math.min(d, yMax) / yMax) * (H - padT - padB);
   const line = (d: number, color: string, label: string, key: string) => (
     <g key={key}>
       <line
@@ -259,6 +262,7 @@ function CycleScatter({
       </text>
     </g>
   );
+  const yTicks = Array.from(new Set([0, Math.round(yMax / 2), Math.round(yMax)]));
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
@@ -266,10 +270,50 @@ function CycleScatter({
       role="img"
       aria-label={t("cycleTime.title")}
     >
+      {/* Y axis: days scale */}
+      {yTicks.map((v) => (
+        <text
+          key={`y${v}`}
+          x={padL - 4}
+          y={y(v) + 3}
+          fontSize={9}
+          textAnchor="end"
+          fill="currentColor"
+          fillOpacity={0.55}
+        >
+          {v}d
+        </text>
+      ))}
+      <line x1={padL} y1={y(yMax)} x2={padL} y2={y(0)} stroke="currentColor" strokeOpacity={0.25} />
+      <line
+        x1={padL}
+        y1={y(0)}
+        x2={W - padR}
+        y2={y(0)}
+        stroke="currentColor"
+        strokeOpacity={0.25}
+      />
+      {/* X axis: completion dates */}
+      {xLabelsFor(
+        sorted.map((p) => p.at),
+        4
+      ).map((l) => (
+        <text
+          key={`x${l.i}`}
+          x={x(l.i)}
+          y={H - 6}
+          fontSize={9}
+          textAnchor={l.anchor}
+          fill="currentColor"
+          fillOpacity={0.55}
+        >
+          {l.text}
+        </text>
+      ))}
       {line(p95, "#e11d48", "p95", "l95")}
       {line(p85, "#7c3aed", "p85", "l85")}
       {line(p50, "#0891b2", "p50", "l50")}
-      {points.map((pt, i) => (
+      {sorted.map((pt, i) => (
         <circle key={i} cx={x(i)} cy={y(pt.days)} r={2} fill="#64748b" fillOpacity={0.55} />
       ))}
     </svg>
