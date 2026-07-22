@@ -1,8 +1,7 @@
 "use server";
 import prisma from "@/lib/prisma";
 import { requireMemberOrHigher } from "@/lib/permissions";
-
-export const EXPERIENCE_THRESHOLD = 3; // < isso = "novo neste tipo"
+import { EXPERIENCE_THRESHOLD } from "@/lib/forecast-feasibility";
 
 export interface AssigneeTypeExperience {
   completed: number;

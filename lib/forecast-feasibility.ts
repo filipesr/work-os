@@ -28,3 +28,9 @@ export function idealStartOffsetDays(p85: number): number {
 export function confidentDays(p85: number, p95: number, experienced: boolean): number {
   return experienced ? p85 : p95;
 }
+
+/** Nº de etapas concluídas no tipo a partir do qual a pessoa conta como
+ * "experiente" (banda p85 em vez de p95). Abaixo disso = "novo neste tipo".
+ * Vive num módulo puro (não "use server") para poder ser importado por client,
+ * server actions e testes sem violar a regra de export do "use server". */
+export const EXPERIENCE_THRESHOLD = 3;

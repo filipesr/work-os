@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/permissions", () => ({ requireMemberOrHigher: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({ default: { taskActiveStage: { count: vi.fn() } }, prisma: {} }));
 import prisma from "@/lib/prisma";
-import { getAssigneeTypeExperience, EXPERIENCE_THRESHOLD } from "@/lib/actions/assignee-experience";
+import { getAssigneeTypeExperience } from "@/lib/actions/assignee-experience";
+import { EXPERIENCE_THRESHOLD } from "@/lib/forecast-feasibility";
 const db = prisma as unknown as { taskActiveStage: { count: ReturnType<typeof vi.fn> } };
 
 describe("getAssigneeTypeExperience", () => {
