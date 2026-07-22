@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { MyActiveStagesWidget, TeamBacklogWidget } from "@/components/dashboard/ActiveStagesWidget";
+import { MyGrowthWidget } from "@/components/dashboard/MyGrowthWidget";
 import { StatsCardSkeleton, TableSkeleton } from "@/components/dashboard/DashboardSkeleton";
 
 export const metadata: Metadata = {
@@ -100,6 +101,11 @@ export default async function DashboardPage() {
         {/* Widget 1: My Active Stages (com resumo "Meu foco" no topo) */}
         <Suspense fallback={<TableSkeleton rows={3} />}>
           <MyActiveStagesWidget />
+        </Suspense>
+
+        {/* Widget: Minha evolução (privado, auto-referenciado) */}
+        <Suspense fallback={<TableSkeleton rows={2} />}>
+          <MyGrowthWidget userId={userId} />
         </Suspense>
 
         {/* Widget 2: Team Backlog */}

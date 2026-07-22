@@ -123,5 +123,13 @@
     "overdue": "Atrasado",
     "days": "dias",
     "hours": "horas"
+  },
+  "growth": {
+    "title": "Minha evolução",
+    "selfReferencedNote": "Sua entrega ao longo do tempo — comparada só com o seu próprio histórico.",
+    "throughputEmpty": "Sem conclusões recentes.",
+    "wip": "{wip} ativas · {aging} envelhecendo",
+    "utilization": "{pct}% de utilização",
+    "utilizationNoTarget": "Sem meta de capacidade"
   }
 }
