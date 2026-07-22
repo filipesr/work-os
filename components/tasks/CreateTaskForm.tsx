@@ -6,7 +6,8 @@ import { createTask } from "@/lib/actions/task";
 import { getTemplateStagePreview } from "@/app/actions/templateActions";
 import { getClients } from "@/lib/actions/client";
 import { getTypeForecast } from "@/lib/actions/reporting";
-import { assessFeasibility, idealStartOffsetDays } from "@/lib/forecast-feasibility";
+import { assessFeasibility, idealStartOffsetDays, confidentDays } from "@/lib/forecast-feasibility";
+import { getAssigneeTypeExperience } from "@/lib/actions/assignee-experience";
 import { QuickCreateProject } from "@/components/quick-create/QuickCreateProject";
 import { StageAssigneeSelect } from "@/components/ui/StageAssigneeSelect";
 import { Input } from "@/components/ui/input";
@@ -66,9 +67,12 @@ export function CreateTaskForm({
   const [forecast, setForecast] = useState<{
     p50: number;
     p85: number;
+    p95: number;
     count: number;
     lowConfidence: boolean;
   } | null>(null);
+  const [entryAssigneeId, setEntryAssigneeId] = useState<string>("");
+  const [entryExperienced, setEntryExperienced] = useState<boolean | null>(null);
 
   // Load clients for QuickCreateProject
   useEffect(() => {
@@ -92,6 +96,8 @@ export function CreateTaskForm({
   // Handler for when the user selects a template
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplateId(templateId);
+    setEntryAssigneeId("");
+    setEntryExperienced(null);
     if (!templateId) {
       setStagePreview([]);
       setForecast(null);
@@ -108,17 +114,38 @@ export function CreateTaskForm({
     });
   };
 
+  // Fetch the entry-stage assignee's experience with this work type — widens
+  // the confidence band (p85 → p95) when they're new to it. Bandwidth only,
+  // never a person score.
+  useEffect(() => {
+    if (!entryAssigneeId || !selectedTemplateId) {
+      setEntryExperienced(null);
+      return;
+    }
+    let cancelled = false;
+    getAssigneeTypeExperience(entryAssigneeId, selectedTemplateId).then((r) => {
+      if (!cancelled) setEntryExperienced(r.experienced);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [entryAssigneeId, selectedTemplateId]);
+
   const selectedTemplate = templates.find((tmpl) => tmpl.id === selectedTemplateId);
   const daysAvailable = dueDate
     ? Math.ceil((new Date(dueDate).getTime() - new Date().setHours(0, 0, 0, 0)) / 8.64e7)
     : NaN;
+  const band =
+    forecast && forecast.p85 > 0
+      ? confidentDays(forecast.p85, forecast.p95, entryExperienced ?? true)
+      : 0;
   const feasibility =
     forecast && forecast.count > 0 && dueDate
-      ? assessFeasibility(daysAvailable, forecast.p50, forecast.p85)
+      ? assessFeasibility(daysAvailable, forecast.p50, band)
       : "unknown";
   const idealStart =
-    forecast && forecast.p85 > 0 && dueDate
-      ? new Date(new Date(dueDate).getTime() - idealStartOffsetDays(forecast.p85) * 8.64e7)
+    band > 0 && dueDate
+      ? new Date(new Date(dueDate).getTime() - idealStartOffsetDays(band) * 8.64e7)
       : null;
   const idealStartPassed = idealStart
     ? idealStart.getTime() < new Date().setHours(0, 0, 0, 0)
@@ -266,6 +293,7 @@ export function CreateTaskForm({
                     stageId={stage.id}
                     teamName={stage.defaultTeam?.name ?? null}
                     members={stage.defaultTeam?.members ?? []}
+                    {...(index === 0 ? { onChange: (v: string) => setEntryAssigneeId(v) } : {})}
                   />
                 </li>
               ))}
@@ -326,6 +354,9 @@ export function CreateTaskForm({
               <span className="block">
                 {t("create.feasibility.lowConfidence", { count: forecast.count })}
               </span>
+            )}
+            {entryAssigneeId && entryExperienced === false && (
+              <span className="block">{t("create.feasibility.newToTypeNote")}</span>
             )}
             {idealStartPassed && idealStart && (
               <span className="block">

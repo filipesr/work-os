@@ -382,7 +382,8 @@
       "atRisk": "Prazo em risco",
       "summary": "{type}: p50 {p50}d · p85 {p85}d (base {count}). Você tem {days}d.",
       "lowConfidence": "Base pequena (N={count}) — confiança baixa.",
-      "idealStart": "Início ideal seria {date}."
+      "idealStart": "Início ideal seria {date}.",
+      "newToTypeNote": "Responsável novo neste tipo → previsão mais conservadora (p95)."
     }
   }
 }
