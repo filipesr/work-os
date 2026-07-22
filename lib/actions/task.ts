@@ -1972,6 +1972,7 @@ export async function duplicateTask(taskId: string) {
           status: "BACKLOG",
           projectId: original.projectId,
           assigneeId: null,
+          workflowTemplateId: templateId,
         },
       });
       await createTaskStages(tx, { taskId: t.id, templateId, userId, selectedStageIds });
