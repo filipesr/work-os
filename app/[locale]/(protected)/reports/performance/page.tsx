@@ -291,6 +291,11 @@ async function CycleTimeSection({ filters, t }: { filters: PerformanceFilters; t
           <p className="text-sm text-muted-foreground">{t("cycleTime.noData")}</p>
         ) : (
           <>
+            {cycle.lowConfidence && (
+              <p className="mb-3 text-xs text-amber-600 dark:text-amber-400">
+                {t("cycleTime.lowConfidence", { count: cycle.count })}
+              </p>
+            )}
             <div className="grid grid-cols-3 gap-3 mb-4">
               <div className="rounded-lg border p-3 text-center">
                 <div className="text-xs text-cyan-600 dark:text-cyan-400">{t("cycleTime.p50")}</div>
@@ -622,11 +627,18 @@ export default async function PerformanceReportPage({
 
   const params = await searchParams;
 
-  const { monthStr, teamId, clientId, projectId, startDate, endDate, hasFilters } =
+  const { monthStr, teamId, clientId, projectId, templateId, startDate, endDate, hasFilters } =
     parseReportFilters(params);
 
   // Stable reference so cache() dedupes the shared queries across sections.
-  const filters: PerformanceFilters = { startDate, endDate, teamId, clientId, projectId };
+  const filters: PerformanceFilters = {
+    startDate,
+    endDate,
+    teamId,
+    clientId,
+    projectId,
+    templateId,
+  };
 
   const [t, months] = await Promise.all([
     getTranslations("reportsPerformance"),
@@ -657,6 +669,8 @@ export default async function PerformanceReportPage({
         teamId={teamId}
         clientId={clientId}
         projectId={projectId}
+        templateId={templateId}
+        includeTemplate
         hasFilters={hasFilters}
       />
 

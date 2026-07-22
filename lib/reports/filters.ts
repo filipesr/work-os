@@ -13,13 +13,25 @@ export function parseReportFilters(params: SearchParams) {
     typeof params.clientId === "string" && params.clientId ? params.clientId : undefined;
   const projectId =
     typeof params.projectId === "string" && params.projectId ? params.projectId : undefined;
+  const templateId =
+    typeof params.templateId === "string" && params.templateId ? params.templateId : undefined;
 
   // Default to the current month (SP) even when no data exists yet.
   const monthStr = rawMonth && /^\d{4}-\d{2}$/.test(rawMonth) ? rawMonth : currentMonthSaoPaulo();
   const { start: startDate, end: endDate } = monthRangeSaoPaulo(monthStr);
 
   // Filters are meaningful (e.g. "Limpar") only when a non-default filter is active.
-  const hasFilters = Boolean(rawMonth || teamId || clientId || projectId);
+  const hasFilters = Boolean(rawMonth || teamId || clientId || projectId || templateId);
 
-  return { rawMonth, monthStr, teamId, clientId, projectId, startDate, endDate, hasFilters };
+  return {
+    rawMonth,
+    monthStr,
+    teamId,
+    clientId,
+    projectId,
+    templateId,
+    startDate,
+    endDate,
+    hasFilters,
+  };
 }

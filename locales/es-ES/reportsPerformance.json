@@ -10,6 +10,8 @@
     "allTeams": "Todos los equipos",
     "allClients": "Todos los clientes",
     "allProjects": "Todos los proyectos",
+    "type": "Tipo",
+    "allTypes": "Todos los tipos",
     "filter": "Filtrar",
     "clear": "Limpiar"
   },
@@ -33,7 +35,8 @@
     "p50": "p50 (mediana)",
     "p85": "p85 (confiable)",
     "p95": "p95",
-    "footnote": "Base: {count} tarea(s) completada(s)"
+    "footnote": "Base: {count} tarea(s) completada(s)",
+    "lowConfidence": "Base pequeña (N={count}) — confianza baja."
   },
   "flowEfficiency": {
     "title": "Eficiencia de Flujo por Etapa",
