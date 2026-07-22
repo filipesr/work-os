@@ -92,6 +92,11 @@ enum StageLogStatus {
   REVERTED // Stage was rejected/reverted
 }
 
+enum ReworkKind {
+  INTERNAL // retrabalho pego dentro do processo (gate interno) — desejável
+  CLIENT // rejeição do cliente (escapou) — custosa
+}
+
 enum ActiveStageStatus {
   INACTIVE // Pre-created but not yet reached (no predecessor completed)
   ACTIVE // Ready to work - all dependencies met
@@ -172,13 +177,14 @@ model User {
   activityLogs  ActivityLog[]
 
   // Artifact / NAS relations
-  uploadedArtifacts   TaskArtifact[]      @relation("ArtifactUploader")
-  deletedArtifacts    TaskArtifact[]      @relation("ArtifactDeleter")
-  createdShareLinks   ArtifactShareLink[]
-  artifactAuditLogs   ArtifactAuditLog[]
+  uploadedArtifacts TaskArtifact[]      @relation("ArtifactUploader")
+  deletedArtifacts  TaskArtifact[]      @relation("ArtifactDeleter")
+  createdShareLinks ArtifactShareLink[]
+  artifactAuditLogs ArtifactAuditLog[]
 
   oneOnOnesReceived OneOnOneLog[] @relation("OneOnOneSubject")
   oneOnOnesGiven    OneOnOneLog[] @relation("OneOnOneManager")
+  reworkEventsBy    ReworkEvent[] @relation("ReworkBy")
 }
 
 model Team {
@@ -256,14 +262,15 @@ model TemplateStage {
   optional Boolean @default(false)
 
   // Relations
-  dependencies   StageDependency[] @relation("DependsOn")
-  dependents     StageDependency[] @relation("Stage")
+  dependencies     StageDependency[] @relation("DependsOn")
+  dependents       StageDependency[] @relation("Stage")
   activeTasks      TaskActiveStage[] @relation("ActiveTasks")
   stageLogs        TaskStageLog[]
   timeLogs         TimeLog[]
   activityLogs     ActivityLog[]
   stageArtifacts   TaskArtifact[]
   stageTransitions StageTransition[]
+  reworkEvents     ReworkEvent[]     @relation("ReworkSource")
 }
 
 // This table defines the dependencies: "Stage A must be complete before Stage B"
@@ -306,6 +313,7 @@ model Task {
   timeLogs         TimeLog[]
   activityLogs     ActivityLog[]
   stageTransitions StageTransition[]
+  reworkEvents     ReworkEvent[]
 
   // Tipo de trabalho: o template que a tarefa instancia. Denormalizado (fixo na
   // criação) p/ agregação/segmentação por tipo (reference-class forecasting).
@@ -381,7 +389,7 @@ model TaskArtifact {
   project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   clientId String?
-  client   Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   userId String
   user   User   @relation("ArtifactCreator", fields: [userId], references: [id], onDelete: Cascade)
@@ -541,6 +549,29 @@ model StageTransition {
   // Reconstruction always scopes by (taskId, stageId) ordered by `at`.
   @@index([taskId, stageId, at])
   @@index([stageId])
+}
+
+// ReworkEvent: um registro por reversão de tarefa. Atribui o retorno à
+// etapa-ORIGEM (a etapa-alvo da reversão = a que deve refazer, tipicamente onde o
+// defeito nasceu) e classifica interno vs cliente. Sinal de PROCESSO (P2/P5),
+// nunca individual. Append-only. byUserId é só auditoria — nunca vira métrica de pessoa.
+model ReworkEvent {
+  id     String     @id @default(cuid())
+  at     DateTime   @default(now())
+  kind   ReworkKind
+  reason String     @db.Text
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  sourceStageId String
+  sourceStage   TemplateStage @relation("ReworkSource", fields: [sourceStageId], references: [id], onDelete: Cascade)
+
+  byUserId String
+  byUser   User   @relation("ReworkBy", fields: [byUserId], references: [id], onDelete: Cascade)
+
+  @@index([sourceStageId, at])
+  @@index([taskId])
 }
 
 // OneOnOneLog: a recorded 1:1 between a manager and a team member. Powers the
