@@ -176,6 +176,9 @@ model User {
   deletedArtifacts    TaskArtifact[]      @relation("ArtifactDeleter")
   createdShareLinks   ArtifactShareLink[]
   artifactAuditLogs   ArtifactAuditLog[]
+
+  oneOnOnesReceived OneOnOneLog[] @relation("OneOnOneSubject")
+  oneOnOnesGiven    OneOnOneLog[] @relation("OneOnOneManager")
 }
 
 model Team {
@@ -529,6 +532,25 @@ model StageTransition {
   // Reconstruction always scopes by (taskId, stageId) ordered by `at`.
   @@index([taskId, stageId, at])
   @@index([stageId])
+}
+
+// OneOnOneLog: a recorded 1:1 between a manager and a team member. Powers the
+// 1:1-cadence signal (days since last 1:1 per person → overdue flag), the
+// Gallup-grounded people-management lever. Append-only; the latest row per
+// subject is the last 1:1.
+model OneOnOneLog {
+  id         String   @id @default(cuid())
+  occurredAt DateTime
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  userId String // the team member the 1:1 was with
+  user   User   @relation("OneOnOneSubject", fields: [userId], references: [id], onDelete: Cascade)
+
+  managerId String // who ran the 1:1
+  manager   User   @relation("OneOnOneManager", fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt])
 }
 
 // --- 6. Real-time Activity Tracking Model ---

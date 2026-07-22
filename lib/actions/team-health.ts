@@ -12,6 +12,17 @@ export const DEFAULT_SLA_HOURS = 72;
 export const AGING_ALERT_RATIO = 1.0;
 export const QUEUE_LIMIT = 6;
 
+// Burnout signal calibration (indicative — Gallup gives the aggregate, not the
+// individual trigger). Sustained high utilization / repeated overtime over the
+// window is the pattern the literature ties to burnout risk.
+export const BURNOUT_WINDOW_WEEKS = 4;
+export const BURNOUT_UTIL_HIGH = 0.9; // avg utilization over the window
+export const BURNOUT_UTIL_MED = 0.75;
+export const BURNOUT_OVERTIME_WEEKS_HIGH = 2; // weeks logged above capacity
+
+// 1:1 cadence: a member with no 1:1 in this many days is "overdue".
+export const ONE_ON_ONE_OVERDUE_DAYS = 30;
+
 export interface MemberLoad {
   userId: string;
   name: string;
@@ -57,6 +68,23 @@ export interface WipStageStatus {
   inProgress: number; // ACTIVE + assigned instances of this stage
   limit: number;
   state: "full" | "over"; // full = at limit, over = breached
+}
+
+export interface BurnoutSignal {
+  userId: string;
+  name: string;
+  avgUtilization: number | null; // over the window; null when no capacity target
+  overtimeWeeks: number; // weeks logged above capacity
+  wipCount: number; // current ACTIVE assigned stages
+  risk: "medium" | "high";
+}
+
+export interface OneOnOneCadenceRow {
+  userId: string;
+  name: string;
+  lastOneOnOne: string | null; // ISO date, or null if never
+  daysSince: number | null;
+  overdue: boolean;
 }
 
 /** Median of a numeric list (0 for empty). Pure helper. */
@@ -384,4 +412,127 @@ export async function getSystemConstraint(teamIds?: string[]): Promise<SystemCon
     blockedTaskCount: best.tasks.size,
     totalWaitHours: best.waitHours,
   };
+}
+
+/**
+ * Burnout risk signals: per team member, the SUSTAINED-overload pattern the
+ * literature ties to burnout (Gallup), derived from data that already exists —
+ * utilization (TimeLog ÷ weeklyCapacityHours over the last BURNOUT_WINDOW_WEEKS),
+ * weeks logged above capacity (overtime), and current WIP. Returns only members
+ * at medium/high risk, high first. Indicative, not a diagnosis.
+ */
+export async function getBurnoutSignals(teamIds?: string[]): Promise<BurnoutSignal[]> {
+  await requireManagerOrAdmin();
+  const scope = teamIds ?? (await resolveTeamIds());
+
+  const members = await prisma.user.findMany({
+    where: { teams: { some: { id: { in: scope } } } },
+    select: { id: true, name: true, weeklyCapacityHours: true },
+  });
+  if (members.length === 0) return [];
+  const memberIds = members.map((m) => m.id);
+
+  const windowMs = BURNOUT_WINDOW_WEEKS * 7 * 24 * 3.6e6;
+  const from = new Date(Date.now() - windowMs);
+
+  const [logs, wip] = await Promise.all([
+    prisma.timeLog.findMany({
+      where: { userId: { in: memberIds }, logDate: { gte: from } },
+      select: { userId: true, hoursSpent: true, logDate: true },
+    }),
+    prisma.taskActiveStage.groupBy({
+      by: ["assigneeId"],
+      where: { status: "ACTIVE", assigneeId: { in: memberIds } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  // Weekly hour buckets per user (index 0..WINDOW-1).
+  const fromDay = from.getTime();
+  const weekMs = 7 * 24 * 3.6e6;
+  const weeklyByUser = new Map<string, number[]>();
+  for (const m of members) weeklyByUser.set(m.id, new Array(BURNOUT_WINDOW_WEEKS).fill(0));
+  for (const l of logs) {
+    const idx = Math.floor((l.logDate.getTime() - fromDay) / weekMs);
+    const arr = weeklyByUser.get(l.userId);
+    if (arr && idx >= 0 && idx < BURNOUT_WINDOW_WEEKS) arr[idx] += l.hoursSpent;
+  }
+  const wipByUser = new Map(wip.map((w) => [w.assigneeId, w._count._all]));
+
+  const out: BurnoutSignal[] = [];
+  for (const m of members) {
+    const weeks = weeklyByUser.get(m.id)!;
+    const total = weeks.reduce((a, b) => a + b, 0);
+    const wipCount = wipByUser.get(m.id) ?? 0;
+
+    let avgUtilization: number | null = null;
+    let overtimeWeeks = 0;
+    if (m.weeklyCapacityHours && m.weeklyCapacityHours > 0) {
+      avgUtilization = total / (m.weeklyCapacityHours * BURNOUT_WINDOW_WEEKS);
+      overtimeWeeks = weeks.filter((h) => h > m.weeklyCapacityHours!).length;
+    }
+
+    const isHigh =
+      (avgUtilization != null && avgUtilization > BURNOUT_UTIL_HIGH) ||
+      overtimeWeeks >= BURNOUT_OVERTIME_WEEKS_HIGH;
+    const isMed =
+      (avgUtilization != null && avgUtilization > BURNOUT_UTIL_MED) || wipCount >= OVERLOAD_CEILING;
+
+    if (!isHigh && !isMed) continue;
+    out.push({
+      userId: m.id,
+      name: m.name ?? "—",
+      avgUtilization,
+      overtimeWeeks,
+      wipCount,
+      risk: isHigh ? "high" : "medium",
+    });
+  }
+
+  return out.sort((a, b) => {
+    if (a.risk !== b.risk) return a.risk === "high" ? -1 : 1;
+    return (b.avgUtilization ?? 0) - (a.avgUtilization ?? 0);
+  });
+}
+
+/**
+ * 1:1 cadence per team member: the date of their most recent 1:1, days since,
+ * and whether it is overdue (> ONE_ON_ONE_OVERDUE_DAYS, or never held). Overdue
+ * first, then longest-waiting. The Gallup-grounded people-management lever.
+ */
+export async function getOneOnOneCadence(teamIds?: string[]): Promise<OneOnOneCadenceRow[]> {
+  await requireManagerOrAdmin();
+  const scope = teamIds ?? (await resolveTeamIds());
+
+  const members = await prisma.user.findMany({
+    where: { teams: { some: { id: { in: scope } } } },
+    select: {
+      id: true,
+      name: true,
+      oneOnOnesReceived: {
+        orderBy: { occurredAt: "desc" },
+        take: 1,
+        select: { occurredAt: true },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  const now = Date.now();
+  return members
+    .map((m): OneOnOneCadenceRow => {
+      const last = m.oneOnOnesReceived[0]?.occurredAt ?? null;
+      const daysSince = last ? Math.floor((now - last.getTime()) / 8.64e7) : null;
+      return {
+        userId: m.id,
+        name: m.name ?? "—",
+        lastOneOnOne: last ? last.toISOString() : null,
+        daysSince,
+        overdue: daysSince === null || daysSince > ONE_ON_ONE_OVERDUE_DAYS,
+      };
+    })
+    .sort((a, b) => {
+      if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+      return (b.daysSince ?? Infinity) - (a.daysSince ?? Infinity);
+    });
 }

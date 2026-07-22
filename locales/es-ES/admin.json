@@ -549,6 +549,34 @@
       "title": "Límites de WIP",
       "full": "en el límite",
       "over": "por encima del límite"
+    },
+    "burnout": {
+      "title": "Señales de sobrecarga",
+      "subtitle": "Patrón sostenido en las últimas semanas — indicativo, no diagnóstico.",
+      "util": "{pct}% utilización",
+      "overtime": "{weeks} sem. sobre la meta",
+      "wip": "{count} en progreso",
+      "medium": "atención",
+      "high": "alto riesgo"
+    },
+    "oneOnOne": {
+      "title": "Cadencia de 1:1",
+      "never": "Sin 1:1 registrado",
+      "daysSince": "hace {days} días",
+      "overdue": "atrasado",
+      "logButton": "Registrar 1:1",
+      "logged": "1:1 registrado"
+    },
+    "review": {
+      "title": "Revisión semanal",
+      "subtitle": "Recorre las señales de abajo y ajusta — la cadencia de gestión del flujo.",
+      "constraint": "Restricción del sistema: ¿qué etapa más detiene? Actuar ahí primero.",
+      "aging": "Cola de envejecimiento: ¿qué superó el SLA?",
+      "blocked": "Bloqueados: destrabar dependencias.",
+      "wip": "Límites de WIP: ¿alguna etapa por encima del tope?",
+      "load": "Carga del equipo: sobrecarga vs ociosos.",
+      "burnout": "Señales de sobrecarga: ¿alguien en riesgo sostenido?",
+      "oneOnOne": "1:1s: ¿quién está atrasado?"
     }
   }
 }

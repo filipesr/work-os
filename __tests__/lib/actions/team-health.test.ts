@@ -8,6 +8,7 @@ vi.mock("@/lib/prisma", () => ({
     taskActiveStage: { findMany: vi.fn(), groupBy: vi.fn() },
     stageDependency: { findMany: vi.fn() },
     templateStage: { findMany: vi.fn(), findUnique: vi.fn() },
+    timeLog: { findMany: vi.fn() },
   },
 }));
 vi.mock("@prisma/client", () => ({
@@ -310,5 +311,70 @@ describe("getWipStatus", () => {
     const qc = rows.find((r) => r.stageName === "QC")!;
     expect(qc.state).toBe("full");
     expect(rows.some((r) => r.stageName === "Dev")).toBe(false); // within limit
+  });
+});
+
+import { getBurnoutSignals, getOneOnOneCadence } from "@/lib/actions/team-health";
+
+describe("getBurnoutSignals", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("flags high risk on sustained high utilization and hides healthy members", async () => {
+    asManager();
+    db.user.findMany.mockResolvedValue([
+      { id: "a", name: "Ana", weeklyCapacityHours: 40 }, // overloaded
+      { id: "b", name: "Bruno", weeklyCapacityHours: 40 }, // healthy
+    ] as never);
+    // 4 weeks; Ana logs ~44h/week (>90% util & overtime), Bruno ~20h/week.
+    const now = Date.now();
+    const wk = 7 * 24 * 3.6e6;
+    const logs: { userId: string; hoursSpent: number; logDate: Date }[] = [];
+    for (let w = 0; w < 4; w++) {
+      const d = new Date(now - (3 - w) * wk - 1 * 24 * 3.6e6);
+      logs.push({ userId: "a", hoursSpent: 44, logDate: d });
+      logs.push({ userId: "b", hoursSpent: 20, logDate: d });
+    }
+    db.timeLog.findMany.mockResolvedValue(logs as never);
+    db.taskActiveStage.groupBy.mockResolvedValue([
+      { assigneeId: "a", _count: { _all: 5 } },
+    ] as never);
+
+    const rows = await getBurnoutSignals();
+    expect(rows.map((r) => r.name)).toEqual(["Ana"]); // Bruno healthy → hidden
+    expect(rows[0].risk).toBe("high");
+    expect(rows[0].overtimeWeeks).toBe(4);
+  });
+
+  it("returns empty when no member is at risk", async () => {
+    asManager();
+    db.user.findMany.mockResolvedValue([
+      { id: "b", name: "Bruno", weeklyCapacityHours: 40 },
+    ] as never);
+    db.timeLog.findMany.mockResolvedValue([] as never);
+    db.taskActiveStage.groupBy.mockResolvedValue([] as never);
+    expect(await getBurnoutSignals()).toEqual([]);
+  });
+});
+
+describe("getOneOnOneCadence", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("marks never-met and stale 1:1s overdue, ordering overdue first", async () => {
+    asManager();
+    const daysAgo = (d: number) => new Date(Date.now() - d * 8.64e7);
+    db.user.findMany.mockResolvedValue([
+      { id: "a", name: "Ana", oneOnOnesReceived: [{ occurredAt: daysAgo(45) }] }, // overdue
+      { id: "b", name: "Bruno", oneOnOnesReceived: [{ occurredAt: daysAgo(5) }] }, // recent
+      { id: "c", name: "Caio", oneOnOnesReceived: [] }, // never
+    ] as never);
+
+    const rows = await getOneOnOneCadence();
+    expect(rows[0].overdue).toBe(true); // overdue sorted first
+    const bruno = rows.find((r) => r.userId === "b")!;
+    expect(bruno.overdue).toBe(false);
+    expect(bruno.daysSince).toBe(5);
+    const caio = rows.find((r) => r.userId === "c")!;
+    expect(caio.overdue).toBe(true);
+    expect(caio.lastOneOnOne).toBeNull();
   });
 });

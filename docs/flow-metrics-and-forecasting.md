@@ -227,22 +227,65 @@ usuário. i18n `admin.users.edit.capacity*` + `reportsProductivity.hoursByUser.u
 saudável, 85%+ risco) **não passaram na verificação adversarial** da pesquisa —
 por isso é faixa indicativa, sem alarme, e a meta é por-pessoa (não global).
 
-## Verificação (P0 + P1 + P2)
+---
 
-- `tsc --noEmit` 0 erros · `vitest` 341/341 · `next build` limpo · paridade i18n 45/45.
-- Testes puros novos: `statusDurations`, `flowEfficiencyRatio`, `statusAt`,
+# Gestão de pessoas: burnout, revisão semanal & 1:1 (P3)
+
+Fecha o eixo de pessoas (§1.8, Gallup). P3.9 e P3.10 reusam dados existentes;
+P3.11 adiciona o modelo `OneOnOneLog` (migração `20260721150000`).
+
+## 9. Sinais de sobrecarga/burnout — P3.9
+
+**O que é.** Por pessoa, o **padrão sustentado** de sobrecarga que a literatura
+liga a burnout — não o pico pontual. `team-health.getBurnoutSignals` cruza,
+nas últimas `BURNOUT_WINDOW_WEEKS=4` semanas: utilização média (TimeLog ÷
+capacidade), semanas com horas acima da meta (overtime) e WIP atual.
+
+**Risco.** `high` se util média > `BURNOUT_UTIL_HIGH=0.9` **ou** overtime ≥
+`BURNOUT_OVERTIME_WEEKS_HIGH=2`; `medium` se util > `BURNOUT_UTIL_MED=0.75`
+**ou** WIP ≥ `OVERLOAD_CEILING`. Só retorna medium/high, high primeiro.
+Componente `BurnoutSignals` no cockpit (render `null` se ninguém em risco).
+
+**Caveat.** Limiares indicativos (Gallup dá o agregado, não o gatilho
+individual) — sinal, não diagnóstico. Depende da capacidade (P2.8) estar setada.
+
+## 10. Revisão semanal guiada — P3.10
+
+**O que é.** `components/admin/WeeklyReview` — checklist colapsável no topo do
+cockpit que percorre os sinais (restrição → aging → bloqueados → WIP → carga →
+burnout → 1:1). Estado local (client), sem query extra — os números vivem em
+cada bloco. Transforma o painel em **rotina** ("medir → gerir → ajustar", §1.7).
+
+## 11. Cadência de 1:1 — P3.11
+
+**O que é.** Modelo `OneOnOneLog` (manager↔membro, `occurredAt`, `notes?`).
+`getOneOnOneCadence` retorna, por membro, o último 1:1 + dias desde +
+`overdue` (> `ONE_ON_ONE_OVERDUE_DAYS=30` ou nunca). Componente
+`OneOnOneCadence` no cockpit (atrasados primeiro) com botão **"Registrar 1:1"**
+(`logOneOnOne`, um clique = hoje; notes ficam para depois). Materializa a
+alavanca #1 da Gallup.
+
+**Deferido:** health-check survey (pesquisa periódica de clima) — feature própria
+com modelo + UI de survey; fora do escopo desta entrega.
+
+## Verificação (P0 + P1 + P2 + P3)
+
+- `tsc --noEmit` 0 erros · `vitest` 344/344 · `next build` limpo · paridade i18n 45/45.
+- Testes puros/lógica novos: `statusDurations`, `flowEfficiencyRatio`, `statusAt`,
   `getSystemConstraint` (3), `dependencyRiskLevel`, `percentile`, `mulberry32`,
-  `forecastWhen`, `forecastHowMany`, `getWipStatus` (full/over/within).
-- Mocks atualizados: `stageTransition` (create/createMany), `taskActiveStage.groupBy`.
+  `forecastWhen`, `forecastHowMany`, `getWipStatus`, `getBurnoutSignals`,
+  `getOneOnOneCadence`.
+- Mocks atualizados: `stageTransition`, `taskActiveStage.groupBy`, `timeLog`.
 
 ## Pendências / próximos passos
 
-- **Migrações aplicadas:** `StageTransition` (P0.1) — feito. **`20260721140000`
-  (wipLimit + weeklyCapacityHours) — aplicar em produção** (`prisma migrate deploy`).
-- **Configurar dados:** WIP limits por etapa (editor de template) e capacidade
-  por pessoa (edit de usuário) começam nulos — nada aparece até configurar.
-- **Validação com dados reais:** cards de fluxo/forecast enchem conforme o fluxo roda.
-- **P3 (próximo no roadmap):** sinais de burnout (sobrecarga sustentada + horas
-  acima da meta) e rotinas guiadas (revisão semanal de WIP/aging, 1:1, health checks).
-- **Refinamentos:** subdividir `ACTIVE` por `assignedAt`; materializar o CFD se o
-  replay ficar pesado; backfill exato do histórico pré-migração é impossível.
+- **Migrações a aplicar em produção** (`prisma migrate deploy`):
+  `StageTransition` (P0.1, aplicada), `20260721140000` (wipLimit + capacity),
+  `20260721150000` (OneOnOneLog).
+- **Configurar dados:** WIP limits por etapa, capacidade por pessoa começam
+  nulos; sinais de burnout precisam da capacidade setada; 1:1 enche ao registrar.
+- **Validação com dados reais:** cards de fluxo/forecast/pessoas enchem conforme
+  o fluxo roda.
+- **Roadmap concluído (P0–P3).** Follow-ups: health-check survey (clima),
+  subdividir `ACTIVE` por `assignedAt`, materializar o CFD se o replay pesar,
+  notas no 1:1, benchmarks de utilização com fonte primária (2ª rodada de research).
