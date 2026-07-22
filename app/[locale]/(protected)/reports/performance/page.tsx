@@ -12,6 +12,8 @@ import {
   getThroughputSeries,
   getFlowCfdSeries,
   getAvailablePerformanceMonths,
+  getReworkBySourceStage,
+  getFirstTimeRightByStage,
   type PerformanceFilters,
 } from "@/lib/actions/reporting";
 import { ThroughputLine, StatusCfd } from "@/components/reports/FlowCharts";
@@ -562,6 +564,87 @@ async function ReworkSection({ filters, t }: { filters: PerformanceFilters; t: T
   );
 }
 
+async function FirstTimeRightSection({ filters, t }: { filters: PerformanceFilters; t: T }) {
+  const rows = await getFirstTimeRightByStage(filters);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("firstTimeRight.title")}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground mb-4">{t("firstTimeRight.description")}</p>
+        {rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("firstTimeRight.noData")}</p>
+        ) : (
+          <div className="space-y-2">
+            {rows.map((r) => {
+              const pct = Math.round(r.firstTimeRight * 100);
+              const tone =
+                pct >= 85
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : pct >= 60
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-rose-600 dark:text-rose-400";
+              return (
+                <div key={r.stageId} className="grid grid-cols-3 gap-2 text-sm items-center">
+                  <div className="col-span-2">
+                    <div className="font-medium truncate">{r.stageName}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {r.templateName} •{" "}
+                      {t("firstTimeRight.counts", {
+                        completed: r.completed,
+                        reworked: r.reworkedTo,
+                      })}
+                    </div>
+                  </div>
+                  <div className={`text-right text-lg font-bold ${tone}`}>{pct}%</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+async function ReworkBySourceSection({ filters, t }: { filters: PerformanceFilters; t: T }) {
+  const rows = await getReworkBySourceStage(filters);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("reworkBySource.title")}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground mb-4">{t("reworkBySource.description")}</p>
+        {rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("reworkBySource.noData")}</p>
+        ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-2 pb-2 border-b font-semibold text-sm">
+              <div>{t("reworkBySource.stageHeader")}</div>
+              <div className="text-center">{t("reworkBySource.internal")}</div>
+              <div className="text-center">{t("reworkBySource.client")}</div>
+            </div>
+            {rows.map((r) => (
+              <div key={r.stageId} className="grid grid-cols-3 gap-2 text-sm items-center">
+                <div className="font-medium truncate">{r.stageName}</div>
+                <div className="text-center text-emerald-600 dark:text-emerald-400 font-medium">
+                  {r.internal}
+                </div>
+                <div className="text-center text-rose-600 dark:text-rose-400 font-medium">
+                  {r.client}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="mt-3 text-[11px] text-muted-foreground">{t("reworkBySource.legend")}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
 async function QualityIssuesSection({ filters, t }: { filters: PerformanceFilters; t: T }) {
   const reworkRateByStage = await loadRework(filters);
   const qualityIssues = reworkRateByStage.filter((s) => s.reworkRate > 0.1);
@@ -716,6 +799,16 @@ export default async function PerformanceReportPage({
       <Suspense fallback={<CardSkeleton />}>
         <ReworkSection filters={filters} t={t} />
       </Suspense>
+
+      {/* Process signals: first-time-right and rework by source stage */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Suspense fallback={<CardSkeleton />}>
+          <FirstTimeRightSection filters={filters} t={t} />
+        </Suspense>
+        <Suspense fallback={<CardSkeleton />}>
+          <ReworkBySourceSection filters={filters} t={t} />
+        </Suspense>
+      </div>
 
       {/* Quality Issues Alert */}
       <Suspense fallback={null}>

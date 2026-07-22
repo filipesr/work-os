@@ -88,5 +88,20 @@
     "active": "Ativa",
     "blocked": "Bloqueada",
     "inactive": "Não iniciada"
+  },
+  "firstTimeRight": {
+    "title": "First-Time-Right por Etapa",
+    "description": "Das etapas concluídas, fração que não voltou para revisão. Alto = entrega certa de primeira.",
+    "noData": "Sem dados de retrabalho no período.",
+    "counts": "{completed} concluídas · {reworked} retornos"
+  },
+  "reworkBySource": {
+    "title": "Retrabalho por Etapa-Origem",
+    "description": "Qual etapa mais gera retorno a jusante — e se está sendo pego dentro (interno) ou escapando ao cliente.",
+    "noData": "Sem retrabalho registrado no período.",
+    "stageHeader": "Etapa",
+    "internal": "Interno",
+    "client": "Cliente",
+    "legend": "Interno = qualidade pega dentro do processo (bom). Cliente = escapou (custoso). Sinal de processo, não de pessoa."
   }
 }
