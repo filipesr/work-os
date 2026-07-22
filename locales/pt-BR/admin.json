@@ -121,7 +121,14 @@
       "hours": "Horas",
       "description": "Descrição",
       "noDescription": "Sem descrição",
-      "noTimeLogs": "Nenhum registro de tempo recente."
+      "noTimeLogs": "Nenhum registro de tempo recente.",
+      "throughputTitle": "Throughput (últimas 8 semanas)",
+      "selfReferencedNote": "Evolução da própria pessoa — não comparado com colegas.",
+      "throughputEmpty": "Sem conclusões no período.",
+      "agingNote": "{aging} de {wip} etapas ativas envelhecendo.",
+      "utilizationTitle": "Utilização (mês atual)",
+      "utilizationNoTarget": "Sem meta de capacidade definida.",
+      "utilizationDetail": "{hours}h de {capacity}h/semana previstas"
     },
     "filters": {
       "button": "Filtrar",

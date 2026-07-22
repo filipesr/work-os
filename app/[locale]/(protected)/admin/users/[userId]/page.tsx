@@ -8,6 +8,13 @@ import EditUserButton from "../edit-user-button";
 import { updateUserRoleAndTeams } from "@/lib/actions/user";
 import { BackLink } from "@/components/ui/BackLink";
 import { StatCard } from "@/components/admin/StatCard";
+import {
+  getPersonThroughputSeries,
+  getPersonWorkload,
+  getPersonUtilization,
+} from "@/lib/actions/person-metrics";
+import { ThroughputLine } from "@/components/reports/FlowCharts";
+import { monthRangeSaoPaulo, currentMonthSaoPaulo } from "@/lib/dates";
 
 async function getUser(userId: string) {
   await requireAdmin();
@@ -56,6 +63,13 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
   if (!user) {
     notFound();
   }
+
+  const { start: monthStart, end: monthEnd } = monthRangeSaoPaulo(currentMonthSaoPaulo());
+  const [throughput, workload, util] = await Promise.all([
+    getPersonThroughputSeries(userId, 8),
+    getPersonWorkload(userId),
+    getPersonUtilization(userId, { from: monthStart, to: monthEnd }),
+  ]);
 
   const totalHours = user.timeLogs.reduce((sum, log) => sum + Number(log.hoursSpent), 0);
 
@@ -120,6 +134,49 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
         <StatCard label={t("activeStages")} value={user.activeStages.length} />
         <StatCard label={t("assignedTasks")} value={user.assignedTasks.length} />
         <StatCard label={t("hoursLogged")} value={totalHours.toFixed(1)} />
+      </div>
+
+      {/* Throughput + Utilização (auto-referenciado) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+          <h2 className="text-lg font-bold text-foreground mb-1">{t("throughputTitle")}</h2>
+          <p className="text-xs text-muted-foreground mb-3">{t("selfReferencedNote")}</p>
+          {throughput.some((p) => p.count > 0) ? (
+            <ThroughputLine points={throughput} label={t("throughputTitle")} />
+          ) : (
+            <p className="text-sm text-muted-foreground">{t("throughputEmpty")}</p>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t("agingNote", { aging: workload.aging, wip: workload.wip })}
+          </p>
+        </div>
+        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+          <h2 className="text-lg font-bold text-foreground mb-1">{t("utilizationTitle")}</h2>
+          {util.weeklyCapacityHours == null ? (
+            <p className="text-sm text-muted-foreground">{t("utilizationNoTarget")}</p>
+          ) : (
+            (() => {
+              const pct = Math.round((util.utilization ?? 0) * 100);
+              const tone =
+                pct > 90
+                  ? "text-rose-600 dark:text-rose-400"
+                  : pct >= 60
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-amber-600 dark:text-amber-400";
+              return (
+                <>
+                  <p className={`text-3xl font-bold ${tone}`}>{pct}%</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("utilizationDetail", {
+                      hours: util.hours.toFixed(1),
+                      capacity: util.weeklyCapacityHours,
+                    })}
+                  </p>
+                </>
+              );
+            })()
+          )}
+        </div>
       </div>
 
       {/* Active Stages Table */}
