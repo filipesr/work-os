@@ -35,21 +35,21 @@ export async function CurrentLoadGrid({ rows }: CurrentLoadGridProps) {
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-success-subtle0" />
+                  <span className="h-2 w-2 rounded-full bg-success" />
                   {t("onTrack")}
                 </span>
                 <span className="font-semibold tabular-nums">{row.onTrack}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-warning-subtle0" />
+                  <span className="h-2 w-2 rounded-full bg-warning" />
                   {t("attention")}
                 </span>
                 <span className="font-semibold tabular-nums">{row.attention}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-danger-subtle0" />
+                  <span className="h-2 w-2 rounded-full bg-danger" />
                   {t("overdue")}
                 </span>
                 <span className="font-semibold tabular-nums">{row.overdue}</span>

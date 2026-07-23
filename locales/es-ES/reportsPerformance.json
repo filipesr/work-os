@@ -1,6 +1,13 @@
 {
-  "title": "Informe de Rendimiento y Cuellos de Botella",
-  "subtitle": "Análisis de flujo de trabajo, identificación de cuellos de botella y tasa de retrabajo",
+  "kicker": "Informes",
+  "title": "Flujo y Entrega",
+  "subtitle": "Flujo de trabajo, cuellos de botella, retrabajo y desempeño de entrega por equipo",
+  "back": "Volver a Informes",
+  "team": {
+    "heading": "Por equipo",
+    "subtitle": "Vista gerencial: puntualidad, throughput y tiempo por etapa (por equipo, no por persona)",
+    "rangeNote": "Período: el mes seleccionado en el filtro, o los últimos 30 días cuando no hay un mes seleccionado."
+  },
   "filters": {
     "title": "Filtros",
     "month": "Mes",

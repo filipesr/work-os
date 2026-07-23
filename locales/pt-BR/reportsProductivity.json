@@ -1,6 +1,8 @@
 {
-  "title": "Horas",
+  "kicker": "Relatórios",
+  "title": "Horas & Utilização",
   "subtitle": "Análise de tempo gasto por usuário, projeto, cliente e etapa do fluxo",
+  "back": "Voltar para Relatórios",
   "filters": {
     "title": "Filtros",
     "month": "Mês",
@@ -20,7 +22,8 @@
     "userHeader": "Usuário",
     "hoursHeader": "Horas",
     "noName": "Sem nome",
-    "utilizationHeader": "Utilização"
+    "utilizationHeader": "Utilização",
+    "utilizationNote": "Faixa indicativa (referência de agência não verificada) — um sinal de capacidade, nunca um ranking."
   },
   "hoursByProject": {
     "title": "Horas por Projeto",

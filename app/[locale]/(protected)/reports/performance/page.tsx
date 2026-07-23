@@ -1,5 +1,4 @@
 import { Suspense, cache } from "react";
-import Link from "next/link";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import {
@@ -14,12 +13,19 @@ import {
   getAvailablePerformanceMonths,
   getReworkBySourceStage,
   getFirstTimeRightByStage,
+  getOnTimeRate,
+  getTeamThroughput,
+  getStageDuration,
   type PerformanceFilters,
+  type PeriodRange,
 } from "@/lib/actions/reporting";
 import { ThroughputLine, StatusCfd, CycleScatter } from "@/components/reports/FlowCharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { OnTimeRateCard } from "@/components/reports/team-productivity/OnTimeRateCard";
+import { ThroughputTable } from "@/components/reports/team-productivity/ThroughputTable";
+import { StageDurationTable } from "@/components/reports/team-productivity/StageDurationTable";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SectionCard } from "@/components/ui/SectionCard";
 import {
-  ArrowLeft,
   TrendingDown,
   AlertTriangle,
   Timer,
@@ -29,6 +35,8 @@ import {
   Dice5,
   LineChart,
   Layers,
+  Users,
+  BarChart3,
 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { ExportButtons } from "@/components/reports/ExportButtons";
@@ -43,62 +51,62 @@ const loadRework = cache((filters: PerformanceFilters) => getReworkRateByStage(f
 
 type T = Awaited<ReturnType<typeof getTranslations>>;
 
+/** Flat stat tile (nexo v2): semantic-tinted icon chip + value, no gradients. */
+function StatTile({
+  icon: Icon,
+  tone,
+  label,
+  value,
+}: {
+  icon: typeof Timer;
+  tone: "info" | "success" | "warning";
+  label: string;
+  value: string;
+}) {
+  const chip =
+    tone === "success"
+      ? "bg-success-subtle text-success"
+      : tone === "warning"
+        ? "bg-warning-subtle text-warning"
+        : "bg-primary/10 text-primary";
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex items-center gap-4">
+        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${chip}`}>
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="text-2xl font-bold tracking-tight tabular-nums text-foreground">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 async function LeadTimeSection({ filters, t }: { filters: PerformanceFilters; t: T }) {
   const leadTimeMetrics = await getLeadTimeMetrics(filters);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950 dark:to-indigo-900">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-indigo-500/20 rounded-full">
-              <Timer className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <div>
-              <p className="text-sm text-indigo-700 dark:text-indigo-300">
-                {t("leadTimeMetrics.average")}
-              </p>
-              <p className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
-                {leadTimeMetrics.averageLeadTimeDays.toFixed(1)} {t("leadTimeMetrics.days")}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-success-subtle0/20 rounded-full">
-              <Activity className="h-6 w-6 text-success" />
-            </div>
-            <div>
-              <p className="text-sm text-success">{t("leadTimeMetrics.median")}</p>
-              <p className="text-2xl font-bold text-success">
-                {leadTimeMetrics.medianLeadTimeDays.toFixed(1)} {t("leadTimeMetrics.days")}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950 dark:to-indigo-900">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-indigo-500/20 rounded-full">
-              <TrendingDown className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <div>
-              <p className="text-sm text-indigo-700 dark:text-indigo-300">
-                {t("leadTimeMetrics.count")}
-              </p>
-              <p className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
-                {leadTimeMetrics.count}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <StatTile
+        icon={Timer}
+        tone="info"
+        label={t("leadTimeMetrics.average")}
+        value={`${leadTimeMetrics.averageLeadTimeDays.toFixed(1)} ${t("leadTimeMetrics.days")}`}
+      />
+      <StatTile
+        icon={Activity}
+        tone="success"
+        label={t("leadTimeMetrics.median")}
+        value={`${leadTimeMetrics.medianLeadTimeDays.toFixed(1)} ${t("leadTimeMetrics.days")}`}
+      />
+      <StatTile
+        icon={TrendingDown}
+        tone="info"
+        label={t("leadTimeMetrics.count")}
+        value={`${leadTimeMetrics.count}`}
+      />
     </div>
   );
 }
@@ -110,40 +118,40 @@ async function BottlenecksSection({ filters, t }: { filters: PerformanceFilters;
   if (bottlenecks.length === 0) return null;
 
   return (
-    <Card className="border-2 border-warning/40 bg-gradient-to-br from-amber-50 to-orange-50">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-warning" />
-          <CardTitle className="text-warning">{t("bottlenecks.title")}</CardTitle>
+    <section className="rounded-xl border border-warning/40 bg-card shadow-sm">
+      <div className="flex items-start gap-3 border-b border-border p-6">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-warning-subtle text-warning">
+          <AlertTriangle className="h-4 w-4" />
+        </span>
+        <div>
+          <h2 className="text-base font-semibold text-foreground">{t("bottlenecks.title")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("bottlenecks.description")}</p>
         </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-warning mb-4">{t("bottlenecks.description")}</p>
-        <div className="space-y-2">
-          {bottlenecks.map((stage) => (
-            <div
-              key={stage.stageId}
-              className="flex justify-between items-center p-3 bg-warning-subtle rounded-lg border border-warning/40"
-            >
-              <div>
-                <div className="font-medium text-warning">{stage.stageName}</div>
-                <div className="text-xs text-warning">
-                  {stage.templateName} • {stage.count} {t("bottlenecks.occurrences")}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-lg font-bold text-warning">
-                  {stage.averageDurationDays.toFixed(1)} {t("bottlenecks.days")}
-                </div>
-                <div className="text-xs text-warning">
-                  {stage.averageDurationHours.toFixed(1)} {t("bottlenecks.hours")}
-                </div>
+      </div>
+      <div className="space-y-2 p-6">
+        {bottlenecks.map((stage) => (
+          <div
+            key={stage.stageId}
+            className="flex items-center justify-between rounded-lg border border-warning/40 bg-warning-subtle p-3"
+          >
+            <div>
+              <div className="font-medium text-foreground">{stage.stageName}</div>
+              <div className="text-xs text-muted-foreground">
+                {stage.templateName} • {stage.count} {t("bottlenecks.occurrences")}
               </div>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            <div className="text-right">
+              <div className="text-lg font-bold text-warning">
+                {stage.averageDurationDays.toFixed(1)} {t("bottlenecks.days")}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {stage.averageDurationHours.toFixed(1)} {t("bottlenecks.hours")}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -158,55 +166,52 @@ async function AvgTimeSection({ filters, t }: { filters: PerformanceFilters; t: 
   }));
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Timer className="h-5 w-5" />
-            <CardTitle>{t("avgTimePerStage.title")}</CardTitle>
+    <SectionCard
+      title={t("avgTimePerStage.title")}
+      icon={Timer}
+      action={
+        <ExportButtons
+          filename="avg-time-per-stage"
+          title={t("avgTimePerStage.title")}
+          columns={[
+            { key: "stage", header: t("avgTimePerStage.stageHeader") },
+            { key: "template", header: "Template" },
+            { key: "days", header: t("avgTimePerStage.timeHeader") },
+            { key: "count", header: "x" },
+          ]}
+          rows={exportRows}
+        />
+      }
+    >
+      {averageTimePerStage.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("avgTimePerStage.noData")}</p>
+      ) : (
+        <div className="space-y-2">
+          <div className="grid grid-cols-3 gap-2 border-b border-border pb-2 text-sm font-semibold">
+            <div className="col-span-2">{t("avgTimePerStage.stageHeader")}</div>
+            <div className="text-right">{t("avgTimePerStage.timeHeader")}</div>
           </div>
-          <ExportButtons
-            filename="avg-time-per-stage"
-            title={t("avgTimePerStage.title")}
-            columns={[
-              { key: "stage", header: t("avgTimePerStage.stageHeader") },
-              { key: "template", header: "Template" },
-              { key: "days", header: t("avgTimePerStage.timeHeader") },
-              { key: "count", header: "x" },
-            ]}
-            rows={exportRows}
-          />
-        </div>
-      </CardHeader>
-      <CardContent>
-        {averageTimePerStage.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("avgTimePerStage.noData")}</p>
-        ) : (
-          <div className="space-y-2">
-            <div className="grid grid-cols-3 gap-2 pb-2 border-b font-semibold text-sm">
-              <div className="col-span-2">{t("avgTimePerStage.stageHeader")}</div>
-              <div className="text-right">{t("avgTimePerStage.timeHeader")}</div>
-            </div>
-            {averageTimePerStage.map((stage) => (
-              <div key={stage.stageId} className="grid grid-cols-3 gap-2 text-sm">
-                <div className="col-span-2">
-                  <div className="font-medium truncate">{stage.stageName}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {stage.templateName} • {stage.count}x
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium">{stage.averageDurationDays.toFixed(1)}d</div>
-                  <div className="text-xs text-muted-foreground">
-                    {stage.averageDurationHours.toFixed(0)}h
-                  </div>
+          {averageTimePerStage.map((stage) => (
+            <div key={stage.stageId} className="grid grid-cols-3 gap-2 text-sm">
+              <div className="col-span-2">
+                <div className="truncate font-medium">{stage.stageName}</div>
+                <div className="text-xs text-muted-foreground">
+                  {stage.templateName} • {stage.count}x
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              <div className="text-right">
+                <div className="font-medium tabular-nums">
+                  {stage.averageDurationDays.toFixed(1)}d
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {stage.averageDurationHours.toFixed(0)}h
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </SectionCard>
   );
 }
 
@@ -214,56 +219,45 @@ async function CycleTimeSection({ filters, t }: { filters: PerformanceFilters; t
   const cycle = await getCycleTimePercentiles(filters);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Target className="h-5 w-5" />
-          <CardTitle>{t("cycleTime.title")}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">{t("cycleTime.description")}</p>
-        {cycle.count === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("cycleTime.noData")}</p>
-        ) : (
-          <>
-            {cycle.lowConfidence && (
-              <p className="mb-3 text-xs text-warning">
-                {t("cycleTime.lowConfidence", { count: cycle.count })}
-              </p>
-            )}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="rounded-lg border p-3 text-center">
-                <div className="text-xs text-cyan-600 dark:text-cyan-400">{t("cycleTime.p50")}</div>
-                <div className="text-xl font-bold">{cycle.p50.toFixed(1)}d</div>
-              </div>
-              <div className="rounded-lg border-2 border-indigo-400 dark:border-indigo-500 p-3 text-center">
-                <div className="text-xs text-indigo-600 dark:text-indigo-400">
-                  {t("cycleTime.p85")}
-                </div>
-                <div className="text-xl font-bold text-indigo-700 dark:text-indigo-300">
-                  {cycle.p85.toFixed(1)}d
-                </div>
-              </div>
-              <div className="rounded-lg border p-3 text-center">
-                <div className="text-xs text-danger">{t("cycleTime.p95")}</div>
-                <div className="text-xl font-bold">{cycle.p95.toFixed(1)}d</div>
+    <SectionCard title={t("cycleTime.title")} subtitle={t("cycleTime.description")} icon={Target}>
+      {cycle.count === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("cycleTime.noData")}</p>
+      ) : (
+        <>
+          {cycle.lowConfidence && (
+            <p className="mb-3 text-xs text-warning">
+              {t("cycleTime.lowConfidence", { count: cycle.count })}
+            </p>
+          )}
+          <div className="mb-4 grid grid-cols-3 gap-3">
+            <div className="rounded-lg border border-border p-3 text-center">
+              <div className="text-xs text-muted-foreground">{t("cycleTime.p50")}</div>
+              <div className="text-xl font-bold tabular-nums">{cycle.p50.toFixed(1)}d</div>
+            </div>
+            <div className="rounded-lg border-2 border-primary p-3 text-center">
+              <div className="text-xs text-primary">{t("cycleTime.p85")}</div>
+              <div className="text-xl font-bold tabular-nums text-primary">
+                {cycle.p85.toFixed(1)}d
               </div>
             </div>
-            <CycleScatter
-              points={cycle.points}
-              p50={cycle.p50}
-              p85={cycle.p85}
-              p95={cycle.p95}
-              ariaLabel={t("cycleTime.title")}
-            />
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t("cycleTime.footnote", { count: cycle.count })}
-            </p>
-          </>
-        )}
-      </CardContent>
-    </Card>
+            <div className="rounded-lg border border-border p-3 text-center">
+              <div className="text-xs text-danger">{t("cycleTime.p95")}</div>
+              <div className="text-xl font-bold tabular-nums">{cycle.p95.toFixed(1)}d</div>
+            </div>
+          </div>
+          <CycleScatter
+            points={cycle.points}
+            p50={cycle.p50}
+            p85={cycle.p85}
+            p95={cycle.p95}
+            ariaLabel={t("cycleTime.title")}
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t("cycleTime.footnote", { count: cycle.count })}
+          </p>
+        </>
+      )}
+    </SectionCard>
   );
 }
 
@@ -271,53 +265,43 @@ async function ForecastSection({ filters, t }: { filters: PerformanceFilters; t:
   const f = await getDeliveryForecast(filters);
 
   return (
-    <Card className="border-2 border-indigo-300 dark:border-indigo-700 bg-gradient-to-br from-indigo-50 to-indigo-50 dark:from-indigo-950 dark:to-indigo-950">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Dice5 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-          <CardTitle className="text-indigo-800 dark:text-indigo-200">
-            {t("forecast.title")}
-          </CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-indigo-700 dark:text-indigo-300 mb-4">
-          {t("forecast.description")}
-        </p>
-        {f.totalThroughput === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("forecast.noData")}</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="rounded-lg border bg-card p-3">
-              <div className="text-xs text-muted-foreground">{t("forecast.backlog")}</div>
-              <div className="text-2xl font-bold">{f.backlog}</div>
+    <SectionCard
+      title={t("forecast.title")}
+      subtitle={t("forecast.description")}
+      icon={Dice5}
+      className="border-primary/40"
+    >
+      {f.totalThroughput === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("forecast.noData")}</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-border p-3">
+            <div className="text-xs text-muted-foreground">{t("forecast.backlog")}</div>
+            <div className="text-2xl font-bold tabular-nums">{f.backlog}</div>
+          </div>
+          <div className="rounded-lg border-2 border-primary p-3">
+            <div className="text-xs text-primary">{t("forecast.whenP85")}</div>
+            <div className="text-2xl font-bold tabular-nums text-primary">
+              {f.when ? t("forecast.days", { days: Math.ceil(f.when.p85) }) : "—"}
             </div>
-            <div className="rounded-lg border-2 border-indigo-400 dark:border-indigo-500 p-3">
-              <div className="text-xs text-indigo-600 dark:text-indigo-400">
-                {t("forecast.whenP85")}
+            {f.when && (
+              <div className="text-xs text-muted-foreground">
+                p50 {Math.ceil(f.when.p50)}d · p95 {Math.ceil(f.when.p95)}d
               </div>
-              <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">
-                {f.when ? t("forecast.days", { days: Math.ceil(f.when.p85) }) : "—"}
-              </div>
-              {f.when && (
-                <div className="text-xs text-muted-foreground">
-                  p50 {Math.ceil(f.when.p50)}d · p95 {Math.ceil(f.when.p95)}d
-                </div>
-              )}
+            )}
+          </div>
+          <div className="rounded-lg border border-border p-3">
+            <div className="text-xs text-muted-foreground">
+              {t("forecast.howMany", { days: f.horizonDays })}
             </div>
-            <div className="rounded-lg border bg-card p-3">
-              <div className="text-xs text-muted-foreground">
-                {t("forecast.howMany", { days: f.horizonDays })}
-              </div>
-              <div className="text-2xl font-bold">{Math.floor(f.howMany.p50)}</div>
-              <div className="text-xs text-muted-foreground">
-                p85 ≥ {Math.floor(f.howMany.p85)} · p95 ≥ {Math.floor(f.howMany.p95)}
-              </div>
+            <div className="text-2xl font-bold tabular-nums">{Math.floor(f.howMany.p50)}</div>
+            <div className="text-xs text-muted-foreground">
+              p85 ≥ {Math.floor(f.howMany.p85)} · p95 ≥ {Math.floor(f.howMany.p95)}
             </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </SectionCard>
   );
 }
 
@@ -326,22 +310,17 @@ async function ThroughputSection({ filters, t }: { filters: PerformanceFilters; 
   const hasData = points.some((p) => p.count > 0);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <LineChart className="h-5 w-5" />
-          <CardTitle>{t("throughput.title")}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">{t("throughput.description")}</p>
-        {hasData ? (
-          <ThroughputLine points={points} label={t("throughput.title")} />
-        ) : (
-          <p className="text-sm text-muted-foreground">{t("throughput.noData")}</p>
-        )}
-      </CardContent>
-    </Card>
+    <SectionCard
+      title={t("throughput.title")}
+      subtitle={t("throughput.description")}
+      icon={LineChart}
+    >
+      {hasData ? (
+        <ThroughputLine points={points} label={t("throughput.title")} />
+      ) : (
+        <p className="text-sm text-muted-foreground">{t("throughput.noData")}</p>
+      )}
+    </SectionCard>
   );
 }
 
@@ -350,30 +329,21 @@ async function CfdSection({ filters, t }: { filters: PerformanceFilters; t: T })
   const hasData = points.some((p) => p.COMPLETED + p.ACTIVE + p.BLOCKED + p.INACTIVE > 0);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Layers className="h-5 w-5" />
-          <CardTitle>{t("cfd.title")}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">{t("cfd.description")}</p>
-        {hasData ? (
-          <StatusCfd
-            points={points}
-            labels={{
-              COMPLETED: t("cfd.completed"),
-              ACTIVE: t("cfd.active"),
-              BLOCKED: t("cfd.blocked"),
-              INACTIVE: t("cfd.inactive"),
-            }}
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">{t("cfd.noData")}</p>
-        )}
-      </CardContent>
-    </Card>
+    <SectionCard title={t("cfd.title")} subtitle={t("cfd.description")} icon={Layers}>
+      {hasData ? (
+        <StatusCfd
+          points={points}
+          labels={{
+            COMPLETED: t("cfd.completed"),
+            ACTIVE: t("cfd.active"),
+            BLOCKED: t("cfd.blocked"),
+            INACTIVE: t("cfd.inactive"),
+          }}
+        />
+      ) : (
+        <p className="text-sm text-muted-foreground">{t("cfd.noData")}</p>
+      )}
+    </SectionCard>
   );
 }
 
@@ -381,48 +351,43 @@ async function FlowEfficiencySection({ filters, t }: { filters: PerformanceFilte
   const flowByStage = await getFlowEfficiencyByStage(filters);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Gauge className="h-5 w-5" />
-          <CardTitle>{t("flowEfficiency.title")}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">{t("flowEfficiency.description")}</p>
-        {flowByStage.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("flowEfficiency.noData")}</p>
-        ) : (
-          <div className="space-y-2">
-            <div className="grid grid-cols-3 gap-2 pb-2 border-b font-semibold text-sm">
-              <div className="col-span-2">{t("flowEfficiency.stageHeader")}</div>
-              <div className="text-right">{t("flowEfficiency.efficiencyHeader")}</div>
-            </div>
-            {flowByStage.map((stage) => {
-              const pct = Math.round(stage.flowEfficiency * 100);
-              // Low efficiency = mostly waiting = the problem to surface.
-              const tone = pct < 40 ? "text-danger" : pct < 70 ? "text-warning" : "text-success";
-              return (
-                <div key={stage.stageId} className="grid grid-cols-3 gap-2 text-sm items-center">
-                  <div className="col-span-2">
-                    <div className="font-medium truncate">{stage.stageName}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {stage.templateName} • {stage.count}x •{" "}
-                      {t("flowEfficiency.waitingHours", {
-                        hours: stage.blockedHours.toFixed(0),
-                      })}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-lg font-bold ${tone}`}>{pct}%</div>
+    <SectionCard
+      title={t("flowEfficiency.title")}
+      subtitle={t("flowEfficiency.description")}
+      icon={Gauge}
+    >
+      {flowByStage.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("flowEfficiency.noData")}</p>
+      ) : (
+        <div className="space-y-2">
+          <div className="grid grid-cols-3 gap-2 border-b border-border pb-2 text-sm font-semibold">
+            <div className="col-span-2">{t("flowEfficiency.stageHeader")}</div>
+            <div className="text-right">{t("flowEfficiency.efficiencyHeader")}</div>
+          </div>
+          {flowByStage.map((stage) => {
+            const pct = Math.round(stage.flowEfficiency * 100);
+            // Low efficiency = mostly waiting = the problem to surface.
+            const tone = pct < 40 ? "text-danger" : pct < 70 ? "text-warning" : "text-success";
+            return (
+              <div key={stage.stageId} className="grid grid-cols-3 items-center gap-2 text-sm">
+                <div className="col-span-2">
+                  <div className="truncate font-medium">{stage.stageName}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {stage.templateName} • {stage.count}x •{" "}
+                    {t("flowEfficiency.waitingHours", {
+                      hours: stage.blockedHours.toFixed(0),
+                    })}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                <div className="text-right">
+                  <div className={`text-lg font-bold tabular-nums ${tone}`}>{pct}%</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </SectionCard>
   );
 }
 
@@ -430,131 +395,109 @@ async function ReworkSection({ filters, t }: { filters: PerformanceFilters; t: T
   const reworkRateByStage = await loadRework(filters);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" />
-          <CardTitle>{t("reworkRate.title")}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {reworkRateByStage.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("reworkRate.noData")}</p>
-        ) : (
-          <div className="space-y-2">
-            <div className="grid grid-cols-4 gap-2 pb-2 border-b font-semibold text-sm">
-              <div className="col-span-2">{t("reworkRate.stageHeader")}</div>
-              <div className="text-center">{t("reworkRate.completedRevertedHeader")}</div>
-              <div className="text-right">{t("reworkRate.rateHeader")}</div>
-            </div>
-            {reworkRateByStage.map((stage) => {
-              const reworkPercentage = (stage.reworkRate * 100).toFixed(0);
-              const isHighRework = stage.reworkRate > 0.15;
+    <SectionCard title={t("reworkRate.title")} icon={AlertTriangle}>
+      {reworkRateByStage.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("reworkRate.noData")}</p>
+      ) : (
+        <div className="space-y-2">
+          <div className="grid grid-cols-4 gap-2 border-b border-border pb-2 text-sm font-semibold">
+            <div className="col-span-2">{t("reworkRate.stageHeader")}</div>
+            <div className="text-center">{t("reworkRate.completedRevertedHeader")}</div>
+            <div className="text-right">{t("reworkRate.rateHeader")}</div>
+          </div>
+          {reworkRateByStage.map((stage) => {
+            const reworkPercentage = (stage.reworkRate * 100).toFixed(0);
+            const isHighRework = stage.reworkRate > 0.15;
 
-              return (
-                <div
-                  key={stage.stageId}
-                  className={`grid grid-cols-4 gap-2 text-sm p-2 rounded ${
-                    isHighRework ? "bg-danger-subtle border border-danger/40" : ""
-                  }`}
-                >
-                  <div className="col-span-2">
-                    <div className="font-medium truncate">{stage.stageName}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {stage.templateName}
-                    </div>
-                  </div>
-                  <div className="text-center text-xs">
-                    <div className="text-success font-medium">{stage.completed}</div>
-                    <div className="text-danger font-medium">{stage.reverted}</div>
-                  </div>
-                  <div className="text-right">
-                    <div
-                      className={`font-bold ${isHighRework ? "text-danger" : "text-foreground"}`}
-                    >
-                      {reworkPercentage}%
-                    </div>
+            return (
+              <div
+                key={stage.stageId}
+                className={`grid grid-cols-4 gap-2 rounded p-2 text-sm ${
+                  isHighRework ? "border border-danger/40 bg-danger-subtle" : ""
+                }`}
+              >
+                <div className="col-span-2">
+                  <div className="truncate font-medium">{stage.stageName}</div>
+                  <div className="truncate text-xs text-muted-foreground">{stage.templateName}</div>
+                </div>
+                <div className="text-center text-xs">
+                  <div className="font-medium text-success">{stage.completed}</div>
+                  <div className="font-medium text-danger">{stage.reverted}</div>
+                </div>
+                <div className="text-right">
+                  <div
+                    className={`font-bold tabular-nums ${isHighRework ? "text-danger" : "text-foreground"}`}
+                  >
+                    {reworkPercentage}%
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </SectionCard>
   );
 }
 
 async function FirstTimeRightSection({ filters, t }: { filters: PerformanceFilters; t: T }) {
   const rows = await getFirstTimeRightByStage(filters);
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("firstTimeRight.title")}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">{t("firstTimeRight.description")}</p>
-        {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("firstTimeRight.noData")}</p>
-        ) : (
-          <div className="space-y-2">
-            {rows.map((r) => {
-              const pct = Math.round(r.firstTimeRight * 100);
-              const tone = pct >= 85 ? "text-success" : pct >= 60 ? "text-warning" : "text-danger";
-              return (
-                <div key={r.stageId} className="grid grid-cols-3 gap-2 text-sm items-center">
-                  <div className="col-span-2">
-                    <div className="font-medium truncate">{r.stageName}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {r.templateName} •{" "}
-                      {t("firstTimeRight.counts", {
-                        completed: r.completed,
-                        reworked: r.reworkedTo,
-                      })}
-                    </div>
+    <SectionCard title={t("firstTimeRight.title")} subtitle={t("firstTimeRight.description")}>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("firstTimeRight.noData")}</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map((r) => {
+            const pct = Math.round(r.firstTimeRight * 100);
+            const tone = pct >= 85 ? "text-success" : pct >= 60 ? "text-warning" : "text-danger";
+            return (
+              <div key={r.stageId} className="grid grid-cols-3 items-center gap-2 text-sm">
+                <div className="col-span-2">
+                  <div className="truncate font-medium">{r.stageName}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {r.templateName} •{" "}
+                    {t("firstTimeRight.counts", {
+                      completed: r.completed,
+                      reworked: r.reworkedTo,
+                    })}
                   </div>
-                  <div className={`text-right text-lg font-bold ${tone}`}>{pct}%</div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-        <p className="mt-3 text-[11px] text-muted-foreground">{t("firstTimeRight.legend")}</p>
-      </CardContent>
-    </Card>
+                <div className={`text-right text-lg font-bold tabular-nums ${tone}`}>{pct}%</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <p className="mt-3 text-[11px] text-muted-foreground">{t("firstTimeRight.legend")}</p>
+    </SectionCard>
   );
 }
 
 async function ReworkBySourceSection({ filters, t }: { filters: PerformanceFilters; t: T }) {
   const rows = await getReworkBySourceStage(filters);
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("reworkBySource.title")}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">{t("reworkBySource.description")}</p>
-        {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("reworkBySource.noData")}</p>
-        ) : (
-          <div className="space-y-2">
-            <div className="grid grid-cols-3 gap-2 pb-2 border-b font-semibold text-sm">
-              <div>{t("reworkBySource.stageHeader")}</div>
-              <div className="text-center">{t("reworkBySource.internal")}</div>
-              <div className="text-center">{t("reworkBySource.client")}</div>
-            </div>
-            {rows.map((r) => (
-              <div key={r.stageId} className="grid grid-cols-3 gap-2 text-sm items-center">
-                <div className="font-medium truncate">{r.stageName}</div>
-                <div className="text-center text-success font-medium">{r.internal}</div>
-                <div className="text-center text-danger font-medium">{r.client}</div>
-              </div>
-            ))}
+    <SectionCard title={t("reworkBySource.title")} subtitle={t("reworkBySource.description")}>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("reworkBySource.noData")}</p>
+      ) : (
+        <div className="space-y-2">
+          <div className="grid grid-cols-3 gap-2 border-b border-border pb-2 text-sm font-semibold">
+            <div>{t("reworkBySource.stageHeader")}</div>
+            <div className="text-center">{t("reworkBySource.internal")}</div>
+            <div className="text-center">{t("reworkBySource.client")}</div>
           </div>
-        )}
-        <p className="mt-3 text-[11px] text-muted-foreground">{t("reworkBySource.legend")}</p>
-      </CardContent>
-    </Card>
+          {rows.map((r) => (
+            <div key={r.stageId} className="grid grid-cols-3 items-center gap-2 text-sm">
+              <div className="truncate font-medium">{r.stageName}</div>
+              <div className="text-center font-medium text-success">{r.internal}</div>
+              <div className="text-center font-medium text-danger">{r.client}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="mt-3 text-[11px] text-muted-foreground">{t("reworkBySource.legend")}</p>
+    </SectionCard>
   );
 }
 
@@ -565,40 +508,57 @@ async function QualityIssuesSection({ filters, t }: { filters: PerformanceFilter
   if (qualityIssues.length === 0) return null;
 
   return (
-    <Card className="border-2 border-danger/40 bg-gradient-to-br from-rose-50 to-red-50">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-danger" />
-          <CardTitle className="text-danger">{t("qualityIssues.title")}</CardTitle>
+    <section className="rounded-xl border border-danger/40 bg-card shadow-sm">
+      <div className="flex items-start gap-3 border-b border-border p-6">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-danger-subtle text-danger">
+          <AlertTriangle className="h-4 w-4" />
+        </span>
+        <div>
+          <h2 className="text-base font-semibold text-foreground">{t("qualityIssues.title")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("qualityIssues.description")}</p>
         </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-danger mb-4">{t("qualityIssues.description")}</p>
-        <div className="space-y-2">
-          {qualityIssues.map((stage) => (
-            <div
-              key={stage.stageId}
-              className="flex justify-between items-center p-3 bg-danger-subtle rounded-lg border border-danger/40"
-            >
-              <div>
-                <div className="font-medium text-danger">{stage.stageName}</div>
-                <div className="text-xs text-danger">
-                  {stage.templateName} • {stage.completed} {t("qualityIssues.completed")},{" "}
-                  {stage.reverted} {t("qualityIssues.reverted")}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-danger">
-                  {(stage.reworkRate * 100).toFixed(0)}%
-                </div>
-                <div className="text-xs text-danger">{t("qualityIssues.rework")}</div>
+      </div>
+      <div className="space-y-2 p-6">
+        {qualityIssues.map((stage) => (
+          <div
+            key={stage.stageId}
+            className="flex items-center justify-between rounded-lg border border-danger/40 bg-danger-subtle p-3"
+          >
+            <div>
+              <div className="font-medium text-foreground">{stage.stageName}</div>
+              <div className="text-xs text-muted-foreground">
+                {stage.templateName} • {stage.completed} {t("qualityIssues.completed")},{" "}
+                {stage.reverted} {t("qualityIssues.reverted")}
               </div>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            <div className="text-right">
+              <div className="text-2xl font-bold tabular-nums text-danger">
+                {(stage.reworkRate * 100).toFixed(0)}%
+              </div>
+              <div className="text-xs text-muted-foreground">{t("qualityIssues.rework")}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
+}
+
+// ─── Team (historical) — folded in from the former /reports/team-productivity ──
+
+async function TeamOnTimeSection({ range }: { range: PeriodRange }) {
+  const data = await getOnTimeRate(range);
+  return <OnTimeRateCard data={data} />;
+}
+
+async function TeamThroughputSection({ range }: { range: PeriodRange }) {
+  const rows = await getTeamThroughput(range);
+  return <ThroughputTable rows={rows} />;
+}
+
+async function TeamStageDurationSection({ range }: { range: PeriodRange }) {
+  const rows = await getStageDuration(range);
+  return <StageDurationTable rows={rows} />;
 }
 
 export default async function PerformanceReportPage({
@@ -628,97 +588,133 @@ export default async function PerformanceReportPage({
     templateId,
   };
 
+  // The team (historical) widgets take an explicit {from,to}. Reuse the selected
+  // month window when present; otherwise default to the trailing 30 days.
+  const now = new Date();
+  const teamRange: PeriodRange = {
+    from: startDate ?? new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+    to: endDate ?? now,
+  };
+
   const [t, months] = await Promise.all([
     getTranslations("reportsPerformance"),
     getAvailablePerformanceMonths(),
   ]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <Link href="/reports" className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <h1 className="text-3xl font-bold">{t("title")}</h1>
-          </div>
-          <p className="text-muted-foreground">{t("subtitle")}</p>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <ReportFilterBar
-        basePath="/reports/performance"
-        namespace="reportsPerformance"
-        months={months}
-        month={monthStr}
-        teamId={teamId}
-        clientId={clientId}
-        projectId={projectId}
-        templateId={templateId}
-        includeTemplate
-        hasFilters={hasFilters}
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader
+        kicker={t("kicker")}
+        title={t("title")}
+        subtitle={t("subtitle")}
+        backHref="/reports"
+        backLabel={t("back")}
       />
 
-      {/* Lead Time Metrics */}
-      <Suspense fallback={<MetricsSkeleton />}>
-        <LeadTimeSection filters={filters} t={t} />
-      </Suspense>
+      <div className="space-y-6">
+        {/* Filters */}
+        <ReportFilterBar
+          basePath="/reports/performance"
+          namespace="reportsPerformance"
+          months={months}
+          month={monthStr}
+          teamId={teamId}
+          clientId={clientId}
+          projectId={projectId}
+          templateId={templateId}
+          includeTemplate
+          hasFilters={hasFilters}
+        />
 
-      {/* Cycle-time percentiles (forecast basis) */}
-      <Suspense fallback={<CardSkeleton />}>
-        <CycleTimeSection filters={filters} t={t} />
-      </Suspense>
-
-      {/* Monte Carlo delivery forecast */}
-      <Suspense fallback={<CardSkeleton />}>
-        <ForecastSection filters={filters} t={t} />
-      </Suspense>
-
-      {/* Time-series: throughput trend + status CFD */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Suspense fallback={<CardSkeleton />}>
-          <ThroughputSection filters={filters} t={t} />
+        {/* Lead Time Metrics */}
+        <Suspense fallback={<MetricsSkeleton />}>
+          <LeadTimeSection filters={filters} t={t} />
         </Suspense>
+
+        {/* Cycle-time percentiles (forecast basis) */}
         <Suspense fallback={<CardSkeleton />}>
-          <CfdSection filters={filters} t={t} />
+          <CycleTimeSection filters={filters} t={t} />
         </Suspense>
+
+        {/* Monte Carlo delivery forecast */}
+        <Suspense fallback={<CardSkeleton />}>
+          <ForecastSection filters={filters} t={t} />
+        </Suspense>
+
+        {/* Time-series: throughput trend + status CFD */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Suspense fallback={<CardSkeleton />}>
+            <ThroughputSection filters={filters} t={t} />
+          </Suspense>
+          <Suspense fallback={<CardSkeleton />}>
+            <CfdSection filters={filters} t={t} />
+          </Suspense>
+        </div>
+
+        {/* Bottlenecks Alert */}
+        <Suspense fallback={null}>
+          <BottlenecksSection filters={filters} t={t} />
+        </Suspense>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Suspense fallback={<CardSkeleton />}>
+            <AvgTimeSection filters={filters} t={t} />
+          </Suspense>
+          <Suspense fallback={<CardSkeleton />}>
+            <FlowEfficiencySection filters={filters} t={t} />
+          </Suspense>
+        </div>
+
+        <Suspense fallback={<CardSkeleton />}>
+          <ReworkSection filters={filters} t={t} />
+        </Suspense>
+
+        {/* Process signals: first-time-right and rework by source stage */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Suspense fallback={<CardSkeleton />}>
+            <FirstTimeRightSection filters={filters} t={t} />
+          </Suspense>
+          <Suspense fallback={<CardSkeleton />}>
+            <ReworkBySourceSection filters={filters} t={t} />
+          </Suspense>
+        </div>
+
+        {/* Quality Issues Alert */}
+        <Suspense fallback={null}>
+          <QualityIssuesSection filters={filters} t={t} />
+        </Suspense>
+
+        {/* ── Team (historical) — folded in from team-productivity (§3.3) ── */}
+        <div className="flex items-center gap-3 pt-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Users className="h-4 w-4" />
+          </span>
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
+              {t("team.heading")}
+            </h2>
+            <p className="text-sm text-muted-foreground">{t("team.subtitle")}</p>
+          </div>
+        </div>
+
+        <Suspense fallback={<CardSkeleton />}>
+          <TeamOnTimeSection range={teamRange} />
+        </Suspense>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Suspense fallback={<CardSkeleton />}>
+            <TeamThroughputSection range={teamRange} />
+          </Suspense>
+          <Suspense fallback={<CardSkeleton />}>
+            <TeamStageDurationSection range={teamRange} />
+          </Suspense>
+        </div>
+
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <BarChart3 className="h-3.5 w-3.5" />
+          {t("team.rangeNote")}
+        </p>
       </div>
-
-      {/* Bottlenecks Alert */}
-      <Suspense fallback={null}>
-        <BottlenecksSection filters={filters} t={t} />
-      </Suspense>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Suspense fallback={<CardSkeleton />}>
-          <AvgTimeSection filters={filters} t={t} />
-        </Suspense>
-        <Suspense fallback={<CardSkeleton />}>
-          <FlowEfficiencySection filters={filters} t={t} />
-        </Suspense>
-      </div>
-
-      <Suspense fallback={<CardSkeleton />}>
-        <ReworkSection filters={filters} t={t} />
-      </Suspense>
-
-      {/* Process signals: first-time-right and rework by source stage */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Suspense fallback={<CardSkeleton />}>
-          <FirstTimeRightSection filters={filters} t={t} />
-        </Suspense>
-        <Suspense fallback={<CardSkeleton />}>
-          <ReworkBySourceSection filters={filters} t={t} />
-        </Suspense>
-      </div>
-
-      {/* Quality Issues Alert */}
-      <Suspense fallback={null}>
-        <QualityIssuesSection filters={filters} t={t} />
-      </Suspense>
     </div>
   );
 }

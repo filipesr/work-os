@@ -29,10 +29,8 @@ export function MetricsSkeleton() {
 
 export function SummarySkeleton() {
   return (
-    <Card className="bg-gradient-to-br from-indigo-50 to-indigo-50 dark:from-indigo-950 dark:to-indigo-950">
-      <CardContent className="pt-6">
-        <div className="h-12 w-48 bg-muted rounded animate-pulse" />
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="h-12 w-48 bg-muted rounded animate-pulse" />
+    </div>
   );
 }
