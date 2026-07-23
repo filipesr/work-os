@@ -133,5 +133,16 @@
     "due": "Vencimiento",
     "hoursToday": "Horas hoy",
     "empty": "Nada por aquí."
+  },
+  "myEvolution": {
+    "title": "Mi Evolución",
+    "subtitle": "Una lectura de tu propio flujo a lo largo del tiempo — sin ranking, sin comparación con colegas."
+  },
+  "projectsList": {
+    "title": "Proyectos",
+    "subtitle": "Todos los proyectos por cliente.",
+    "tasksCount": "{count} tareas",
+    "empty": "Ningún proyecto todavía.",
+    "open": "Abrir"
   }
 }

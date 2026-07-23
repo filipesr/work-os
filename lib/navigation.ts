@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   ClipboardList,
-  BarChart3,
   Handshake,
   PanelTop,
   UsersRound,
@@ -37,16 +36,16 @@ export function isNavGroup(item: NavItem): item is NavGroup {
   return "children" in item;
 }
 
-// Colaborador (MEMBER/SUPERVISOR): sua fila + evolução privada.
+// Colaborador (MEMBER/SUPERVISOR): sua fila. "Minha Evolução" (pessoal) vive no
+// menu de avatar, acessível a todos os papéis.
 const memberItems: NavItem[] = [
   { id: "inicio", labelKey: "inicio", href: "/dashboard", icon: LayoutDashboard },
   { id: "meu-trabalho", labelKey: "meuTrabalho", href: "/tasks", icon: ClipboardList },
-  { id: "minha-evolucao", labelKey: "minhaEvolucao", href: "/minha-evolucao", icon: BarChart3 },
 ];
 
-// Gestor (MANAGER/ADMIN): cockpit, demandas, entregas, relatórios.
+// Gestor (MANAGER/ADMIN): dashboard (cockpit), demandas, entregas, relatórios.
 const managerItems: NavItem[] = [
-  { id: "cockpit", labelKey: "cockpit", href: "/admin", icon: LayoutDashboard },
+  { id: "cockpit", labelKey: "dashboard", href: "/admin", icon: LayoutDashboard },
   { id: "demandas", labelKey: "demandas", href: "/admin/tasks", icon: ClipboardList },
   {
     id: "entregas",

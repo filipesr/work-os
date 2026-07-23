@@ -14,6 +14,7 @@ import {
   User as UserIcon,
   LogOut,
   HelpCircle,
+  TrendingUp,
 } from "lucide-react";
 import { getNavItems, isNavGroup, roleLabelKey, homeHref, type AppRole } from "@/lib/navigation";
 import { useTheme } from "@/components/ThemeProvider";
@@ -115,10 +116,10 @@ export function PrimaryNav({ role, userName }: { role: AppRole; userName: string
           className="flex shrink-0 items-center gap-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-extrabold tracking-tight text-primary-foreground">
-            N
+            W
           </span>
           <span className="hidden text-base font-bold tracking-tight text-foreground sm:block">
-            nexo
+            WorkOS
           </span>
         </Link>
 
@@ -237,6 +238,10 @@ export function PrimaryNav({ role, userName }: { role: AppRole; userName: string
                 <Link href="/account" role="menuitem" className="nav-menu-item">
                   <UserIcon className="h-4 w-4" aria-hidden="true" />
                   {t("myAccount")}
+                </Link>
+                <Link href="/minha-evolucao" role="menuitem" className="nav-menu-item">
+                  <TrendingUp className="h-4 w-4" aria-hidden="true" />
+                  {t("minhaEvolucao")}
                 </Link>
                 <Link href="/help" role="menuitem" className="nav-menu-item">
                   <HelpCircle className="h-4 w-4" aria-hidden="true" />
