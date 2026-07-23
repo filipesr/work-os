@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
-import Link from "next/link";
+import { Users } from "lucide-react";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/permissions";
+import { getTranslations } from "next-intl/server";
+import { SimpleEntityCrudList, type CrudItem } from "@/components/admin/SimpleEntityCrudList";
+import { DeleteTeamButton } from "./delete-team-button";
 
 export const metadata: Metadata = {
   title: "Equipes",
 };
-import { requireAdmin } from "@/lib/permissions";
-import { DeleteTeamButton } from "./delete-team-button";
-import { getTranslations } from "next-intl/server";
 
 async function getTeams() {
   await requireAdmin();
@@ -52,80 +53,26 @@ export default async function TeamsPage() {
   const teams = await getTeams();
   const t = await getTranslations("admin.teams");
 
+  const items: CrudItem[] = teams.map((team) => ({
+    id: team.id,
+    href: `/admin/teams/${team.id}`,
+    title: team.name,
+    meta: t("membersCount", { count: team._count.members }),
+    actions: <DeleteTeamButton teamId={team.id} deleteAction={deleteTeam} />,
+  }));
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
-
-      {/* Create Form */}
-      <div className="bg-card shadow-lg rounded-xl border border-border p-6 mb-8">
-        <h2 className="text-lg font-semibold text-foreground mb-4">{t("createTitle")}</h2>
-        <form action={createTeam} className="flex gap-4">
-          <input
-            type="text"
-            name="name"
-            placeholder={t("namePlaceholder")}
-            required
-            className="flex-1 h-11 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base text-foreground font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 transition-all duration-200"
-          />
-          <button
-            type="submit"
-            className="px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-4 focus:ring-primary/10 shadow-sm hover:shadow-md transition-all duration-200"
-          >
-            {t("createButton")}
-          </button>
-        </form>
-      </div>
-
-      {/* Teams List */}
-      <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
-        <table className="min-w-full divide-y divide-border">
-          <thead className="bg-muted">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
-                {t("table.name")}
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-foreground uppercase tracking-wider">
-                {t("table.members")}
-              </th>
-              <th className="px-6 py-4 text-right text-xs font-bold text-foreground uppercase tracking-wider">
-                {t("table.actions")}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-card divide-y divide-border">
-            {teams.map((team) => (
-              <tr key={team.id} className="hover:bg-accent transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <Link
-                    href={`/admin/teams/${team.id}`}
-                    className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-                  >
-                    {team.name}
-                  </Link>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-muted-foreground">
-                    {t("membersCount", { count: team._count.members })}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <DeleteTeamButton teamId={team.id} deleteAction={deleteTeam} />
-                </td>
-              </tr>
-            ))}
-            {teams.length === 0 && (
-              <tr>
-                <td colSpan={3} className="px-6 py-8 text-center text-sm text-muted-foreground">
-                  {t("noTeams")}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <SimpleEntityCrudList
+      kicker={t("kicker")}
+      title={t("title")}
+      subtitle={t("subtitle")}
+      createTitle={t("createTitle")}
+      createAction={createTeam}
+      createFields={[{ name: "name", placeholder: t("namePlaceholder"), required: true }]}
+      createButtonLabel={t("createButton")}
+      items={items}
+      emptyLabel={t("noTeams")}
+      emptyIcon={Users}
+    />
   );
 }

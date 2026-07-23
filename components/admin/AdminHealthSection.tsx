@@ -8,9 +8,19 @@ import WipLimits from "@/components/admin/WipLimits";
 import BurnoutSignals from "@/components/admin/BurnoutSignals";
 import OneOnOneCadence from "@/components/admin/OneOnOneCadence";
 import WeeklyReview, { type ReviewStep } from "@/components/admin/WeeklyReview";
+import { CurrentLoadGrid } from "@/components/reports/team-productivity/CurrentLoadGrid";
+import { getTeamCurrentLoad } from "@/lib/actions/reporting";
 
 function CardSkeleton() {
   return <div className="bg-card rounded-xl border border-border p-6 h-48 animate-pulse" />;
+}
+
+// §3.1 MOVER: carga ao vivo por time (in-progress on-track/atenção/atrasado). É
+// ops (exceção ao vivo, P6), não histórico — por isso vem dos relatórios para o
+// cockpit. Origem: components/reports/team-productivity/CurrentLoadGrid.tsx.
+async function CurrentLoadSection() {
+  const rows = await getTeamCurrentLoad();
+  return <CurrentLoadGrid rows={rows} />;
 }
 
 export async function AdminHealthSection() {
@@ -42,6 +52,11 @@ export async function AdminHealthSection() {
         <div className="lg:col-span-2">
           <Suspense fallback={null}>
             <SystemConstraint />
+          </Suspense>
+        </div>
+        <div className="lg:col-span-2">
+          <Suspense fallback={<CardSkeleton />}>
+            <CurrentLoadSection />
           </Suspense>
         </div>
         <div className="lg:col-span-2">

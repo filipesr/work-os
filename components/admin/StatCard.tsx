@@ -13,9 +13,9 @@ interface StatCardProps {
  */
 export function StatCard({ label, value, className = "" }: StatCardProps) {
   return (
-    <div className={`bg-card shadow-lg rounded-xl border border-border p-6 ${className}`}>
+    <div className={`rounded-xl border border-border bg-card p-6 shadow-sm ${className}`}>
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="text-3xl font-bold text-foreground mt-1">{value}</p>
+      <p className="mt-1 text-3xl font-bold text-foreground">{value}</p>
     </div>
   );
 }

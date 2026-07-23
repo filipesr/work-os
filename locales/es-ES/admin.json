@@ -59,6 +59,7 @@
     }
   },
   "users": {
+    "kicker": "Administración",
     "title": "Usuarios",
     "subtitle": "Gestiona usuarios, sus roles y asignaciones de equipo",
     "createUser": "Crear Usuario",
@@ -105,6 +106,10 @@
     },
     "detail": {
       "backToUsers": "Volver a Usuarios",
+      "reportLink": {
+        "title": "Informe de la persona",
+        "subtitle": "Throughput, utilización, calidad y retrabajo — en la vista canónica de los informes, autorreferenciada y sin ranking."
+      },
       "lastSeen": "Visto por última vez",
       "never": "Nunca",
       "activeStages": "Etapas Activas",
@@ -155,6 +160,7 @@
     }
   },
   "teams": {
+    "kicker": "Administración",
     "title": "Equipos",
     "subtitle": "Gestiona los equipos y sus miembros",
     "createTeam": "Crear Equipo",
@@ -201,6 +207,7 @@
     }
   },
   "clients": {
+    "kicker": "Administración",
     "title": "Clientes",
     "subtitle": "Gestiona clientes y sus proyectos",
     "createTitle": "Crear Cliente",
@@ -340,11 +347,12 @@
     }
   },
   "workflows": {
+    "kicker": "Administración",
     "title": "Flujos de Trabajo",
     "subtitle": "Crea y gestiona plantillas de workflow. Estos son los \"guiones\" que definen cómo fluyen las tareas por tu sistema.",
     "createTitle": "Crear Nueva Plantilla",
     "createWorkflow": "Crear Flujo de Trabajo",
-    "nameLabel": "Nombre de la Plantilla *",
+    "nameLabel": "Nombre de la Plantilla",
     "namePlaceholder": "ej: Video Corto, Landing Page",
     "descriptionLabel": "Descripción",
     "descriptionPlaceholder": "Describe para qué sirve esta plantilla de workflow...",
@@ -381,9 +389,10 @@
       "kicker": "Demandas"
     },
     "list": {
+      "kicker": "Demandas",
       "title": "Tareas",
       "subtitle": "Gestiona y sigue todas las tareas a través de proyectos",
-      "createTask": "+ Crear Tarea",
+      "createTask": "Crear Tarea",
       "noTasksYet": "Aún no hay tareas",
       "noTasksMessage": "Comienza creando tu primera tarea desde una plantilla de flujo de trabajo.",
       "createFirstTask": "Crear tu primera tarea",

@@ -8,8 +8,6 @@ import {
   ChevronDown,
   Menu,
   X,
-  Moon,
-  Sun,
   Globe,
   User as UserIcon,
   LogOut,
@@ -18,7 +16,6 @@ import {
   Presentation,
 } from "lucide-react";
 import { getNavItems, isNavGroup, roleLabelKey, homeHref, type AppRole } from "@/lib/navigation";
-import { useTheme } from "@/components/ThemeProvider";
 import { locales, localeLabels, type LocaleType } from "@/lib/i18n";
 import { setStoredLocale } from "@/lib/locale-storage";
 import { signOutAction } from "@/lib/actions/auth";
@@ -42,7 +39,6 @@ function delocalize(pathname: string): string {
 
 export function PrimaryNav({ role, userName }: { role: AppRole; userName: string | null }) {
   const t = useTranslations("common.nav");
-  const { theme, toggle: toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const currentLocale = useLocale() as LocaleType;
@@ -94,7 +90,6 @@ export function PrimaryNav({ role, userName }: { role: AppRole; userName: string
     router.refresh();
   };
   const otherLocale = locales.find((l) => l !== currentLocale) ?? currentLocale;
-  const isDark = theme === "dark";
 
   const linkBase =
     "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -252,19 +247,6 @@ export function PrimaryNav({ role, userName }: { role: AppRole; userName: string
                   <Presentation className="h-4 w-4" aria-hidden="true" />
                   {t("taskFlow")}
                 </Link>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={toggleTheme}
-                  className="nav-menu-item"
-                >
-                  {isDark ? (
-                    <Sun className="h-4 w-4" aria-hidden="true" />
-                  ) : (
-                    <Moon className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  {isDark ? t("themeLight") : t("themeDark")}
-                </button>
                 <button
                   type="button"
                   role="menuitem"

@@ -59,6 +59,7 @@
     }
   },
   "users": {
+    "kicker": "Administração",
     "title": "Usuários",
     "subtitle": "Gerencie usuários, suas funções e atribuições de equipe",
     "createUser": "Criar Usuário",
@@ -105,6 +106,10 @@
     },
     "detail": {
       "backToUsers": "Voltar para Usuários",
+      "reportLink": {
+        "title": "Relatório da pessoa",
+        "subtitle": "Throughput, utilização, qualidade e retrabalho — na visão canônica dos relatórios, auto-referenciada e sem ranking."
+      },
       "lastSeen": "Visto por último em",
       "never": "Nunca",
       "activeStages": "Etapas Ativas",
@@ -155,6 +160,7 @@
     }
   },
   "teams": {
+    "kicker": "Administração",
     "title": "Equipes",
     "subtitle": "Gerencie as equipes e seus membros",
     "createTeam": "Criar Equipe",
@@ -201,6 +207,7 @@
     }
   },
   "clients": {
+    "kicker": "Administração",
     "title": "Clientes",
     "subtitle": "Gerencie clientes e seus projetos",
     "createTitle": "Criar Cliente",
@@ -340,11 +347,12 @@
     }
   },
   "workflows": {
+    "kicker": "Administração",
     "title": "Fluxos de Trabalho",
     "subtitle": "Crie e gerencie templates de workflow. Estes são os \"roteiros\" que definem como as tarefas fluem pelo seu sistema.",
     "createTitle": "Criar Novo Template",
     "createWorkflow": "Criar Fluxo de Trabalho",
-    "nameLabel": "Nome do Template *",
+    "nameLabel": "Nome do Template",
     "namePlaceholder": "ex: Vídeo Curto, Landing Page",
     "descriptionLabel": "Descrição",
     "descriptionPlaceholder": "Descreva para que serve este template de workflow...",
@@ -381,9 +389,10 @@
       "kicker": "Demandas"
     },
     "list": {
+      "kicker": "Demandas",
       "title": "Tarefas",
       "subtitle": "Gerencie e acompanhe todas as tarefas através de projetos",
-      "createTask": "+ Criar Tarefa",
+      "createTask": "Criar Tarefa",
       "noTasksYet": "Nenhuma tarefa ainda",
       "noTasksMessage": "Comece criando sua primeira tarefa a partir de um template de fluxo de trabalho.",
       "createFirstTask": "Criar sua primeira tarefa",
