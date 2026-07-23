@@ -611,5 +611,10 @@
       "oneOnOne": "1:1s: quem está atrasado?",
       "open": "Abrir tela em nova aba"
     }
+  },
+  "cockpit": {
+    "kicker": "Saúde do time",
+    "title": "Cockpit",
+    "subtitle": "Uma fila de exceções para orientar onde agir primeiro — não um ranking de pessoas."
   }
 }
