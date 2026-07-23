@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  Gauge,
   ClipboardList,
   Handshake,
   PanelTop,
@@ -43,9 +44,9 @@ const memberItems: NavItem[] = [
   { id: "meu-trabalho", labelKey: "meuTrabalho", href: "/tasks", icon: ClipboardList },
 ];
 
-// Gestor (MANAGER/ADMIN): dashboard (cockpit), demandas, entregas, relatórios.
+// Gestor (MANAGER/ADMIN): dashboard pessoal, demandas, entregas, relatórios.
 const managerItems: NavItem[] = [
-  { id: "cockpit", labelKey: "dashboard", href: "/admin", icon: LayoutDashboard },
+  { id: "dashboard", labelKey: "dashboard", href: "/dashboard", icon: LayoutDashboard },
   { id: "demandas", labelKey: "demandas", href: "/admin/tasks", icon: ClipboardList },
   {
     id: "entregas",
@@ -74,24 +75,24 @@ const managerItems: NavItem[] = [
   },
 ];
 
-// Administração (só ADMIN).
-const adminGroup: NavGroup = {
-  id: "administracao",
-  labelKey: "admin",
-  children: [
-    { id: "usuarios", labelKey: "usuarios", href: "/admin/users", icon: UsersRound },
-    { id: "equipes", labelKey: "equipes", href: "/admin/teams", icon: UsersRound },
-    { id: "fluxos", labelKey: "fluxos", href: "/admin/templates", icon: Workflow },
-  ],
-};
+// Menu "Administração". O Cockpit de saúde do time (/admin) mora aqui e é visível
+// a MANAGER e ADMIN; os demais itens (usuários/equipes/fluxos) são só de ADMIN.
+const cockpitLink: NavLink = { id: "cockpit", labelKey: "cockpit", href: "/admin", icon: Gauge };
+const adminOnlyLinks: NavLink[] = [
+  { id: "usuarios", labelKey: "usuarios", href: "/admin/users", icon: UsersRound },
+  { id: "equipes", labelKey: "equipes", href: "/admin/teams", icon: UsersRound },
+  { id: "fluxos", labelKey: "fluxos", href: "/admin/templates", icon: Workflow },
+];
 
 export type AppRole = "ADMIN" | "MANAGER" | "SUPERVISOR" | "MEMBER";
 
 /** Itens de navegação para o papel. MEMBER/SUPERVISOR veem a visão de colaborador;
- * MANAGER a de gestor; ADMIN a de gestor + Administração. */
+ * MANAGER a de gestor + Administração(Cockpit); ADMIN + usuários/equipes/fluxos. */
 export function getNavItems(role: AppRole): NavItem[] {
-  if (role === "ADMIN") return [...managerItems, adminGroup];
-  if (role === "MANAGER") return managerItems;
+  if (role === "MANAGER" || role === "ADMIN") {
+    const children = role === "ADMIN" ? [cockpitLink, ...adminOnlyLinks] : [cockpitLink];
+    return [...managerItems, { id: "administracao", labelKey: "admin", children }];
+  }
   return memberItems;
 }
 
@@ -103,7 +104,7 @@ export function roleLabelKey(role: AppRole): string {
   return "roleMember";
 }
 
-/** Home por papel (destino do logo). */
-export function homeHref(role: AppRole): string {
-  return role === "MANAGER" || role === "ADMIN" ? "/admin" : "/dashboard";
+/** Home (destino do logo) = dashboard pessoal para todos os papéis. */
+export function homeHref(_role: AppRole): string {
+  return "/dashboard";
 }
