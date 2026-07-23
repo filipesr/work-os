@@ -17,7 +17,8 @@ import { Paperclip } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { getTranslations } from "next-intl/server";
-import { BackLink } from "@/components/ui/BackLink";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SectionCard } from "@/components/ui/SectionCard";
 import { formatDisplayDate, formatDisplayDateTime } from "@/lib/dates";
 
 interface StageLogRow {
@@ -77,36 +78,27 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Back link — returns to the parent project */}
-      <BackLink
-        href={`/admin/projects/${task.project.id}`}
-        label={t("backToProject")}
-        className="mb-6"
+      <PageHeader
+        kicker={`${task.project.client.name} · ${task.project.name}`}
+        title={task.title}
+        subtitle={task.description || t("noDescription")}
+        backHref={`/admin/projects/${task.project.id}`}
+        backLabel={t("backToProject")}
+        actions={
+          <StatusBadge tone={taskStatusTone(task.status)} label={t(`taskStatus.${task.status}`)} />
+        }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
-        <div className="lg:col-span-2">
-          {/* Task Header */}
-          <div className="bg-card shadow-lg rounded-xl border border-border p-6 mb-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold text-foreground mb-2">{task.title}</h1>
-                <p className="text-muted-foreground">{task.description || t("noDescription")}</p>
-              </div>
-              <div className="ml-4">
-                <StatusBadge
-                  tone={taskStatusTone(task.status)}
-                  label={t(`taskStatus.${task.status}`)}
-                />
-              </div>
-            </div>
-
+        <div className="lg:col-span-2 space-y-6">
+          {/* Lifecycle + meta */}
+          <SectionCard>
             <div className="mb-4">
               <TaskLifecycleActions taskId={task.id} taskStatus={task.status} />
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t-2 border-border">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-border pt-4">
               <div>
                 <p className="text-sm font-semibold text-muted-foreground">{t("project")}</p>
                 <p className="mt-1 text-sm text-foreground font-medium">
@@ -135,12 +127,12 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                 </p>
               </div>
             </div>
-          </div>
+          </SectionCard>
 
           {/* Current Stage & Actions */}
-          <div className="bg-card shadow-lg rounded-xl border border-border p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-foreground">{t("currentStage")}</h2>
+          <SectionCard
+            title={t("currentStage")}
+            action={
               <div className="flex gap-2 flex-wrap">
                 <AdvanceStageButton taskId={task.id} currentStageId={task.currentStageId} />
                 <RevertStageButton taskId={task.id} previousStages={previousStages} />
@@ -153,8 +145,8 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                   />
                 )}
               </div>
-            </div>
-
+            }
+          >
             {task.currentStage ? (
               <div className="border-2 border-primary/20 bg-primary/5 rounded-lg p-4">
                 <div className="flex items-center gap-3">
@@ -179,11 +171,10 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
             ) : (
               <p className="text-muted-foreground">{t("noCurrentStage")}</p>
             )}
-          </div>
+          </SectionCard>
 
           {/* All stages pipeline (status + responsible per stage) */}
-          <div className="bg-card shadow-lg rounded-xl border border-border p-6 mb-6">
-            <h2 className="text-xl font-bold text-foreground mb-4">{t("allStages")}</h2>
+          <SectionCard title={t("allStages")}>
             <div className="space-y-2">
               {task.stagePipeline.map((ps) => {
                 const responsible = ps.assignee?.name || ps.assignee?.email || null;
@@ -231,11 +222,10 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                 );
               })}
             </div>
-          </div>
+          </SectionCard>
 
           {/* Stage History */}
-          <div className="bg-card shadow-lg rounded-xl border border-border p-6 mb-6">
-            <h2 className="text-xl font-bold text-foreground mb-4">{t("stageHistory")}</h2>
+          <SectionCard title={t("stageHistory")}>
             {task.stageLogs.length === 0 ? (
               <p className="text-muted-foreground">{t("noStageHistory")}</p>
             ) : (
@@ -267,12 +257,11 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                 ))}
               </div>
             )}
-          </div>
+          </SectionCard>
 
           {/* Comments */}
           {task.comments.length > 0 && (
-            <div className="bg-card shadow-lg rounded-xl border border-border p-6">
-              <h2 className="text-xl font-bold text-foreground mb-4">{t("comments")}</h2>
+            <SectionCard title={t("comments")}>
               <div className="space-y-4">
                 {task.comments.map((comment: CommentRow) => (
                   <div
@@ -297,7 +286,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                   </div>
                 ))}
               </div>
-            </div>
+            </SectionCard>
           )}
         </div>
 
@@ -333,9 +322,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
             </Card>
 
             {/* Time tracking (registered time logs + open/running activities) */}
-            <div className="bg-card shadow-lg rounded-xl border border-border p-6">
-              <h2 className="text-xl font-bold text-foreground mb-4">{t("timeLogs")}</h2>
-
+            <SectionCard title={t("timeLogs")}>
               {timeTracking.openActivities.length > 0 && (
                 <div className="space-y-2 mb-4">
                   {timeTracking.openActivities.map((a) => (
@@ -367,7 +354,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
               )}
 
               <TimeLogsList timeLogs={timeTracking.timeLogs} />
-            </div>
+            </SectionCard>
           </div>
         </div>
       </div>

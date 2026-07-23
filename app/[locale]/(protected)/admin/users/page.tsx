@@ -14,6 +14,8 @@ import { requireAdmin } from "@/lib/permissions";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { getTranslations } from "next-intl/server";
 import { Pagination } from "@/components/ui/pagination";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { DEFAULT_PAGE_SIZE, paginate, parsePage } from "@/lib/pagination";
 
 const SORTABLE_FIELDS = ["name", "email", "role"] as const;
@@ -145,16 +147,15 @@ export default async function UsersPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
-        </div>
-        <UserFilters teams={teams} />
-      </div>
+      <PageHeader
+        kicker={t("kicker")}
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={<UserFilters teams={teams} />}
+      />
 
       {/* Users List */}
-      <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted">
             <tr>
@@ -193,9 +194,7 @@ export default async function UsersPage({
                   <div className="text-sm text-muted-foreground">{user.email}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-3 py-1 inline-flex text-xs font-bold rounded-full bg-primary/10 text-primary border border-primary/20">
-                    {t(`roles.${user.role.toLowerCase()}`)}
-                  </span>
+                  <StatusBadge tone="info" label={t(`roles.${user.role.toLowerCase()}`)} />
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm text-muted-foreground">

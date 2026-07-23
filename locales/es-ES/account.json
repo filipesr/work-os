@@ -1,7 +1,18 @@
 {
   "userNotFound": "Usuario no encontrado.",
+  "kicker": "Cuenta",
   "title": "Mi Cuenta",
-  "subtitle": "Visualiza tu información de perfil",
+  "subtitle": "Visualiza tu información de perfil y ajusta tus preferencias.",
+  "preferences": {
+    "title": "Preferencias",
+    "subtitle": "Idioma y apariencia de la aplicación."
+  },
+  "theme": {
+    "field": "Tema",
+    "label": "Tema de la interfaz",
+    "light": "Claro",
+    "dark": "Oscuro"
+  },
   "fields": {
     "name": "Nombre",
     "email": "Correo Electrónico",

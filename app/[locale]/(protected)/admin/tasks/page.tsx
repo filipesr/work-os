@@ -11,8 +11,11 @@ import { getTranslations } from "next-intl/server";
 import { Pagination } from "@/components/ui/pagination";
 import { TaskFilters } from "@/components/tasks/TaskFilters";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/empty-state";
 import { taskStatusTone, priorityTone } from "@/lib/status-tone";
 import { parsePage } from "@/lib/pagination";
+import { ClipboardList, Plus, SearchX } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Demandas",
@@ -69,57 +72,48 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
-        </div>
-        <Link
-          href="/admin/tasks/new"
-          className="px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 shadow-sm hover:shadow-md transition-all duration-200"
-        >
-          {t("createTask")}
-        </Link>
-      </div>
+      <PageHeader
+        kicker={t("kicker")}
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={
+          <Link
+            href="/admin/tasks/new"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary/90 hover:shadow-md"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            {t("createTask")}
+          </Link>
+        }
+      />
 
       {/* Filters */}
       <TaskFilters clients={clients} teams={teams} />
 
       {/* Tasks List */}
-      <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         {tasks.length === 0 ? (
           hasActiveFilters ? (
-            <div className="p-12 text-center">
-              <h3 className="text-lg font-bold text-foreground mb-2">{t("filters.noResults")}</h3>
-              <p className="text-muted-foreground">{t("filters.noResultsMessage")}</p>
-            </div>
+            <EmptyState
+              icon={SearchX}
+              title={t("filters.noResults")}
+              description={t("filters.noResultsMessage")}
+            />
           ) : (
-            <div className="p-12 text-center">
-              <div className="text-muted-foreground mb-6">
-                <svg
-                  className="mx-auto h-16 w-16"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+            <EmptyState
+              icon={ClipboardList}
+              title={t("noTasksYet")}
+              description={t("noTasksMessage")}
+              action={
+                <Link
+                  href="/admin/tasks/new"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary/90 hover:shadow-md"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-3">{t("noTasksYet")}</h3>
-              <p className="text-muted-foreground mb-6">{t("noTasksMessage")}</p>
-              <Link
-                href="/admin/tasks/new"
-                className="inline-flex items-center px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 shadow-sm hover:shadow-md transition-all duration-200"
-              >
-                {t("createFirstTask")}
-              </Link>
-            </div>
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  {t("createFirstTask")}
+                </Link>
+              }
+            />
           )
         ) : (
           <table className="min-w-full divide-y divide-border">

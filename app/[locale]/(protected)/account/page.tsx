@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { SignOutButton } from "@/components/auth/SignOutButton";
-
-export const metadata: Metadata = {
-  title: "Conta",
-};
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import Image from "next/image";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { getTranslations } from "next-intl/server";
+import { Info } from "lucide-react";
+import { SignOutButton } from "@/components/auth/SignOutButton";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SectionCard } from "@/components/ui/SectionCard";
+import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
+import { ThemeControl } from "./ThemeControl";
+
+export const metadata: Metadata = { title: "Conta" };
 
 function formatDate(value: Date | string): string {
   const d = new Date(value);
@@ -28,7 +29,6 @@ export default async function AccountPage() {
     return null;
   }
 
-  // Fetch full user data to include the team name
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
@@ -38,132 +38,95 @@ export default async function AccountPage() {
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="max-w-2xl mx-auto">
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">{t("userNotFound")}</p>
-          </CardContent>
-        </Card>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <SectionCard>
+          <p className="text-center text-muted-foreground">{t("userNotFound")}</p>
+        </SectionCard>
       </div>
     );
   }
 
+  const fields: Array<{ label: string; value: string }> = [
+    { label: t("fields.name"), value: user.name || t("noInfo") },
+    { label: t("fields.email"), value: user.email || t("noInfo") },
+    { label: t("fields.role"), value: t(`roles.${user.role}`) },
+    {
+      label: t("fields.team"),
+      value: user.teams.length > 0 ? user.teams.map((tm) => tm.name).join(", ") : t("noTeam"),
+    },
+    { label: t("fields.birthday"), value: user.birthday ? formatDate(user.birthday) : t("noInfo") },
+    {
+      label: t("fields.admission"),
+      value: user.admissionDate ? formatDate(user.admissionDate) : t("noInfo"),
+    },
+  ];
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-2xl">{t("title")}</CardTitle>
-          <CardDescription>{t("subtitle")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* User Avatar */}
-          <div className="flex justify-center">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader
+        kicker={t("kicker")}
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={<SignOutButton />}
+      />
+
+      <div className="mx-auto max-w-2xl space-y-6">
+        {/* Perfil */}
+        <SectionCard>
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
             {user.image ? (
               <Image
                 src={getProxiedImageUrl(user.image) || "/default-avatar.png"}
                 alt={user.name || "User avatar"}
-                width={120}
-                height={120}
-                className="rounded-full border-4 border-border shadow-lg"
+                width={96}
+                height={96}
+                className="rounded-full border border-border shadow-sm"
               />
             ) : (
-              <div className="w-[120px] h-[120px] rounded-full bg-muted flex items-center justify-center border-4 border-border shadow-lg">
-                <span className="text-4xl font-bold text-muted-foreground">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full border border-border bg-muted shadow-sm">
+                <span className="text-3xl font-bold text-muted-foreground">
                   {user.name?.[0]?.toUpperCase() || "?"}
                 </span>
               </div>
             )}
+            <div className="text-center sm:text-left">
+              <p className="text-lg font-semibold text-foreground">{user.name || t("noInfo")}</p>
+              <p className="text-sm text-muted-foreground">{user.email}</p>
+            </div>
           </div>
 
-          {/* User Information */}
+          <dl className="mt-6 divide-y divide-border">
+            {fields.map((f) => (
+              <div key={f.label} className="flex items-baseline justify-between gap-4 py-3">
+                <dt className="text-sm font-medium text-muted-foreground">{f.label}</dt>
+                <dd className="text-right text-sm font-semibold text-foreground">{f.value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-muted/50 p-4">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">{t("googleSyncNote.label")}</span>{" "}
+              {t("googleSyncNote.message")}
+            </p>
+          </div>
+        </SectionCard>
+
+        {/* Preferências: idioma + tema (§3.1) */}
+        <SectionCard title={t("preferences.title")} subtitle={t("preferences.subtitle")}>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              {/* Name */}
-              <div className="border-b border-border pb-3">
-                <dt className="text-sm font-medium text-muted-foreground mb-1">
-                  {t("fields.name")}
-                </dt>
-                <dd className="text-base font-semibold text-foreground">
-                  {user.name || t("noInfo")}
-                </dd>
-              </div>
-
-              {/* Email */}
-              <div className="border-b border-border pb-3">
-                <dt className="text-sm font-medium text-muted-foreground mb-1">
-                  {t("fields.email")}
-                </dt>
-                <dd className="text-base font-semibold text-foreground">
-                  {user.email || t("noInfo")}
-                </dd>
-              </div>
-
-              {/* Role */}
-              <div className="border-b border-border pb-3">
-                <dt className="text-sm font-medium text-muted-foreground mb-1">
-                  {t("fields.role")}
-                </dt>
-                <dd className="text-base font-semibold text-foreground">
-                  {t(`roles.${user.role}`)}
-                </dd>
-              </div>
-
-              {/* Team */}
-              <div className="border-b border-border pb-3">
-                <dt className="text-sm font-medium text-muted-foreground mb-1">
-                  {t("fields.team")}
-                </dt>
-                <dd className="text-base font-semibold text-foreground">
-                  {user.teams.length > 0 ? user.teams.map((tm) => tm.name).join(", ") : t("noTeam")}
-                </dd>
-              </div>
-
-              {/* Birthday */}
-              <div className="border-b border-border pb-3">
-                <dt className="text-sm font-medium text-muted-foreground mb-1">
-                  {t("fields.birthday")}
-                </dt>
-                <dd className="text-base font-semibold text-foreground">
-                  {user.birthday ? formatDate(user.birthday) : t("noInfo")}
-                </dd>
-              </div>
-
-              {/* Admission */}
-              <div className="border-b border-border pb-3">
-                <dt className="text-sm font-medium text-muted-foreground mb-1">
-                  {t("fields.admission")}
-                </dt>
-                <dd className="text-base font-semibold text-foreground">
-                  {user.admissionDate ? formatDate(user.admissionDate) : t("noInfo")}
-                </dd>
-              </div>
-
-              {/* Language */}
-              <div className="border-b border-border pb-3">
-                <dt className="text-sm font-medium text-muted-foreground mb-1">
-                  {t("fields.language")}
-                </dt>
-                <dd className="text-base font-semibold text-foreground">
-                  <LanguageSwitcher />
-                </dd>
-              </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-medium text-foreground">{t("fields.language")}</p>
+              <LanguageSwitcher />
             </div>
-
-            {/* Google Sync Notice */}
-            <div className="bg-muted/50 border border-border rounded-lg p-4 mt-6">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-semibold">{t("googleSyncNote.label")}</span>{" "}
-                {t("googleSyncNote.message")}
-              </p>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+              <p className="text-sm font-medium text-foreground">{t("theme.field")}</p>
+              <ThemeControl />
             </div>
           </div>
-
-          {/* Sign Out Button */}
-          <div className="flex justify-center pt-4">
-            <SignOutButton />
-          </div>
-        </CardContent>
-      </Card>
+        </SectionCard>
+      </div>
     </div>
   );
 }
