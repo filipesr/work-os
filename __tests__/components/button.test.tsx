@@ -34,7 +34,7 @@ describe("Button", () => {
   it("applies outline variant styles", () => {
     render(<Button variant="outline">Outline</Button>);
     const button = screen.getByRole("button");
-    expect(button.className).toContain("border-2");
+    expect(button.className).toContain("border-border");
   });
 
   it("applies ghost variant styles", () => {
