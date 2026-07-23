@@ -10,6 +10,8 @@ import { StorageBreakdown } from "@/components/nas/StorageBreakdown";
 import { storageByTask } from "@/lib/nas/storage-stats";
 import { BackLink } from "@/components/ui/BackLink";
 import { StatCard } from "@/components/admin/StatCard";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { taskStatusTone, priorityTone } from "@/lib/status-tone";
 import { updateProject, deleteProject } from "@/lib/actions/project";
 import { EditProjectHeader } from "./edit-project-header";
 
@@ -81,22 +83,6 @@ export default async function ProjectDetailPage({
       task.artifacts.map((a) => mapArtifactRow(a, "TASK", { id: task.id, title: task.title }))
     ),
   ];
-
-  const statusColors: Record<string, string> = {
-    BACKLOG: "bg-gray-100 text-gray-800 border-gray-200",
-    IN_PROGRESS: "bg-blue-100 text-blue-800 border-blue-200",
-    COMPLETED: "bg-green-100 text-green-800 border-green-200",
-    CANCELLED: "bg-red-100 text-red-800 border-red-200",
-    PAUSED: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    OBSOLETE: "bg-muted text-muted-foreground border-border",
-  };
-
-  const priorityColors: Record<string, string> = {
-    URGENT: "bg-red-100 text-red-800 border-red-200",
-    HIGH: "bg-orange-100 text-orange-800 border-orange-200",
-    MEDIUM: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    LOW: "bg-green-100 text-green-800 border-green-200",
-  };
 
   return (
     <div className="container mx-auto p-8">
@@ -181,18 +167,16 @@ export default async function ProjectDetailPage({
                     </Link>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1 inline-flex text-xs font-bold rounded-full border ${statusColors[task.status] || ""}`}
-                    >
-                      {t(`status.${task.status}`)}
-                    </span>
+                    <StatusBadge
+                      tone={taskStatusTone(task.status)}
+                      label={t(`status.${task.status}`)}
+                    />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1 inline-flex text-xs font-bold rounded-full border ${priorityColors[task.priority] || ""}`}
-                    >
-                      {t(`priority.${task.priority}`)}
-                    </span>
+                    <StatusBadge
+                      tone={priorityTone(task.priority)}
+                      label={t(`priority.${task.priority}`)}
+                    />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm text-muted-foreground">

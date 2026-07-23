@@ -10,6 +10,8 @@ import { getClients } from "@/lib/actions/client";
 import { getTranslations } from "next-intl/server";
 import { Pagination } from "@/components/ui/pagination";
 import { TaskFilters } from "@/components/tasks/TaskFilters";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { taskStatusTone, priorityTone } from "@/lib/status-tone";
 import { parsePage } from "@/lib/pagination";
 
 export const metadata: Metadata = {
@@ -161,45 +163,19 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                     {task.project.client.name} - {task.project.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1 text-xs font-bold rounded-full ${
-                        task.status === "COMPLETED"
-                          ? "bg-green-100 text-green-800 border border-green-200"
-                          : task.status === "IN_PROGRESS"
-                            ? "bg-primary/10 text-primary border border-primary/20"
-                            : task.status === "PAUSED" || task.status === "CANCELLED"
-                              ? "bg-destructive/10 text-destructive border border-destructive/20"
-                              : "bg-muted text-muted-foreground border border-border"
-                      }`}
-                    >
-                      {t(`taskStatus.${task.status}`)}
-                    </span>
+                    <StatusBadge
+                      tone={taskStatusTone(task.status)}
+                      label={t(`taskStatus.${task.status}`)}
+                    />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {task.currentStage?.name || t("noStage")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1 text-xs font-bold rounded-full ${
-                        task.priority === "URGENT"
-                          ? "bg-red-100 text-red-800 border border-red-200"
-                          : task.priority === "HIGH"
-                            ? "bg-orange-100 text-orange-800 border border-orange-200"
-                            : task.priority === "MEDIUM"
-                              ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
-                              : "bg-muted text-muted-foreground border border-border"
-                      }`}
-                    >
-                      {task.priority === "URGENT"
-                        ? t("priority.urgent")
-                        : task.priority === "HIGH"
-                          ? t("priority.high")
-                          : task.priority === "MEDIUM"
-                            ? t("priority.medium")
-                            : task.priority === "LOW"
-                              ? t("priority.low")
-                              : task.priority}
-                    </span>
+                    <StatusBadge
+                      tone={priorityTone(task.priority)}
+                      label={t(`priority.${task.priority.toLowerCase()}`)}
+                    />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {task.assignee?.name || t("unassigned")}
