@@ -398,29 +398,29 @@ brief + os princípios. Preencher conforme cada tela chega.
 
 **Legenda:** ⬜ não gerada · 🟡 gerada, revisão pendente · ✅ de acordo · 🔧 ajustes pendentes.
 
-| #   | Tela                           | Status | Resumo da revisão                                                                                                                                                  |
-| --- | ------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0   | Navegação global               | 🔧     | Persona‑aware; avatar enxuto (tema+idioma juntos, sair separado); sem duplicação — resolve o "menu confuso". 1 correção: submenu Relatórios incompleto/fora do §3. |
-| 1   | Início / dashboard pessoal     | 🔧     | Fiel ao brief (exceção‑primeiro, tom informacional, aging vs SLA, KPIs coerentes com a lista). 3 ajustes finos abaixo.                                             |
-| 2   | Meu Trabalho (`/tasks`)        | ⬜     | Ao gerar, **reusar** o mesmo padrão de lista+KPI do Início (não recriar).                                                                                          |
-| 3   | Detalhe da tarefa              | ⬜     | —                                                                                                                                                                  |
-| 4   | Minha Evolução                 | ⬜     | —                                                                                                                                                                  |
-| 5   | Kanban do projeto              | ⬜     | —                                                                                                                                                                  |
-| 6   | Cockpit (`/admin`)             | ⬜     | —                                                                                                                                                                  |
-| 7   | Demandas (lista/detalhe/criar) | ⬜     | —                                                                                                                                                                  |
-| 8   | Fluxo & Entrega (fundido)      | ⬜     | —                                                                                                                                                                  |
-| 9   | Horas & Utilização             | ⬜     | —                                                                                                                                                                  |
-| 10  | Pessoas (por pessoa)           | ⬜     | —                                                                                                                                                                  |
-| 11  | Calendário (unificado)         | ⬜     | —                                                                                                                                                                  |
-| 12  | Presença ao vivo (+ modo TV)   | ⬜     | —                                                                                                                                                                  |
-| 13  | Clientes (lista/detalhe)       | ⬜     | —                                                                                                                                                                  |
-| 14  | Projetos (lista nova/detalhe)  | ⬜     | —                                                                                                                                                                  |
-| 15  | Usuários (CRUD)                | ⬜     | —                                                                                                                                                                  |
-| 16  | Equipes                        | ⬜     | —                                                                                                                                                                  |
-| 17  | Fluxos de trabalho (editor)    | ⬜     | —                                                                                                                                                                  |
-| 18  | Conta                          | ⬜     | —                                                                                                                                                                  |
-| 19  | Ajuda                          | ⬜     | —                                                                                                                                                                  |
-| 20  | Login / Home pública           | ⬜     | —                                                                                                                                                                  |
+| #   | Tela                           | Status | Resumo da revisão                                                                                                                                                     |
+| --- | ------------------------------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | Navegação global               | 🔧     | Persona‑aware; avatar enxuto (tema+idioma juntos, sair separado); sem duplicação — resolve o "menu confuso". 1 correção: submenu Relatórios incompleto/fora do §3.    |
+| 1   | Início / dashboard pessoal     | 🔧     | Fiel ao brief (exceção‑primeiro, tom informacional, aging vs SLA, KPIs coerentes com a lista). 3 ajustes finos abaixo.                                                |
+| 2   | Meu Trabalho (`/tasks`)        | 🔧     | **Reusou** o padrão do Início (filtros + 6 KPIs + tabela clicável), números coerentes. Reconciliar 1 divergência: célula de AGING (texto aqui vs barra no dashboard). |
+| 3   | Detalhe da tarefa              | ⬜     | —                                                                                                                                                                     |
+| 4   | Minha Evolução                 | ⬜     | —                                                                                                                                                                     |
+| 5   | Kanban do projeto              | ⬜     | —                                                                                                                                                                     |
+| 6   | Cockpit (`/admin`)             | ⬜     | —                                                                                                                                                                     |
+| 7   | Demandas (lista/detalhe/criar) | ⬜     | —                                                                                                                                                                     |
+| 8   | Fluxo & Entrega (fundido)      | ⬜     | —                                                                                                                                                                     |
+| 9   | Horas & Utilização             | ⬜     | —                                                                                                                                                                     |
+| 10  | Pessoas (por pessoa)           | ⬜     | —                                                                                                                                                                     |
+| 11  | Calendário (unificado)         | ⬜     | —                                                                                                                                                                     |
+| 12  | Presença ao vivo (+ modo TV)   | ⬜     | —                                                                                                                                                                     |
+| 13  | Clientes (lista/detalhe)       | ⬜     | —                                                                                                                                                                     |
+| 14  | Projetos (lista nova/detalhe)  | ⬜     | —                                                                                                                                                                     |
+| 15  | Usuários (CRUD)                | ⬜     | —                                                                                                                                                                     |
+| 16  | Equipes                        | ⬜     | —                                                                                                                                                                     |
+| 17  | Fluxos de trabalho (editor)    | ⬜     | —                                                                                                                                                                     |
+| 18  | Conta                          | ⬜     | —                                                                                                                                                                     |
+| 19  | Ajuda                          | ⬜     | —                                                                                                                                                                     |
+| 20  | Login / Home pública           | ⬜     | —                                                                                                                                                                     |
 
 ### Log de revisão
 
@@ -472,3 +472,25 @@ completa e reforçar o merge team‑productivity → Fluxo & Entrega (§3.3).
 **Carregar para a próxima:** ao gerar **Meu Trabalho (`/tasks`)**, pedir explicitamente para
 **reusar o mesmo padrão de lista "Meu foco" + faixa de KPIs** (só trocando os filtros) — é a
 unificação do §3 (evitar recriar uma tabela divergente).
+
+#### Tela 2 — Meu Trabalho (`/tasks`) · revisado 2026‑07‑23 · 🔧
+
+**De acordo — a unificação do §3 aconteceu:**
+
+- Reusa o padrão do Início: filtros (Escopo Minhas/Do time · pills de status · range de vencimento
+  · Limpar) + **6 KPIs** (Total, Ativas, Bloqueadas, Concluídas, Atrasadas, Horas) + tabela
+  clicável ("clique na linha para o detalhe").
+- Colunas coerentes (TAREFA · ETAPA · STATUS · AGING · VENCIMENTO · Horas hoje); coluna extra
+  "Horas hoje" é ok (colunas configuráveis por contexto — previsto no brief).
+- **Números coerentes:** Total 7 = 2 concluídas + 4 ativas (a _Atrasada_ conta como ativa +
+  flag de atraso) + 1 bloqueada; Atrasadas=1 é contagem transversal. Bate com a lista.
+
+**Ajustar (reconciliação cross‑tela, não bug da tela):**
+
+1. **Célula de AGING divergiu do dashboard.** Aqui é **texto colorido** "Xh / SLA" sem barra;
+   no Início é **barra colorida** + número. Definir **UMA** célula de aging canônica e usá‑la nas
+   duas telas — é exatamente o alvo do §3 (um componente, não dois parecidos). Escolher: barra
+   (mais escaneável) ou texto (mais compacto).
+2. **Confirmar o alvo do clique:** o brief pede **detalhe read‑only** (painel/modal), **não** a
+   tela de tarefa editável (essa tem as ações). O chevron sugere navegação — verificar que abre a
+   versão só‑leitura.
