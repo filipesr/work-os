@@ -57,7 +57,7 @@ export function MonthlyCalendar({
           {t("legend.holiday")}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm border border-violet-300 bg-violet-100" />
+          <span className="h-3 w-3 rounded-sm border border-indigo-300 bg-indigo-100" />
           {t("legend.commercial")}
         </span>
         <span className="inline-flex items-center gap-1.5">

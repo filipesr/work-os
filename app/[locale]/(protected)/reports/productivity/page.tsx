@@ -159,11 +159,11 @@ async function HoursByClientSection({ filters, t }: { filters: ProductivityFilte
   const hoursByClient = await getHoursByClient(filters);
 
   return (
-    <Card className="border-l-4 border-l-purple-500 dark:border-l-purple-400">
-      <CardHeader className="bg-gradient-to-r from-purple-50 to-transparent dark:from-purple-950 dark:to-transparent">
+    <Card className="border-l-4 border-l-indigo-500 dark:border-l-indigo-400">
+      <CardHeader className="bg-gradient-to-r from-indigo-50 to-transparent dark:from-indigo-950 dark:to-transparent">
         <div className="flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-          <CardTitle className="text-purple-900 dark:text-purple-100">
+          <Building2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+          <CardTitle className="text-indigo-900 dark:text-indigo-100">
             {t("hoursByClient.title")}
           </CardTitle>
         </div>

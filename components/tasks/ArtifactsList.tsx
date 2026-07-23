@@ -30,7 +30,7 @@ interface ArtifactsListProps {
 const artifactTypeConfig = {
   DOCUMENT: { icon: FileText, color: "text-indigo-500" },
   IMAGE: { icon: Image, color: "text-green-500" },
-  VIDEO: { icon: Video, color: "text-purple-500" },
+  VIDEO: { icon: Video, color: "text-indigo-500" },
   FIGMA: { icon: Figma, color: "text-pink-500" },
   OTHER: { icon: File, color: "text-gray-500" },
 };

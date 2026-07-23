@@ -84,17 +84,17 @@ async function LeadTimeSection({ filters, t }: { filters: PerformanceFilters; t:
         </CardContent>
       </Card>
 
-      <Card className="bg-gradient-to-br from-violet-50 to-violet-100 dark:from-violet-950 dark:to-violet-900">
+      <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950 dark:to-indigo-900">
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-violet-500/20 rounded-full">
-              <TrendingDown className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+            <div className="p-3 bg-indigo-500/20 rounded-full">
+              <TrendingDown className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <p className="text-sm text-violet-700 dark:text-violet-300">
+              <p className="text-sm text-indigo-700 dark:text-indigo-300">
                 {t("leadTimeMetrics.count")}
               </p>
-              <p className="text-2xl font-bold text-violet-900 dark:text-violet-100">
+              <p className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
                 {leadTimeMetrics.count}
               </p>
             </div>
@@ -245,11 +245,11 @@ async function CycleTimeSection({ filters, t }: { filters: PerformanceFilters; t
                 <div className="text-xs text-cyan-600 dark:text-cyan-400">{t("cycleTime.p50")}</div>
                 <div className="text-xl font-bold">{cycle.p50.toFixed(1)}d</div>
               </div>
-              <div className="rounded-lg border-2 border-violet-400 dark:border-violet-500 p-3 text-center">
-                <div className="text-xs text-violet-600 dark:text-violet-400">
+              <div className="rounded-lg border-2 border-indigo-400 dark:border-indigo-500 p-3 text-center">
+                <div className="text-xs text-indigo-600 dark:text-indigo-400">
                   {t("cycleTime.p85")}
                 </div>
-                <div className="text-xl font-bold text-violet-700 dark:text-violet-300">
+                <div className="text-xl font-bold text-indigo-700 dark:text-indigo-300">
                   {cycle.p85.toFixed(1)}d
                 </div>
               </div>
@@ -279,17 +279,17 @@ async function ForecastSection({ filters, t }: { filters: PerformanceFilters; t:
   const f = await getDeliveryForecast(filters);
 
   return (
-    <Card className="border-2 border-violet-300 dark:border-violet-700 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950 dark:to-indigo-950">
+    <Card className="border-2 border-indigo-300 dark:border-indigo-700 bg-gradient-to-br from-indigo-50 to-indigo-50 dark:from-indigo-950 dark:to-indigo-950">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Dice5 className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-          <CardTitle className="text-violet-800 dark:text-violet-200">
+          <Dice5 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+          <CardTitle className="text-indigo-800 dark:text-indigo-200">
             {t("forecast.title")}
           </CardTitle>
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-violet-700 dark:text-violet-300 mb-4">
+        <p className="text-sm text-indigo-700 dark:text-indigo-300 mb-4">
           {t("forecast.description")}
         </p>
         {f.totalThroughput === 0 ? (
@@ -300,11 +300,11 @@ async function ForecastSection({ filters, t }: { filters: PerformanceFilters; t:
               <div className="text-xs text-muted-foreground">{t("forecast.backlog")}</div>
               <div className="text-2xl font-bold">{f.backlog}</div>
             </div>
-            <div className="rounded-lg border-2 border-violet-400 dark:border-violet-500 p-3">
-              <div className="text-xs text-violet-600 dark:text-violet-400">
+            <div className="rounded-lg border-2 border-indigo-400 dark:border-indigo-500 p-3">
+              <div className="text-xs text-indigo-600 dark:text-indigo-400">
                 {t("forecast.whenP85")}
               </div>
-              <div className="text-2xl font-bold text-violet-700 dark:text-violet-300">
+              <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">
                 {f.when ? t("forecast.days", { days: Math.ceil(f.when.p85) }) : "—"}
               </div>
               {f.when && (

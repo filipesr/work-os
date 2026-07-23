@@ -24,7 +24,7 @@ export function EventPill({ event, variant, onSelect }: EventPillProps) {
         className={`block w-full truncate rounded border px-1.5 py-0.5 text-left text-[11px] font-medium transition-colors ${
           event.type === "holiday"
             ? "border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-400 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-200"
-            : "border-violet-200 bg-violet-50 text-violet-700 hover:border-violet-400 dark:border-violet-800/60 dark:bg-violet-950/40 dark:text-violet-200"
+            : "border-indigo-200 bg-indigo-50 text-indigo-700 hover:border-indigo-400 dark:border-indigo-800/60 dark:bg-indigo-950/40 dark:text-indigo-200"
         }`}
       >
         <span className="mr-1">{flags}</span>
@@ -43,7 +43,7 @@ export function EventPill({ event, variant, onSelect }: EventPillProps) {
         className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold ${
           event.type === "holiday"
             ? "border-rose-200 bg-rose-50 text-rose-700"
-            : "border-violet-200 bg-violet-50 text-violet-700"
+            : "border-indigo-200 bg-indigo-50 text-indigo-700"
         }`}
       >
         {event.type === "holiday" ? t("legend.holiday") : t("legend.commercial")}

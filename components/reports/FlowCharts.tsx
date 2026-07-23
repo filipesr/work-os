@@ -279,7 +279,7 @@ export function CycleScatter({
         </text>
       ))}
       {line(p95, "#e11d48", "p95", "l95")}
-      {line(p85, "#7c3aed", "p85", "l85")}
+      {line(p85, "#4f46e5", "p85", "l85")}
       {line(p50, "#0891b2", "p50", "l50")}
       {sorted.map((pt, i) => (
         <circle key={i} cx={x(i)} cy={y(pt.days)} r={2} fill="#64748b" fillOpacity={0.55} />
