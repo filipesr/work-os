@@ -26,7 +26,7 @@ export default async function TemplatesPage() {
       </div>
 
       {/* Create New Template Form */}
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-8">
+      <div className="bg-card shadow-lg rounded-xl border border-border p-6 mb-8">
         <h2 className="text-xl font-semibold text-foreground mb-4">{t("createTitle")}</h2>
         <form action={createWorkflowTemplate} className="space-y-4">
           <div>
@@ -67,7 +67,7 @@ export default async function TemplatesPage() {
       </div>
 
       {/* Templates List */}
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+      <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
         <div className="px-6 py-4 border-b-2 border-border bg-muted">
           <h2 className="text-xl font-bold text-foreground">{t("listTitle")}</h2>
         </div>

@@ -4,7 +4,7 @@ export default function AdminTaskDetailLoading() {
       <div className="h-5 w-32 bg-muted rounded mb-6" />
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 space-y-6">
-          <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+          <div className="bg-card shadow-lg rounded-xl border border-border p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="h-8 w-72 bg-muted rounded mb-2" />
@@ -21,11 +21,11 @@ export default function AdminTaskDetailLoading() {
               ))}
             </div>
           </div>
-          <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+          <div className="bg-card shadow-lg rounded-xl border border-border p-6">
             <div className="h-6 w-32 bg-muted rounded mb-4" />
             <div className="h-20 bg-muted rounded-lg" />
           </div>
-          <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+          <div className="bg-card shadow-lg rounded-xl border border-border p-6">
             <div className="h-6 w-40 bg-muted rounded mb-4" />
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -35,7 +35,7 @@ export default function AdminTaskDetailLoading() {
           </div>
         </div>
         <div className="lg:col-span-1">
-          <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+          <div className="bg-card shadow-lg rounded-xl border border-border p-6">
             <div className="h-6 w-24 bg-muted rounded mb-4" />
             <div className="space-y-3">
               {Array.from({ length: 2 }).map((_, i) => (

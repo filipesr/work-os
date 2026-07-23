@@ -17,7 +17,7 @@ export async function OnTimeRateCard({ data }: OnTimeRateCardProps) {
 
   if (overall.total === 0) {
     return (
-      <div className="bg-card border-2 border-border rounded-xl p-6">
+      <div className="bg-card border border-border rounded-xl p-6">
         <h2 className="text-lg font-bold text-foreground mb-1">{t("title")}</h2>
         <p className="text-sm text-muted-foreground">{t("noData")}</p>
       </div>
@@ -25,7 +25,7 @@ export async function OnTimeRateCard({ data }: OnTimeRateCardProps) {
   }
 
   return (
-    <div className="bg-card border-2 border-border rounded-xl p-6">
+    <div className="bg-card border border-border rounded-xl p-6">
       <h2 className="text-lg font-bold text-foreground mb-2">{t("title")}</h2>
       <div className="flex flex-wrap items-baseline gap-3">
         <div className="text-5xl font-extrabold text-primary tabular-nums">

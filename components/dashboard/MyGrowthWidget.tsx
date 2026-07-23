@@ -22,7 +22,7 @@ export async function MyGrowthWidget({ userId }: { userId: string }) {
   const pct = util.utilization == null ? null : Math.round(util.utilization * 100);
 
   return (
-    <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+    <div className="bg-card shadow-lg rounded-xl border border-border p-6">
       <h2 className="text-lg font-bold text-foreground mb-1">{t("title")}</h2>
       <p className="text-xs text-muted-foreground mb-3">{t("selfReferencedNote")}</p>
       {throughput.some((p) => p.count > 0) ? (

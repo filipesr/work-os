@@ -5,7 +5,7 @@ export default function TemplatesLoading() {
         <div className="h-8 w-56 bg-muted rounded mb-2" />
         <div className="h-4 w-72 bg-muted rounded" />
       </div>
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 space-y-4">
+      <div className="bg-card shadow-lg rounded-xl border border-border p-6 space-y-4">
         <div className="h-6 w-40 bg-muted rounded" />
         <div>
           <div className="h-4 w-20 bg-muted rounded mb-2" />
@@ -17,7 +17,7 @@ export default function TemplatesLoading() {
         </div>
         <div className="h-11 w-32 bg-muted rounded-lg" />
       </div>
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+      <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
         <div className="px-6 py-4 border-b-2 border-border bg-muted">
           <div className="h-6 w-40 bg-muted-foreground/10 rounded" />
         </div>

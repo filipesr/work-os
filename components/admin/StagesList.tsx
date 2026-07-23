@@ -50,7 +50,7 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
         const isEditing = editingStageId === stage.id;
 
         return (
-          <div key={stage.id} className="border-2 border-border rounded-lg p-4 bg-card shadow-sm">
+          <div key={stage.id} className="border border-border rounded-lg p-4 bg-card shadow-sm">
             {isEditing ? (
               <StageEditForm
                 stage={stage}

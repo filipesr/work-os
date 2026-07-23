@@ -9,7 +9,7 @@ function Badge({ className = "", variant = "default", ...props }: BadgeProps) {
     default: "bg-primary text-primary-foreground shadow-sm",
     secondary: "bg-secondary text-secondary-foreground shadow-sm",
     destructive: "bg-destructive text-destructive-foreground shadow-sm",
-    outline: "border-2 border-border bg-card text-foreground",
+    outline: "border border-border bg-card text-foreground",
     success: "bg-green-600 text-white shadow-sm",
   };
 

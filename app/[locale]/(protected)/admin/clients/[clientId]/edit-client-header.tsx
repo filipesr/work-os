@@ -32,7 +32,7 @@ export function EditClientHeader({
 
   if (isEditing) {
     return (
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+      <div className="bg-card shadow-lg rounded-xl border border-border p-6">
         <h2 className="text-xl font-bold text-foreground mb-4">{t("editTitle")}</h2>
         <form
           action={async (formData: FormData) => {
@@ -144,7 +144,7 @@ export function EditClientHeader({
   }
 
   return (
-    <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+    <div className="bg-card shadow-lg rounded-xl border border-border p-6">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-foreground mb-3">{client.name}</h1>

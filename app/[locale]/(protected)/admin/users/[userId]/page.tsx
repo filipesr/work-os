@@ -84,12 +84,12 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
       <BackLink href="/admin/users" label={t("backToUsers")} className="mb-6" />
 
       {/* Header Card */}
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+      <div className="bg-card shadow-lg rounded-xl border border-border p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             {user.image && (
               <img
-                className="h-16 w-16 rounded-full border-2 border-border"
+                className="h-16 w-16 rounded-full border border-border"
                 src={getProxiedImageUrl(user.image) || undefined}
                 alt=""
               />
@@ -144,7 +144,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
 
       {/* Throughput + Utilização (auto-referenciado) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+        <div className="bg-card shadow-lg rounded-xl border border-border p-6">
           <h2 className="text-lg font-bold text-foreground mb-1">{t("throughputTitle")}</h2>
           <p className="text-xs text-muted-foreground mb-3">{t("selfReferencedNote")}</p>
           {throughput.some((p) => p.count > 0) ? (
@@ -156,7 +156,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
             {t("agingNote", { aging: workload.aging, wip: workload.wip })}
           </p>
         </div>
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+        <div className="bg-card shadow-lg rounded-xl border border-border p-6">
           <h2 className="text-lg font-bold text-foreground mb-1">{t("utilizationTitle")}</h2>
           {util.weeklyCapacityHours == null ? (
             <p className="text-sm text-muted-foreground">{t("utilizationNoTarget")}</p>
@@ -186,7 +186,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
       </div>
 
       {/* Qualidade (defeito-only, 3b.T3/T4) */}
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mt-6">
+      <div className="bg-card shadow-lg rounded-xl border border-border p-6 mt-6">
         <h2 className="text-lg font-bold text-foreground mb-1">{tQuality("qualityTitle")}</h2>
         <p className="text-xs text-muted-foreground mb-4">{tQuality("qualityConfoundNote")}</p>
         <div className="flex flex-wrap gap-6 mb-4">
@@ -231,7 +231,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
       {/* Active Stages Table */}
       <div className="mt-6">
         <h2 className="text-xl font-bold text-foreground mb-4">{t("activeStagesTable")}</h2>
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+        <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
               <tr>
@@ -292,7 +292,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
       {/* Recent Time Logs */}
       <div className="mt-6">
         <h2 className="text-xl font-bold text-foreground mb-4">{t("recentTimeLogs")}</h2>
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+        <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
               <tr>

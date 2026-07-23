@@ -263,7 +263,7 @@ export function CreateTaskForm({
         )}
 
         {/* Dynamic Stage Preview */}
-        <div className="mt-4 p-4 bg-muted/30 rounded-lg border-2 border-border">
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border">
           <h4 className="text-sm font-semibold text-foreground mb-3">
             {t("create.stagePreviewTitle")}
           </h4>

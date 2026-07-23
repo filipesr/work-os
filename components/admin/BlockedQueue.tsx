@@ -14,7 +14,7 @@ export default async function BlockedQueue() {
   const items = (await getBlockedStages()).slice(0, QUEUE_LIMIT);
 
   return (
-    <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+    <div className="bg-card shadow-lg rounded-xl border border-border p-6">
       <h3 className="text-lg font-bold text-foreground mb-4">{t("title")}</h3>
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("empty")}</p>

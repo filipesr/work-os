@@ -5,7 +5,7 @@ export default function UsersLoading() {
         <div className="h-8 w-40 bg-muted rounded" />
         <div className="mt-2 h-4 w-64 bg-muted rounded" />
       </div>
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+      <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
         <div className="bg-muted px-6 py-4 flex gap-8">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-4 w-20 bg-muted-foreground/10 rounded" />

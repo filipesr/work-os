@@ -183,7 +183,7 @@ export function Slideshow() {
   const isLast = index === total - 1;
 
   const iconBtn =
-    "inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-border bg-card text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+    "inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
 
   return (
     <div className="fixed inset-0 bg-background text-foreground flex flex-col overflow-hidden">

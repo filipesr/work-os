@@ -18,7 +18,7 @@ export default function WeeklyReview({
   openLabel: string;
 }) {
   return (
-    <div className="rounded-xl border-2 border-border bg-card p-4">
+    <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex items-center gap-2">
         <ClipboardCheck className="h-5 w-5 text-foreground" />
         <span className="font-bold text-foreground">{title}</span>

@@ -1,25 +1,23 @@
-import { signIn } from "@/auth"
-import { getTranslations } from "next-intl/server"
+import { signIn } from "@/auth";
+import { getTranslations } from "next-intl/server";
 
 export default async function SignInPage() {
-  const t = await getTranslations("auth.signIn")
+  const t = await getTranslations("auth.signIn");
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="max-w-md w-full space-y-8 p-10 bg-card rounded-2xl shadow-2xl border-2 border-border">
+      <div className="max-w-md w-full space-y-8 p-10 bg-card rounded-2xl shadow-2xl border border-border">
         <div className="text-center">
           <h2 className="text-4xl font-bold text-foreground bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-3">
             Work OS
           </h2>
-          <p className="text-base text-muted-foreground font-medium">
-            {t("subtitle")}
-          </p>
+          <p className="text-base text-muted-foreground font-medium">{t("subtitle")}</p>
         </div>
         <div className="mt-10 space-y-6">
           <form
             action={async () => {
-              "use server"
-              await signIn("google", { redirectTo: "/" })
+              "use server";
+              await signIn("google", { redirectTo: "/" });
             }}
           >
             <button
@@ -53,5 +51,5 @@ export default async function SignInPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

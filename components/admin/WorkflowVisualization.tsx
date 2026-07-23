@@ -69,7 +69,7 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
   const levels = groupStagesByLevel(stages);
 
   return (
-    <div className="bg-muted/30 rounded-lg p-6 border-2 border-border">
+    <div className="bg-muted/30 rounded-lg p-6 border border-border">
       <h3 className="text-lg font-bold text-foreground mb-4">{t("title")}</h3>
       <p className="text-sm text-muted-foreground mb-3">{t("subtitle")}</p>
 

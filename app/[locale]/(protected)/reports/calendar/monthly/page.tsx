@@ -120,7 +120,7 @@ export default async function MonthlyCalendarPage({ searchParams }: PageProps) {
   const nextMonth = formatYearMonth(shiftMonth(first, 1));
 
   const navBtn =
-    "inline-flex h-9 w-9 items-center justify-center rounded-lg border-2 border-border bg-card text-foreground hover:bg-accent transition-colors";
+    "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-foreground hover:bg-accent transition-colors";
 
   return (
     <div className="container mx-auto p-8">
@@ -150,7 +150,7 @@ export default async function MonthlyCalendarPage({ searchParams }: PageProps) {
           </Link>
           <Link
             href="/reports/calendar/monthly"
-            className="ml-1 inline-flex h-9 items-center rounded-lg border-2 border-border bg-card px-3 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+            className="ml-1 inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground hover:bg-accent transition-colors"
           >
             {t("nav.today")}
           </Link>

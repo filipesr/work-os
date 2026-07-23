@@ -24,7 +24,7 @@ export function HelpFigure({ image, caption, placeholder }: HelpFigureProps) {
 
   return (
     <>
-      <figure className="mt-4 overflow-hidden rounded-xl border-2 border-border bg-muted/40">
+      <figure className="mt-4 overflow-hidden rounded-xl border border-border bg-muted/40">
         {showImage ? (
           <button
             type="button"

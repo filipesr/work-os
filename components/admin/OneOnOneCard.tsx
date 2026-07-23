@@ -45,7 +45,7 @@ export default function OneOnOneCard({ rows }: { rows: OneOnOneCadenceRow[] }) {
   }, [allSorted, query]);
 
   return (
-    <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+    <div className="bg-card shadow-lg rounded-xl border border-border p-6">
       <div className="mb-1 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-foreground" />

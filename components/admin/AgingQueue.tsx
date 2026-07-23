@@ -13,7 +13,7 @@ export default async function AgingQueue() {
   const items = (await getAgingStages()).slice(0, QUEUE_LIMIT);
 
   return (
-    <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+    <div className="bg-card shadow-lg rounded-xl border border-border p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-foreground">{t("title")}</h3>
         <Link

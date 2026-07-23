@@ -70,7 +70,7 @@ export default async function CalendarPage({ searchParams }: PageProps) {
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      <div className="flex items-center gap-4 bg-card border-2 border-border rounded-xl p-3 overflow-x-auto">
+      <div className="flex items-center gap-4 bg-card border border-border rounded-xl p-3 overflow-x-auto">
         <WeekNavigator weekStart={weekStart} weekEnd={weekEnd} />
         <div className="ml-auto">
           <CalendarFiltersBar

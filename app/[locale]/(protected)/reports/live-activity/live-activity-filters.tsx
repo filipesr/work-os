@@ -52,7 +52,7 @@ export default function LiveActivityFilters({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="relative inline-flex items-center gap-2 rounded-lg border-2 border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+        className="relative inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors"
       >
         <SlidersHorizontal className="h-4 w-4" />
         {t("filters.button")}
@@ -68,7 +68,7 @@ export default function LiveActivityFilters({
           <div
             role="dialog"
             aria-modal="true"
-            className="relative mt-12 w-full max-w-md rounded-xl border-2 border-border bg-card p-6 shadow-lg"
+            className="relative mt-12 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg"
           >
             <h3 className="text-lg font-bold text-foreground">{t("filters.title")}</h3>
 
@@ -104,7 +104,7 @@ export default function LiveActivityFilters({
                   </button>
                 </div>
               </div>
-              <div className="max-h-[40vh] space-y-0.5 overflow-y-auto rounded-lg border-2 border-border p-2">
+              <div className="max-h-[40vh] space-y-0.5 overflow-y-auto rounded-lg border border-border p-2">
                 {teamNames.map((name) =>
                   checkbox(!hiddenTeams.has(name), name, () => onToggleTeam(name))
                 )}

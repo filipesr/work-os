@@ -88,7 +88,7 @@ export async function CalendarGrid({ buckets, weekStart }: CalendarGridProps) {
   const dayFormatter = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" });
 
   return (
-    <div className="bg-card border-2 border-border rounded-xl overflow-hidden">
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
       {/* Header */}
       <div className="grid bg-muted/60" style={{ gridTemplateColumns: GRID_COLS }}>
         <div className="px-4 py-2 text-[11px] font-bold text-muted-foreground uppercase border-r border-border">

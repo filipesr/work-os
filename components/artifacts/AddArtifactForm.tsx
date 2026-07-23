@@ -80,7 +80,7 @@ export function AddArtifactForm({
 
   return (
     <div className="rounded-lg border-2 border-dashed border-border p-4">
-      <div className="mb-3 inline-flex rounded-lg border-2 border-border p-0.5">
+      <div className="mb-3 inline-flex rounded-lg border border-border p-0.5">
         <button
           type="button"
           onClick={() => setMode("link")}

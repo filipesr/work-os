@@ -38,7 +38,7 @@ export async function StageDurationTable({ rows }: StageDurationTableProps) {
 
   if (rows.length === 0) {
     return (
-      <div className="bg-card border-2 border-border rounded-xl p-6">
+      <div className="bg-card border border-border rounded-xl p-6">
         <h2 className="text-lg font-bold text-foreground mb-1">{t("title")}</h2>
         <p className="text-sm text-muted-foreground">{t("empty")}</p>
       </div>
@@ -46,7 +46,7 @@ export async function StageDurationTable({ rows }: StageDurationTableProps) {
   }
 
   return (
-    <div className="bg-card border-2 border-border rounded-xl overflow-hidden">
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
       <div className="p-6 pb-3 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold text-foreground">{t("title")}</h2>

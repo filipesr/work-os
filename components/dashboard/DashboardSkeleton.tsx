@@ -10,10 +10,7 @@ export function StatsCardSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       {[1, 2, 3, 4].map((i) => (
-        <div
-          key={i}
-          className="bg-card p-4 rounded-lg border shadow-sm animate-pulse"
-        >
+        <div key={i} className="bg-card p-4 rounded-lg border shadow-sm animate-pulse">
           {/* Label skeleton */}
           <div className="h-4 bg-muted rounded w-3/4 mb-3" />
           {/* Number skeleton */}
@@ -27,7 +24,7 @@ export function StatsCardSkeleton() {
 // Skeleton para tabelas de active stages
 export function TableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+    <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
       {/* Header skeleton */}
       <div className="bg-primary/5 px-6 py-4 border-b-2 border-border animate-pulse">
         <div className="h-6 bg-muted rounded w-48 mb-2" />
@@ -37,10 +34,7 @@ export function TableSkeleton({ rows = 5 }: { rows?: number }) {
       {/* Table skeleton */}
       <div className="p-4 space-y-3">
         {Array.from({ length: rows }).map((_, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg animate-pulse"
-          >
+          <div key={i} className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg animate-pulse">
             {/* Task name */}
             <div className="flex-1">
               <div className="h-5 bg-muted rounded w-3/4 mb-2" />
@@ -93,7 +87,7 @@ export function DashboardSkeleton() {
 // Skeleton para widget individual (usado com Suspense)
 export function WidgetSkeleton({ title }: { title?: string }) {
   return (
-    <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+    <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
       <div className="bg-primary/5 px-6 py-4 border-b-2 border-border">
         {title ? (
           <h2 className="text-xl font-bold text-foreground">{title}</h2>
@@ -104,10 +98,7 @@ export function WidgetSkeleton({ title }: { title?: string }) {
       <div className="p-6">
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-16 bg-muted/30 rounded-lg animate-pulse"
-            />
+            <div key={i} className="h-16 bg-muted/30 rounded-lg animate-pulse" />
           ))}
         </div>
       </div>

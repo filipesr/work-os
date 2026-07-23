@@ -87,7 +87,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
       <TaskFilters clients={clients} teams={teams} />
 
       {/* Tasks List */}
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+      <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
         {tasks.length === 0 ? (
           hasActiveFilters ? (
             <div className="p-12 text-center">

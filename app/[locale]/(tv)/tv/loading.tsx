@@ -7,7 +7,7 @@ export default function TVLoading() {
       </div>
       <div className="flex flex-wrap justify-center gap-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="w-52 rounded-xl border-2 border-border overflow-hidden">
+          <div key={i} className="w-52 rounded-xl border border-border overflow-hidden">
             <div className="h-24 bg-muted" />
             <div className="flex justify-center -mt-12 mb-4">
               <div className="h-24 w-24 rounded-full bg-muted border-4 border-background" />

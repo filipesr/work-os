@@ -54,7 +54,7 @@ export function GuideView({ guide, ui }: { guide: Guide; ui: GuideUi }) {
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground text-base font-bold">
             {guide.badge}
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-border bg-muted px-3 py-1 text-xs font-mono text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs font-mono text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" />
             {ui.routeBadge}: {guide.route}
           </span>

@@ -50,9 +50,9 @@ export async function Pagination({
   const hasNext = page < totalPages;
 
   const linkClasses =
-    "inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg border-2 border-border bg-card text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all";
+    "inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg border border-border bg-card text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all";
   const disabledClasses =
-    "inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg border-2 border-border bg-muted text-muted-foreground cursor-not-allowed";
+    "inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg border border-border bg-muted text-muted-foreground cursor-not-allowed";
 
   return (
     <nav

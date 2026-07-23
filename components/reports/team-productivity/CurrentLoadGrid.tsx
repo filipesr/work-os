@@ -12,7 +12,7 @@ export async function CurrentLoadGrid({ rows }: CurrentLoadGridProps) {
 
   if (nonZero.length === 0) {
     return (
-      <div className="bg-card border-2 border-border rounded-xl p-6">
+      <div className="bg-card border border-border rounded-xl p-6">
         <h2 className="text-lg font-bold text-foreground mb-1">{t("title")}</h2>
         <p className="text-sm text-muted-foreground">{t("empty")}</p>
       </div>
@@ -20,12 +20,12 @@ export async function CurrentLoadGrid({ rows }: CurrentLoadGridProps) {
   }
 
   return (
-    <div className="bg-card border-2 border-border rounded-xl p-6">
+    <div className="bg-card border border-border rounded-xl p-6">
       <h2 className="text-lg font-bold text-foreground mb-1">{t("title")}</h2>
       <p className="text-sm text-muted-foreground mb-4">{t("subtitle")}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {nonZero.map((row) => (
-          <div key={row.teamId} className="border-2 border-border rounded-lg p-4 bg-muted/20">
+          <div key={row.teamId} className="border border-border rounded-lg p-4 bg-muted/20">
             <div className="flex items-baseline justify-between mb-3">
               <h3 className="font-bold text-foreground">{row.teamName}</h3>
               <span className="text-2xl font-extrabold text-primary tabular-nums">

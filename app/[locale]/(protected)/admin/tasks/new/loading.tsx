@@ -6,7 +6,7 @@ export default function NewTaskLoading() {
         <div className="h-8 w-48 bg-muted rounded" />
         <div className="mt-2 h-4 w-64 bg-muted rounded" />
       </div>
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 space-y-6">
+      <div className="bg-card shadow-lg rounded-xl border border-border p-6 space-y-6">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i}>
             <div className="h-4 w-24 bg-muted rounded mb-2" />

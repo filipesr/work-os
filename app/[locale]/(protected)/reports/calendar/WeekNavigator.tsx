@@ -26,7 +26,7 @@ export function WeekNavigator({ weekStart, weekEnd }: WeekNavigatorProps) {
   const label = t("range", { start: fmt.format(weekStart), end: fmt.format(weekEnd) });
 
   const iconBtn =
-    "inline-flex h-9 w-9 items-center justify-center rounded-lg border-2 border-border bg-card text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors";
+    "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors";
 
   return (
     <div className="flex items-center gap-1.5">

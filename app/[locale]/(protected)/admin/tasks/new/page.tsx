@@ -42,7 +42,7 @@ export default async function NewTaskPage({
       </div>
 
       {/* Form */}
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+      <div className="bg-card shadow-lg rounded-xl border border-border p-6">
         <CreateTaskForm projects={projects} templates={templates} defaultProjectId={projectId} />
       </div>
 

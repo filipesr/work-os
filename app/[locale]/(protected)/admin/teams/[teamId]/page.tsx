@@ -77,7 +77,7 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ tea
             setMembers={setTeamMembers}
           />
         </div>
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+        <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
               <tr>
@@ -99,7 +99,7 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ tea
                     <div className="flex items-center">
                       {member.image && (
                         <img
-                          className="h-8 w-8 rounded-full mr-3 border-2 border-border"
+                          className="h-8 w-8 rounded-full mr-3 border border-border"
                           src={getProxiedImageUrl(member.image) || undefined}
                           alt=""
                         />
@@ -137,7 +137,7 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ tea
       {/* Default Stages Section */}
       <div className="mt-6">
         <h2 className="text-xl font-bold text-foreground mb-4">{t("stagesTable")}</h2>
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+        <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
               <tr>

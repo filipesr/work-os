@@ -10,7 +10,7 @@ export default async function BurnoutSignals() {
   if (items.length === 0) return null;
 
   return (
-    <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+    <div className="bg-card shadow-lg rounded-xl border border-border p-6">
       <div className="mb-1 flex items-center gap-2">
         <HeartPulse className="h-5 w-5 text-rose-600 dark:text-rose-400" />
         <h3 className="text-lg font-bold text-foreground">{t("title")}</h3>

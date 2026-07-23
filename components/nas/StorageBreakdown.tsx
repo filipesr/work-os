@@ -8,7 +8,7 @@ export function StorageBreakdown({ title, stats }: { title: string; stats: Stora
   if (stats.totalFiles === 0) return null;
   const max = Math.max(...stats.rows.map((r) => r.bytes), 1);
   return (
-    <div className="rounded-lg border-2 border-border p-4 space-y-3">
+    <div className="rounded-lg border border-border p-4 space-y-3">
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="text-sm font-bold text-foreground">{title}</h3>
         <span className="shrink-0 text-sm font-semibold text-muted-foreground">

@@ -95,7 +95,7 @@ export function TeamLoadBalanceClient({ rows, summary }: { rows: MemberLoad[]; s
   ];
 
   return (
-    <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+    <div className="bg-card shadow-lg rounded-xl border border-border p-6">
       <h3 className="text-lg font-bold text-foreground mb-4">{t("title")}</h3>
 
       {rows.length === 0 ? (

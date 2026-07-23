@@ -47,7 +47,7 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
   }
 
   return (
-    <div className="border-2 border-border rounded-lg p-6 bg-muted/30">
+    <div className="border border-border rounded-lg p-6 bg-muted/30">
       <h3 className="font-bold text-foreground text-lg mb-4">{t("title")}</h3>
       <form
         onSubmit={async (e) => {

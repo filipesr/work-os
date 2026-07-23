@@ -83,7 +83,7 @@ export function MonthlyCalendar({
       </div>
 
       {/* Day grid */}
-      <div className="grid grid-cols-7 overflow-hidden rounded-b-xl border-2 border-border">
+      <div className="grid grid-cols-7 overflow-hidden rounded-b-xl border border-border">
         {days.map((day, index) => {
           const events = eventsByDay[day.iso] ?? [];
           const clients = demandsByDay[day.iso] ?? [];

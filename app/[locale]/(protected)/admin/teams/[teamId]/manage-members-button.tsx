@@ -79,7 +79,7 @@ export default function ManageTeamMembers({
           <div
             role="dialog"
             aria-modal="true"
-            className="relative mt-12 w-full max-w-lg rounded-xl border-2 border-border bg-card p-6 shadow-lg"
+            className="relative mt-12 w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-lg"
           >
             <h3 className="text-lg font-bold text-foreground">
               {t("manageMembersTitle", { team: teamName })}
@@ -101,7 +101,7 @@ export default function ManageTeamMembers({
                 {t("selectedCount", { count: selected.size })}
               </div>
 
-              <div className="max-h-[50vh] space-y-1 overflow-y-auto rounded-lg border-2 border-border p-2">
+              <div className="max-h-[50vh] space-y-1 overflow-y-auto rounded-lg border border-border p-2">
                 {filtered.map((user) => (
                   <label
                     key={user.id}

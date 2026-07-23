@@ -70,7 +70,7 @@ export default async function ClientsPage() {
       </div>
 
       {/* Create Form */}
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-8">
+      <div className="bg-card shadow-lg rounded-xl border border-border p-6 mb-8">
         <h2 className="text-lg font-semibold text-foreground mb-4">{t("createTitle")}</h2>
         <form action={createClient} className="flex gap-4">
           <input
@@ -90,7 +90,7 @@ export default async function ClientsPage() {
       </div>
 
       {/* Clients List */}
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+      <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted">
             <tr>

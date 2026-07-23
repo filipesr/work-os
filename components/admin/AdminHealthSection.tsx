@@ -10,7 +10,7 @@ import OneOnOneCadence from "@/components/admin/OneOnOneCadence";
 import WeeklyReview, { type ReviewStep } from "@/components/admin/WeeklyReview";
 
 function CardSkeleton() {
-  return <div className="bg-card rounded-xl border-2 border-border p-6 h-48 animate-pulse" />;
+  return <div className="bg-card rounded-xl border border-border p-6 h-48 animate-pulse" />;
 }
 
 export async function AdminHealthSection() {

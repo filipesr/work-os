@@ -24,7 +24,7 @@ export default async function HelpPage() {
           <Link
             key={key}
             href={`/help/${key}`}
-            className="group flex items-center gap-5 rounded-xl border-2 border-border bg-card p-6 hover:border-primary/60 hover:shadow-md transition-all"
+            className="group flex items-center gap-5 rounded-xl border border-border bg-card p-6 hover:border-primary/60 hover:shadow-md transition-all"
           >
             <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-primary text-primary-foreground text-lg font-bold">
               {t(`hub.guides.${key}.badge`)}

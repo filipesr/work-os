@@ -74,7 +74,7 @@ export default function EditUserButton({ user, teams, updateUser }: EditUserButt
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-user-title"
-            className="relative top-12 mx-auto p-6 border-2 border-border w-[26rem] max-w-[92vw] shadow-lg rounded-xl bg-card"
+            className="relative top-12 mx-auto p-6 border border-border w-[26rem] max-w-[92vw] shadow-lg rounded-xl bg-card"
           >
             <div className="mt-3">
               <h3 id="edit-user-title" className="text-lg leading-6 font-bold text-foreground mb-4">

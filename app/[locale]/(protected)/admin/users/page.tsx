@@ -154,7 +154,7 @@ export default async function UsersPage({
       </div>
 
       {/* Users List */}
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+      <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted">
             <tr>
@@ -176,7 +176,7 @@ export default async function UsersPage({
                   <div className="flex items-center">
                     {user.image && (
                       <img
-                        className="h-10 w-10 rounded-full mr-3 border-2 border-border"
+                        className="h-10 w-10 rounded-full mr-3 border border-border"
                         src={getProxiedImageUrl(user.image) || undefined}
                         alt=""
                       />

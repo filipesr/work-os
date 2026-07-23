@@ -88,7 +88,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
         {/* Main content */}
         <div className="lg:col-span-2">
           {/* Task Header */}
-          <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-6">
+          <div className="bg-card shadow-lg rounded-xl border border-border p-6 mb-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <h1 className="text-3xl font-bold text-foreground mb-2">{task.title}</h1>
@@ -138,7 +138,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
           </div>
 
           {/* Current Stage & Actions */}
-          <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-6">
+          <div className="bg-card shadow-lg rounded-xl border border-border p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground">{t("currentStage")}</h2>
               <div className="flex gap-2 flex-wrap">
@@ -182,7 +182,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
           </div>
 
           {/* All stages pipeline (status + responsible per stage) */}
-          <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-6">
+          <div className="bg-card shadow-lg rounded-xl border border-border p-6 mb-6">
             <h2 className="text-xl font-bold text-foreground mb-4">{t("allStages")}</h2>
             <div className="space-y-2">
               {task.stagePipeline.map((ps) => {
@@ -234,7 +234,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
           </div>
 
           {/* Stage History */}
-          <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6 mb-6">
+          <div className="bg-card shadow-lg rounded-xl border border-border p-6 mb-6">
             <h2 className="text-xl font-bold text-foreground mb-4">{t("stageHistory")}</h2>
             {task.stageLogs.length === 0 ? (
               <p className="text-muted-foreground">{t("noStageHistory")}</p>
@@ -271,7 +271,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
 
           {/* Comments */}
           {task.comments.length > 0 && (
-            <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+            <div className="bg-card shadow-lg rounded-xl border border-border p-6">
               <h2 className="text-xl font-bold text-foreground mb-4">{t("comments")}</h2>
               <div className="space-y-4">
                 {task.comments.map((comment: CommentRow) => (
@@ -333,7 +333,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
             </Card>
 
             {/* Time tracking (registered time logs + open/running activities) */}
-            <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+            <div className="bg-card shadow-lg rounded-xl border border-border p-6">
               <h2 className="text-xl font-bold text-foreground mb-4">{t("timeLogs")}</h2>
 
               {timeTracking.openActivities.length > 0 && (

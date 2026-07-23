@@ -152,7 +152,7 @@ export default async function ClientDetailPage({
         {/* Completion filter chips (Pendentes / Concluídos / Todos) */}
         <ProjectStatusFilter />
 
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+        <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
               <tr>

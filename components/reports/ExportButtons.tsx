@@ -60,7 +60,7 @@ export function ExportButtons<T extends Record<string, unknown>>({
   };
 
   const btn =
-    "inline-flex items-center gap-1.5 rounded-lg border-2 border-border bg-card px-3 py-1.5 text-sm font-semibold text-foreground hover:bg-muted transition-colors";
+    "inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-semibold text-foreground hover:bg-muted transition-colors";
 
   return (
     <div className="flex gap-2">

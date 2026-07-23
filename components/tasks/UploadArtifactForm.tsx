@@ -134,7 +134,7 @@ export function UploadArtifactForm({
 
   if (blockedReason) {
     return (
-      <div className="flex items-start gap-2 rounded-lg border-2 border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+      <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
         <ShieldAlert className="h-4 w-4 mt-0.5 flex-shrink-0" />
         <span>{blockedReason}</span>
       </div>

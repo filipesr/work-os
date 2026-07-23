@@ -72,7 +72,7 @@ async function StageDurationSection({ range }: { range: { from: Date; to: Date }
 
 function SectionSkeleton() {
   return (
-    <div className="bg-card border-2 border-border rounded-xl p-6">
+    <div className="bg-card border border-border rounded-xl p-6">
       <div className="h-6 w-48 bg-muted rounded animate-pulse mb-3" />
       <div className="h-24 bg-muted rounded animate-pulse" />
     </div>
@@ -100,7 +100,7 @@ export default async function TeamProductivityPage({ searchParams }: PageProps) 
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      <div className="bg-card border-2 border-border rounded-xl p-4">
+      <div className="bg-card border border-border rounded-xl p-4">
         <PeriodSelector period={period} from={params.from} to={params.to} />
       </div>
 

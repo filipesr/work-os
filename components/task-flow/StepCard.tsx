@@ -30,7 +30,7 @@ export function StepCard({
   const styles = ACCENT_STYLES[accent];
   return (
     <article
-      className={`bg-card border-2 border-border border-l-4 ${styles.border} rounded-2xl p-5 text-left flex gap-4 items-start`}
+      className={`bg-card border border-border border-l-4 ${styles.border} rounded-2xl p-5 text-left flex gap-4 items-start`}
     >
       <span
         className={`flex-shrink-0 inline-flex items-center justify-center min-w-[3rem] h-12 px-3 rounded-full font-bold text-xl ${styles.badge}`}

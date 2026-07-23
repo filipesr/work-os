@@ -1,7 +1,7 @@
 export default function AccountLoading() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-2xl mx-auto bg-card rounded-xl border-2 border-border shadow-lg">
+      <div className="max-w-2xl mx-auto bg-card rounded-xl border border-border shadow-lg">
         <div className="p-6 animate-pulse space-y-6">
           <div>
             <div className="h-7 w-40 bg-muted rounded" />

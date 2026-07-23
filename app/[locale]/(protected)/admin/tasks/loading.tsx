@@ -8,7 +8,7 @@ export default function AdminTasksLoading() {
         </div>
         <div className="h-10 w-32 bg-muted rounded-lg" />
       </div>
-      <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+      <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
         <div className="bg-muted px-6 py-4 flex gap-8">
           {Array.from({ length: 7 }).map((_, i) => (
             <div key={i} className="h-4 w-20 bg-muted-foreground/10 rounded" />

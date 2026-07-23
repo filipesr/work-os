@@ -108,7 +108,7 @@ export default async function ProjectDetailPage({
 
       {/* Info Cards */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-6">
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border p-6">
+        <div className="bg-card shadow-lg rounded-xl border border-border p-6">
           <p className="text-sm text-muted-foreground">{t("completion")}</p>
           <p className="text-3xl font-bold text-foreground mt-1">{completion.pct}%</p>
           <p className="text-xs font-semibold text-muted-foreground mt-1">
@@ -134,7 +134,7 @@ export default async function ProjectDetailPage({
             {t("createTask")}
           </Link>
         </div>
-        <div className="bg-card shadow-lg rounded-xl border-2 border-border overflow-hidden">
+        <div className="bg-card shadow-lg rounded-xl border border-border overflow-hidden">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
               <tr>
