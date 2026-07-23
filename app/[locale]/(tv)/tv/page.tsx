@@ -105,7 +105,7 @@ export default function TVLiveActivityPage() {
             {onlineCount} {t("online")}
           </span>
           <span>
-            <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mr-1" />
+            <span className="inline-block h-2 w-2 rounded-full bg-indigo-500 mr-1" />
             {workingCount} {t("working")}
           </span>
           <span className="text-gray-600">{allUsers.length} total</span>

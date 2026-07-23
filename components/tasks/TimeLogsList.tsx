@@ -55,7 +55,7 @@ export function TimeLogsList({ timeLogs }: TimeLogsListProps) {
               </p>
             </div>
             {/* Hours Badge */}
-            <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-semibold">
+            <div className="flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-800 rounded-md text-sm font-semibold">
               <Clock className="h-3 w-3" />
               {log.hoursSpent}h
             </div>

@@ -61,7 +61,7 @@ export function MonthlyCalendar({
           {t("legend.commercial")}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm border border-blue-300 bg-blue-100" />
+          <span className="h-3 w-3 rounded-sm border border-indigo-300 bg-indigo-100" />
           {t("legend.demands")}
         </span>
         <span className="inline-flex items-center gap-1.5">
@@ -153,10 +153,10 @@ export function MonthlyCalendar({
                         })
                       }
                       title={client.clientName}
-                      className="flex w-full items-center gap-1 rounded border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-800 hover:border-blue-400 transition-colors dark:border-blue-800/60 dark:bg-blue-950/40 dark:text-blue-200"
+                      className="flex w-full items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[11px] text-indigo-800 hover:border-indigo-400 transition-colors dark:border-indigo-800/60 dark:bg-indigo-950/40 dark:text-indigo-200"
                     >
                       <span className="truncate">{client.clientName}</span>
-                      <span className="ml-auto shrink-0 rounded-full bg-blue-200/70 px-1.5 text-[10px] font-bold dark:bg-blue-800/60">
+                      <span className="ml-auto shrink-0 rounded-full bg-indigo-200/70 px-1.5 text-[10px] font-bold dark:bg-indigo-800/60">
                         {client.tasks.length}
                       </span>
                     </button>

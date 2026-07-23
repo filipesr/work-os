@@ -138,9 +138,9 @@ export default function LiveActivityPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-10 w-10 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-200"
+                  className="h-10 w-10 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-200"
                 >
-                  <Info className="h-6 w-6 text-blue-600" />
+                  <Info className="h-6 w-6 text-indigo-600" />
                 </Button>
               </DialogTrigger>
               <DialogContent>

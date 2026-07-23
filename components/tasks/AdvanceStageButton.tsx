@@ -133,11 +133,11 @@ export function AdvanceStageButton({
             </div>
 
             {/* Info Box */}
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+              <p className="text-sm text-indigo-800">
                 <strong>ℹ️ {t("advanceModal.whatHappensLabel")}</strong>
               </p>
-              <ul className="text-xs text-blue-700 mt-2 space-y-1 list-disc pl-5">
+              <ul className="text-xs text-indigo-700 mt-2 space-y-1 list-disc pl-5">
                 <li>{t("advanceModal.whatHappens1")}</li>
                 <li>
                   {t.rich("advanceModal.whatHappens2", {

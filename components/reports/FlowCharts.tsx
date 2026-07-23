@@ -121,9 +121,9 @@ export function ThroughputLine({ points, label }: { points: ThroughputPoint[]; l
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label={label}>
       <ChartAxes yMax={max} yFn={y} xFn={x} xLabels={xLabelsFor(points.map((p) => p.weekStart))} />
-      <path d={path} fill="none" stroke="#2563eb" strokeWidth={2} />
+      <path d={path} fill="none" stroke="#4f46e5" strokeWidth={2} />
       {points.map((p, i) => (
-        <circle key={i} cx={x(i)} cy={y(p.count)} r={2.5} fill="#2563eb" />
+        <circle key={i} cx={x(i)} cy={y(p.count)} r={2.5} fill="#4f46e5" />
       ))}
     </svg>
   );
@@ -132,7 +132,7 @@ export function ThroughputLine({ points, label }: { points: ThroughputPoint[]; l
 const BANDS: { key: keyof Omit<CfdPoint, "date">; color: string }[] = [
   // bottom → top: done accumulates at the base, waiting/backlog on top
   { key: "COMPLETED", color: "#059669" },
-  { key: "ACTIVE", color: "#2563eb" },
+  { key: "ACTIVE", color: "#4f46e5" },
   { key: "BLOCKED", color: "#e11d48" },
   { key: "INACTIVE", color: "#94a3b8" },
 ];

@@ -33,7 +33,7 @@ function formatArtifactTime(
 // CSS por status; o rótulo textual vem das traduções (nasStatus.<STATUS>).
 const nasStatusCls: Record<string, string> = {
   PENDING: "bg-muted text-muted-foreground border-border",
-  UPLOADING: "bg-blue-100 text-blue-800 border-blue-200",
+  UPLOADING: "bg-indigo-100 text-indigo-800 border-indigo-200",
   READY: "bg-green-100 text-green-800 border-green-200",
   FAILED: "bg-red-100 text-red-800 border-red-200",
   EXPIRED: "bg-muted text-muted-foreground border-border",

@@ -29,7 +29,7 @@ export function MetricsSkeleton() {
 
 export function SummarySkeleton() {
   return (
-    <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950 dark:to-blue-950">
+    <Card className="bg-gradient-to-br from-indigo-50 to-indigo-50 dark:from-indigo-950 dark:to-indigo-950">
       <CardContent className="pt-6">
         <div className="h-12 w-48 bg-muted rounded animate-pulse" />
       </CardContent>

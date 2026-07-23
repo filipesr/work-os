@@ -48,17 +48,17 @@ async function LeadTimeSection({ filters, t }: { filters: PerformanceFilters; t:
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+      <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950 dark:to-indigo-900">
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-500/20 rounded-full">
-              <Timer className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div className="p-3 bg-indigo-500/20 rounded-full">
+              <Timer className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
+              <p className="text-sm text-indigo-700 dark:text-indigo-300">
                 {t("leadTimeMetrics.average")}
               </p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+              <p className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
                 {leadTimeMetrics.averageLeadTimeDays.toFixed(1)} {t("leadTimeMetrics.days")}
               </p>
             </div>
