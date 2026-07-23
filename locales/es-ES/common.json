@@ -114,7 +114,16 @@
   "flow": {
     "sla": "SLA",
     "slaExceeded": "SLA excedido",
-    "blockedFor": "bloqueada hace {age}"
+    "blockedFor": "bloqueada hace {age}",
+    "statusActive": "Activa",
+    "statusBlocked": "Bloqueada",
+    "statusOverdue": "Retrasada",
+    "statusCompleted": "Completada",
+    "dueToday": "Vence hoy",
+    "dueTomorrow": "Vence mañana",
+    "dueInDays": "En {days} días",
+    "overdueByDays": "Retrasada {days}d",
+    "noDue": "Sin plazo"
   },
   "stageList": {
     "task": "Tarea",

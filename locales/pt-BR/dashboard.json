@@ -7,7 +7,12 @@
     "hoursToday": "Horas Hoje",
     "upcomingDeadlines": "Prazos Próximos",
     "aging": "Envelhecendo",
-    "atRisk": "Em risco"
+    "atRisk": "Em risco",
+    "activeTasksHint": "Em andamento por você",
+    "agingHint": "Perto do prazo de SLA",
+    "atRiskHint": "Atrasadas ou bloqueadas",
+    "completedWeekHint": "Últimos 7 dias",
+    "hoursTodayHint": "Registradas em etapas"
   },
   "priority": {
     "URGENT": "URGENTE",
@@ -83,7 +88,8 @@
   "teamBacklog": {
     "title": "Backlog da Equipe (Não Atribuído)",
     "stageCount": "{count} etapa disponível",
-    "stagesCount": "{count} etapas disponíveis"
+    "stagesCount": "{count} etapas disponíveis",
+    "subtitle": "Etapas sem responsável — reivindique para começar"
   },
   "emptyStates": {
     "noActiveStages": "Você não tem etapas ativas. Bom trabalho!",
