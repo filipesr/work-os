@@ -32,7 +32,7 @@ export async function AdminHealthSection() {
     { label: t("review.aging"), href: "/reports/calendar" },
     { label: t("review.blocked") },
     { label: t("review.wip"), href: "/reports/performance" },
-    { label: t("review.load"), href: "/reports/team-productivity" },
+    { label: t("review.load"), href: "/reports/performance" },
     { label: t("review.burnout"), href: "/reports/productivity" },
     { label: t("review.oneOnOne") },
   ];

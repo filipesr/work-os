@@ -169,7 +169,7 @@ export async function createTasksBatch(input: {
     }
   });
 
-  revalidatePath("/reports/calendar/monthly");
+  revalidatePath("/reports/calendar");
   revalidatePath("/admin/tasks");
   revalidatePath("/dashboard");
 
