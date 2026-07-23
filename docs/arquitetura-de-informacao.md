@@ -387,3 +387,62 @@ para o deck (`/next`).
 - **Manutenção:** ao mover/renomear uma superfície, atualizar o §3 da
   [biblioteca de conhecimento](./biblioteca-de-conhecimento.md) (mapa de defesa) para a
   tela não perder seu vínculo com o princípio que a justifica.
+
+---
+
+## 6. Checklist de geração & revisão de telas
+
+Registro vivo das telas geradas pela ferramenta externa (a partir dos prompts de
+[prompts-de-geracao-de-telas.md](./prompts-de-geracao-de-telas.md)) e da revisão contra o
+brief + os princípios. Preencher conforme cada tela chega.
+
+**Legenda:** ⬜ não gerada · 🟡 gerada, revisão pendente · ✅ de acordo · 🔧 ajustes pendentes.
+
+| #   | Tela                           | Status | Resumo da revisão                                                                                                      |
+| --- | ------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------- |
+| 0   | Navegação global               | ⬜     | —                                                                                                                      |
+| 1   | Início / dashboard pessoal     | 🔧     | Fiel ao brief (exceção‑primeiro, tom informacional, aging vs SLA, KPIs coerentes com a lista). 3 ajustes finos abaixo. |
+| 2   | Meu Trabalho (`/tasks`)        | ⬜     | Ao gerar, **reusar** o mesmo padrão de lista+KPI do Início (não recriar).                                              |
+| 3   | Detalhe da tarefa              | ⬜     | —                                                                                                                      |
+| 4   | Minha Evolução                 | ⬜     | —                                                                                                                      |
+| 5   | Kanban do projeto              | ⬜     | —                                                                                                                      |
+| 6   | Cockpit (`/admin`)             | ⬜     | —                                                                                                                      |
+| 7   | Demandas (lista/detalhe/criar) | ⬜     | —                                                                                                                      |
+| 8   | Fluxo & Entrega (fundido)      | ⬜     | —                                                                                                                      |
+| 9   | Horas & Utilização             | ⬜     | —                                                                                                                      |
+| 10  | Pessoas (por pessoa)           | ⬜     | —                                                                                                                      |
+| 11  | Calendário (unificado)         | ⬜     | —                                                                                                                      |
+| 12  | Presença ao vivo (+ modo TV)   | ⬜     | —                                                                                                                      |
+| 13  | Clientes (lista/detalhe)       | ⬜     | —                                                                                                                      |
+| 14  | Projetos (lista nova/detalhe)  | ⬜     | —                                                                                                                      |
+| 15  | Usuários (CRUD)                | ⬜     | —                                                                                                                      |
+| 16  | Equipes                        | ⬜     | —                                                                                                                      |
+| 17  | Fluxos de trabalho (editor)    | ⬜     | —                                                                                                                      |
+| 18  | Conta                          | ⬜     | —                                                                                                                      |
+| 19  | Ajuda                          | ⬜     | —                                                                                                                      |
+| 20  | Login / Home pública           | ⬜     | —                                                                                                                      |
+
+### Log de revisão
+
+#### Tela 1 — Início / dashboard pessoal · revisado 2026‑07‑23 · 🔧
+
+**De acordo:**
+
+- Ordem exceção‑primeiro (KPIs → Meu foco → Backlog do time) — P6.
+- Aviso de WIP com tom **informacional** ("Sem pressa, só um lembrete") — P1/P7 no registro certo.
+- Aging vs SLA visível (barra + "SLA estourado"; vermelho/âmbar/verde) e badges de status.
+- **Coerência KPI ↔ lista:** ativas=5, envelhecendo=1 (âmbar), em risco=2 (atrasada+bloqueada) batem com a tabela.
+- Backlog pull com "Reivindicar" por etapa sem responsável.
+
+**Ajustar:**
+
+1. **Aging em etapa BLOQUEADA:** hoje mostra barra verde (18h/48h). Bloqueio é exceção por si;
+   o relógio relevante é o de **espera**, não o de trabalho. Neutralizar/mutar a barra quando
+   `status = bloqueada` (ou trocar por "bloqueada há Xh").
+2. **Coerência é contrato de implementação:** a tela hardcodou um snapshot coerente; ao plugar
+   dados reais, os **KPIs precisam derivar da MESMA consulta** que monta a lista (senão divergem).
+3. **Faltam provas:** validar **tema escuro** e **es‑ES** (P8) — não verificáveis por 1 screenshot.
+
+**Carregar para a próxima:** ao gerar **Meu Trabalho (`/tasks`)**, pedir explicitamente para
+**reusar o mesmo padrão de lista "Meu foco" + faixa de KPIs** (só trocando os filtros) — é a
+unificação do §3 (evitar recriar uma tabela divergente).
