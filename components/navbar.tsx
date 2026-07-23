@@ -1,72 +1,13 @@
 import { auth } from "@/auth";
-import { UserRole } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import { UserMenu } from "@/components/user-menu";
-import { getTranslations } from "next-intl/server";
+import { PrimaryNav } from "@/components/PrimaryNav";
+import type { AppRole } from "@/lib/navigation";
 
+// Casca server: resolve a sessão e delega a navegação primária persona-aware ao
+// PrimaryNav (client). O agrupamento por papel vive em lib/navigation.ts.
 export async function Navbar() {
   const session = await auth();
+  if (!session?.user) return null;
 
-  if (!session?.user) {
-    return null;
-  }
-
-  const userRole = session.user.role;
-  const userId = session.user.id;
-  const t = await getTranslations("common.nav");
-
-  // Buscar teamId atualizado do banco
-  const currentUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { teams: { select: { id: true } } },
-  });
-  const hasTeam = (currentUser?.teams.length ?? 0) > 0;
-  const isAdminOrManager = userRole === UserRole.ADMIN || userRole === UserRole.MANAGER;
-
-  return (
-    <nav
-      className="sticky top-0 z-50 bg-card shadow-lg border-b-2 border-border"
-      aria-label="Main navigation"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex space-x-8">
-            {/* Dashboard: Apenas para usuários COM team */}
-            {hasTeam && (
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
-              >
-                {t("dashboard")}
-              </Link>
-            )}
-
-            {/* Eventos & Demandas (calendário mensal): admin/manager */}
-            {isAdminOrManager && (
-              <Link
-                href="/reports/calendar/monthly"
-                className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
-              >
-                {t("calendarMonthly")}
-              </Link>
-            )}
-
-            {/* Clientes: admin/manager */}
-            {isAdminOrManager && (
-              <Link
-                href="/admin/clients"
-                className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
-              >
-                {t("clients")}
-              </Link>
-            )}
-          </div>
-          <div className="flex items-center space-x-4">
-            <UserMenu userName={session.user.name ?? null} userRole={userRole} />
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
+  const role = (session.user.role ?? "MEMBER") as AppRole;
+  return <PrimaryNav role={role} userName={session.user.name ?? null} />;
 }
