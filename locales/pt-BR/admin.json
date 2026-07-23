@@ -250,7 +250,8 @@
       "statusActive": "Ativo",
       "statusInactive": "Inativo",
       "deactivate": "Desativar",
-      "activate": "Ativar"
+      "activate": "Ativar",
+      "artifacts": "Artefatos"
     }
   },
   "projects": {
@@ -616,5 +617,10 @@
     "kicker": "Saúde do time",
     "title": "Geral",
     "subtitle": "Uma fila de exceções para orientar onde agir primeiro — não um ranking de pessoas."
+  },
+  "projectStatusFilter": {
+    "all": "Todos",
+    "pending": "Pendentes",
+    "completed": "Concluídos"
   }
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Task, User, TaskPriority } from "@prisma/client";
+import { Task, User } from "@prisma/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { priorityTone } from "@/lib/status-tone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -15,14 +16,6 @@ type TaskCardProps = {
     assignee: Pick<User, "id" | "name" | "email" | "image"> | null;
   };
 };
-
-const priorityVariants: Record<TaskPriority, "default" | "secondary" | "destructive" | "outline"> =
-  {
-    LOW: "secondary",
-    MEDIUM: "default",
-    HIGH: "outline",
-    URGENT: "destructive",
-  };
 
 export function TaskCard({ task }: TaskCardProps) {
   const t = useTranslations("projects");
@@ -38,9 +31,10 @@ export function TaskCard({ task }: TaskCardProps) {
         <CardContent className="space-y-3">
           {/* Priority Badge */}
           <div>
-            <Badge variant={priorityVariants[task.priority]}>
-              {t(`priority.${task.priority}`)}
-            </Badge>
+            <StatusBadge
+              tone={priorityTone(task.priority)}
+              label={t(`priority.${task.priority}`)}
+            />
           </div>
 
           {/* Due Date */}

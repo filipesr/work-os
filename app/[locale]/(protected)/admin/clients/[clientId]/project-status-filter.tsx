@@ -2,17 +2,19 @@
 
 import { useCallback } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 // Chips Pendentes / Concluídos (+ Todos) para filtrar a lista de projetos do
 // cliente por estado de conclusão derivado. Espelha o padrão de TaskFilters
 // (useRouter/usePathname/useSearchParams + setParam).
 const OPTIONS = [
-  { value: null, label: "Todos" },
-  { value: "pending", label: "Pendentes" },
-  { value: "completed", label: "Concluídos" },
+  { value: null, labelKey: "all" },
+  { value: "pending", labelKey: "pending" },
+  { value: "completed", labelKey: "completed" },
 ] as const;
 
 export function ProjectStatusFilter() {
+  const t = useTranslations("admin.projectStatusFilter");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -36,7 +38,7 @@ export function ProjectStatusFilter() {
         const active = current === (opt.value ?? "");
         return (
           <button
-            key={opt.label}
+            key={opt.labelKey}
             type="button"
             onClick={() => setParam(opt.value)}
             aria-pressed={active}
@@ -46,7 +48,7 @@ export function ProjectStatusFilter() {
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            {opt.label}
+            {t(opt.labelKey)}
           </button>
         );
       })}

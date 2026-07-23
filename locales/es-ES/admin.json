@@ -250,7 +250,8 @@
       "statusActive": "Activo",
       "statusInactive": "Inactivo",
       "deactivate": "Desactivar",
-      "activate": "Activar"
+      "activate": "Activar",
+      "artifacts": "Artefactos"
     }
   },
   "projects": {
@@ -616,5 +617,10 @@
     "kicker": "Salud del equipo",
     "title": "General",
     "subtitle": "Una cola de excepciones para orientar dónde actuar primero — no un ranking de personas."
+  },
+  "projectStatusFilter": {
+    "all": "Todos",
+    "pending": "Pendientes",
+    "completed": "Completados"
   }
 }

@@ -114,7 +114,7 @@ export default async function ClientDetailPage({
 
       {/* Artefatos do cliente (Origem: Cliente) — visíveis nas demandas do cliente */}
       <div className="mt-6">
-        <h2 className="text-xl font-bold text-foreground mb-4">Artefatos</h2>
+        <h2 className="text-xl font-bold text-foreground mb-4">{t("artifacts")}</h2>
         <UnifiedArtifactsPanel
           rows={client.artifacts.map((a) => mapArtifactRow(a, "CLIENT"))}
           scope="CLIENT"
