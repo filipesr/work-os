@@ -1,6 +1,12 @@
 {
-  "title": "Calendário de Tarefas",
+  "kicker": "Relatórios",
+  "title": "Calendário",
   "subtitle": "Visão semanal das tarefas em andamento por equipe",
+  "view": {
+    "label": "Modo de visualização",
+    "week": "Semana",
+    "month": "Mês"
+  },
   "filters": {
     "team": "Equipe",
     "project": "Projeto",

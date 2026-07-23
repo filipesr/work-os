@@ -5,9 +5,11 @@ import Link from "next/link";
 import LiveActivityFilters from "./live-activity-filters";
 import { getActiveWorkLogs, getOnlineUsers, getOfflineUsers } from "@/lib/actions/activity";
 import { useLiveSnapshot } from "@/lib/hooks/useLiveSnapshot";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Activity, Clock, RefreshCw, Info } from "lucide-react";
+import { SectionCard } from "@/components/ui/SectionCard";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Activity, RefreshCw, Info, Tv } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR, es } from "date-fns/locale";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
@@ -46,18 +48,18 @@ type UserWithStatus = {
   activeLog?: ActiveLogData[0];
 };
 
-const DEFAULT_HIDDEN_TEAMS = ["HR", "Finance", "Reception", "General Services", "Manager"];
-
 export default function LiveActivityPage() {
-  // Filters (status + teams). HR/Finance/Reception/General Services/Manager
-  // start hidden by default.
-  const [showOnline, setShowOnline] = useState(true);
-  const [showOffline, setShowOffline] = useState(true);
-  const [hiddenTeams, setHiddenTeams] = useState<Set<string>>(new Set(DEFAULT_HIDDEN_TEAMS));
-
   const t = useTranslations("reports.liveActivity");
   const locale = useLocale();
   const dateLocale = locale === "es-ES" ? es : ptBR;
+
+  // Teams hidden by default come from config/i18n (not a hardcoded English list).
+  const defaultHiddenTeams = (t.raw("defaultHiddenTeams") as string[] | undefined) ?? [];
+
+  // Filters (status + teams).
+  const [showOnline, setShowOnline] = useState(true);
+  const [showOffline, setShowOffline] = useState(true);
+  const [hiddenTeams, setHiddenTeams] = useState<Set<string>>(new Set(defaultHiddenTeams));
 
   const fetchFallback = useCallback(async (): Promise<LiveData> => {
     const [activeLogs, onlineUsers, offlineUsers] = await Promise.all([
@@ -82,22 +84,12 @@ export default function LiveActivityPage() {
 
   // Combine all users into a single list with status
   const allUsers: UserWithStatus[] = [
-    // Online users
     ...onlineUsers.map((user) => {
       const activeLog = activeLogs.find((log) => log.user.id === user.id);
-      return {
-        ...user,
-        isOnline: true,
-        activeLog: activeLog,
-      };
+      return { ...user, isOnline: true, activeLog };
     }),
-    // Offline users
-    ...offlineUsers.map((user) => ({
-      ...user,
-      isOnline: false,
-    })),
+    ...offlineUsers.map((user) => ({ ...user, isOnline: false })),
   ].sort((a, b) => {
-    // Sort by status first (online first), then by name
     if (a.isOnline && !b.isOnline) return -1;
     if (!a.isOnline && b.isOnline) return 1;
     return (a.name || a.email || "").localeCompare(b.name || b.email || "");
@@ -124,211 +116,158 @@ export default function LiveActivityPage() {
     });
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <Link href="/reports" className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <h1 className="text-3xl font-bold">{t("title")}</h1>
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader
+        kicker={t("kicker")}
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={
+          <>
             <Dialog>
               <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-10 w-10 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-200"
-                >
-                  <Info className="h-6 w-6 text-indigo-600" />
+                <Button variant="ghost" size="sm" aria-label={t("help.title")} className="px-2">
+                  <Info className="h-5 w-5" />
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>{t("help.title")}</DialogTitle>
                   <DialogDescription className="space-y-3 pt-4">
-                    <span>{t("help.online")}</span>
-                    <span>{t("help.offline")}</span>
-                    <span>{t("help.working")}</span>
-                    <span className="text-xs text-muted-foreground">💡 {t("help.autoUpdate")}</span>
+                    <span className="block">{t("help.online")}</span>
+                    <span className="block">{t("help.offline")}</span>
+                    <span className="block">{t("help.working")}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      💡 {t("help.autoUpdate")}
+                    </span>
                   </DialogDescription>
                 </DialogHeader>
               </DialogContent>
             </Dialog>
+            <LiveActivityFilters
+              teamNames={teamNames}
+              showOnline={showOnline}
+              showOffline={showOffline}
+              hiddenTeams={hiddenTeams}
+              onToggleOnline={() => setShowOnline((v) => !v)}
+              onToggleOffline={() => setShowOffline((v) => !v)}
+              onToggleTeam={toggleTeam}
+              onSelectAllTeams={() => setHiddenTeams(new Set())}
+              onClearTeams={() => setHiddenTeams(new Set(teamNames))}
+            />
+            <Link
+              href="/tv"
+              target="_blank"
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <Tv className="h-4 w-4" />
+              {t("tvMode")}
+            </Link>
+          </>
+        }
+      />
+
+      <SectionCard
+        title={`${t("allUsers")} (${filteredUsers.length})`}
+        icon={Activity}
+        badge={
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            {t("updatedAgo")}{" "}
+            {formatDistanceToNow(lastUpdated, { addSuffix: true, locale: dateLocale })}
+          </span>
+        }
+      >
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <RefreshCw className="mb-2 h-8 w-8 animate-spin" />
+            <p>{t("loading")}</p>
           </div>
-          <p className="text-muted-foreground">{t("subtitle")}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <LiveActivityFilters
-            teamNames={teamNames}
-            showOnline={showOnline}
-            showOffline={showOffline}
-            hiddenTeams={hiddenTeams}
-            onToggleOnline={() => setShowOnline((v) => !v)}
-            onToggleOffline={() => setShowOffline((v) => !v)}
-            onToggleTeam={toggleTeam}
-            onSelectAllTeams={() => setHiddenTeams(new Set())}
-            onClearTeams={() => setHiddenTeams(new Set(teamNames))}
-          />
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <RefreshCw className="h-4 w-4 animate-spin" />
-            <span>
-              {t("updatedAgo")}{" "}
-              {formatDistanceToNow(lastUpdated, { addSuffix: true, locale: dateLocale })}
-            </span>
-          </div>
-        </div>
-      </div>
+        ) : filteredUsers.length === 0 ? (
+          <EmptyState icon={Activity} title={t("noUsers")} description={t("subtitle")} />
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+            {filteredUsers.map((user) => {
+              let durationText = "";
+              if (user.activeLog) {
+                const duration =
+                  new Date().getTime() - new Date(user.activeLog.startedAt).getTime();
+                const mins = Math.floor(duration / 1000 / 60);
+                const hrs = Math.floor(mins / 60);
+                const remMins = mins % 60;
+                durationText = hrs > 0 ? `${hrs}h ${remMins}min` : `${mins}min`;
+              }
 
-      {/* Unified User List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            {t("allUsers")} ({filteredUsers.length})
-          </CardTitle>
-          <p className="text-sm text-muted-foreground hidden">
-            <span className="text-success font-medium">{t("online")}</span> |
-            <span className="text-danger font-medium"> {t("offline")}</span>
-          </p>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center text-muted-foreground py-12">
-              <RefreshCw className="h-8 w-8 animate-spin mb-2" />
-              <p>{t("loading")}</p>
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-muted-foreground py-12">
-              <Activity className="h-12 w-12 mb-4 opacity-20" />
-              <p className="text-lg font-medium">{t("noUsers")}</p>
-            </div>
-          ) : (
-            <div className="flex flex-wrap justify-center gap-4">
-              {filteredUsers.map((user) => {
-                // Calculate duration for users actively working
-                let duration, durationMinutes, durationHours, remainingMinutes;
-                if (user.activeLog) {
-                  duration = new Date().getTime() - new Date(user.activeLog.startedAt).getTime();
-                  durationMinutes = Math.floor(duration / 1000 / 60);
-                  durationHours = Math.floor(durationMinutes / 60);
-                  remainingMinutes = durationMinutes % 60;
-                }
-
-                const cardContent = (
-                  <div
-                    className={`
-                      relative overflow-hidden rounded-xl transition-all w-52
-                      ${
-                        user.isOnline
-                          ? "border-2 border-success/40 shadow-lg shadow-green-500/20 hover:shadow-xl"
-                          : "border-2 border-gray-300 grayscale opacity-60"
-                      }
-                      ${user.activeLog ? "cursor-pointer" : ""}
-                    `}
-                  >
-                    {/* Header colorido estilo Pokémon */}
-                    <div
-                      className={`
-                        h-24 relative
-                        ${
-                          user.isOnline
-                            ? "bg-gradient-to-br from-green-400 to-green-600"
-                            : "bg-gradient-to-br from-gray-300 to-gray-400"
-                        }
-                      `}
-                    >
-                      {/* Badge de status no canto */}
-                      {user.lastSeenAt && (
-                        <div className="absolute top-2 right-2 ">
-                          <span className="bg-white/90 px-2 py-1 rounded-md shadow-sm flex flex-col items-end">
-                            <span className="text-success text-xs font-bold">
-                              {user.activeLog ? user.activeLog.task.title : t("online")}
-                            </span>
-                            {user.activeLog && (
-                              <span className="text-gray-600 text-[0.5rem]">
-                                {user.activeLog.task.project.name}
-                                {durationHours !== undefined &&
-                                  (durationHours > 0
-                                    ? ` - ${durationHours}h ${remainingMinutes}min`
-                                    : ` - ${durationMinutes}min`)}
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      )}
+              const card = (
+                <div
+                  className={`flex h-full flex-col rounded-xl border bg-card p-4 shadow-sm transition-colors ${
+                    user.isOnline
+                      ? "border-success/40 hover:border-success"
+                      : "border-border opacity-70"
+                  } ${user.activeLog ? "cursor-pointer" : ""}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="relative shrink-0">
+                      <Avatar className={`h-12 w-12 ${!user.isOnline ? "grayscale" : ""}`}>
+                        <AvatarImage src={getProxiedImageUrl(user.image) || undefined} />
+                        <AvatarFallback>{user.name?.charAt(0).toUpperCase() || "?"}</AvatarFallback>
+                      </Avatar>
+                      <span
+                        className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card ${
+                          user.isOnline ? "bg-success" : "bg-muted-foreground"
+                        } ${user.activeLog ? "animate-pulse" : ""}`}
+                      />
                     </div>
-
-                    {/* Avatar grande centralizado (sobrepõe o header) */}
-                    <div className="flex justify-center -mt-12 mb-4">
-                      <div className="relative">
-                        <Avatar
-                          className={`h-24 w-24 border-4 border-background shadow-xl ${!user.isOnline ? "grayscale" : ""}`}
-                        >
-                          <AvatarImage src={getProxiedImageUrl(user.image) || undefined} />
-                          <AvatarFallback className="text-2xl">
-                            {user.name?.charAt(0).toUpperCase() || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        {/* Indicador de status */}
-                        <div
-                          className={`
-                            absolute bottom-1 right-1 h-6 w-6 rounded-full border-4 border-background
-                            ${user.isOnline ? "bg-success-subtle0" : "bg-danger-subtle0"}
-                            ${user.activeLog ? "animate-pulse" : ""}
-                          `}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Conteúdo empilhado verticalmente */}
-                    <div className="px-4 pb-4 text-center">
-                      {/* Nome */}
-                      <h3
-                        className={`font-bold text-lg truncate ${!user.isOnline ? "text-gray-600" : ""}`}
-                      >
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate font-semibold text-foreground">
                         {user.name || user.email}
                       </h3>
-
-                      {/* Equipe */}
-                      <p
-                        className={`text-xs pb-3 ${!user.isOnline ? "text-gray-500" : "text-muted-foreground"}`}
-                      >
+                      <p className="truncate text-xs text-muted-foreground">
                         {user.teams.length > 0
                           ? user.teams.map((tm) => tm.name).join(", ")
                           : t("noTeam")}
                       </p>
-
-                      <div className="pt-2 border-t text-xs text-muted-foreground">
-                        {user.lastSeenAt ? (
-                          <p>
-                            {t("lastSeen")}{" "}
-                            {formatDistanceToNow(new Date(user.lastSeenAt), {
-                              addSuffix: true,
-                              locale: dateLocale,
-                            })}
-                          </p>
-                        ) : (
-                          <p>{t("neverAccessed")}</p>
-                        )}
-                      </div>
                     </div>
                   </div>
-                );
 
-                // Return wrapped in Link if activeLog exists, otherwise plain div
-                return user.activeLog ? (
-                  <Link key={user.id} href={`/tasks/${user.activeLog.task.id}`} target="_blank">
-                    {cardContent}
-                  </Link>
-                ) : (
-                  <div key={user.id}>{cardContent}</div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  {user.activeLog ? (
+                    <div className="mt-3 rounded-lg bg-success-subtle px-3 py-2">
+                      <p className="truncate text-sm font-medium text-success">
+                        {user.activeLog.task.title}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {user.activeLog.task.project.name}
+                        {durationText && ` · ${durationText}`}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-3 border-t border-border pt-2 text-xs text-muted-foreground">
+                      {user.lastSeenAt ? (
+                        <p>
+                          {t("lastSeen")}{" "}
+                          {formatDistanceToNow(new Date(user.lastSeenAt), {
+                            addSuffix: true,
+                            locale: dateLocale,
+                          })}
+                        </p>
+                      ) : (
+                        <p>{t("neverAccessed")}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+
+              return user.activeLog ? (
+                <Link key={user.id} href={`/tasks/${user.activeLog.task.id}`} target="_blank">
+                  {card}
+                </Link>
+              ) : (
+                <div key={user.id}>{card}</div>
+              );
+            })}
+          </div>
+        )}
+      </SectionCard>
     </div>
   );
 }

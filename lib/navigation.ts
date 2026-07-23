@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   Gauge,
-  BarChart3,
   ClipboardList,
   Handshake,
   PanelTop,
@@ -60,9 +59,8 @@ const managerItems: NavItem[] = [
   {
     id: "relatorios",
     labelKey: "reports",
-    // Todas as telas de relatório mapeadas. (§3: team-productivity funde em
-    // Fluxo & Entrega e calendário semanal+mensal viram um só — na etapa de UX;
-    // até lá ficam reachable aqui para nada ficar órfão.)
+    // Telas de relatório (§3.3 aplicado): "Fluxo & Entrega" absorveu
+    // team-productivity, e "Calendário" unifica semana/mês num único destino.
     children: [
       {
         id: "fluxo-entrega",
@@ -70,21 +68,9 @@ const managerItems: NavItem[] = [
         href: "/reports/performance",
         icon: TrendingUp,
       },
-      {
-        id: "team-productivity",
-        labelKey: "teamProductivity",
-        href: "/reports/team-productivity",
-        icon: BarChart3,
-      },
       { id: "horas", labelKey: "horasUtilizacao", href: "/reports/productivity", icon: Clock },
       { id: "pessoas", labelKey: "pessoas", href: "/reports", icon: UsersRound },
       { id: "calendario", labelKey: "calendar", href: "/reports/calendar", icon: CalendarRange },
-      {
-        id: "calendario-mensal",
-        labelKey: "calendarMonthly",
-        href: "/reports/calendar/monthly",
-        icon: CalendarRange,
-      },
       { id: "presenca", labelKey: "presenca", href: "/reports/live-activity", icon: Activity },
     ],
   },

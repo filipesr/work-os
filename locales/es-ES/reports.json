@@ -7,18 +7,20 @@
     "teamPerformance": "Rendimiento del Equipo"
   },
   "index": {
+    "kicker": "Informes",
     "title": "Informes y Análisis",
     "subtitle": "Inteligencia de negocio para mejorar la productividad e identificar cuellos de botella en el flujo de trabajo",
+    "exploreHeading": "Explorar informes",
     "productivity": {
-      "title": "Informe de Productividad",
+      "title": "Horas y Utilización",
       "description": "Visualiza el tiempo dedicado por usuario, proyecto, cliente y etapa del workflow",
       "feature1": "Horas registradas por usuario",
       "feature2": "Tiempo invertido por proyecto y cliente",
       "feature3": "Distribución de esfuerzo por etapa del flujo"
     },
     "performance": {
-      "title": "Informe de Desempeño",
-      "description": "Identifica cuellos de botella en el workflow y analiza la tasa de retrabajo",
+      "title": "Flujo y Entrega",
+      "description": "Identifica cuellos de botella en el workflow, analiza el retrabajo y el desempeño por equipo",
       "feature1": "Tiempo promedio en cada etapa (cuellos de botella)",
       "feature2": "Tasa de retrabajo y reversiones",
       "feature3": "Lead time y throughput del sistema"
@@ -69,8 +71,11 @@
     }
   },
   "liveActivity": {
+    "kicker": "Informes",
     "title": "Estado de los Usuarios",
     "subtitle": "Visualiza el estado de todos los usuarios en tiempo real (actualiza cada 10 segundos)",
+    "tvMode": "Modo TV",
+    "defaultHiddenTeams": ["HR", "Finance", "Reception", "General Services", "Manager"],
     "allUsers": "Todos los Usuarios",
     "online": "En Línea",
     "offline": "Desconectado",
@@ -112,6 +117,7 @@
     "pdf": "Exportar PDF"
   },
   "userReport": {
+    "kicker": "Persona",
     "back": "Volver a Informes",
     "subtitle": "Productividad · {month}",
     "totalHours": "Horas registradas",
@@ -120,6 +126,7 @@
     "hoursByStage": "Horas por etapa",
     "stageHeader": "Etapa",
     "hoursHeader": "Horas",
-    "noData": "Sin datos en el período."
+    "noData": "Sin datos en el período.",
+    "guardNote": "Vista autorreferencial de una persona — no es un ranking ni una comparación entre colaboradores. Sirve a la conversación de desarrollo (P1/P2/P7)."
   }
 }

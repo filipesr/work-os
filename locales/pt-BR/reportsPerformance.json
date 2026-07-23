@@ -1,6 +1,13 @@
 {
-  "title": "Relatório de Desempenho e Gargalos",
-  "subtitle": "Análise de fluxo de trabalho, identificação de gargalos e taxa de retrabalho",
+  "kicker": "Relatórios",
+  "title": "Fluxo & Entrega",
+  "subtitle": "Fluxo de trabalho, gargalos, retrabalho e desempenho de entrega por equipe",
+  "back": "Voltar para Relatórios",
+  "team": {
+    "heading": "Por equipe",
+    "subtitle": "Visão gerencial: pontualidade, throughput e tempo por etapa (por equipe, não por pessoa)",
+    "rangeNote": "Período: mês selecionado no filtro, ou os últimos 30 dias quando nenhum mês está selecionado."
+  },
   "filters": {
     "title": "Filtros",
     "month": "Mês",

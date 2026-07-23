@@ -1,6 +1,12 @@
 {
-  "title": "Calendario de Tareas",
+  "kicker": "Informes",
+  "title": "Calendario",
   "subtitle": "Vista semanal de tareas en curso por equipo",
+  "view": {
+    "label": "Modo de visualización",
+    "week": "Semana",
+    "month": "Mes"
+  },
   "filters": {
     "team": "Equipo",
     "project": "Proyecto",

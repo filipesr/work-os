@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getTranslations } from "next-intl/server";
 import { getUserProductivityReport } from "@/lib/actions/reporting";
 import { currentMonthSaoPaulo, monthRangeSaoPaulo, formatMonthLabel } from "@/lib/dates";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+import { Clock, CheckCircle2, Timer, Workflow, Info } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SectionCard } from "@/components/ui/SectionCard";
 import { ExportButtons } from "@/components/reports/ExportButtons";
 
 export const metadata: Metadata = {
@@ -16,6 +16,33 @@ export const metadata: Metadata = {
 interface PageProps {
   params: Promise<{ userId: string; locale: string }>;
   searchParams: Promise<{ month?: string }>;
+}
+
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: typeof Clock;
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex items-center gap-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="text-3xl font-bold tracking-tight tabular-nums text-foreground">{value}</p>
+          {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default async function UserReportPage({ params, searchParams }: PageProps) {
@@ -37,75 +64,58 @@ export default async function UserReportPage({ params, searchParams }: PageProps
   const name = report.user.name || report.user.email || report.user.id;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
-      <div>
-        <Link
-          href="/reports"
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t("back")}
-        </Link>
-        <h1 className="text-3xl font-bold text-foreground">{name}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t("subtitle", { month: formatMonthLabel(month, locale) })}
-        </p>
-      </div>
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader
+        kicker={t("kicker")}
+        title={name}
+        subtitle={t("subtitle", { month: formatMonthLabel(month, locale) })}
+        backHref="/reports"
+        backLabel={t("back")}
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">{t("totalHours")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold tabular-nums">{report.totalHours.toFixed(1)}h</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">{t("stagesCompleted")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold tabular-nums">{report.stagesCompleted}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">{t("onTimeRate")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold tabular-nums">
-              {report.onTime.percentage.toFixed(0)}%
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {report.onTime.onTime}/{report.onTime.total}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
-          <CardTitle>{t("hoursByStage")}</CardTitle>
-          <ExportButtons
-            filename={`relatorio-${name}`}
-            title={`${name} — ${t("hoursByStage")}`}
-            columns={[
-              { key: "stage", header: t("stageHeader") },
-              { key: "hours", header: t("hoursHeader") },
-            ]}
-            rows={report.hoursByStage.map((s) => ({
-              stage: s.stageName,
-              hours: Number(s.totalHours.toFixed(1)),
-            }))}
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatTile
+            icon={Clock}
+            label={t("totalHours")}
+            value={`${report.totalHours.toFixed(1)}h`}
           />
-        </CardHeader>
-        <CardContent>
+          <StatTile
+            icon={CheckCircle2}
+            label={t("stagesCompleted")}
+            value={`${report.stagesCompleted}`}
+          />
+          <StatTile
+            icon={Timer}
+            label={t("onTimeRate")}
+            value={`${report.onTime.percentage.toFixed(0)}%`}
+            hint={`${report.onTime.onTime}/${report.onTime.total}`}
+          />
+        </div>
+
+        <SectionCard
+          title={t("hoursByStage")}
+          icon={Workflow}
+          action={
+            <ExportButtons
+              filename={`relatorio-${name}`}
+              title={`${name} — ${t("hoursByStage")}`}
+              columns={[
+                { key: "stage", header: t("stageHeader") },
+                { key: "hours", header: t("hoursHeader") },
+              ]}
+              rows={report.hoursByStage.map((s) => ({
+                stage: s.stageName,
+                hours: Number(s.totalHours.toFixed(1)),
+              }))}
+            />
+          }
+        >
           {report.hoursByStage.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("noData")}</p>
           ) : (
             <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-2 pb-2 border-b font-semibold text-sm">
+              <div className="grid grid-cols-2 gap-2 border-b border-border pb-2 text-sm font-semibold">
                 <div>{t("stageHeader")}</div>
                 <div className="text-right">{t("hoursHeader")}</div>
               </div>
@@ -119,8 +129,14 @@ export default async function UserReportPage({ params, searchParams }: PageProps
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </SectionCard>
+
+        {/* Guard (P1/P2/P7): self-referential view, not a ranking. */}
+        <p className="flex items-start gap-2 text-xs text-muted-foreground">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {t("guardNote")}
+        </p>
+      </div>
     </div>
   );
 }

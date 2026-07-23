@@ -9,7 +9,7 @@ import {
 import { RefreshCw } from "lucide-react";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { useLiveSnapshot } from "@/lib/hooks/useLiveSnapshot";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 type ActiveLogData = Awaited<ReturnType<typeof getTVActiveWorkLogs>>;
 type OnlineUserData = Awaited<ReturnType<typeof getTVOnlineUsers>>;
@@ -37,6 +37,7 @@ export default function TVLiveActivityPage() {
   const [clock, setClock] = useState(new Date());
 
   const t = useTranslations("reports.liveActivity");
+  const locale = useLocale();
 
   const fetchFallback = useCallback(async (): Promise<TVData> => {
     const [activeLogs, onlineUsers, offlineUsers] = await Promise.all([
@@ -94,14 +95,14 @@ export default function TVLiveActivityPage() {
       <div className="flex items-center justify-between mb-4 text-gray-400 text-sm">
         <div className="flex items-center gap-4">
           <span className="text-lg font-mono text-gray-300">
-            {clock.toLocaleTimeString("pt-BR", {
+            {clock.toLocaleTimeString(locale === "es-ES" ? "es-ES" : "pt-BR", {
               hour: "2-digit",
               minute: "2-digit",
               second: "2-digit",
             })}
           </span>
           <span>
-            <span className="inline-block h-2 w-2 rounded-full bg-success-subtle0 mr-1" />
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 mr-1" />
             {onlineCount} {t("online")}
           </span>
           <span>
@@ -135,8 +136,8 @@ export default function TVLiveActivityPage() {
                 ${
                   user.isOnline
                     ? user.activeLog
-                      ? "bg-green-950/60 border border-success/40/60"
-                      : "bg-green-950/30 border border-success/40/40"
+                      ? "bg-emerald-950/60 border border-emerald-500/60"
+                      : "bg-emerald-950/30 border border-emerald-500/40"
                     : "bg-gray-900/50 border border-gray-800/40 opacity-50"
                 }
               `}
@@ -156,7 +157,7 @@ export default function TVLiveActivityPage() {
                   {firstName.charAt(0).toUpperCase()}
                 </div>
                 {user.activeLog && (
-                  <div className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-success-subtle0 border-2 border-gray-950 animate-pulse" />
+                  <div className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-emerald-500 border-2 border-gray-950 animate-pulse" />
                 )}
               </div>
 

@@ -7,18 +7,20 @@
     "teamPerformance": "Desempenho da Equipe"
   },
   "index": {
+    "kicker": "Relatórios",
     "title": "Relatórios e Análises",
     "subtitle": "Inteligência de negócios para melhorar a produtividade e identificar gargalos no fluxo de trabalho",
+    "exploreHeading": "Explorar relatórios",
     "productivity": {
-      "title": "Relatório de Produtividade",
+      "title": "Horas & Utilização",
       "description": "Visualize o tempo gasto por usuário, projeto, cliente e etapa do workflow",
       "feature1": "Horas registradas por usuário",
       "feature2": "Tempo investido por projeto e cliente",
       "feature3": "Distribuição de esforço por etapa do fluxo"
     },
     "performance": {
-      "title": "Relatório de Desempenho",
-      "description": "Identifique gargalos no workflow e analise a taxa de retrabalho",
+      "title": "Fluxo & Entrega",
+      "description": "Identifique gargalos no workflow, analise o retrabalho e o desempenho por equipe",
       "feature1": "Tempo médio em cada etapa (bottlenecks)",
       "feature2": "Taxa de retrabalho e reversões",
       "feature3": "Lead time e throughput do sistema"
@@ -69,8 +71,11 @@
     }
   },
   "liveActivity": {
+    "kicker": "Relatórios",
     "title": "Status dos Usuários",
     "subtitle": "Visualize o status de todos os usuários em tempo real (atualiza a cada 10 segundos)",
+    "tvMode": "Modo TV",
+    "defaultHiddenTeams": ["HR", "Finance", "Reception", "General Services", "Manager"],
     "allUsers": "Todos os Usuários",
     "online": "Online",
     "offline": "Offline",
@@ -112,6 +117,7 @@
     "pdf": "Exportar PDF"
   },
   "userReport": {
+    "kicker": "Pessoa",
     "back": "Voltar para Relatórios",
     "subtitle": "Produtividade · {month}",
     "totalHours": "Horas registradas",
@@ -120,6 +126,7 @@
     "hoursByStage": "Horas por etapa",
     "stageHeader": "Etapa",
     "hoursHeader": "Horas",
-    "noData": "Sem dados no período."
+    "noData": "Sem dados no período.",
+    "guardNote": "Visão auto-referencial de uma pessoa — não um ranking nem comparação entre colaboradores. Serve à conversa de desenvolvimento (P1/P2/P7)."
   }
 }
