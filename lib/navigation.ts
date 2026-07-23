@@ -77,7 +77,7 @@ const managerItems: NavItem[] = [
 
 // Menu "Administração". O Cockpit de saúde do time (/admin) mora aqui e é visível
 // a MANAGER e ADMIN; os demais itens (usuários/equipes/fluxos) são só de ADMIN.
-const cockpitLink: NavLink = { id: "cockpit", labelKey: "cockpit", href: "/admin", icon: Gauge };
+const geralLink: NavLink = { id: "geral", labelKey: "geral", href: "/admin", icon: Gauge };
 const adminOnlyLinks: NavLink[] = [
   { id: "usuarios", labelKey: "usuarios", href: "/admin/users", icon: UsersRound },
   { id: "equipes", labelKey: "equipes", href: "/admin/teams", icon: UsersRound },
@@ -90,7 +90,7 @@ export type AppRole = "ADMIN" | "MANAGER" | "SUPERVISOR" | "MEMBER";
  * MANAGER a de gestor + Administração(Cockpit); ADMIN + usuários/equipes/fluxos. */
 export function getNavItems(role: AppRole): NavItem[] {
   if (role === "MANAGER" || role === "ADMIN") {
-    const children = role === "ADMIN" ? [cockpitLink, ...adminOnlyLinks] : [cockpitLink];
+    const children = role === "ADMIN" ? [geralLink, ...adminOnlyLinks] : [geralLink];
     return [...managerItems, { id: "administracao", labelKey: "admin", children }];
   }
   return memberItems;
