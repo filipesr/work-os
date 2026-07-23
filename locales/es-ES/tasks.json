@@ -385,5 +385,25 @@
       "idealStart": "El inicio ideal sería {date}.",
       "newToTypeNote": "Responsable nuevo en este tipo → previsión más conservadora: {days}d (p95)."
     }
+  },
+  "myWork": {
+    "title": "Mi Trabajo",
+    "subtitle": "Estrecha la cola, recorre las etapas y abre solo el contexto que necesites.",
+    "scope": "Alcance",
+    "scopeMine": "Mías",
+    "scopeTeam": "Del equipo",
+    "statusLabel": "Estado",
+    "from": "Vencimiento desde",
+    "to": "Hasta",
+    "clear": "Limpiar",
+    "listTitle": "Etapas",
+    "listSubtitle": "Haz clic en una fila para consultar el detalle.",
+    "empty": "Ninguna etapa con esos filtros.",
+    "kpiTotal": "Total",
+    "kpiActive": "Activas",
+    "kpiBlocked": "Bloqueadas",
+    "kpiCompleted": "Completadas",
+    "kpiOverdue": "Atrasadas",
+    "kpiHours": "Horas"
   }
 }

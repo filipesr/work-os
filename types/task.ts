@@ -26,6 +26,7 @@ export type ActiveStageWithDetails = {
     id: string;
     name: string;
     order: number;
+    expectedDurationHours: number | null;
     defaultTeam: {
       id: string;
       name: string;

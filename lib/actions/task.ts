@@ -1138,6 +1138,7 @@ export async function getMyAllStages(filters?: {
       id: s.stage.id,
       name: s.stage.name,
       order: s.stage.order,
+      expectedDurationHours: s.stage.expectedDurationHours,
       defaultTeam: s.stage.defaultTeam,
       template: s.stage.template,
     },

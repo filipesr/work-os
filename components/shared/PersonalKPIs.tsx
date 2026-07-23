@@ -13,9 +13,10 @@ export interface KpiItem {
 /** Faixa de KPIs de exceção (Início / Meu Trabalho). Presentacional — os rótulos
  * e valores já vêm resolvidos pelo chamador. Componente canônico compartilhado
  * (§3: unificar StatsCards + MyStagesKPIs). */
-export function PersonalKPIs({ items }: { items: KpiItem[] }) {
+export function PersonalKPIs({ items, columns = 5 }: { items: KpiItem[]; columns?: 5 | 6 }) {
+  const lgCols = columns === 6 ? "lg:grid-cols-6" : "lg:grid-cols-5";
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <div className={`grid grid-cols-2 gap-3 sm:grid-cols-3 ${lgCols}`}>
       {items.map((kpi) => {
         const tone: Tone = kpi.tone ?? "neutral";
         const Icon = kpi.icon;
