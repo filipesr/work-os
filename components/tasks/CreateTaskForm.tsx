@@ -14,6 +14,7 @@ import {
 } from "@/lib/forecast-feasibility";
 import { getAssigneeTypeExperience } from "@/lib/actions/assignee-experience";
 import { QuickCreateProject } from "@/components/quick-create/QuickCreateProject";
+import { QuickCreateClient } from "@/components/quick-create/QuickCreateClient";
 import { StageAssigneeSelect } from "@/components/ui/StageAssigneeSelect";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslations, useLocale } from "next-intl";
-import { Loader2 } from "lucide-react";
+import { Loader2, ListChecks, ClipboardList, Sparkles, Plus } from "lucide-react";
 
 interface Project {
   id: string;
@@ -68,6 +69,7 @@ export function CreateTaskForm({
   const [stagePreview, setStagePreview] = useState<StagePreviewItem[]>([]);
   const [isPreviewLoading, startPreviewTransition] = useTransition();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [priority, setPriority] = useState<string>("MEDIUM");
   const [dueDate, setDueDate] = useState<string>("");
   const [forecast, setForecast] = useState<{
     p50: number;
@@ -97,7 +99,7 @@ export function CreateTaskForm({
   }, [initialProjects]);
 
   // Handler for when a project is created
-  const handleProjectCreated = (projectId: string) => {
+  const handleProjectCreated = (_projectId: string) => {
     router.refresh();
   };
 
@@ -169,245 +171,424 @@ export function CreateTaskForm({
   const idealStartPassed = idealStart
     ? idealStart.getTime() < new Date().setHours(0, 0, 0, 0)
     : false;
-  const fmtDate = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit" });
+  const fmtDate = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" });
+
+  const includedCount = stagePreview.filter((s) => checkedStages[s.id] ?? !s.optional).length;
+  const entryStageName = stagePreview.find((s) => s.id === entryStageId)?.name ?? "";
+  const refDays = forecast ? Math.round(forecast.p85) : 0;
+
+  // Viability card tone — comfortable=success, tight=warning, atRisk=danger.
+  const viaTone =
+    feasibility === "comfortable"
+      ? {
+          wrap: "border-success/40 bg-success-subtle",
+          chip: "bg-success/15 text-success",
+          word: "text-success",
+        }
+      : feasibility === "tight"
+        ? {
+            wrap: "border-warning/40 bg-warning-subtle",
+            chip: "bg-warning/15 text-warning",
+            word: "text-warning",
+          }
+        : {
+            wrap: "border-danger/40 bg-danger-subtle",
+            chip: "bg-danger/15 text-danger",
+            word: "text-danger",
+          };
+
+  const canSubmit = projects.length > 0 && templates.length > 0;
 
   return (
-    <form action={createTask} className="space-y-6">
-      {/* Title */}
-      <div>
-        <label htmlFor="title" className="block text-sm font-semibold text-foreground mb-2">
-          {t("create.titleLabel")}
-        </label>
-        <Input
-          type="text"
-          id="title"
-          name="title"
-          required
-          placeholder={t("create.titlePlaceholder")}
-        />
-      </div>
-
-      {/* Description */}
-      <div>
-        <label htmlFor="description" className="block text-sm font-semibold text-foreground mb-2">
-          {t("create.descriptionLabel")}
-        </label>
-        <Textarea
-          id="description"
-          name="description"
-          rows={4}
-          placeholder={t("create.descriptionPlaceholder")}
-        />
-      </div>
-
-      {/* Project Selection */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label htmlFor="projectId" className="block text-sm font-semibold text-foreground">
-            {t("create.projectLabel")}
-          </label>
-          <QuickCreateProject
-            clients={clients}
-            variant="ghost"
-            size="sm"
-            onProjectCreated={handleProjectCreated}
-          />
-        </div>
-        <Select name="projectId" required defaultValue={defaultProjectId}>
-          <SelectTrigger id="projectId">
-            <SelectValue placeholder={t("create.projectPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            {projects.map((project) => (
-              <SelectItem key={project.id} value={project.id}>
-                {project.client.name} - {project.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {projects.length === 0 && (
-          <p className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
-            <span>{t("create.noProjectsAvailable")}</span>
-            <QuickCreateProject
-              clients={clients}
-              variant="ghost"
-              size="sm"
-              className="h-auto p-0"
-              onProjectCreated={handleProjectCreated}
-            />
-          </p>
-        )}
-      </div>
-
-      {/* Template Selection */}
-      <div>
-        <label htmlFor="templateId" className="block text-sm font-semibold text-foreground mb-2">
-          {t("create.templateLabel")}
-        </label>
-        <Select name="templateId" required onValueChange={handleTemplateChange}>
-          <SelectTrigger id="templateId">
-            <SelectValue placeholder={t("create.templatePlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            {templates.map((template) => (
-              <SelectItem key={template.id} value={template.id}>
-                {template.name} ({t("create.templateStages", { count: template._count.stages })})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {templates.length === 0 && (
-          <p className="mt-2 text-sm text-destructive font-medium">
-            {t("create.noTemplatesAvailable")}
-          </p>
-        )}
-
-        {/* Dynamic Stage Preview */}
-        <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border">
-          <h4 className="text-sm font-semibold text-foreground mb-3">
-            {t("create.stagePreviewTitle")}
-          </h4>
-
-          {isPreviewLoading && (
-            <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {t("create.stagePreviewLoading")}
+    <form action={createTask} className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+      {/* ---------- LEFT: context + stage preview ---------- */}
+      <div className="space-y-6 lg:col-span-2">
+        {/* Card: Contexto da demanda */}
+        <section className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="border-b border-border p-6">
+            <h2 className="text-lg font-semibold text-foreground">{t("create.contextTitle")}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{t("create.contextSubtitle")}</p>
+          </div>
+          <div className="space-y-6 p-6">
+            {/* Title */}
+            <div>
+              <label htmlFor="title" className="mb-2 block text-sm font-semibold text-foreground">
+                {t("create.titleLabel")}
+              </label>
+              <Input
+                type="text"
+                id="title"
+                name="title"
+                required
+                placeholder={t("create.titlePlaceholder")}
+              />
             </div>
-          )}
 
-          {!isPreviewLoading && stagePreview.length === 0 && (
-            <div className="text-sm text-muted-foreground">{t("create.stagePreviewEmpty")}</div>
-          )}
+            {/* Description */}
+            <div>
+              <label
+                htmlFor="description"
+                className="mb-2 block text-sm font-semibold text-foreground"
+              >
+                {t("create.descriptionLabel")}
+              </label>
+              <Textarea
+                id="description"
+                name="description"
+                rows={4}
+                placeholder={t("create.descriptionPlaceholder")}
+              />
+            </div>
 
-          {!isPreviewLoading && stagePreview.length > 0 && (
-            <ol className="space-y-2">
-              {stagePreview.map((stage, index) => (
-                <li
-                  key={stage.id}
-                  className="flex items-center justify-between gap-3 rounded-md bg-background/60 px-3 py-2"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <input
-                      type="checkbox"
-                      name={`stage:${stage.id}`}
-                      checked={checkedStages[stage.id] ?? !stage.optional}
-                      onChange={(e) =>
-                        setCheckedStages((prev) => ({ ...prev, [stage.id]: e.target.checked }))
-                      }
-                      className="h-4 w-4 shrink-0"
-                      aria-label={stage.name}
-                    />
-                    <div className="min-w-0">
-                      <span className="text-sm font-medium text-foreground">
-                        {index + 1}. {stage.name}
-                        {stage.optional && (
-                          <span className="ml-2 text-xs text-muted-foreground">(opcional)</span>
-                        )}
-                      </span>
-                      {stage.defaultTeam && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {stage.defaultTeam.name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <StageAssigneeSelect
-                    stageId={stage.id}
-                    teamName={stage.defaultTeam?.name ?? null}
-                    members={stage.defaultTeam?.members ?? []}
-                    onChange={(v: string) =>
-                      setStageAssignees((prev) => ({ ...prev, [stage.id]: v }))
-                    }
+            {/* Project Selection */}
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <label htmlFor="projectId" className="block text-sm font-semibold text-foreground">
+                  {t("create.projectLabel")}
+                </label>
+                <div className="flex items-center gap-1">
+                  <QuickCreateProject
+                    clients={clients}
+                    variant="ghost"
+                    size="sm"
+                    onProjectCreated={handleProjectCreated}
                   />
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
-      </div>
+                  <QuickCreateClient
+                    variant="ghost"
+                    size="sm"
+                    onClientCreated={() => router.refresh()}
+                  />
+                </div>
+              </div>
+              <Select name="projectId" required defaultValue={defaultProjectId}>
+                <SelectTrigger id="projectId">
+                  <SelectValue placeholder={t("create.projectPlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.client.name} - {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {projects.length === 0 && (
+                <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>{t("create.noProjectsAvailable")}</span>
+                </p>
+              )}
+            </div>
 
-      {/* Priority */}
-      <div>
-        <label htmlFor="priority" className="block text-sm font-semibold text-foreground mb-2">
-          {t("create.priorityLabel")}
-        </label>
-        <Select name="priority" required defaultValue="MEDIUM">
-          <SelectTrigger id="priority">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="LOW">{tPriority("low")}</SelectItem>
-            <SelectItem value="MEDIUM">{tPriority("medium")}</SelectItem>
-            <SelectItem value="HIGH">{tPriority("high")}</SelectItem>
-            <SelectItem value="URGENT">{tPriority("urgent")}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+            {/* Template + Priority */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="templateId"
+                  className="mb-2 block text-sm font-semibold text-foreground"
+                >
+                  {t("create.templateLabel")}
+                </label>
+                <Select name="templateId" required onValueChange={handleTemplateChange}>
+                  <SelectTrigger id="templateId">
+                    <SelectValue placeholder={t("create.templatePlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name} (
+                        {t("create.templateStages", { count: template._count.stages })})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {templates.length === 0 && (
+                  <p className="mt-2 text-sm text-destructive font-medium">
+                    {t("create.noTemplatesAvailable")}
+                  </p>
+                )}
+              </div>
 
-      {/* Due Date */}
-      <div>
-        <label htmlFor="dueDate" className="block text-sm font-semibold text-foreground mb-2">
-          {t("create.dueDateLabel")}
-        </label>
-        <Input
-          type="date"
-          id="dueDate"
-          name="dueDate"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-        />
-        {feasibility !== "unknown" && selectedTemplate && forecast && (
-          <div
-            className={`mt-2 rounded-md border p-2 text-xs ${
-              feasibility === "comfortable"
-                ? "border-success/40 bg-success-subtle text-success"
-                : feasibility === "tight"
-                  ? "border-warning/40 bg-warning-subtle text-warning"
-                  : "border-danger/40 bg-danger-subtle text-danger"
-            }`}
-          >
-            <span className="font-semibold">{t(`create.feasibility.${feasibility}`)}</span>{" "}
-            {t("create.feasibility.summary", {
-              type: selectedTemplate.name,
-              p50: forecast.p50.toFixed(0),
-              p85: forecast.p85.toFixed(0),
-              count: forecast.count,
-              days: Number.isFinite(daysAvailable) ? daysAvailable : 0,
-            })}
-            {forecast.lowConfidence && (
-              <span className="block">
-                {t("create.feasibility.lowConfidence", { count: forecast.count })}
+              <div>
+                <label
+                  htmlFor="priority"
+                  className="mb-2 block text-sm font-semibold text-foreground"
+                >
+                  {t("create.priorityLabel")}
+                </label>
+                <Select name="priority" required value={priority} onValueChange={setPriority}>
+                  <SelectTrigger id="priority">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LOW">{tPriority("low")}</SelectItem>
+                    <SelectItem value="MEDIUM">{tPriority("medium")}</SelectItem>
+                    <SelectItem value="HIGH">{tPriority("high")}</SelectItem>
+                    <SelectItem value="URGENT">{tPriority("urgent")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Due Date */}
+            <div>
+              <label htmlFor="dueDate" className="mb-2 block text-sm font-semibold text-foreground">
+                {t("create.dueDateLabel")}
+              </label>
+              <Input
+                type="date"
+                id="dueDate"
+                name="dueDate"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Card: Pré-visualização das etapas */}
+        <section className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="flex items-start justify-between gap-3 border-b border-border p-6">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <ListChecks className="h-5 w-5" />
               </span>
-            )}
-            {entryAssigneeId && entryExperienced === false && (
-              <span className="block">
-                {t("create.feasibility.newToTypeNote", { days: Math.ceil(band) })}
-              </span>
-            )}
-            {idealStartPassed && idealStart && (
-              <span className="block">
-                {t("create.feasibility.idealStart", { date: fmtDate.format(idealStart) })}
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">
+                  {t("create.previewTitle")}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {selectedTemplate?.description ?? t("create.stagePreviewEmpty")}
+                </p>
+              </div>
+            </div>
+            {stagePreview.length > 0 && (
+              <span className="shrink-0 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                {t("create.previewIncluded", { count: includedCount })}
               </span>
             )}
           </div>
-        )}
+
+          <div className="p-6">
+            {isPreviewLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t("create.stagePreviewLoading")}
+              </div>
+            )}
+
+            {!isPreviewLoading && stagePreview.length === 0 && (
+              <div className="text-sm text-muted-foreground">{t("create.stagePreviewEmpty")}</div>
+            )}
+
+            {!isPreviewLoading && stagePreview.length > 0 && (
+              <>
+                <ol className="divide-y divide-border">
+                  {stagePreview.map((stage, index) => {
+                    const isChecked = checkedStages[stage.id] ?? !stage.optional;
+                    const isEntry = stage.id === entryStageId;
+                    const dimmed = stage.optional && !isChecked;
+                    return (
+                      <li
+                        key={stage.id}
+                        className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between"
+                      >
+                        <div
+                          className={`flex min-w-0 items-start gap-3 ${dimmed ? "opacity-60" : ""}`}
+                        >
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border text-xs font-semibold text-muted-foreground">
+                            {index + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-semibold text-foreground">
+                                {stage.name}
+                              </span>
+                              {stage.optional && (
+                                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                                  {t("create.optionalBadge")}
+                                </span>
+                              )}
+                              {isEntry && (
+                                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                  {t("create.entryBadge")}
+                                </span>
+                              )}
+                            </div>
+                            {stage.optional ? (
+                              <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                                <input
+                                  type="checkbox"
+                                  name={`stage:${stage.id}`}
+                                  checked={isChecked}
+                                  onChange={(e) =>
+                                    setCheckedStages((prev) => ({
+                                      ...prev,
+                                      [stage.id]: e.target.checked,
+                                    }))
+                                  }
+                                  className="h-4 w-4 shrink-0 accent-primary"
+                                  aria-label={stage.name}
+                                />
+                                {t("create.includeStage")}
+                              </label>
+                            ) : (
+                              <input type="hidden" name={`stage:${stage.id}`} value="on" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="shrink-0 sm:w-56 sm:pl-3">
+                          <p className="mb-1 text-xs font-medium text-muted-foreground">
+                            {t("create.responsibleLabel")}
+                          </p>
+                          <StageAssigneeSelect
+                            stageId={stage.id}
+                            teamName={stage.defaultTeam?.name ?? null}
+                            members={stage.defaultTeam?.members ?? []}
+                            className="w-full"
+                            onChange={(v: string) =>
+                              setStageAssignees((prev) => ({ ...prev, [stage.id]: v }))
+                            }
+                          />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+                <p className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
+                  {entryStageName
+                    ? t.rich("create.entryFooter", {
+                        stage: entryStageName,
+                        b: (chunks) => (
+                          <span className="font-semibold text-foreground">{chunks}</span>
+                        ),
+                      })
+                    : t("create.entryFooterNone")}
+                </p>
+              </>
+            )}
+          </div>
+        </section>
       </div>
 
-      {/* Submit Button */}
-      <div className="flex gap-4">
-        <button
-          type="submit"
-          disabled={projects.length === 0 || templates.length === 0}
-          className="px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {t("create.createButton")}
-        </button>
-        <a
-          href="/admin/tasks"
-          className="px-6 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/90 transition-all duration-200 shadow-sm"
-        >
-          {t("create.cancelButton")}
-        </a>
+      {/* ---------- RIGHT: sticky summary ---------- */}
+      <div className="space-y-6 lg:sticky lg:top-8">
+        {/* Tipo selecionado */}
+        {selectedTemplate && (
+          <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <ClipboardList className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("create.typeSelected")}
+                </p>
+                <p className="text-base font-semibold text-foreground">{selectedTemplate.name}</p>
+                {forecast && forecast.count > 0 && (
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {t("create.reference", {
+                      p50: forecast.p50.toFixed(0),
+                      p85: forecast.p85.toFixed(0),
+                    })}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+              <span className="text-sm text-muted-foreground">{t("create.priorityShort")}</span>
+              <span className="text-sm font-semibold text-primary">
+                {tPriority(priority.toLowerCase())}
+              </span>
+            </div>
+          </section>
+        )}
+
+        {/* Checagem de viabilidade */}
+        {feasibility !== "unknown" && selectedTemplate && forecast ? (
+          <section className={`rounded-xl border p-5 shadow-sm ${viaTone.wrap}`}>
+            <div className="flex items-start gap-3">
+              <span
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${viaTone.chip}`}
+              >
+                <Sparkles className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("create.viabilityLabel")}
+                </p>
+                <p className={`text-lg font-bold ${viaTone.word}`}>
+                  {t(`create.feasibilityShort.${feasibility}`)}
+                </p>
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-foreground/80">
+              {t("create.viabilitySentence", {
+                days: Number.isFinite(daysAvailable) ? daysAvailable : 0,
+                ref: refDays,
+              })}
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="rounded-lg bg-background/60 p-3">
+                <p className="text-xs text-muted-foreground">{t("create.daysAvailableLabel")}</p>
+                <p className="text-base font-semibold text-foreground">
+                  {t("create.daysShort", {
+                    days: Number.isFinite(daysAvailable) ? daysAvailable : 0,
+                  })}
+                </p>
+              </div>
+              {idealStart && (
+                <div className="rounded-lg bg-background/60 p-3">
+                  <p className="text-xs text-muted-foreground">{t("create.idealStartLabel")}</p>
+                  <p className="text-base font-semibold text-foreground">
+                    {fmtDate.format(idealStart)}
+                  </p>
+                </div>
+              )}
+            </div>
+            {(forecast.lowConfidence ||
+              (entryAssigneeId && entryExperienced === false) ||
+              idealStartPassed) && (
+              <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+                {forecast.lowConfidence && (
+                  <p>{t("create.feasibility.lowConfidence", { count: forecast.count })}</p>
+                )}
+                {entryAssigneeId && entryExperienced === false && (
+                  <p>{t("create.feasibility.newToTypeNote", { days: Math.ceil(band) })}</p>
+                )}
+                {idealStartPassed && <p>{t("create.idealStartPassedNote")}</p>}
+              </div>
+            )}
+            <p className="mt-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+              {t("create.viabilityFootnote")}
+            </p>
+          </section>
+        ) : (
+          <section className="rounded-xl border border-dashed border-border bg-card p-5 text-sm text-muted-foreground shadow-sm">
+            {t("create.viabilityEmpty")}
+          </section>
+        )}
+
+        {/* Criação */}
+        <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("create.creationLabel")}
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{t("create.creationNote")}</p>
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary/90 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus className="h-5 w-5" />
+            {t("create.createButton")}
+          </button>
+          <a
+            href="/admin/tasks"
+            className="mt-2 block text-center text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            {t("create.cancelButton")}
+          </a>
+        </section>
       </div>
     </form>
   );

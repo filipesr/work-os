@@ -368,8 +368,8 @@
     "noTasks": "Nenhuma tarefa encontrada",
     "new": {
       "backToTasks": "Voltar para Tarefas",
-      "title": "Criar Nova Tarefa",
-      "subtitle": "Inicialize uma nova tarefa a partir de um template de fluxo de trabalho. A tarefa começará na primeira etapa do template selecionado.",
+      "title": "Criar demanda",
+      "subtitle": "Defina o contexto, adapte o fluxo ao necessário e use a estimativa como apoio de planejamento.",
       "howItWorks": {
         "title": "Como funciona:",
         "step1": "Selecione um projeto e um template de workflow",
@@ -377,7 +377,8 @@
         "step3": "A tarefa será criada automaticamente com base nas etapas configuradas no template",
         "step4": "Você será atribuído à primeira etapa automaticamente",
         "step5": "A tarefa pode ser movida através das etapas conforme o trabalho progride"
-      }
+      },
+      "kicker": "Demandas"
     },
     "list": {
       "title": "Tarefas",

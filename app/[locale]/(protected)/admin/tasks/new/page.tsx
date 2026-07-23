@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getProjectsForSelect, getTemplatesForSelect } from "@/lib/actions/task";
 import { CreateTaskForm } from "@/components/tasks/CreateTaskForm";
 import { getTranslations } from "next-intl/server";
@@ -17,46 +16,15 @@ export default async function NewTaskPage({
   ]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 max-w-3xl">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8">
-        <Link
-          href="/admin/tasks"
-          className="inline-flex items-center text-primary hover:text-primary/80 mb-4 font-semibold transition-colors"
-        >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path d="M15 19l-7-7 7-7" />
-          </svg>
-          {t("backToTasks")}
-        </Link>
-        <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
+        <p className="text-sm font-semibold text-primary">{t("kicker")}</p>
+        <h1 className="mt-1 text-3xl font-bold text-foreground">{t("title")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      {/* Form */}
-      <div className="bg-card shadow-lg rounded-xl border border-border p-6">
-        <CreateTaskForm projects={projects} templates={templates} defaultProjectId={projectId} />
-      </div>
-
-      {/* Help Text */}
-      <div className="mt-6 bg-primary/5 border-2 border-primary/20 rounded-xl p-5">
-        <h3 className="text-sm font-bold text-foreground mb-3">{t("howItWorks.title")}</h3>
-        <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-          <li>{t("howItWorks.step1")}</li>
-          <li>{t("howItWorks.step2")}</li>
-          <li>{t("howItWorks.step3")}</li>
-          <li>{t("howItWorks.step4")}</li>
-          <li>{t("howItWorks.step5")}</li>
-        </ul>
-      </div>
+      <CreateTaskForm projects={projects} templates={templates} defaultProjectId={projectId} />
     </div>
   );
 }

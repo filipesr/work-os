@@ -368,8 +368,8 @@
     "noTasks": "No se encontraron tareas",
     "new": {
       "backToTasks": "Volver a Tareas",
-      "title": "Crear Nueva Tarea",
-      "subtitle": "Inicializa una nueva tarea desde una plantilla de flujo de trabajo. La tarea comenzará en la primera etapa de la plantilla seleccionada.",
+      "title": "Crear demanda",
+      "subtitle": "Define el contexto, adapta el flujo a lo necesario y usa la estimación como apoyo de planificación.",
       "howItWorks": {
         "title": "Cómo funciona:",
         "step1": "Selecciona un proyecto y una plantilla de workflow",
@@ -377,7 +377,8 @@
         "step3": "La tarea se creará automáticamente basándose en las etapas configuradas en la plantilla",
         "step4": "Serás asignado a la primera etapa automáticamente",
         "step5": "La tarea puede moverse a través de las etapas a medida que avanza el trabajo"
-      }
+      },
+      "kicker": "Demandas"
     },
     "list": {
       "title": "Tareas",

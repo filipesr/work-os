@@ -34,6 +34,9 @@ vi.mock("@/lib/actions/assignee-experience", () => ({
 vi.mock("@/components/quick-create/QuickCreateProject", () => ({
   QuickCreateProject: () => <div />,
 }));
+vi.mock("@/components/quick-create/QuickCreateClient", () => ({
+  QuickCreateClient: () => <div />,
+}));
 vi.mock("@/components/ui/StageAssigneeSelect", () => ({ StageAssigneeSelect: () => <div /> }));
 
 const projects = [
