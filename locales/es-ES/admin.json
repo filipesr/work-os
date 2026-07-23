@@ -612,9 +612,9 @@
       "open": "Abrir pantalla en nueva pestaña"
     }
   },
-  "cockpit": {
+  "geral": {
     "kicker": "Salud del equipo",
-    "title": "Cockpit",
+    "title": "General",
     "subtitle": "Una cola de excepciones para orientar dónde actuar primero — no un ranking de personas."
   }
 }

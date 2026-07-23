@@ -612,9 +612,9 @@
       "open": "Abrir tela em nova aba"
     }
   },
-  "cockpit": {
+  "geral": {
     "kicker": "Saúde do time",
-    "title": "Cockpit",
+    "title": "Geral",
     "subtitle": "Uma fila de exceções para orientar onde agir primeiro — não um ranking de pessoas."
   }
 }
