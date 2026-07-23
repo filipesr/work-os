@@ -398,31 +398,57 @@ brief + os princípios. Preencher conforme cada tela chega.
 
 **Legenda:** ⬜ não gerada · 🟡 gerada, revisão pendente · ✅ de acordo · 🔧 ajustes pendentes.
 
-| #   | Tela                           | Status | Resumo da revisão                                                                                                      |
-| --- | ------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------- |
-| 0   | Navegação global               | ⬜     | —                                                                                                                      |
-| 1   | Início / dashboard pessoal     | 🔧     | Fiel ao brief (exceção‑primeiro, tom informacional, aging vs SLA, KPIs coerentes com a lista). 3 ajustes finos abaixo. |
-| 2   | Meu Trabalho (`/tasks`)        | ⬜     | Ao gerar, **reusar** o mesmo padrão de lista+KPI do Início (não recriar).                                              |
-| 3   | Detalhe da tarefa              | ⬜     | —                                                                                                                      |
-| 4   | Minha Evolução                 | ⬜     | —                                                                                                                      |
-| 5   | Kanban do projeto              | ⬜     | —                                                                                                                      |
-| 6   | Cockpit (`/admin`)             | ⬜     | —                                                                                                                      |
-| 7   | Demandas (lista/detalhe/criar) | ⬜     | —                                                                                                                      |
-| 8   | Fluxo & Entrega (fundido)      | ⬜     | —                                                                                                                      |
-| 9   | Horas & Utilização             | ⬜     | —                                                                                                                      |
-| 10  | Pessoas (por pessoa)           | ⬜     | —                                                                                                                      |
-| 11  | Calendário (unificado)         | ⬜     | —                                                                                                                      |
-| 12  | Presença ao vivo (+ modo TV)   | ⬜     | —                                                                                                                      |
-| 13  | Clientes (lista/detalhe)       | ⬜     | —                                                                                                                      |
-| 14  | Projetos (lista nova/detalhe)  | ⬜     | —                                                                                                                      |
-| 15  | Usuários (CRUD)                | ⬜     | —                                                                                                                      |
-| 16  | Equipes                        | ⬜     | —                                                                                                                      |
-| 17  | Fluxos de trabalho (editor)    | ⬜     | —                                                                                                                      |
-| 18  | Conta                          | ⬜     | —                                                                                                                      |
-| 19  | Ajuda                          | ⬜     | —                                                                                                                      |
-| 20  | Login / Home pública           | ⬜     | —                                                                                                                      |
+| #   | Tela                           | Status | Resumo da revisão                                                                                                                                                  |
+| --- | ------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0   | Navegação global               | 🔧     | Persona‑aware; avatar enxuto (tema+idioma juntos, sair separado); sem duplicação — resolve o "menu confuso". 1 correção: submenu Relatórios incompleto/fora do §3. |
+| 1   | Início / dashboard pessoal     | 🔧     | Fiel ao brief (exceção‑primeiro, tom informacional, aging vs SLA, KPIs coerentes com a lista). 3 ajustes finos abaixo.                                             |
+| 2   | Meu Trabalho (`/tasks`)        | ⬜     | Ao gerar, **reusar** o mesmo padrão de lista+KPI do Início (não recriar).                                                                                          |
+| 3   | Detalhe da tarefa              | ⬜     | —                                                                                                                                                                  |
+| 4   | Minha Evolução                 | ⬜     | —                                                                                                                                                                  |
+| 5   | Kanban do projeto              | ⬜     | —                                                                                                                                                                  |
+| 6   | Cockpit (`/admin`)             | ⬜     | —                                                                                                                                                                  |
+| 7   | Demandas (lista/detalhe/criar) | ⬜     | —                                                                                                                                                                  |
+| 8   | Fluxo & Entrega (fundido)      | ⬜     | —                                                                                                                                                                  |
+| 9   | Horas & Utilização             | ⬜     | —                                                                                                                                                                  |
+| 10  | Pessoas (por pessoa)           | ⬜     | —                                                                                                                                                                  |
+| 11  | Calendário (unificado)         | ⬜     | —                                                                                                                                                                  |
+| 12  | Presença ao vivo (+ modo TV)   | ⬜     | —                                                                                                                                                                  |
+| 13  | Clientes (lista/detalhe)       | ⬜     | —                                                                                                                                                                  |
+| 14  | Projetos (lista nova/detalhe)  | ⬜     | —                                                                                                                                                                  |
+| 15  | Usuários (CRUD)                | ⬜     | —                                                                                                                                                                  |
+| 16  | Equipes                        | ⬜     | —                                                                                                                                                                  |
+| 17  | Fluxos de trabalho (editor)    | ⬜     | —                                                                                                                                                                  |
+| 18  | Conta                          | ⬜     | —                                                                                                                                                                  |
+| 19  | Ajuda                          | ⬜     | —                                                                                                                                                                  |
+| 20  | Login / Home pública           | ⬜     | —                                                                                                                                                                  |
 
 ### Log de revisão
+
+#### Tela 0 — Navegação global · revisado 2026‑07‑23 · 🔧
+
+**De acordo:**
+
+- Barra primária persona‑aware (visão ADMIN): `Cockpit` (ativo) · `Demandas` · `Entregas ▾`
+  (Clientes, Projetos) · `Relatórios ▾` · `Administração ▾` (Usuários, Equipes, Fluxos de
+  Trabalho) — exatamente o §1.3.
+- **Avatar enxuto:** nome + papel · Minha Conta · Ajuda · **Tema** e **Idioma juntos aqui** ·
+  **Sair** separado/destrutivo (vermelho). Resolve as "prefs partidas" e tira o sair do meio das
+  ferramentas.
+- Sem duplicação barra↔menu; item ativo destacado; ícones consistentes; marca "nexo".
+
+**Ajustar:**
+
+1. **Submenu Relatórios incompleto e fora do §3:** mostra só "Produtividade da Equipe" +
+   "Mensal / Eventos". "Produtividade da Equipe" deveria estar **fundida** em "Fluxo & Entrega"
+   (§3). Lista‑alvo do submenu (ou landing no hub `/reports`): **Fluxo & Entrega · Horas &
+   Utilização · Pessoas · Calendário / Eventos · Presença ao vivo**.
+2. **Visão MEMBER não verificada:** o print é da barra do ADMIN (Marina = Administrador(a)).
+   Falta ver a de colaborador — deve mostrar só `Início` + `Meu Trabalho`.
+3. **Acesso do gestor ao trabalho pessoal:** Cockpit é a casa do gestor (ok), mas confirmar onde
+   ele alcança a própria fila (`/tasks`) — dentro de `Demandas` ou item próprio.
+
+**Carregar para a próxima:** ao pedir a correção do submenu Relatórios, entregar a lista‑alvo
+completa e reforçar o merge team‑productivity → Fluxo & Entrega (§3.3).
 
 #### Tela 1 — Início / dashboard pessoal · revisado 2026‑07‑23 · 🔧
 
