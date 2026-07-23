@@ -19,7 +19,8 @@ async function snapshot() {
 
 export type TVSnapshot = Awaited<ReturnType<typeof snapshot>>;
 
-// Public — mirrors the (auth-less) TV server actions.
+// Auth is enforced inside the TV server actions (requireMemberOrHigher): the
+// first snapshot throws for an unauthenticated request, closing the stream.
 export function GET(request: Request) {
   return createSnapshotStreamResponse(snapshot, request.signal);
 }

@@ -90,7 +90,7 @@ export function RevertStageButton({
             {/* Info Badge */}
             <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
               <p className="text-xs text-indigo-800">
-                <strong>ℹ️ {t("infoLabel")}</strong> {t("infoText")}
+                <strong>{t("infoLabel")}</strong> {t("infoText")}
               </p>
             </div>
 
@@ -106,16 +106,16 @@ export function RevertStageButton({
                     type="button"
                     onClick={() => setSelectedStageId(stage.id)}
                     disabled={isPending}
-                    className={`w-full text-left p-4 border-2 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group shadow-sm hover:shadow-md ${
+                    className={`w-full text-left p-4 border rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group shadow-sm hover:shadow-md ${
                       selectedStageId === stage.id
-                        ? "border-indigo-400 bg-gradient-to-r from-indigo-50 to-indigo-50"
-                        : "border-gray-200 hover:border-indigo-300 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-indigo-50"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50 hover:bg-primary/5"
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       {/* Order Badge */}
                       <div className="flex-shrink-0">
-                        <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-white font-bold text-sm shadow-md">
+                        <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm shadow-md">
                           {stage.order}
                         </span>
                       </div>
@@ -206,8 +206,8 @@ export function RevertStageButton({
             </div>
 
             {/* Footer */}
-            <div className="flex gap-3 justify-between items-center pt-4 border-t border-gray-200">
-              <p className="text-xs text-gray-500">
+            <div className="flex gap-3 justify-between items-center pt-4 border-t border-border">
+              <p className="text-xs text-muted-foreground">
                 {previousStages.length === 1
                   ? t("oneStageAvailable")
                   : t("manyStagesAvailable", { count: previousStages.length })}
@@ -221,7 +221,7 @@ export function RevertStageButton({
                     setKind(null);
                   }}
                   disabled={isPending}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-muted text-foreground rounded-md hover:bg-accent transition-colors disabled:opacity-50"
                 >
                   {tCommon("buttons.cancel")}
                 </button>

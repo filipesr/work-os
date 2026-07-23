@@ -13,7 +13,7 @@ export default async function SystemConstraint() {
   if (!constraint) return null;
 
   return (
-    <div className="rounded-xl border-2 border-danger/40 bg-gradient-to-br from-rose-50 to-orange-50 p-6">
+    <div className="rounded-xl border border-danger/40 bg-danger-subtle p-6">
       <div className="flex items-start gap-3">
         <AlertOctagon className="h-6 w-6 shrink-0 text-danger" />
         <div className="min-w-0">

@@ -1,13 +1,17 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { requireMemberOrHigher } from "@/lib/permissions";
 
 /**
- * Public server actions for the TV display page.
- * No auth required — these are read-only queries for the fullscreen TV dashboard.
+ * Server actions for the TV display page. Read-only queries for the fullscreen
+ * wallboard, but they expose team-wide activity (who is online, what they work
+ * on), so they require an authenticated user — same bar as /reports/live-activity.
+ * The office display authenticates once; the SSE stream carries the session cookie.
  */
 
 export async function getTVActiveWorkLogs() {
+  await requireMemberOrHigher();
   try {
     const activeLogs = await prisma.activityLog.findMany({
       where: { endedAt: null },
@@ -55,6 +59,7 @@ export async function getTVActiveWorkLogs() {
 }
 
 export async function getTVOnlineUsers() {
+  await requireMemberOrHigher();
   try {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
@@ -91,6 +96,7 @@ export async function getTVOnlineUsers() {
 }
 
 export async function getTVOfflineUsers() {
+  await requireMemberOrHigher();
   try {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);

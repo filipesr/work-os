@@ -4,7 +4,14 @@
  * sign-in. Keep in sync with the `(protected)` route group — adding a top-level
  * protected segment means adding it here too.
  */
-export const PROTECTED_PATHS = ["/dashboard", "/tasks", "/admin", "/reports", "/account"] as const;
+export const PROTECTED_PATHS = [
+  "/dashboard",
+  "/tasks",
+  "/admin",
+  "/reports",
+  "/account",
+  "/tv",
+] as const;
 
 /** True when `pathname` (locale already stripped) falls under a protected segment. */
 export function isProtectedPath(pathnameWithoutLocale: string): boolean {

@@ -32,7 +32,7 @@
     "CLIENT": "Cliente"
   },
   "googleSyncNote": {
-    "label": "ℹ️ Nota:",
+    "label": "Nota:",
     "message": "Tu nombre y foto se sincronizan con tu Cuenta de Google. Tu rol y equipo son asignados por un administrador."
   }
 }
