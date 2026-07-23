@@ -35,21 +35,6 @@ async function createTeam(formData: FormData) {
   revalidatePath("/admin/teams");
 }
 
-async function updateTeam(formData: FormData) {
-  "use server";
-  await requireAdmin();
-  const id = formData.get("id") as string;
-  const name = formData.get("name") as string;
-  if (!id || !name) return;
-
-  await prisma.team.update({
-    where: { id },
-    data: { name },
-  });
-
-  revalidatePath("/admin/teams");
-}
-
 async function deleteTeam(formData: FormData) {
   "use server";
   await requireAdmin();

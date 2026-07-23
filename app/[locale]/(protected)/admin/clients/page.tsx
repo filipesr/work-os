@@ -45,21 +45,6 @@ async function createClient(formData: FormData) {
   revalidatePath("/admin/clients");
 }
 
-async function updateClient(formData: FormData) {
-  "use server";
-  await requireManagerOrAdmin();
-  const id = formData.get("id") as string;
-  const name = formData.get("name") as string;
-  if (!id || !name) return;
-
-  await prisma.client.update({
-    where: { id },
-    data: { name },
-  });
-
-  revalidatePath("/admin/clients");
-}
-
 async function deleteClient(formData: FormData) {
   "use server";
   await requireManagerOrAdmin();
