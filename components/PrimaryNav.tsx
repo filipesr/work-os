@@ -15,6 +15,7 @@ import {
   LogOut,
   HelpCircle,
   TrendingUp,
+  Presentation,
 } from "lucide-react";
 import { getNavItems, isNavGroup, roleLabelKey, homeHref, type AppRole } from "@/lib/navigation";
 import { useTheme } from "@/components/ThemeProvider";
@@ -246,6 +247,10 @@ export function PrimaryNav({ role, userName }: { role: AppRole; userName: string
                 <Link href="/help" role="menuitem" className="nav-menu-item">
                   <HelpCircle className="h-4 w-4" aria-hidden="true" />
                   {t("help")}
+                </Link>
+                <Link href="/next" role="menuitem" className="nav-menu-item">
+                  <Presentation className="h-4 w-4" aria-hidden="true" />
+                  {t("taskFlow")}
                 </Link>
                 <button
                   type="button"
