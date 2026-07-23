@@ -110,5 +110,19 @@
     "backToClients": "Voltar para Clientes",
     "backToTeams": "Voltar para Equipes",
     "backToUsers": "Voltar para Usuários"
+  },
+  "flow": {
+    "sla": "SLA",
+    "slaExceeded": "SLA estourado",
+    "blockedFor": "bloqueada há {age}"
+  },
+  "stageList": {
+    "task": "Tarefa",
+    "stage": "Etapa",
+    "status": "Status",
+    "aging": "Aging",
+    "due": "Vencimento",
+    "hoursToday": "Horas hoje",
+    "empty": "Nada por aqui."
   }
 }
