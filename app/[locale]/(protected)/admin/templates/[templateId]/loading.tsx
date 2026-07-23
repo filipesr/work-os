@@ -1,6 +1,6 @@
 export default function TemplateDetailLoading() {
   return (
-    <div className="container mx-auto p-8 animate-pulse">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 animate-pulse">
       <div className="h-5 w-40 bg-muted rounded mb-6" />
       <div className="bg-card border border-border shadow-sm rounded-lg p-6 mb-8">
         <div className="h-8 w-64 bg-muted rounded mb-2" />

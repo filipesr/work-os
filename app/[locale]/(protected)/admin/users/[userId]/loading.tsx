@@ -1,6 +1,6 @@
 export default function UserDetailLoading() {
   return (
-    <div className="container mx-auto p-8 animate-pulse">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 animate-pulse">
       <div className="h-5 w-40 bg-muted rounded mb-6" />
 
       <div className="bg-card shadow-lg rounded-xl border border-border p-6">

@@ -124,7 +124,7 @@ export default function LiveActivityPage() {
     });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

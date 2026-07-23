@@ -85,7 +85,7 @@ export default async function ProjectDetailPage({
   ];
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <BackLink
         href={`/admin/clients/${project.clientId}`}
         label={t("backToProjects")}

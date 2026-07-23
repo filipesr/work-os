@@ -1,6 +1,6 @@
 export default function NewTaskLoading() {
   return (
-    <div className="container mx-auto p-8 max-w-3xl animate-pulse space-y-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 max-w-3xl animate-pulse space-y-8">
       <div>
         <div className="h-5 w-32 bg-muted rounded mb-4" />
         <div className="h-8 w-48 bg-muted rounded" />

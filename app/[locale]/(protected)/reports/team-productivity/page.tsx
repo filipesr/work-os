@@ -94,7 +94,7 @@ export default async function TeamProductivityPage({ searchParams }: PageProps) 
   const t = await getTranslations("reportsTeam");
 
   return (
-    <div className="container mx-auto p-6 space-y-4">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-4">
       <div>
         <h1 className="text-3xl font-bold text-foreground mb-1">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>

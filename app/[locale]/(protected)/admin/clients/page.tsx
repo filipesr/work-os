@@ -63,7 +63,7 @@ export default async function ClientsPage() {
   const t = await getTranslations("admin.clients");
 
   return (
-    <div>
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>

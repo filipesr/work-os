@@ -76,7 +76,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
   ];
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Back link — returns to the parent project */}
       <BackLink
         href={`/admin/projects/${task.project.id}`}

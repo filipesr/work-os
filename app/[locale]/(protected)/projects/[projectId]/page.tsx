@@ -147,7 +147,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const allStages = Array.from(allStagesMap.values()).sort((a, b) => a.order - b.order);
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">{project.name}</h1>
         <p className="text-muted-foreground">Cliente: {project.client.name}</p>

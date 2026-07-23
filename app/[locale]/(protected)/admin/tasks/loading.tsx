@@ -1,6 +1,6 @@
 export default function AdminTasksLoading() {
   return (
-    <div className="container mx-auto p-8 animate-pulse space-y-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 animate-pulse space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <div className="h-8 w-40 bg-muted rounded" />

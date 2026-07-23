@@ -68,7 +68,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   ]);
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>

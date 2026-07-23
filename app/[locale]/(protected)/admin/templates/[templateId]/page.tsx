@@ -27,7 +27,7 @@ export default async function TemplateEditorPage({
   }
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Back link */}
       <Link
         href="/admin/templates"
@@ -54,25 +54,19 @@ export default async function TemplateEditorPage({
       <div className="mt-8 bg-card border border-border shadow-sm rounded-lg p-6">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-foreground mb-3">{t("workflowStages")}</h2>
-          <p className="text-muted-foreground">
-            {t("workflowStagesDescription")}
-          </p>
+          <p className="text-muted-foreground">{t("workflowStagesDescription")}</p>
         </div>
 
         {/* Create New Stage Form */}
         <CreateStageForm
           templateId={template.id}
           teams={teams}
-          existingStages={template.stages.map(s => ({ id: s.id, name: s.name, order: s.order }))}
+          existingStages={template.stages.map((s) => ({ id: s.id, name: s.name, order: s.order }))}
         />
 
         {/* Stages List */}
         <div className="mt-8">
-          <StagesList
-            stages={template.stages}
-            templateId={template.id}
-            teams={teams}
-          />
+          <StagesList stages={template.stages} templateId={template.id} teams={teams} />
         </div>
       </div>
 

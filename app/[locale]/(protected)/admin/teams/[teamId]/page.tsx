@@ -49,7 +49,7 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ tea
   }
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <BackLink href="/admin/teams" label={t("backToTeams")} className="mb-6" />
 
       {/* Header Card */}

@@ -80,7 +80,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
   const totalHours = user.timeLogs.reduce((sum, log) => sum + Number(log.hoursSpent), 0);
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <BackLink href="/admin/users" label={t("backToUsers")} className="mb-6" />
 
       {/* Header Card */}
