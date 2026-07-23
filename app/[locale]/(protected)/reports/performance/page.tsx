@@ -16,7 +16,7 @@ import {
   getFirstTimeRightByStage,
   type PerformanceFilters,
 } from "@/lib/actions/reporting";
-import { ThroughputLine, StatusCfd, xLabelsFor } from "@/components/reports/FlowCharts";
+import { ThroughputLine, StatusCfd, CycleScatter } from "@/components/reports/FlowCharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ArrowLeft,
@@ -218,108 +218,6 @@ async function AvgTimeSection({ filters, t }: { filters: PerformanceFilters; t: 
   );
 }
 
-// Static SVG scatterplot of cycle times with p50/p85/p95 reference lines.
-// Server-rendered — no charting library, no client JS.
-function CycleScatter({
-  points,
-  p50,
-  p85,
-  p95,
-  t,
-}: {
-  points: { days: number; at: string }[];
-  p50: number;
-  p85: number;
-  p95: number;
-  t: T;
-}) {
-  const W = 320;
-  const H = 160;
-  const padL = 24; // room for Y-axis (days) labels
-  const padR = 42; // room for percentile labels
-  const padT = 8;
-  const padB = 20; // room for X-axis (date) labels
-  // Cap the y-axis so a rare outlier doesn't squash the bulk; clip above.
-  const yMax = Math.max(p95 * 1.25, 1);
-  // Oldest → newest left-to-right so the X axis reads chronologically.
-  const sorted = [...points].sort((a, b) => a.at.localeCompare(b.at));
-  const x = (i: number) =>
-    padL + (sorted.length <= 1 ? 0 : (i / (sorted.length - 1)) * (W - padL - padR));
-  const y = (d: number) => padT + (1 - Math.min(d, yMax) / yMax) * (H - padT - padB);
-  const line = (d: number, color: string, label: string, key: string) => (
-    <g key={key}>
-      <line
-        x1={padL}
-        y1={y(d)}
-        x2={W - padR}
-        y2={y(d)}
-        stroke={color}
-        strokeDasharray="3 3"
-        strokeWidth={1}
-      />
-      <text x={W - padR + 3} y={y(d) + 3} fontSize={9} fill={color}>
-        {label} {d.toFixed(1)}d
-      </text>
-    </g>
-  );
-  const yTicks = Array.from(new Set([0, Math.round(yMax / 2), Math.round(yMax)]));
-  return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      className="w-full h-auto"
-      role="img"
-      aria-label={t("cycleTime.title")}
-    >
-      {/* Y axis: days scale */}
-      {yTicks.map((v) => (
-        <text
-          key={`y${v}`}
-          x={padL - 4}
-          y={y(v) + 3}
-          fontSize={9}
-          textAnchor="end"
-          fill="currentColor"
-          fillOpacity={0.55}
-        >
-          {v}d
-        </text>
-      ))}
-      <line x1={padL} y1={y(yMax)} x2={padL} y2={y(0)} stroke="currentColor" strokeOpacity={0.25} />
-      <line
-        x1={padL}
-        y1={y(0)}
-        x2={W - padR}
-        y2={y(0)}
-        stroke="currentColor"
-        strokeOpacity={0.25}
-      />
-      {/* X axis: completion dates */}
-      {xLabelsFor(
-        sorted.map((p) => p.at),
-        4
-      ).map((l) => (
-        <text
-          key={`x${l.i}`}
-          x={x(l.i)}
-          y={H - 6}
-          fontSize={9}
-          textAnchor={l.anchor}
-          fill="currentColor"
-          fillOpacity={0.55}
-        >
-          {l.text}
-        </text>
-      ))}
-      {line(p95, "#e11d48", "p95", "l95")}
-      {line(p85, "#7c3aed", "p85", "l85")}
-      {line(p50, "#0891b2", "p50", "l50")}
-      {sorted.map((pt, i) => (
-        <circle key={i} cx={x(i)} cy={y(pt.days)} r={2} fill="#64748b" fillOpacity={0.55} />
-      ))}
-    </svg>
-  );
-}
-
 async function CycleTimeSection({ filters, t }: { filters: PerformanceFilters; t: T }) {
   const cycle = await getCycleTimePercentiles(filters);
 
@@ -365,7 +263,7 @@ async function CycleTimeSection({ filters, t }: { filters: PerformanceFilters; t
               p50={cycle.p50}
               p85={cycle.p85}
               p95={cycle.p95}
-              t={t}
+              ariaLabel={t("cycleTime.title")}
             />
             <p className="mt-2 text-xs text-muted-foreground">
               {t("cycleTime.footnote", { count: cycle.count })}
