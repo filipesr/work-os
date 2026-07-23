@@ -71,8 +71,8 @@ describe("TaskDetailView", () => {
   it("renders the task title and project/client", () => {
     renderView();
     expect(screen.getByRole("heading", { name: "Landing Page" })).toBeInTheDocument();
-    expect(screen.getByText("ACME")).toBeInTheDocument();
-    expect(screen.getByText("Site")).toBeInTheDocument();
+    // PageHeader subtitle joins client · project into a single node.
+    expect(screen.getByText("ACME · Site")).toBeInTheDocument();
   });
 
   it("shows the assignee name", () => {
@@ -87,6 +87,7 @@ describe("TaskDetailView", () => {
 
   it("renders the current stage badge when present", () => {
     renderView({ currentStage: { id: "s1", name: "Design", order: 3 } });
-    expect(screen.getByText("Design")).toBeInTheDocument();
+    // StatusBadge joins order · stage name into a single node.
+    expect(screen.getByText("3 · Design")).toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import dynamic from "next/dynamic";
+import { type ReactNode } from "react";
 import {
   Task,
   User,
@@ -15,13 +15,13 @@ import {
   TimeLog,
   UserRole,
 } from "@prisma/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SectionCard } from "@/components/ui/SectionCard";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { taskStatusTone, priorityTone } from "@/lib/status-tone";
 import {
-  ArrowLeft,
   Calendar,
   User as UserIcon,
   AlertCircle,
@@ -87,6 +87,20 @@ interface TaskDetailViewProps {
   currentStageAssignee?: string | null;
 }
 
+/** Pílula de contagem para os headers de seção (comentários / artefatos / horas). */
+function CountPill({ children }: { children: ReactNode }) {
+  return (
+    <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+      {children}
+    </span>
+  );
+}
+
+/** Micro-label de campo (não-formulário) dentro do card de detalhes. */
+function FieldMicroLabel({ children }: { children: ReactNode }) {
+  return <p className="mb-2 text-xs font-medium text-muted-foreground">{children}</p>;
+}
+
 export function TaskDetailView({
   task,
   artifactRows,
@@ -108,98 +122,67 @@ export function TaskDetailView({
   const t = useTranslations("tasks");
   const tDetail = useTranslations("tasks.detail");
   const tPriority = useTranslations("tasks.priority");
+  const tStatus = useTranslations("tasks.status");
   const tComments = useTranslations("tasks.comments");
   const tArtifacts = useTranslations("tasks.artifacts");
   const tTimeLogs = useTranslations("tasks.timeLogs");
   const locale = useLocale();
   const dateLocale = dateFnsLocale(locale);
 
-  const priorityConfig = {
-    LOW: { label: tPriority("low"), variant: "secondary" as const },
-    MEDIUM: { label: tPriority("medium"), variant: "default" as const },
-    HIGH: { label: tPriority("high"), variant: "outline" as const },
-    URGENT: { label: tPriority("urgent"), variant: "destructive" as const },
+  const statusLabels: Record<Task["status"], string> = {
+    BACKLOG: tStatus("backlog"),
+    IN_PROGRESS: tStatus("inProgress"),
+    PAUSED: tStatus("paused"),
+    COMPLETED: tStatus("completed"),
+    CANCELLED: tStatus("cancelled"),
+    OBSOLETE: tStatus("obsolete"),
   };
-
-  const tStatus = useTranslations("tasks.status");
-
-  const statusConfig = {
-    BACKLOG: { label: tStatus("backlog"), variant: "secondary" as const },
-    IN_PROGRESS: { label: tStatus("inProgress"), variant: "default" as const },
-    PAUSED: { label: tStatus("paused"), variant: "outline" as const },
-    COMPLETED: { label: tStatus("completed"), variant: "default" as const },
-    CANCELLED: { label: tStatus("cancelled"), variant: "destructive" as const },
-    OBSOLETE: { label: tStatus("obsolete"), variant: "outline" as const },
-  };
+  const priorityLabel = tPriority(task.priority.toLowerCase());
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Main Content - Left Side */}
-      <div className="lg:col-span-2 space-y-6">
-        {/* Main Task Card - Title + Details + Current Stage */}
-        <Card>
-          <CardHeader>
-            {/* Back Button + Title Row */}
-            <div className="flex items-start gap-4 mb-4">
-              <Link
-                href={`/projects/${task.projectId}`}
-                className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground shrink-0 mt-1"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                {tDetail("backToTasks")}
-              </Link>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold leading-tight mb-2">{task.title}</h1>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>{task.project.client.name}</span>
-                  <span>•</span>
-                  <span>{task.project.name}</span>
-                </div>
-              </div>
-              {/* Top Right Corner: Current Stage Tag + History Button */}
-              <div className="flex items-center gap-2 shrink-0">
-                {task.currentStage && (
-                  <Badge variant="default" className="gap-1.5">
-                    <span className="font-bold">{task.currentStage.order}</span>
-                    <span>•</span>
-                    <span>{task.currentStage.name}</span>
-                  </Badge>
-                )}
-                <WorkflowHistoryModal
-                  allStages={allTemplateStages}
-                  stageLogs={task.stageLogs}
-                  comments={task.comments}
-                  artifacts={task.artifacts}
-                  currentUserId={currentUserId}
-                  currentStageId={task.currentStageId}
-                />
-              </div>
-            </div>
-          </CardHeader>
+    <>
+      <PageHeader
+        kicker={tDetail("kicker")}
+        title={task.title}
+        subtitle={`${task.project.client.name} · ${task.project.name}`}
+        backHref={`/projects/${task.projectId}`}
+        backLabel={tDetail("backToProject")}
+        actions={
+          <>
+            {task.currentStage && (
+              <StatusBadge
+                tone="info"
+                label={`${task.currentStage.order} · ${task.currentStage.name}`}
+              />
+            )}
+            <WorkflowHistoryModal
+              allStages={allTemplateStages}
+              stageLogs={task.stageLogs}
+              comments={task.comments}
+              artifacts={task.artifacts}
+              currentUserId={currentUserId}
+              currentStageId={task.currentStageId}
+            />
+          </>
+        }
+      />
 
-          <CardContent className="space-y-4">
-            {/* Details Grid */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Main Content - Left Side */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* Details card — status/prioridade/responsável/prazo + descrições */}
+          <SectionCard title={tDetail("taskDetails")} bodyClassName="space-y-4 p-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  {tDetail("status")}
-                </p>
-                <Badge variant={statusConfig[task.status].variant}>
-                  {statusConfig[task.status].label}
-                </Badge>
+                <FieldMicroLabel>{tDetail("status")}</FieldMicroLabel>
+                <StatusBadge tone={taskStatusTone(task.status)} label={statusLabels[task.status]} />
               </div>
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  {tDetail("priority")}
-                </p>
-                <Badge variant={priorityConfig[task.priority].variant}>
-                  {priorityConfig[task.priority].label}
-                </Badge>
+                <FieldMicroLabel>{tDetail("priority")}</FieldMicroLabel>
+                <StatusBadge tone={priorityTone(task.priority)} label={priorityLabel} />
               </div>
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  {tDetail("assignee")}
-                </p>
+                <FieldMicroLabel>{tDetail("assignee")}</FieldMicroLabel>
                 {task.assignee ? (
                   <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
@@ -208,27 +191,29 @@ export function TaskDetailView({
                         {task.assignee.name?.charAt(0).toUpperCase() || "?"}
                       </AvatarFallback>
                     </Avatar>
-                    <p className="text-sm truncate">{task.assignee.name || task.assignee.email}</p>
+                    <p className="truncate text-sm text-foreground">
+                      {task.assignee.name || task.assignee.email}
+                    </p>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <UserIcon className="h-4 w-4" />
-                    <span className="text-sm">{tDetail("noDescription")}</span>
+                    <span className="text-sm">{tDetail("unassigned")}</span>
                   </div>
                 )}
               </div>
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  {tDetail("dueDate")}
-                </p>
+                <FieldMicroLabel>{tDetail("dueDate")}</FieldMicroLabel>
                 {task.dueDate ? (
                   <div
-                    className={`flex items-center gap-2 text-sm ${isOverdue ? "text-destructive" : ""}`}
+                    className={`flex items-center gap-2 text-sm ${
+                      isOverdue ? "font-medium text-danger" : "text-foreground"
+                    }`}
                   >
                     {isOverdue ? (
                       <AlertCircle className="h-4 w-4" />
                     ) : (
-                      <Calendar className="h-4 w-4" />
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
                     )}
                     <span>
                       {format(new Date(task.dueDate), "dd/MM/yyyy", {
@@ -237,7 +222,7 @@ export function TaskDetailView({
                     </span>
                   </div>
                 ) : (
-                  <span className="text-sm text-muted-foreground">{tDetail("noDescription")}</span>
+                  <span className="text-sm text-muted-foreground">{tDetail("noDueDate")}</span>
                 )}
               </div>
             </div>
@@ -247,10 +232,10 @@ export function TaskDetailView({
               <>
                 <Separator />
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">
-                    {tDetail("description")}
+                  <FieldMicroLabel>{tDetail("description")}</FieldMicroLabel>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                    {task.description}
                   </p>
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{task.description}</p>
                 </div>
               </>
             )}
@@ -259,61 +244,43 @@ export function TaskDetailView({
             {task.project.description && (
               <>
                 <Separator />
-                <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-3">
-                  <p className="text-xs font-semibold text-primary mb-1">
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                  <p className="mb-1 text-xs font-semibold text-primary">
                     {tDetail("aboutProject")} · {task.project.name}
                   </p>
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
                     {task.project.description}
                   </p>
                 </div>
               </>
             )}
-          </CardContent>
-        </Card>
+          </SectionCard>
 
-        {/* Comments Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              {tComments("title")}
-              <Badge variant="secondary" className="ml-auto">
-                {task.comments.length}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          {/* Comments Section */}
+          <SectionCard
+            title={tComments("title")}
+            icon={MessageSquare}
+            badge={<CountPill>{task.comments.length}</CountPill>}
+            bodyClassName="space-y-4 p-6"
+          >
             <CommentsList comments={task.comments} currentUserId={currentUserId} />
-
             <Separator />
-
-            {/* Add Comment Form */}
             <AddCommentForm taskId={task.id} userId={currentUserId} />
-          </CardContent>
-        </Card>
-      </div>
+          </SectionCard>
+        </div>
 
-      {/* Sidebar - Right Side */}
-      <div className="space-y-6">
-        {/* Actions Card */}
-        {canPerformActions && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">{t("actions.edit")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Activity Tracking */}
+        {/* Sidebar - Right Side */}
+        <div className="space-y-6">
+          {/* Actions Card */}
+          {canPerformActions && (
+            <SectionCard title={tDetail("actionsTitle")} bodyClassName="space-y-4 p-6">
               <ActivityButton
                 taskId={task.id}
                 taskTitle={task.title}
                 currentStageId={task.currentStageId}
                 activeLog={activeLog}
               />
-
               <Separator />
-
-              {/* Actions Menu */}
               <TaskActionsMenu
                 taskId={task.id}
                 currentStageId={task.currentStageId}
@@ -321,22 +288,15 @@ export function TaskDetailView({
                 currentStageAssignee={currentStageAssignee}
                 previousStages={previousStages}
               />
-            </CardContent>
-          </Card>
-        )}
+            </SectionCard>
+          )}
 
-        {/* Artifacts Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Paperclip className="h-4 w-4" />
-              {tArtifacts("title")}
-              <Badge variant="secondary" className="ml-auto text-xs">
-                {artifactRows.length}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          {/* Artifacts Section */}
+          <SectionCard
+            title={tArtifacts("title")}
+            icon={Paperclip}
+            badge={<CountPill>{artifactRows.length}</CountPill>}
+          >
             <UnifiedArtifactsPanel
               rows={artifactRows}
               scope="TASK"
@@ -351,27 +311,22 @@ export function TaskDetailView({
             />
             {/* §3: StorageBreakdown (bytes por mídia) removido do detalhe da tarefa —
                 é infra/capacidade, vive em Clientes/Projetos, não na tela de "fazer". */}
-          </CardContent>
-        </Card>
+          </SectionCard>
 
-        {/* Time Logs Section (Only for ADMIN/MANAGER) */}
-        {canViewTimeLogs && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                {tTimeLogs("title")}
-                <Badge variant="secondary" className="ml-auto text-xs">
-                  {tTimeLogs("totalHours", { hours: totalHours.toFixed(1) })}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          {/* Time Logs Section (Only for ADMIN/MANAGER) */}
+          {canViewTimeLogs && (
+            <SectionCard
+              title={tTimeLogs("title")}
+              icon={Clock}
+              badge={
+                <CountPill>{tTimeLogs("totalHours", { hours: totalHours.toFixed(1) })}</CountPill>
+              }
+            >
               <TimeLogsList timeLogs={task.timeLogs} />
-            </CardContent>
-          </Card>
-        )}
+            </SectionCard>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

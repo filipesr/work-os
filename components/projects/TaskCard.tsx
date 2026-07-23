@@ -41,11 +41,11 @@ export function TaskCard({ task }: TaskCardProps) {
           {task.dueDate && (
             <div className="flex items-center gap-2 text-sm">
               {isOverdue ? (
-                <AlertCircle className="h-4 w-4 text-destructive" />
+                <AlertCircle className="h-4 w-4 text-danger" />
               ) : (
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               )}
-              <span className={isOverdue ? "text-destructive" : "text-muted-foreground"}>
+              <span className={isOverdue ? "text-danger" : "text-muted-foreground"}>
                 {formatDistanceToNow(new Date(task.dueDate), {
                   addSuffix: true,
                   locale: dateFnsLocale(locale),

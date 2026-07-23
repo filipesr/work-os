@@ -1,5 +1,8 @@
 {
   "client": "Cliente",
+  "listKicker": "Núcleo de trabajo",
+  "boardKicker": "Proyecto",
+  "backToProjects": "Volver a Proyectos",
   "team": "Equipo",
   "taskCount": "{count} tarea",
   "tasksCount": "{count} tareas",

@@ -14,6 +14,11 @@
   },
   "detail": {
     "backToTasks": "Voltar para Tarefas",
+    "backToProject": "Voltar ao projeto",
+    "kicker": "Tarefa",
+    "actionsTitle": "Ações",
+    "unassigned": "Sem responsável",
+    "noDueDate": "Sem prazo",
     "taskDetails": "Detalhes da Tarefa",
     "aboutProject": "Sobre o projeto",
     "storageByType": "Armazenamento no NAS — por tipo",

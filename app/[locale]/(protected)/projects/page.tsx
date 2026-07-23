@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { PanelTop, ChevronRight } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export const metadata: Metadata = { title: "Projetos" };
 
@@ -13,6 +15,7 @@ export default async function ProjectsPage() {
   const session = await auth();
   if (!session?.user) return notFound();
   const t = await getTranslations("common.projectsList");
+  const tp = await getTranslations("projects");
 
   const projects = await prisma.project.findMany({
     orderBy: { name: "asc" },
@@ -26,15 +29,10 @@ export default async function ProjectsPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
-      </header>
+      <PageHeader kicker={tp("listKicker")} title={t("title")} subtitle={t("subtitle")} />
 
       {projects.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card px-4 py-12 text-center text-sm text-muted-foreground">
-          {t("empty")}
-        </div>
+        <EmptyState variant="card" icon={PanelTop} title={t("title")} description={t("empty")} />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (

@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { KanbanBoard } from "@/components/projects/KanbanBoard";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { auth } from "@/lib/auth";
 
 interface ProjectPageProps {
@@ -146,12 +148,17 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   const allStages = Array.from(allStagesMap.values()).sort((a, b) => a.order - b.order);
 
+  const tp = await getTranslations("projects");
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">{project.name}</h1>
-        <p className="text-muted-foreground">Cliente: {project.client.name}</p>
-      </div>
+      <PageHeader
+        kicker={tp("boardKicker")}
+        title={project.name}
+        subtitle={`${tp("client")}: ${project.client.name}`}
+        backHref="/projects"
+        backLabel={tp("backToProjects")}
+      />
 
       <KanbanBoard
         project={project}
