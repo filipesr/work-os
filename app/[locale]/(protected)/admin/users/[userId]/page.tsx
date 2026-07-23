@@ -163,12 +163,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
           ) : (
             (() => {
               const pct = Math.round((util.utilization ?? 0) * 100);
-              const tone =
-                pct > 90
-                  ? "text-rose-600 dark:text-rose-400"
-                  : pct >= 60
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-amber-600 dark:text-amber-400";
+              const tone = pct > 90 ? "text-danger" : pct >= 60 ? "text-success" : "text-warning";
               return (
                 <>
                   <p className={`text-3xl font-bold ${tone}`}>{pct}%</p>

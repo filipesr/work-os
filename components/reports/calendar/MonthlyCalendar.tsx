@@ -53,7 +53,7 @@ export function MonthlyCalendar({
       {/* Legend */}
       <div className="mb-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm border border-rose-300 bg-rose-100" />
+          <span className="h-3 w-3 rounded-sm border border-danger/40 bg-danger-subtle" />
           {t("legend.holiday")}
         </span>
         <span className="inline-flex items-center gap-1.5">
@@ -65,7 +65,7 @@ export function MonthlyCalendar({
           {t("legend.demands")}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm border border-amber-300 bg-amber-100" />
+          <span className="h-3 w-3 rounded-sm border border-warning/40 bg-warning-subtle" />
           {t("legend.anniversaries")}
         </span>
       </div>
@@ -179,7 +179,7 @@ export function MonthlyCalendar({
                   type="button"
                   onClick={() => setDetailIso(day.iso)}
                   title={annivNames.join(", ")}
-                  className="-mx-1.5 -mb-1.5 mt-auto block truncate border-t border-border bg-amber-50/60 px-1.5 py-1 text-left text-[10px] text-amber-700 transition-colors hover:bg-amber-100/80 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50"
+                  className="-mx-1.5 -mb-1.5 mt-auto block truncate border-t border-border bg-warning-subtle/60 px-1.5 py-1 text-left text-[10px] text-warning transition-colors hover:bg-warning-subtle/80 dark:hover:bg-amber-950/50"
                 >
                   {annivFirstNames.join(", ")}
                 </button>

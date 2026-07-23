@@ -188,8 +188,8 @@ export default function LiveActivityPage() {
             {t("allUsers")} ({filteredUsers.length})
           </CardTitle>
           <p className="text-sm text-muted-foreground hidden">
-            <span className="text-green-600 font-medium">{t("online")}</span> |
-            <span className="text-red-600 font-medium"> {t("offline")}</span>
+            <span className="text-success font-medium">{t("online")}</span> |
+            <span className="text-danger font-medium"> {t("offline")}</span>
           </p>
         </CardHeader>
         <CardContent>
@@ -221,7 +221,7 @@ export default function LiveActivityPage() {
                       relative overflow-hidden rounded-xl transition-all w-52
                       ${
                         user.isOnline
-                          ? "border-2 border-green-500 shadow-lg shadow-green-500/20 hover:shadow-xl"
+                          ? "border-2 border-success/40 shadow-lg shadow-green-500/20 hover:shadow-xl"
                           : "border-2 border-gray-300 grayscale opacity-60"
                       }
                       ${user.activeLog ? "cursor-pointer" : ""}
@@ -242,7 +242,7 @@ export default function LiveActivityPage() {
                       {user.lastSeenAt && (
                         <div className="absolute top-2 right-2 ">
                           <span className="bg-white/90 px-2 py-1 rounded-md shadow-sm flex flex-col items-end">
-                            <span className="text-green-600 text-xs font-bold">
+                            <span className="text-success text-xs font-bold">
                               {user.activeLog ? user.activeLog.task.title : t("online")}
                             </span>
                             {user.activeLog && (
@@ -274,7 +274,7 @@ export default function LiveActivityPage() {
                         <div
                           className={`
                             absolute bottom-1 right-1 h-6 w-6 rounded-full border-4 border-background
-                            ${user.isOnline ? "bg-green-500" : "bg-red-500"}
+                            ${user.isOnline ? "bg-success-subtle0" : "bg-danger-subtle0"}
                             ${user.activeLog ? "animate-pulse" : ""}
                           `}
                         />

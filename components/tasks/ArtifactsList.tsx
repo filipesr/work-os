@@ -13,8 +13,8 @@ import { DownloadArtifactButton } from "./DownloadArtifactButton";
 const nasStatusCls: Record<string, string> = {
   PENDING: "bg-muted text-muted-foreground border-border",
   UPLOADING: "bg-indigo-100 text-indigo-800 border-indigo-200",
-  READY: "bg-green-100 text-green-800 border-green-200",
-  FAILED: "bg-red-100 text-red-800 border-red-200",
+  READY: "bg-success-subtle text-success border-success/40",
+  FAILED: "bg-danger-subtle text-danger border-danger/40",
   EXPIRED: "bg-muted text-muted-foreground border-border",
 };
 
@@ -29,7 +29,7 @@ interface ArtifactsListProps {
 // Ícone + cor por tipo (o rótulo textual vem de tasks.artifacts.types).
 const artifactTypeConfig = {
   DOCUMENT: { icon: FileText, color: "text-indigo-500" },
-  IMAGE: { icon: Image, color: "text-green-500" },
+  IMAGE: { icon: Image, color: "text-success" },
   VIDEO: { icon: Video, color: "text-indigo-500" },
   FIGMA: { icon: Figma, color: "text-pink-500" },
   OTHER: { icon: File, color: "text-gray-500" },

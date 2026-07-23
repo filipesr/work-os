@@ -82,7 +82,7 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="hoursSpent">
-          {t("hoursLabel")} <span className="text-red-500">*</span>
+          {t("hoursLabel")} <span className="text-danger">*</span>
         </Label>
         <Input
           id="hoursSpent"
@@ -100,7 +100,7 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="logDate">
-          {t("dateLabel")} <span className="text-red-500">*</span>
+          {t("dateLabel")} <span className="text-danger">*</span>
         </Label>
         <Input
           id="logDate"

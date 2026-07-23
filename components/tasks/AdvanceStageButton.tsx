@@ -78,10 +78,10 @@ export function AdvanceStageButton({
   // Don't show button if there's no current stage
   if (!currentStageId) {
     return (
-      <div className="border border-yellow-300 bg-yellow-50 rounded-lg p-4">
+      <div className="border border-warning/40 bg-warning-subtle rounded-lg p-4">
         <div className="flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-yellow-600" />
-          <p className="text-sm font-medium text-yellow-900">{t("noActiveStage")}</p>
+          <AlertCircle className="h-5 w-5 text-warning" />
+          <p className="text-sm font-medium text-warning">{t("noActiveStage")}</p>
         </div>
       </div>
     );
@@ -154,11 +154,11 @@ export function AdvanceStageButton({
             </div>
 
             {/* Requirement Box */}
-            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-900">
+            <div className="mb-6 p-4 bg-warning-subtle border border-warning/40 rounded-lg">
+              <p className="text-sm text-warning">
                 <strong>⚠️ {t("advanceModal.requirementLabel")}</strong>
               </p>
-              <p className="text-xs text-amber-800 mt-2">
+              <p className="text-xs text-warning mt-2">
                 {t.rich("advanceModal.requirementText", {
                   strong: (chunks) => <strong>{chunks}</strong>,
                 })}
@@ -175,15 +175,15 @@ export function AdvanceStageButton({
             {previewData && (
               <div className="mb-6 space-y-3">
                 {previewData.activated.length > 0 && (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm font-semibold text-green-800 mb-2">
+                  <div className="p-3 bg-success-subtle border border-success/40 rounded-lg">
+                    <p className="text-sm font-semibold text-success mb-2">
                       ✓ {t("advanceModal.activatedTitle")}
                     </p>
                     <ul className="space-y-2">
                       {previewData.activated.map((stage) => (
                         <li
                           key={stage.id}
-                          className="flex items-center justify-between gap-2 text-xs text-green-700"
+                          className="flex items-center justify-between gap-2 text-xs text-success"
                         >
                           <span>
                             • {stage.name} ({t("advanceModal.orderLabel", { order: stage.order })})
@@ -202,15 +202,15 @@ export function AdvanceStageButton({
                 )}
 
                 {previewData.blocked.length > 0 && (
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm font-semibold text-yellow-800 mb-2">
+                  <div className="p-3 bg-warning-subtle border border-warning/40 rounded-lg">
+                    <p className="text-sm font-semibold text-warning mb-2">
                       🔒 {t("advanceModal.blockedTitle")}
                     </p>
                     <ul className="space-y-2">
                       {previewData.blocked.map((stage) => (
                         <li
                           key={stage.id}
-                          className="flex items-center justify-between gap-2 text-xs text-yellow-700"
+                          className="flex items-center justify-between gap-2 text-xs text-warning"
                         >
                           <span>
                             • {stage.name} ({t("advanceModal.orderLabel", { order: stage.order })})

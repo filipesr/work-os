@@ -56,7 +56,7 @@ export async function TaskBar({
   const isCompleted = task.status === "COMPLETED";
   let dueText = "";
   let toneClasses =
-    "bg-emerald-50 border-emerald-300 text-emerald-950 hover:border-emerald-500 dark:bg-emerald-950/40 dark:border-emerald-700/60 dark:text-emerald-50 dark:hover:border-emerald-500";
+    "bg-success-subtle border-success/40 text-success hover:border-success/40 dark:hover:border-success/40";
 
   if (task.dueDate) {
     const delta = daysUntil(task.dueDate);
@@ -67,15 +67,15 @@ export async function TaskBar({
     } else if (delta < 0) {
       dueText = t("overdue", { days: Math.abs(delta) });
       toneClasses =
-        "bg-red-50 border-red-300 text-red-950 hover:border-red-500 dark:bg-red-950/40 dark:border-red-700/60 dark:text-red-50 dark:hover:border-red-500";
+        "bg-danger-subtle border-danger/40 text-danger hover:border-danger/40 dark:hover:border-danger/40";
     } else if (delta === 0) {
       dueText = t("dueToday");
       toneClasses =
-        "bg-amber-50 border-amber-300 text-amber-950 hover:border-amber-500 dark:bg-amber-950/40 dark:border-amber-700/60 dark:text-amber-50 dark:hover:border-amber-500";
+        "bg-warning-subtle border-warning/40 text-warning hover:border-warning/40 dark:hover:border-warning/40";
     } else if (delta <= 2) {
       dueText = t("dueIn", { days: delta });
       toneClasses =
-        "bg-amber-50 border-amber-300 text-amber-950 hover:border-amber-500 dark:bg-amber-950/40 dark:border-amber-700/60 dark:text-amber-50 dark:hover:border-amber-500";
+        "bg-warning-subtle border-warning/40 text-warning hover:border-warning/40 dark:hover:border-warning/40";
     } else {
       dueText = t("dueIn", { days: delta });
     }

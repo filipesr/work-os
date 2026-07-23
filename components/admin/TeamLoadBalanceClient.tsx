@@ -17,9 +17,9 @@ import type { MemberLoad } from "@/lib/actions/team-health";
 
 const TIER_COLOR: Record<LoadTier, string> = {
   idle: "bg-muted-foreground/30",
-  healthy: "bg-green-500",
-  high: "bg-amber-500",
-  overloaded: "bg-red-500",
+  healthy: "bg-success-subtle0",
+  high: "bg-warning-subtle0",
+  overloaded: "bg-danger-subtle0",
 };
 
 type Filter = "all" | "overloaded" | "idle" | "active";
@@ -42,11 +42,7 @@ function Stat({
   tone?: "default" | "red" | "muted";
 }) {
   const color =
-    tone === "red"
-      ? "text-red-700"
-      : tone === "muted"
-        ? "text-muted-foreground"
-        : "text-foreground";
+    tone === "red" ? "text-danger" : tone === "muted" ? "text-muted-foreground" : "text-foreground";
   return (
     <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
       <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -165,7 +161,7 @@ export function TeamLoadBalanceClient({ rows, summary }: { rows: MemberLoad[]; s
                           {t("activeStages", { count: r.count })}
                         </span>
                         {r.overloaded && (
-                          <span className="shrink-0 text-xs font-bold text-red-700 bg-red-100 border border-red-300 rounded px-2 py-0.5">
+                          <span className="shrink-0 text-xs font-bold text-danger bg-danger-subtle border border-danger/40 rounded px-2 py-0.5">
                             {t("overloaded")}
                           </span>
                         )}
@@ -236,9 +232,9 @@ export function TeamLoadBalanceClient({ rows, summary }: { rows: MemberLoad[]; s
                         <dd
                           className={`text-xs font-medium ${
                             s.dueState === "overdue"
-                              ? "text-red-700"
+                              ? "text-danger"
                               : s.dueState === "dueSoon"
-                                ? "text-yellow-700"
+                                ? "text-warning"
                                 : "text-foreground"
                           }`}
                         >

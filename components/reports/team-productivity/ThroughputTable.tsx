@@ -42,11 +42,7 @@ export async function ThroughputTable({ rows }: ThroughputTableProps) {
           {nonZero.map((row) => {
             const delta = row.completedCount - row.previousCompletedCount;
             const deltaClass =
-              delta > 0
-                ? "text-green-700 dark:text-green-300"
-                : delta < 0
-                  ? "text-red-700 dark:text-red-300"
-                  : "text-muted-foreground";
+              delta > 0 ? "text-success" : delta < 0 ? "text-danger" : "text-muted-foreground";
             return (
               <tr key={row.teamId}>
                 <td className="px-6 py-3 text-sm font-medium text-foreground">{row.teamName}</td>

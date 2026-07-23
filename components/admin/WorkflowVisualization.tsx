@@ -80,7 +80,7 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
           {t("legendStandard")}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-4 rounded border-2 border-dashed border-amber-400 bg-amber-50" />
+          <span className="inline-block h-3 w-4 rounded border-2 border-dashed border-warning/40 bg-warning-subtle" />
           {t("legendOptional")}
         </span>
       </div>
@@ -107,7 +107,7 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
                     <div
                       className={`rounded-lg p-4 min-w-[200px] shadow-sm border-2 ${
                         stage.optional
-                          ? "bg-amber-50/50 border-amber-400 border-dashed"
+                          ? "bg-warning-subtle/50 border-warning/40 border-dashed"
                           : "bg-card border-primary/30"
                       }`}
                     >
@@ -115,7 +115,7 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
                         <span
                           className={`inline-flex items-center justify-center w-6 h-6 rounded-full font-bold text-xs ${
                             stage.optional
-                              ? "bg-amber-100 text-amber-800"
+                              ? "bg-warning-subtle text-warning"
                               : "bg-primary/10 text-primary"
                           }`}
                         >
@@ -123,7 +123,7 @@ export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
                         </span>
                         <h4 className="font-bold text-foreground text-sm">{stage.name}</h4>
                         {stage.optional && (
-                          <span className="ml-auto rounded-full border border-amber-400 bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                          <span className="ml-auto rounded-full border border-warning/40 bg-warning-subtle px-2 py-0.5 text-[10px] font-bold text-warning">
                             {t("optionalBadge")}
                           </span>
                         )}

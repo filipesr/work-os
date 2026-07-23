@@ -18,10 +18,10 @@ export function BonusSlide({
           <Link
             key={key}
             href={href}
-            className="group bg-card border-2 border-amber-500/40 rounded-2xl p-6 text-left flex flex-col hover:border-amber-500/70 hover:shadow-xl transition-all"
+            className="group bg-card border-2 border-warning/40/40 rounded-2xl p-6 text-left flex flex-col hover:border-warning/40/70 hover:shadow-xl transition-all"
           >
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-amber-500/10 mb-4">
-              <Icon className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-warning-subtle0/10 mb-4">
+              <Icon className="h-6 w-6 text-warning" />
             </div>
             <h3 className="text-xl font-bold text-foreground mb-2 leading-tight">
               {t(`cards.${key}.title`)}

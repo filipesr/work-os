@@ -34,8 +34,8 @@ function formatArtifactTime(
 const nasStatusCls: Record<string, string> = {
   PENDING: "bg-muted text-muted-foreground border-border",
   UPLOADING: "bg-indigo-100 text-indigo-800 border-indigo-200",
-  READY: "bg-green-100 text-green-800 border-green-200",
-  FAILED: "bg-red-100 text-red-800 border-red-200",
+  READY: "bg-success-subtle text-success border-success/40",
+  FAILED: "bg-danger-subtle text-danger border-danger/40",
   EXPIRED: "bg-muted text-muted-foreground border-border",
 };
 

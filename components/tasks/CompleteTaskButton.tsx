@@ -48,12 +48,12 @@ export function CompleteTaskButton({
       }
     >
       {/* Info */}
-      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-        <p className="text-sm text-green-800">
+      <div className="p-4 bg-success-subtle border border-success/40 rounded-lg">
+        <p className="text-sm text-success">
           <strong>✓ {t("completeDialog.infoActionLabel")}</strong>{" "}
           {t("completeDialog.infoActionText")}
         </p>
-        <p className="text-xs text-green-700 mt-2">{t("completeDialog.infoComment")}</p>
+        <p className="text-xs text-success mt-2">{t("completeDialog.infoComment")}</p>
       </div>
     </ConfirmActionButton>
   );

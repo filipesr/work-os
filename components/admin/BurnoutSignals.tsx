@@ -12,7 +12,7 @@ export default async function BurnoutSignals() {
   return (
     <div className="bg-card shadow-lg rounded-xl border border-border p-6">
       <div className="mb-1 flex items-center gap-2">
-        <HeartPulse className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+        <HeartPulse className="h-5 w-5 text-danger" />
         <h3 className="text-lg font-bold text-foreground">{t("title")}</h3>
       </div>
       <p className="mb-4 text-xs text-muted-foreground">{t("subtitle")}</p>
@@ -32,8 +32,8 @@ export default async function BurnoutSignals() {
               <span
                 className={`shrink-0 rounded px-2 py-0.5 text-xs font-semibold ${
                   i.risk === "high"
-                    ? "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
-                    : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                    ? "bg-danger-subtle text-danger"
+                    : "bg-warning-subtle text-warning"
                 }`}
               >
                 {t(i.risk)}

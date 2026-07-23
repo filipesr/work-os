@@ -12,19 +12,19 @@ const TONE_STYLES: Record<
   { container: string; iconBg: string; iconColor: string }
 > = {
   problem: {
-    container: "border-red-500/40 hover:border-red-500/60",
-    iconBg: "bg-red-500/10",
-    iconColor: "text-red-600 dark:text-red-400",
+    container: "border-danger/40/40 hover:border-danger/40/60",
+    iconBg: "bg-danger-subtle0/10",
+    iconColor: "text-danger",
   },
   solution: {
-    container: "border-emerald-500/40 hover:border-emerald-500/60",
-    iconBg: "bg-emerald-500/10",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
+    container: "border-success/40/40 hover:border-success/40/60",
+    iconBg: "bg-success-subtle0/10",
+    iconColor: "text-success",
   },
   bonus: {
-    container: "border-amber-500/40 hover:border-amber-500/60",
-    iconBg: "bg-amber-500/10",
-    iconColor: "text-amber-600 dark:text-amber-400",
+    container: "border-warning/40/40 hover:border-warning/40/60",
+    iconBg: "bg-warning-subtle0/10",
+    iconColor: "text-warning",
   },
   step: {
     container: "border-primary/40",

@@ -61,9 +61,9 @@ export async function MyGrowthWidget({ userId }: { userId: string }) {
                   <span
                     className={`ml-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${
                       r.reworkClass === "DEFECT"
-                        ? "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
+                        ? "bg-danger-subtle text-danger"
                         : r.reworkClass === "LEGITIMATE"
-                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                          ? "bg-success-subtle text-success"
                           : "bg-muted text-muted-foreground"
                     }`}
                   >

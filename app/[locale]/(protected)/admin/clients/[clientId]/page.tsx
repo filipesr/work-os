@@ -190,7 +190,7 @@ export default async function ClientDetailPage({
                       <span
                         className={`px-2.5 py-0.5 text-xs font-bold rounded-full border ${
                           isActive
-                            ? "bg-green-100 text-green-800 border-green-200"
+                            ? "bg-success-subtle text-success border-success/40"
                             : "bg-muted text-muted-foreground border-border"
                         }`}
                       >

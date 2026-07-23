@@ -22,15 +22,15 @@ const REPORT_CARDS = [
   {
     key: "performance",
     href: "/reports/performance",
-    iconBgClass: "bg-orange-500/10",
-    accentTextClass: "text-orange-500",
+    iconBgClass: "bg-warning-subtle0/10",
+    accentTextClass: "text-warning",
     iconPath: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
   },
   {
     key: "liveActivity",
     href: "/reports/live-activity",
-    iconBgClass: "bg-green-500/10",
-    accentTextClass: "text-green-500",
+    iconBgClass: "bg-success-subtle0/10",
+    accentTextClass: "text-success",
     iconPath: "M13 10V3L4 14h7v7l9-11h-7z",
   },
   {

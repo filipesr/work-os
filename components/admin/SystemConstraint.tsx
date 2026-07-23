@@ -13,23 +13,21 @@ export default async function SystemConstraint() {
   if (!constraint) return null;
 
   return (
-    <div className="rounded-xl border-2 border-rose-400 dark:border-rose-500 bg-gradient-to-br from-rose-50 to-orange-50 dark:from-rose-950 dark:to-orange-950 p-6">
+    <div className="rounded-xl border-2 border-danger/40 bg-gradient-to-br from-rose-50 to-orange-50 p-6">
       <div className="flex items-start gap-3">
-        <AlertOctagon className="h-6 w-6 shrink-0 text-rose-600 dark:text-rose-400" />
+        <AlertOctagon className="h-6 w-6 shrink-0 text-danger" />
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-danger">
             {t("title")}
           </h3>
-          <p className="mt-1 text-xl font-bold text-rose-900 dark:text-rose-100">
-            {constraint.stageName}
-          </p>
-          <p className="mt-1 text-sm text-rose-700 dark:text-rose-300">
+          <p className="mt-1 text-xl font-bold text-danger">{constraint.stageName}</p>
+          <p className="mt-1 text-sm text-danger">
             {t("detail", {
               tasks: constraint.blockedTaskCount,
               wait: formatAge(constraint.totalWaitHours),
             })}
           </p>
-          <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">{t("hint")}</p>
+          <p className="mt-2 text-xs text-danger">{t("hint")}</p>
         </div>
       </div>
     </div>

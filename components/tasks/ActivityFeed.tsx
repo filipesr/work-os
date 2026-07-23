@@ -83,7 +83,7 @@ function CommentItem({ comment }: { comment: CommentWithUser }) {
   return (
     <div
       className={`flex gap-3 p-3 rounded-lg ${
-        isRevertComment ? "bg-orange-50 border border-orange-200" : "bg-muted/50"
+        isRevertComment ? "bg-warning-subtle border border-warning/40" : "bg-muted/50"
       }`}
     >
       <Avatar className="h-8 w-8">

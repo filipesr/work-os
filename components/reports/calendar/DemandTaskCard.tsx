@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import type { DemandTask } from "./monthly-types";
 
 const STATUS_CLASS: Record<DemandTask["status"], string> = {
-  COMPLETED: "bg-green-100 text-green-800 border-green-200",
+  COMPLETED: "bg-success-subtle text-success border-success/40",
   IN_PROGRESS: "bg-primary/10 text-primary border-primary/20",
   PAUSED: "bg-destructive/10 text-destructive border-destructive/20",
   CANCELLED: "bg-destructive/10 text-destructive border-destructive/20",

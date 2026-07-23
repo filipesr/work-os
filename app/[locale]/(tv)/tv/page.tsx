@@ -101,7 +101,7 @@ export default function TVLiveActivityPage() {
             })}
           </span>
           <span>
-            <span className="inline-block h-2 w-2 rounded-full bg-green-500 mr-1" />
+            <span className="inline-block h-2 w-2 rounded-full bg-success-subtle0 mr-1" />
             {onlineCount} {t("online")}
           </span>
           <span>
@@ -135,8 +135,8 @@ export default function TVLiveActivityPage() {
                 ${
                   user.isOnline
                     ? user.activeLog
-                      ? "bg-green-950/60 border border-green-700/60"
-                      : "bg-green-950/30 border border-green-800/40"
+                      ? "bg-green-950/60 border border-success/40/60"
+                      : "bg-green-950/30 border border-success/40/40"
                     : "bg-gray-900/50 border border-gray-800/40 opacity-50"
                 }
               `}
@@ -156,7 +156,7 @@ export default function TVLiveActivityPage() {
                   {firstName.charAt(0).toUpperCase()}
                 </div>
                 {user.activeLog && (
-                  <div className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-green-500 border-2 border-gray-950 animate-pulse" />
+                  <div className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-success-subtle0 border-2 border-gray-950 animate-pulse" />
                 )}
               </div>
 

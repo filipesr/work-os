@@ -12,8 +12,7 @@ export async function OnTimeRateCard({ data }: OnTimeRateCardProps) {
   const delta = overall.percentage - previousPercentage;
   const deltaSign = delta >= 0 ? "+" : "";
   const deltaText = t("delta", { value: `${deltaSign}${delta.toFixed(1)}` });
-  const deltaClass =
-    delta >= 0 ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300";
+  const deltaClass = delta >= 0 ? "text-success" : "text-danger";
 
   if (overall.total === 0) {
     return (

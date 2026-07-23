@@ -28,8 +28,8 @@ export default function ReworkClassifyToggle({
           className={`rounded px-2 py-0.5 text-[11px] font-medium border disabled:opacity-50 ${
             current === c
               ? c === "DEFECT"
-                ? "bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900/40 dark:text-rose-300"
-                : "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300"
+                ? "bg-danger-subtle text-danger border-danger/40"
+                : "bg-success-subtle text-success border-success/40"
               : "border-border text-muted-foreground hover:bg-accent"
           }`}
         >

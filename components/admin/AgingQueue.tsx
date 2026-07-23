@@ -4,8 +4,8 @@ import { getAgingStages, QUEUE_LIMIT } from "@/lib/actions/team-health";
 import { formatAge } from "@/lib/team-health-format";
 
 const DUE_BADGE: Record<"overdue" | "dueSoon", string> = {
-  overdue: "bg-red-100 text-red-800 border-red-300",
-  dueSoon: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  overdue: "bg-danger-subtle text-danger border-danger/40",
+  dueSoon: "bg-warning-subtle text-warning border-warning/40",
 };
 
 export default async function AgingQueue() {

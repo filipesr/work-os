@@ -14,9 +14,9 @@ const ACCENT_STYLES: Record<
   { badge: string; border: string }
 > = {
   primary: { badge: "bg-primary text-primary-foreground", border: "border-l-primary" },
-  loop: { badge: "bg-amber-500 text-white", border: "border-l-amber-500" },
+  loop: { badge: "bg-warning-subtle0 text-white", border: "border-l-amber-500" },
   fork: { badge: "bg-indigo-500 text-white", border: "border-l-indigo-500" },
-  join: { badge: "bg-orange-500 text-white", border: "border-l-orange-500" },
+  join: { badge: "bg-warning-subtle0 text-white", border: "border-l-orange-500" },
 };
 
 export function StepCard({

@@ -66,17 +66,15 @@ async function LeadTimeSection({ filters, t }: { filters: PerformanceFilters; t:
         </CardContent>
       </Card>
 
-      <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900">
+      <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100">
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-emerald-500/20 rounded-full">
-              <Activity className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+            <div className="p-3 bg-success-subtle0/20 rounded-full">
+              <Activity className="h-6 w-6 text-success" />
             </div>
             <div>
-              <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                {t("leadTimeMetrics.median")}
-              </p>
-              <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+              <p className="text-sm text-success">{t("leadTimeMetrics.median")}</p>
+              <p className="text-2xl font-bold text-success">
                 {leadTimeMetrics.medianLeadTimeDays.toFixed(1)} {t("leadTimeMetrics.days")}
               </p>
             </div>
@@ -112,38 +110,32 @@ async function BottlenecksSection({ filters, t }: { filters: PerformanceFilters;
   if (bottlenecks.length === 0) return null;
 
   return (
-    <Card className="border-2 border-amber-400 dark:border-amber-500 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950">
+    <Card className="border-2 border-warning/40 bg-gradient-to-br from-amber-50 to-orange-50">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          <CardTitle className="text-amber-700 dark:text-amber-300">
-            {t("bottlenecks.title")}
-          </CardTitle>
+          <AlertTriangle className="h-5 w-5 text-warning" />
+          <CardTitle className="text-warning">{t("bottlenecks.title")}</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-amber-700 dark:text-amber-300 mb-4">
-          {t("bottlenecks.description")}
-        </p>
+        <p className="text-sm text-warning mb-4">{t("bottlenecks.description")}</p>
         <div className="space-y-2">
           {bottlenecks.map((stage) => (
             <div
               key={stage.stageId}
-              className="flex justify-between items-center p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg border border-amber-200 dark:border-amber-700"
+              className="flex justify-between items-center p-3 bg-warning-subtle rounded-lg border border-warning/40"
             >
               <div>
-                <div className="font-medium text-amber-900 dark:text-amber-100">
-                  {stage.stageName}
-                </div>
-                <div className="text-xs text-amber-700 dark:text-amber-300">
+                <div className="font-medium text-warning">{stage.stageName}</div>
+                <div className="text-xs text-warning">
                   {stage.templateName} • {stage.count} {t("bottlenecks.occurrences")}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-bold text-amber-700 dark:text-amber-300">
+                <div className="text-lg font-bold text-warning">
                   {stage.averageDurationDays.toFixed(1)} {t("bottlenecks.days")}
                 </div>
-                <div className="text-xs text-amber-600 dark:text-amber-400">
+                <div className="text-xs text-warning">
                   {stage.averageDurationHours.toFixed(1)} {t("bottlenecks.hours")}
                 </div>
               </div>
@@ -236,7 +228,7 @@ async function CycleTimeSection({ filters, t }: { filters: PerformanceFilters; t
         ) : (
           <>
             {cycle.lowConfidence && (
-              <p className="mb-3 text-xs text-amber-600 dark:text-amber-400">
+              <p className="mb-3 text-xs text-warning">
                 {t("cycleTime.lowConfidence", { count: cycle.count })}
               </p>
             )}
@@ -254,7 +246,7 @@ async function CycleTimeSection({ filters, t }: { filters: PerformanceFilters; t
                 </div>
               </div>
               <div className="rounded-lg border p-3 text-center">
-                <div className="text-xs text-rose-600 dark:text-rose-400">{t("cycleTime.p95")}</div>
+                <div className="text-xs text-danger">{t("cycleTime.p95")}</div>
                 <div className="text-xl font-bold">{cycle.p95.toFixed(1)}d</div>
               </div>
             </div>
@@ -409,12 +401,7 @@ async function FlowEfficiencySection({ filters, t }: { filters: PerformanceFilte
             {flowByStage.map((stage) => {
               const pct = Math.round(stage.flowEfficiency * 100);
               // Low efficiency = mostly waiting = the problem to surface.
-              const tone =
-                pct < 40
-                  ? "text-rose-600 dark:text-rose-400"
-                  : pct < 70
-                    ? "text-amber-600 dark:text-amber-400"
-                    : "text-emerald-600 dark:text-emerald-400";
+              const tone = pct < 40 ? "text-danger" : pct < 70 ? "text-warning" : "text-success";
               return (
                 <div key={stage.stageId} className="grid grid-cols-3 gap-2 text-sm items-center">
                   <div className="col-span-2">
@@ -468,9 +455,7 @@ async function ReworkSection({ filters, t }: { filters: PerformanceFilters; t: T
                 <div
                   key={stage.stageId}
                   className={`grid grid-cols-4 gap-2 text-sm p-2 rounded ${
-                    isHighRework
-                      ? "bg-rose-100 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-700"
-                      : ""
+                    isHighRework ? "bg-danger-subtle border border-danger/40" : ""
                   }`}
                 >
                   <div className="col-span-2">
@@ -480,18 +465,12 @@ async function ReworkSection({ filters, t }: { filters: PerformanceFilters; t: T
                     </div>
                   </div>
                   <div className="text-center text-xs">
-                    <div className="text-emerald-600 dark:text-emerald-400 font-medium">
-                      {stage.completed}
-                    </div>
-                    <div className="text-rose-600 dark:text-rose-400 font-medium">
-                      {stage.reverted}
-                    </div>
+                    <div className="text-success font-medium">{stage.completed}</div>
+                    <div className="text-danger font-medium">{stage.reverted}</div>
                   </div>
                   <div className="text-right">
                     <div
-                      className={`font-bold ${
-                        isHighRework ? "text-rose-700 dark:text-rose-300" : "text-foreground"
-                      }`}
+                      className={`font-bold ${isHighRework ? "text-danger" : "text-foreground"}`}
                     >
                       {reworkPercentage}%
                     </div>
@@ -521,12 +500,7 @@ async function FirstTimeRightSection({ filters, t }: { filters: PerformanceFilte
           <div className="space-y-2">
             {rows.map((r) => {
               const pct = Math.round(r.firstTimeRight * 100);
-              const tone =
-                pct >= 85
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : pct >= 60
-                    ? "text-amber-600 dark:text-amber-400"
-                    : "text-rose-600 dark:text-rose-400";
+              const tone = pct >= 85 ? "text-success" : pct >= 60 ? "text-warning" : "text-danger";
               return (
                 <div key={r.stageId} className="grid grid-cols-3 gap-2 text-sm items-center">
                   <div className="col-span-2">
@@ -572,12 +546,8 @@ async function ReworkBySourceSection({ filters, t }: { filters: PerformanceFilte
             {rows.map((r) => (
               <div key={r.stageId} className="grid grid-cols-3 gap-2 text-sm items-center">
                 <div className="font-medium truncate">{r.stageName}</div>
-                <div className="text-center text-emerald-600 dark:text-emerald-400 font-medium">
-                  {r.internal}
-                </div>
-                <div className="text-center text-rose-600 dark:text-rose-400 font-medium">
-                  {r.client}
-                </div>
+                <div className="text-center text-success font-medium">{r.internal}</div>
+                <div className="text-center text-danger font-medium">{r.client}</div>
               </div>
             ))}
           </div>
@@ -595,41 +565,33 @@ async function QualityIssuesSection({ filters, t }: { filters: PerformanceFilter
   if (qualityIssues.length === 0) return null;
 
   return (
-    <Card className="border-2 border-rose-400 dark:border-rose-500 bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950">
+    <Card className="border-2 border-danger/40 bg-gradient-to-br from-rose-50 to-red-50">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400" />
-          <CardTitle className="text-rose-700 dark:text-rose-300">
-            {t("qualityIssues.title")}
-          </CardTitle>
+          <AlertTriangle className="h-5 w-5 text-danger" />
+          <CardTitle className="text-danger">{t("qualityIssues.title")}</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-rose-700 dark:text-rose-300 mb-4">
-          {t("qualityIssues.description")}
-        </p>
+        <p className="text-sm text-danger mb-4">{t("qualityIssues.description")}</p>
         <div className="space-y-2">
           {qualityIssues.map((stage) => (
             <div
               key={stage.stageId}
-              className="flex justify-between items-center p-3 bg-rose-100 dark:bg-rose-900/30 rounded-lg border border-rose-200 dark:border-rose-700"
+              className="flex justify-between items-center p-3 bg-danger-subtle rounded-lg border border-danger/40"
             >
               <div>
-                <div className="font-medium text-rose-900 dark:text-rose-100">
-                  {stage.stageName}
-                </div>
-                <div className="text-xs text-rose-700 dark:text-rose-300">
+                <div className="font-medium text-danger">{stage.stageName}</div>
+                <div className="text-xs text-danger">
                   {stage.templateName} • {stage.completed} {t("qualityIssues.completed")},{" "}
                   {stage.reverted} {t("qualityIssues.reverted")}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-rose-700 dark:text-rose-300">
+                <div className="text-2xl font-bold text-danger">
                   {(stage.reworkRate * 100).toFixed(0)}%
                 </div>
-                <div className="text-xs text-rose-600 dark:text-rose-400">
-                  {t("qualityIssues.rework")}
-                </div>
+                <div className="text-xs text-danger">{t("qualityIssues.rework")}</div>
               </div>
             </div>
           ))}

@@ -86,9 +86,7 @@ export default function OneOnOneCard({ rows }: { rows: OneOnOneCadenceRow[] }) {
                       <span className="block text-xs text-muted-foreground">
                         {t("last", { date: lastLabel(r) })}
                         {r.overdue && (
-                          <span className="ml-1 font-semibold text-rose-600 dark:text-rose-400">
-                            · {t("overdue")}
-                          </span>
+                          <span className="ml-1 font-semibold text-danger">· {t("overdue")}</span>
                         )}
                       </span>
                     </div>
@@ -112,9 +110,7 @@ export default function OneOnOneCard({ rows }: { rows: OneOnOneCadenceRow[] }) {
                 <span className="truncate text-sm font-medium text-foreground">{r.name}</span>
                 <span className="block text-xs text-muted-foreground">
                   {r.daysSince === null ? t("never") : t("daysSince", { days: r.daysSince })}
-                  <span className="ml-1 font-semibold text-rose-600 dark:text-rose-400">
-                    · {t("overdue")}
-                  </span>
+                  <span className="ml-1 font-semibold text-danger">· {t("overdue")}</span>
                 </span>
               </div>
               <RegisterOneOnOneButton userId={r.userId} name={r.name} />

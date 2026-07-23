@@ -360,10 +360,10 @@ export function CreateTaskForm({
           <div
             className={`mt-2 rounded-md border p-2 text-xs ${
               feasibility === "comfortable"
-                ? "border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
+                ? "border-success/40 bg-success-subtle text-success"
                 : feasibility === "tight"
-                  ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
-                  : "border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200"
+                  ? "border-warning/40 bg-warning-subtle text-warning"
+                  : "border-danger/40 bg-danger-subtle text-danger"
             }`}
           >
             <span className="font-semibold">{t(`create.feasibility.${feasibility}`)}</span>{" "}

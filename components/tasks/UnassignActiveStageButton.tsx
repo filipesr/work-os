@@ -50,11 +50,11 @@ export function UnassignActiveStageButton({
       }
     >
       {/* Current Assignee Info */}
-      <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-        <p className="text-sm text-orange-800">
+      <div className="p-4 bg-warning-subtle border border-warning/40 rounded-lg">
+        <p className="text-sm text-warning">
           <strong>{t("unassignStageDialog.currentAssigneeLabel")}</strong> {currentAssignee}
         </p>
-        <p className="text-xs text-orange-700 mt-2">{t("unassignStageDialog.infoComment")}</p>
+        <p className="text-xs text-warning mt-2">{t("unassignStageDialog.infoComment")}</p>
       </div>
     </ConfirmActionButton>
   );

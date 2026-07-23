@@ -191,9 +191,9 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                   ps.status === "ACTIVE"
                     ? "bg-primary/10 text-primary border-primary/20"
                     : ps.status === "COMPLETED"
-                      ? "bg-green-100 text-green-800 border-green-200"
+                      ? "bg-success-subtle text-success border-success/40"
                       : ps.status === "BLOCKED"
-                        ? "bg-orange-100 text-orange-800 border-orange-200"
+                        ? "bg-warning-subtle text-warning border-warning/40"
                         : "bg-muted text-muted-foreground border-border";
                 return (
                   <div
@@ -279,7 +279,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                     key={comment.id}
                     className={`border-l-4 pl-4 py-2 rounded-r-lg ${
                       comment.content.startsWith("**REVERTED")
-                        ? "border-orange-500 bg-orange-50"
+                        ? "border-warning/40 bg-warning-subtle"
                         : "border-border bg-muted/30"
                     }`}
                   >
@@ -341,7 +341,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                   {timeTracking.openActivities.map((a) => (
                     <div
                       key={a.id}
-                      className="flex items-center gap-3 rounded-lg border border-green-300 bg-green-50 dark:bg-green-950/20 px-3 py-2"
+                      className="flex items-center gap-3 rounded-lg border border-success/40 bg-success-subtle px-3 py-2"
                     >
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={getProxiedImageUrl(a.user.image) || undefined} />
@@ -357,8 +357,8 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                           {t("timeStartedAt")} {formatDisplayDateTime(a.startedAt)}
                         </p>
                       </div>
-                      <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-xs font-bold text-green-800">
-                        <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                      <span className="inline-flex items-center gap-1 rounded-full border border-success/40 bg-success-subtle px-2 py-0.5 text-xs font-bold text-success">
+                        <span className="h-2 w-2 rounded-full bg-success-subtle0 animate-pulse" />
                         {t("timeRunning")}
                       </span>
                     </div>

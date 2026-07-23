@@ -94,10 +94,10 @@ async function HoursByUserSection({ filters, t }: { filters: ProductivityFilters
                 pct == null
                   ? "text-muted-foreground"
                   : pct > 90
-                    ? "text-rose-600 dark:text-rose-400"
+                    ? "text-danger"
                     : pct >= 60
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-amber-600 dark:text-amber-400";
+                      ? "text-success"
+                      : "text-warning";
               return (
                 <div key={user.userId} className="grid grid-cols-3 gap-2 text-sm">
                   <div className="truncate">

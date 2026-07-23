@@ -93,14 +93,14 @@ export function StageWorkflowVisualization({
                     status === "current"
                       ? "bg-indigo-50 border-2 border-indigo-300"
                       : status === "completed"
-                        ? "bg-green-50"
+                        ? "bg-success-subtle"
                         : "bg-gray-50"
                   }`}
                 >
                   {/* Icon */}
                   <div className="flex-shrink-0 mt-0.5">
                     {status === "completed" ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      <CheckCircle2 className="h-5 w-5 text-success" />
                     ) : status === "current" ? (
                       <Clock className="h-5 w-5 text-indigo-600 animate-pulse" />
                     ) : (
@@ -117,7 +117,7 @@ export function StageWorkflowVisualization({
                           status === "current"
                             ? "border-indigo-600 text-indigo-700 bg-indigo-100"
                             : status === "completed"
-                              ? "border-green-600 text-green-700 bg-green-100"
+                              ? "border-success/40 text-success bg-success-subtle"
                               : "border-gray-400 text-gray-600"
                         }`}
                       >
@@ -128,7 +128,7 @@ export function StageWorkflowVisualization({
                           status === "current"
                             ? "text-indigo-900"
                             : status === "completed"
-                              ? "text-green-900"
+                              ? "text-success"
                               : "text-gray-700"
                         }`}
                       >
@@ -141,7 +141,7 @@ export function StageWorkflowVisualization({
 
                     {/* Completed stage info */}
                     {status === "completed" && log && log.exitedAt && (
-                      <div className="text-xs text-green-700 space-y-0.5">
+                      <div className="text-xs text-success space-y-0.5">
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{log.user.name || log.user.email}</span>
                           {duration && (
@@ -188,7 +188,7 @@ export function StageWorkflowVisualization({
                   <div className="flex justify-center py-1">
                     <ArrowRight
                       className={`h-4 w-4 ${
-                        status === "completed" ? "text-green-500" : "text-gray-300"
+                        status === "completed" ? "text-success" : "text-gray-300"
                       }`}
                     />
                   </div>
@@ -202,7 +202,7 @@ export function StageWorkflowVisualization({
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <div>
-              <div className="font-semibold text-green-700">
+              <div className="font-semibold text-success">
                 {Array.from(completedStageIds).length}
               </div>
               <div className="text-gray-600">{t("completed")}</div>
