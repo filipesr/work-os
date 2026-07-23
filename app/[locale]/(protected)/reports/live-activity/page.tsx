@@ -137,7 +137,7 @@ export default function LiveActivityPage() {
                     <span className="block">{t("help.offline")}</span>
                     <span className="block">{t("help.working")}</span>
                     <span className="block text-xs text-muted-foreground">
-                      💡 {t("help.autoUpdate")}
+                      {t("help.autoUpdate")}
                     </span>
                   </DialogDescription>
                 </DialogHeader>

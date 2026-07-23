@@ -114,8 +114,8 @@ export function DependencySelector({
 
       {/* Help text */}
       {selectedDeps.size > 0 && (
-        <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-lg">
-          <p className="text-xs text-indigo-700 dark:text-indigo-300">
+        <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+          <p className="text-xs text-primary">
             <strong>{t("importantTitle")}</strong>{" "}
             {selectedDeps.size === 1 ? t("importantSingle") : t("importantMultiple")}
           </p>

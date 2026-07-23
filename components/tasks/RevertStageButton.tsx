@@ -65,7 +65,7 @@ export function RevertStageButton({
         <button
           onClick={() => setIsOpen(true)}
           disabled={isPending}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isPending && <Loader2 className="h-4 w-4 animate-spin" />}← {t("triggerButton")}
         </button>
@@ -88,8 +88,8 @@ export function RevertStageButton({
             </div>
 
             {/* Info Badge */}
-            <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
-              <p className="text-xs text-indigo-800">
+            <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+              <p className="text-xs text-primary">
                 <strong>{t("infoLabel")}</strong> {t("infoText")}
               </p>
             </div>
@@ -123,11 +123,11 @@ export function RevertStageButton({
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-foreground group-hover:text-indigo-600 transition-colors">
+                          <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
                             {stage.name}
                           </span>
                           {index === 0 && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                               {t("mostRecent")}
                             </span>
                           )}
@@ -140,7 +140,7 @@ export function RevertStageButton({
                       {/* Selected indicator */}
                       {selectedStageId === stage.id && (
                         <div className="flex-shrink-0">
-                          <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center">
+                          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                             <svg
                               className="w-3 h-3 text-white"
                               fill="none"
@@ -194,7 +194,7 @@ export function RevertStageButton({
                     aria-pressed={kind === k}
                     className={`flex-1 rounded-lg border-2 px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
                       kind === k
-                        ? "border-indigo-400 bg-indigo-50 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+                        ? "border-primary/40 bg-primary/10 text-primary"
                         : "border-border text-foreground hover:bg-accent"
                     }`}
                   >
@@ -228,7 +228,7 @@ export function RevertStageButton({
                 <button
                   onClick={handleRevert}
                   disabled={isPending || !selectedStageId || !comment.trim() || !kind}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   {isPending ? t("pending") : t("confirmButton")}

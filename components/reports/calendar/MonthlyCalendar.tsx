@@ -57,11 +57,11 @@ export function MonthlyCalendar({
           {t("legend.holiday")}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm border border-indigo-300 bg-indigo-100" />
+          <span className="h-3 w-3 rounded-sm border border-primary/30 bg-primary/10" />
           {t("legend.commercial")}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm border border-indigo-300 bg-indigo-100" />
+          <span className="h-3 w-3 rounded-sm border border-primary/30 bg-primary/10" />
           {t("legend.demands")}
         </span>
         <span className="inline-flex items-center gap-1.5">
@@ -153,10 +153,10 @@ export function MonthlyCalendar({
                         })
                       }
                       title={client.clientName}
-                      className="flex w-full items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[11px] text-indigo-800 hover:border-indigo-400 transition-colors dark:border-indigo-800/60 dark:bg-indigo-950/40 dark:text-indigo-200"
+                      className="flex w-full items-center gap-1 rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary hover:border-primary/40 transition-colors"
                     >
                       <span className="truncate">{client.clientName}</span>
-                      <span className="ml-auto shrink-0 rounded-full bg-indigo-200/70 px-1.5 text-[10px] font-bold dark:bg-indigo-800/60">
+                      <span className="ml-auto shrink-0 rounded-full bg-primary/70 px-1.5 text-[10px] font-bold">
                         {client.tasks.length}
                       </span>
                     </button>
@@ -179,7 +179,7 @@ export function MonthlyCalendar({
                   type="button"
                   onClick={() => setDetailIso(day.iso)}
                   title={annivNames.join(", ")}
-                  className="-mx-1.5 -mb-1.5 mt-auto block truncate border-t border-border bg-warning-subtle/60 px-1.5 py-1 text-left text-[10px] text-warning transition-colors hover:bg-warning-subtle/80 dark:hover:bg-amber-950/50"
+                  className="-mx-1.5 -mb-1.5 mt-auto block truncate border-t border-border bg-warning-subtle/60 px-1.5 py-1 text-left text-[10px] text-warning transition-colors hover:bg-warning-subtle/80"
                 >
                   {annivFirstNames.join(", ")}
                 </button>

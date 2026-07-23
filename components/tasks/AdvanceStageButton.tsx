@@ -97,7 +97,7 @@ export function AdvanceStageButton({
         <button
           onClick={() => setShowConfirm(true)}
           disabled={isPending}
-          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-4 py-2 bg-success text-white rounded-md hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isPending ? (
             <>
@@ -133,11 +133,11 @@ export function AdvanceStageButton({
             </div>
 
             {/* Info Box */}
-            <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-              <p className="text-sm text-indigo-800">
-                <strong>ℹ️ {t("advanceModal.whatHappensLabel")}</strong>
+            <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+              <p className="text-sm text-primary">
+                <strong>{t("advanceModal.whatHappensLabel")}</strong>
               </p>
-              <ul className="text-xs text-indigo-700 mt-2 space-y-1 list-disc pl-5">
+              <ul className="text-xs text-primary mt-2 space-y-1 list-disc pl-5">
                 <li>{t("advanceModal.whatHappens1")}</li>
                 <li>
                   {t.rich("advanceModal.whatHappens2", {
@@ -156,7 +156,7 @@ export function AdvanceStageButton({
             {/* Requirement Box */}
             <div className="mb-6 p-4 bg-warning-subtle border border-warning/40 rounded-lg">
               <p className="text-sm text-warning">
-                <strong>⚠️ {t("advanceModal.requirementLabel")}</strong>
+                <strong>{t("advanceModal.requirementLabel")}</strong>
               </p>
               <p className="text-xs text-warning mt-2">
                 {t.rich("advanceModal.requirementText", {
@@ -242,7 +242,7 @@ export function AdvanceStageButton({
               <button
                 onClick={handleComplete}
                 disabled={isPending}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium flex items-center gap-2"
+                className="px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50 font-medium flex items-center gap-2"
               >
                 {isPending ? (
                   <>

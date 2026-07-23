@@ -15,7 +15,7 @@ const ACCENT_STYLES: Record<
 > = {
   primary: { badge: "bg-primary text-primary-foreground", border: "border-l-primary" },
   loop: { badge: "bg-warning-subtle0 text-white", border: "border-l-amber-500" },
-  fork: { badge: "bg-indigo-500 text-white", border: "border-l-indigo-500" },
+  fork: { badge: "bg-primary text-white", border: "border-l-primary" },
   join: { badge: "bg-warning-subtle0 text-white", border: "border-l-orange-500" },
 };
 

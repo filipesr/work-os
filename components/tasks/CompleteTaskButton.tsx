@@ -35,12 +35,12 @@ export function CompleteTaskButton({
       confirmLabel={t("completeTask")}
       pendingLabel={t("completeDialog.pending")}
       successMessage={t("completeDialog.success")}
-      confirmClassName="bg-green-600 hover:bg-green-700 text-white"
+      confirmClassName="bg-success hover:bg-success/90 text-white"
       open={controlledOpen}
       onOpenChange={onOpenChange}
       trigger={
         isControlled ? undefined : (
-          <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+          <button className="px-4 py-2 bg-success text-white rounded-md hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4" />
             {t("completeTask")}
           </button>

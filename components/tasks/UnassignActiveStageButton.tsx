@@ -37,12 +37,12 @@ export function UnassignActiveStageButton({
       confirmLabel={t("unassignStage")}
       pendingLabel={t("unassignStageDialog.pending")}
       successMessage={t("unassignStageDialog.success")}
-      confirmClassName="bg-orange-600 hover:bg-orange-700 text-white"
+      confirmClassName="bg-warning hover:bg-warning/90 text-white"
       open={open}
       onOpenChange={onOpenChange}
       trigger={
         controlled ? undefined : (
-          <button className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+          <button className="px-4 py-2 bg-warning text-white rounded-md hover:bg-warning/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
             <UserMinus className="h-4 w-4" />
             {t("unassignStage")}
           </button>

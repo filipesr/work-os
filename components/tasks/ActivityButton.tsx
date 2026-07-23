@@ -101,7 +101,7 @@ export function ActivityButton({
             onClick={handleStart}
             disabled={isStarting}
             variant="default"
-            className="w-full bg-green-600 hover:bg-green-700"
+            className="w-full bg-success hover:bg-success/90"
           >
             {isStarting ? (
               <>
@@ -171,7 +171,7 @@ export function ActivityButton({
               <button
                 onClick={handleConfirmStop}
                 disabled={isStopping}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 font-medium flex items-center gap-2"
+                className="px-4 py-2 bg-danger text-danger-foreground rounded-lg hover:bg-danger/90 transition-colors disabled:opacity-50 font-medium flex items-center gap-2"
               >
                 {isStopping ? (
                   <>

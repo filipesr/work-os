@@ -10,7 +10,7 @@ function Badge({ className = "", variant = "default", ...props }: BadgeProps) {
     secondary: "bg-secondary text-secondary-foreground shadow-sm",
     destructive: "bg-destructive text-destructive-foreground shadow-sm",
     outline: "border border-border bg-card text-foreground",
-    success: "bg-green-600 text-white shadow-sm",
+    success: "bg-success text-white shadow-sm",
   };
 
   return (

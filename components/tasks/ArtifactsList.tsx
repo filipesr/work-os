@@ -12,7 +12,7 @@ import { DownloadArtifactButton } from "./DownloadArtifactButton";
 // NAS upload status -> badge classes (o rótulo textual vem de tasks.artifacts.nasStatus).
 const nasStatusCls: Record<string, string> = {
   PENDING: "bg-muted text-muted-foreground border-border",
-  UPLOADING: "bg-indigo-100 text-indigo-800 border-indigo-200",
+  UPLOADING: "bg-primary/10 text-primary border-primary/20",
   READY: "bg-success-subtle text-success border-success/40",
   FAILED: "bg-danger-subtle text-danger border-danger/40",
   EXPIRED: "bg-muted text-muted-foreground border-border",
@@ -28,9 +28,9 @@ interface ArtifactsListProps {
 
 // Ícone + cor por tipo (o rótulo textual vem de tasks.artifacts.types).
 const artifactTypeConfig = {
-  DOCUMENT: { icon: FileText, color: "text-indigo-500" },
+  DOCUMENT: { icon: FileText, color: "text-primary" },
   IMAGE: { icon: Image, color: "text-success" },
-  VIDEO: { icon: Video, color: "text-indigo-500" },
+  VIDEO: { icon: Video, color: "text-primary" },
   FIGMA: { icon: Figma, color: "text-pink-500" },
   OTHER: { icon: File, color: "text-gray-500" },
 };

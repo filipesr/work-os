@@ -91,7 +91,7 @@ export function StageWorkflowVisualization({
                 <div
                   className={`relative flex items-start gap-3 p-3 rounded-lg transition-colors ${
                     status === "current"
-                      ? "bg-indigo-50 border-2 border-indigo-300"
+                      ? "bg-primary/10 border-2 border-primary/30"
                       : status === "completed"
                         ? "bg-success-subtle"
                         : "bg-gray-50"
@@ -102,7 +102,7 @@ export function StageWorkflowVisualization({
                     {status === "completed" ? (
                       <CheckCircle2 className="h-5 w-5 text-success" />
                     ) : status === "current" ? (
-                      <Clock className="h-5 w-5 text-indigo-600 animate-pulse" />
+                      <Clock className="h-5 w-5 text-primary animate-pulse" />
                     ) : (
                       <Circle className="h-5 w-5 text-gray-400" />
                     )}
@@ -115,7 +115,7 @@ export function StageWorkflowVisualization({
                         variant="outline"
                         className={`text-xs ${
                           status === "current"
-                            ? "border-indigo-600 text-indigo-700 bg-indigo-100"
+                            ? "border-primary text-primary bg-primary/10"
                             : status === "completed"
                               ? "border-success/40 text-success bg-success-subtle"
                               : "border-gray-400 text-gray-600"
@@ -126,7 +126,7 @@ export function StageWorkflowVisualization({
                       <span
                         className={`font-medium text-sm ${
                           status === "current"
-                            ? "text-indigo-900"
+                            ? "text-primary"
                             : status === "completed"
                               ? "text-success"
                               : "text-gray-700"
@@ -135,7 +135,7 @@ export function StageWorkflowVisualization({
                         {stage.name}
                       </span>
                       {status === "current" && (
-                        <Badge className="bg-indigo-600 text-white text-xs">{t("current")}</Badge>
+                        <Badge className="bg-primary text-white text-xs">{t("current")}</Badge>
                       )}
                     </div>
 
@@ -163,7 +163,7 @@ export function StageWorkflowVisualization({
 
                     {/* Current stage info */}
                     {status === "current" && log && (
-                      <div className="text-xs text-indigo-700">
+                      <div className="text-xs text-primary">
                         <div>
                           {t("startedOn", {
                             date: format(new Date(log.enteredAt), "dd/MM/yyyy HH:mm", {
@@ -208,7 +208,7 @@ export function StageWorkflowVisualization({
               <div className="text-gray-600">{t("completed")}</div>
             </div>
             <div>
-              <div className="font-semibold text-indigo-700">{currentStageId ? 1 : 0}</div>
+              <div className="font-semibold text-primary">{currentStageId ? 1 : 0}</div>
               <div className="text-gray-600">{t("inProgress")}</div>
             </div>
             <div>
