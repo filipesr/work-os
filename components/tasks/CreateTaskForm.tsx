@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, type ReactNode } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createTask } from "@/lib/actions/task";
 import { getTemplateStagePreview } from "@/app/actions/templateActions";
@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { FieldLabel } from "@/components/ui/FieldLabel";
+import { EmptyState } from "@/components/ui/empty-state";
 import { priorityTone } from "@/lib/status-tone";
 import { useTranslations, useLocale } from "next-intl";
 import {
@@ -37,7 +39,6 @@ import {
   ChevronRight,
   Box,
   CalendarDays,
-  type LucideIcon,
 } from "lucide-react";
 
 interface Project {
@@ -515,7 +516,8 @@ export function CreateTaskForm({
             </div>
           </section>
         ) : (
-          <WaitingCard
+          <EmptyState
+            variant="card"
             icon={Box}
             title={t("create.waitingTemplateTitle")}
             description={t("create.waitingTemplateDesc")}
@@ -582,7 +584,8 @@ export function CreateTaskForm({
             </p>
           </section>
         ) : (
-          <WaitingCard
+          <EmptyState
+            variant="card"
             icon={CalendarDays}
             title={t("create.waitingFeasibilityTitle")}
             description={t("create.waitingFeasibilityDesc")}
@@ -612,49 +615,5 @@ export function CreateTaskForm({
         </section>
       </div>
     </form>
-  );
-}
-
-/** Uppercase micro-label used across the form fields, with an optional required `*`. */
-function FieldLabel({
-  htmlFor,
-  required = false,
-  className = "",
-  children,
-}: {
-  htmlFor?: string;
-  required?: boolean;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <label
-      htmlFor={htmlFor}
-      className={`mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground ${className}`}
-    >
-      {children}
-      {required && <span className="ml-1 text-danger">*</span>}
-    </label>
-  );
-}
-
-/** Dashed placeholder card for the summary column before a template/due date is chosen. */
-function WaitingCard({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-}) {
-  return (
-    <section className="rounded-xl border border-dashed border-border bg-card px-5 py-7 text-center shadow-sm">
-      <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-        <Icon className="h-5 w-5" />
-      </span>
-      <h2 className="mt-3 text-sm font-semibold text-foreground">{title}</h2>
-      <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">{description}</p>
-    </section>
   );
 }

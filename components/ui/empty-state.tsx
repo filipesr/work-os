@@ -1,21 +1,48 @@
-import { LucideIcon } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
+import { type ReactNode } from "react";
 
 interface EmptyStateProps {
   icon: LucideIcon;
   title: string;
   description: string;
-  action?: React.ReactNode;
+  action?: ReactNode;
+  /** `plain` = bloco centralizado dentro de outra seção; `card` = card
+   * tracejado autônomo (ex.: coluna de resumo aguardando input). */
+  variant?: "plain" | "card";
+  className?: string;
 }
 
-export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-      <div className="rounded-full bg-gray-100 p-3 mb-4">
-        <Icon className="h-10 w-10 text-gray-400" />
-      </div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-sm text-gray-500 max-w-sm mb-4">{description}</p>
-      {action && <div>{action}</div>}
+/**
+ * Estado vazio padrão (linguagem "nexo v2"), baseado em tokens. Duas formas:
+ * `plain` (bloco centralizado) e `card` (card tracejado autônomo).
+ */
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  variant = "plain",
+  className = "",
+}: EmptyStateProps) {
+  const inner = (
+    <div className="flex flex-col items-center justify-center px-4 text-center">
+      <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+        <Icon className="h-5 w-5" />
+      </span>
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">{description}</p>
+      {action && <div className="mt-4">{action}</div>}
     </div>
   );
+
+  if (variant === "card") {
+    return (
+      <section
+        className={`rounded-xl border border-dashed border-border bg-card px-5 py-7 shadow-sm ${className}`}
+      >
+        {inner}
+      </section>
+    );
+  }
+  return <div className={`py-12 ${className}`}>{inner}</div>;
 }
