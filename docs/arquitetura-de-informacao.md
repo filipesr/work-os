@@ -398,29 +398,29 @@ brief + os princípios. Preencher conforme cada tela chega.
 
 **Legenda:** ⬜ não gerada · 🟡 gerada, revisão pendente · ✅ de acordo · 🔧 ajustes pendentes.
 
-| #   | Tela                           | Status | Resumo da revisão                                                                                                                                                              |
-| --- | ------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0   | Navegação global               | 🔧     | Persona‑aware; avatar enxuto (tema+idioma juntos, sair separado); sem duplicação — resolve o "menu confuso". 1 correção: submenu Relatórios incompleto/fora do §3.             |
-| 1   | Início / dashboard pessoal     | 🔧     | Fiel ao brief (exceção‑primeiro, tom informacional, aging vs SLA, KPIs coerentes com a lista). 3 ajustes finos abaixo.                                                         |
-| 2   | Meu Trabalho (`/tasks`)        | 🔧     | **Reusou** o padrão do Início (filtros + 6 KPIs + tabela clicável), números coerentes. Reconciliar 1 divergência: célula de AGING (texto aqui vs barra no dashboard).          |
-| 3   | Detalhe da tarefa              | ✅     | Duas colunas (contexto/discussão · agir); **StorageBreakdown removido** (§3 respeitado); artefatos com origem tarefa/projeto/cliente; badges consistentes; back‑link coerente. |
-| 4   | Minha Evolução                 | ⬜     | —                                                                                                                                                                              |
-| 5   | Kanban do projeto              | ⬜     | —                                                                                                                                                                              |
-| 6   | Cockpit (`/admin`)             | ⬜     | —                                                                                                                                                                              |
-| 7   | Demandas (lista/detalhe/criar) | ⬜     | —                                                                                                                                                                              |
-| 8   | Fluxo & Entrega (fundido)      | ⬜     | —                                                                                                                                                                              |
-| 9   | Horas & Utilização             | ⬜     | —                                                                                                                                                                              |
-| 10  | Pessoas (por pessoa)           | ⬜     | —                                                                                                                                                                              |
-| 11  | Calendário (unificado)         | ⬜     | —                                                                                                                                                                              |
-| 12  | Presença ao vivo (+ modo TV)   | ⬜     | —                                                                                                                                                                              |
-| 13  | Clientes (lista/detalhe)       | ⬜     | —                                                                                                                                                                              |
-| 14  | Projetos (lista nova/detalhe)  | ⬜     | —                                                                                                                                                                              |
-| 15  | Usuários (CRUD)                | ⬜     | —                                                                                                                                                                              |
-| 16  | Equipes                        | ⬜     | —                                                                                                                                                                              |
-| 17  | Fluxos de trabalho (editor)    | ⬜     | —                                                                                                                                                                              |
-| 18  | Conta                          | ⬜     | —                                                                                                                                                                              |
-| 19  | Ajuda                          | ⬜     | —                                                                                                                                                                              |
-| 20  | Login / Home pública           | ⬜     | —                                                                                                                                                                              |
+| #   | Tela                           | Status | Resumo da revisão                                                                                                                                                                                             |
+| --- | ------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | Navegação global               | 🔧     | Persona‑aware; avatar enxuto (tema+idioma juntos, sair separado); sem duplicação — resolve o "menu confuso". 1 correção: submenu Relatórios incompleto/fora do §3.                                            |
+| 1   | Início / dashboard pessoal     | 🔧     | Fiel ao brief (exceção‑primeiro, tom informacional, aging vs SLA, KPIs coerentes com a lista). 3 ajustes finos abaixo.                                                                                        |
+| 2   | Meu Trabalho (`/tasks`)        | 🔧     | **Reusou** o padrão do Início (filtros + 6 KPIs + tabela clicável), números coerentes. Reconciliar 1 divergência: célula de AGING (texto aqui vs barra no dashboard).                                         |
+| 3   | Detalhe da tarefa              | ✅     | Duas colunas (contexto/discussão · agir); **StorageBreakdown removido** (§3 respeitado); artefatos com origem tarefa/projeto/cliente; badges consistentes; back‑link coerente.                                |
+| 4   | Minha Evolução                 | ✅     | **Tela nova** (consolida widget do dashboard + analytics do CRUD). Melhor tela até aqui: P1/P2/P7 e salvaguardas 3b impecáveis (privada, faixa de utilização, motivo sempre visível, só gestor reclassifica). |
+| 5   | Kanban do projeto              | ⬜     | —                                                                                                                                                                                                             |
+| 6   | Cockpit (`/admin`)             | ⬜     | —                                                                                                                                                                                                             |
+| 7   | Demandas (lista/detalhe/criar) | ⬜     | —                                                                                                                                                                                                             |
+| 8   | Fluxo & Entrega (fundido)      | ⬜     | —                                                                                                                                                                                                             |
+| 9   | Horas & Utilização             | ⬜     | —                                                                                                                                                                                                             |
+| 10  | Pessoas (por pessoa)           | ⬜     | —                                                                                                                                                                                                             |
+| 11  | Calendário (unificado)         | ⬜     | —                                                                                                                                                                                                             |
+| 12  | Presença ao vivo (+ modo TV)   | ⬜     | —                                                                                                                                                                                                             |
+| 13  | Clientes (lista/detalhe)       | ⬜     | —                                                                                                                                                                                                             |
+| 14  | Projetos (lista nova/detalhe)  | ⬜     | —                                                                                                                                                                                                             |
+| 15  | Usuários (CRUD)                | ⬜     | —                                                                                                                                                                                                             |
+| 16  | Equipes                        | ⬜     | —                                                                                                                                                                                                             |
+| 17  | Fluxos de trabalho (editor)    | ⬜     | —                                                                                                                                                                                                             |
+| 18  | Conta                          | ⬜     | —                                                                                                                                                                                                             |
+| 19  | Ajuda                          | ⬜     | —                                                                                                                                                                                                             |
+| 20  | Login / Home pública           | ⬜     | —                                                                                                                                                                                                             |
 
 ### Log de revisão
 
@@ -517,3 +517,29 @@ unificação do §3 (evitar recriar uma tabela divergente).
 - **"Ações da etapa"** fica atrás de um menu "···"; numa tela de "fazer o trabalho", considerar
   expor a ação mais comum (ex.: Avançar/Concluir) como botão primário visível.
 - **Time logs (só gestor)** não visíveis — confirmar se existem abaixo da dobra ou foram omitidos.
+
+#### Tela 4 — Minha Evolução (nova) · revisado 2026‑07‑23 · ✅ (destaque)
+
+**Confirmação:** é **tela nova** — consolida o widget "Minha evolução" (que sai do dashboard) +
+os analytics por pessoa (que saem do CRUD `/admin/users/[id]`). É a mesma visão que o gestor vê
+em _Pessoas_ (Tela 10).
+
+**De acordo — acertou os princípios mais difíceis (os que viram scorecard se mal feitos):**
+
+- **Enquadramento P1/P2 explícito:** "Visão privada" + subtítulo "sem ranking, sem comparação com
+  colegas".
+- **Throughput** com **eixos rotulados** (Quantidade / Semanas — os eixos que acabamos de
+  adicionar) + rodapé "use a tendência como contexto para planejar, **não como meta individual**;
+  o volume varia com tipo/dependências/escopo" (P2/P7). Média do período mostrada como **contexto**.
+- **Utilização como FAIXA** (Margem · Faixa prevista · Acima do plano, com marca em 79%) +
+  "uma faixa de planejamento, **não um alarme ou uma nota**" — a melhor renderização possível de
+  **P7**.
+- **Qualidade = salvaguardas 3b completas:** "Privado para você"; "aprendizado a partir dos
+  retornos, **não avaliação individual**"; callout "boa parte da variação vem do **sistema**…"
+  (P2); FTR + **interno vs cliente** (P5, com setas ↘/↗); **"o motivo permanece sempre visível — o
+  número não conta a história sozinho"** + **"Somente gestores reclassificam"**; cada retorno com
+  Defeito/Mudança legítima + **MOTIVO DO RETORNO** à vista. Exatamente a exceção 3b como desenhada.
+
+**Nota mínima (não é ajuste):** a "Média do período 5,3/semana" é média — ok aqui porque é
+**contexto de tendência pessoal**, explicitamente não‑meta; a postura de _forecast_ do produto
+segue percentis (P3) nas telas de previsão, não aqui.
