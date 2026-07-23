@@ -415,7 +415,19 @@
       "comfortable": "Cómodo",
       "tight": "Ajustado",
       "atRisk": "En riesgo"
-    }
+    },
+    "labels": {
+      "title": "Título",
+      "description": "Descripción",
+      "project": "Proyecto",
+      "template": "Tipo / plantilla",
+      "priority": "Prioridad",
+      "dueDate": "Vencimiento"
+    },
+    "waitingTemplateTitle": "Elige una plantilla",
+    "waitingTemplateDesc": "La vista previa de las etapas aparecerá aquí para que ajustes la demanda antes de crear.",
+    "waitingFeasibilityTitle": "Viabilidad de plazo",
+    "waitingFeasibilityDesc": "Elige un tipo e indica el vencimiento para ver una estimación de planificación."
   },
   "myWork": {
     "title": "Mi Trabajo",

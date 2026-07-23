@@ -18,11 +18,11 @@ export default async function NewTaskPage({
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-8">
-        <p className="text-sm font-semibold text-primary">{t("kicker")}</p>
-        <h1 className="mt-1 text-3xl font-bold text-foreground">{t("title")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
+      <header className="mb-6 max-w-3xl">
+        <p className="text-sm font-medium text-primary">{t("kicker")}</p>
+        <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-foreground">{t("title")}</h1>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{t("subtitle")}</p>
+      </header>
 
       <CreateTaskForm projects={projects} templates={templates} defaultProjectId={projectId} />
     </div>

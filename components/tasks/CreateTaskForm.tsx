@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createTask } from "@/lib/actions/task";
 import { getTemplateStagePreview } from "@/app/actions/templateActions";
@@ -25,8 +25,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { priorityTone } from "@/lib/status-tone";
 import { useTranslations, useLocale } from "next-intl";
-import { Loader2, ListChecks, ClipboardList, Sparkles, Plus } from "lucide-react";
+import {
+  Loader2,
+  ListChecks,
+  ClipboardList,
+  Sparkles,
+  Plus,
+  ChevronRight,
+  Box,
+  CalendarDays,
+  type LucideIcon,
+} from "lucide-react";
 
 interface Project {
   id: string;
@@ -200,9 +212,12 @@ export function CreateTaskForm({
   const canSubmit = projects.length > 0 && templates.length > 0;
 
   return (
-    <form action={createTask} className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+    <form
+      action={createTask}
+      className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)] xl:items-start"
+    >
       {/* ---------- LEFT: context + stage preview ---------- */}
-      <div className="space-y-6 lg:col-span-2">
+      <div className="space-y-6">
         {/* Card: Contexto da demanda */}
         <section className="rounded-xl border border-border bg-card shadow-sm">
           <div className="border-b border-border p-6">
@@ -212,9 +227,9 @@ export function CreateTaskForm({
           <div className="space-y-6 p-6">
             {/* Title */}
             <div>
-              <label htmlFor="title" className="mb-2 block text-sm font-semibold text-foreground">
-                {t("create.titleLabel")}
-              </label>
+              <FieldLabel htmlFor="title" required>
+                {t("create.labels.title")}
+              </FieldLabel>
               <Input
                 type="text"
                 id="title"
@@ -226,12 +241,7 @@ export function CreateTaskForm({
 
             {/* Description */}
             <div>
-              <label
-                htmlFor="description"
-                className="mb-2 block text-sm font-semibold text-foreground"
-              >
-                {t("create.descriptionLabel")}
-              </label>
+              <FieldLabel htmlFor="description">{t("create.labels.description")}</FieldLabel>
               <Textarea
                 id="description"
                 name="description"
@@ -242,11 +252,11 @@ export function CreateTaskForm({
 
             {/* Project Selection */}
             <div>
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <label htmlFor="projectId" className="block text-sm font-semibold text-foreground">
-                  {t("create.projectLabel")}
-                </label>
-                <div className="flex items-center gap-1">
+              <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+                <FieldLabel htmlFor="projectId" required className="mb-0">
+                  {t("create.labels.project")}
+                </FieldLabel>
+                <div className="flex items-center gap-2">
                   <QuickCreateProject
                     clients={clients}
                     variant="ghost"
@@ -282,12 +292,9 @@ export function CreateTaskForm({
             {/* Template + Priority */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label
-                  htmlFor="templateId"
-                  className="mb-2 block text-sm font-semibold text-foreground"
-                >
-                  {t("create.templateLabel")}
-                </label>
+                <FieldLabel htmlFor="templateId" required>
+                  {t("create.labels.template")}
+                </FieldLabel>
                 <Select name="templateId" required onValueChange={handleTemplateChange}>
                   <SelectTrigger id="templateId">
                     <SelectValue placeholder={t("create.templatePlaceholder")} />
@@ -309,12 +316,7 @@ export function CreateTaskForm({
               </div>
 
               <div>
-                <label
-                  htmlFor="priority"
-                  className="mb-2 block text-sm font-semibold text-foreground"
-                >
-                  {t("create.priorityLabel")}
-                </label>
+                <FieldLabel htmlFor="priority">{t("create.labels.priority")}</FieldLabel>
                 <Select name="priority" required value={priority} onValueChange={setPriority}>
                   <SelectTrigger id="priority">
                     <SelectValue />
@@ -331,9 +333,9 @@ export function CreateTaskForm({
 
             {/* Due Date */}
             <div>
-              <label htmlFor="dueDate" className="mb-2 block text-sm font-semibold text-foreground">
-                {t("create.dueDateLabel")}
-              </label>
+              <FieldLabel htmlFor="dueDate" required>
+                {t("create.labels.dueDate")}
+              </FieldLabel>
               <Input
                 type="date"
                 id="dueDate"
@@ -349,8 +351,8 @@ export function CreateTaskForm({
         <section className="rounded-xl border border-border bg-card shadow-sm">
           <div className="flex items-start justify-between gap-3 border-b border-border p-6">
             <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <ListChecks className="h-5 w-5" />
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <ListChecks className="h-4 w-4" />
               </span>
               <div>
                 <h2 className="text-lg font-semibold text-foreground">
@@ -390,12 +392,12 @@ export function CreateTaskForm({
                     return (
                       <li
                         key={stage.id}
-                        className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between"
+                        className={`grid gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-center ${
+                          dimmed ? "opacity-60" : ""
+                        }`}
                       >
-                        <div
-                          className={`flex min-w-0 items-start gap-3 ${dimmed ? "opacity-60" : ""}`}
-                        >
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border text-xs font-semibold text-muted-foreground">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
                             {index + 1}
                           </span>
                           <div className="min-w-0">
@@ -415,7 +417,7 @@ export function CreateTaskForm({
                               )}
                             </div>
                             {stage.optional ? (
-                              <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                              <label className="mt-1.5 flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground">
                                 <input
                                   type="checkbox"
                                   name={`stage:${stage.id}`}
@@ -436,7 +438,7 @@ export function CreateTaskForm({
                             )}
                           </div>
                         </div>
-                        <div className="shrink-0 sm:w-56 sm:pl-3">
+                        <div>
                           <p className="mb-1 text-xs font-medium text-muted-foreground">
                             {t("create.responsibleLabel")}
                           </p>
@@ -445,6 +447,7 @@ export function CreateTaskForm({
                             teamName={stage.defaultTeam?.name ?? null}
                             members={stage.defaultTeam?.members ?? []}
                             className="w-full"
+                            disabled={!isChecked}
                             onChange={(v: string) =>
                               setStageAssignees((prev) => ({ ...prev, [stage.id]: v }))
                             }
@@ -454,15 +457,22 @@ export function CreateTaskForm({
                     );
                   })}
                 </ol>
-                <p className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
-                  {entryStageName
-                    ? t.rich("create.entryFooter", {
-                        stage: entryStageName,
-                        b: (chunks) => (
-                          <span className="font-semibold text-foreground">{chunks}</span>
-                        ),
-                      })
-                    : t("create.entryFooterNone")}
+                <p className="-mx-6 -mb-6 mt-4 flex items-start gap-2 border-t border-border bg-muted/40 px-6 py-3 text-sm text-muted-foreground">
+                  {entryStageName ? (
+                    <>
+                      <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span>
+                        {t.rich("create.entryFooter", {
+                          stage: entryStageName,
+                          b: (chunks) => (
+                            <span className="font-semibold text-foreground">{chunks}</span>
+                          ),
+                        })}
+                      </span>
+                    </>
+                  ) : (
+                    t("create.entryFooterNone")
+                  )}
                 </p>
               </>
             )}
@@ -471,9 +481,9 @@ export function CreateTaskForm({
       </div>
 
       {/* ---------- RIGHT: sticky summary ---------- */}
-      <div className="space-y-6 lg:sticky lg:top-8">
+      <div className="space-y-6 xl:sticky xl:top-20 xl:self-start">
         {/* Tipo selecionado */}
-        {selectedTemplate && (
+        {selectedTemplate ? (
           <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -494,13 +504,22 @@ export function CreateTaskForm({
                 )}
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
-              <span className="text-sm text-muted-foreground">{t("create.priorityShort")}</span>
-              <span className="text-sm font-semibold text-primary">
-                {tPriority(priority.toLowerCase())}
+            <div className="mt-4 flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
+              <span className="text-xs font-medium text-muted-foreground">
+                {t("create.priorityShort")}
               </span>
+              <StatusBadge
+                tone={priorityTone(priority)}
+                label={tPriority(priority.toLowerCase())}
+              />
             </div>
           </section>
+        ) : (
+          <WaitingCard
+            icon={Box}
+            title={t("create.waitingTemplateTitle")}
+            description={t("create.waitingTemplateDesc")}
+          />
         )}
 
         {/* Checagem de viabilidade */}
@@ -563,9 +582,11 @@ export function CreateTaskForm({
             </p>
           </section>
         ) : (
-          <section className="rounded-xl border border-dashed border-border bg-card p-5 text-sm text-muted-foreground shadow-sm">
-            {t("create.viabilityEmpty")}
-          </section>
+          <WaitingCard
+            icon={CalendarDays}
+            title={t("create.waitingFeasibilityTitle")}
+            description={t("create.waitingFeasibilityDesc")}
+          />
         )}
 
         {/* Criação */}
@@ -591,5 +612,49 @@ export function CreateTaskForm({
         </section>
       </div>
     </form>
+  );
+}
+
+/** Uppercase micro-label used across the form fields, with an optional required `*`. */
+function FieldLabel({
+  htmlFor,
+  required = false,
+  className = "",
+  children,
+}: {
+  htmlFor?: string;
+  required?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label
+      htmlFor={htmlFor}
+      className={`mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground ${className}`}
+    >
+      {children}
+      {required && <span className="ml-1 text-danger">*</span>}
+    </label>
+  );
+}
+
+/** Dashed placeholder card for the summary column before a template/due date is chosen. */
+function WaitingCard({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}) {
+  return (
+    <section className="rounded-xl border border-dashed border-border bg-card px-5 py-7 text-center shadow-sm">
+      <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+        <Icon className="h-5 w-5" />
+      </span>
+      <h2 className="mt-3 text-sm font-semibold text-foreground">{title}</h2>
+      <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">{description}</p>
+    </section>
   );
 }

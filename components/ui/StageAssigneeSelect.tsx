@@ -25,6 +25,7 @@ export function StageAssigneeSelect({
   value,
   onChange,
   className = "",
+  disabled = false,
 }: {
   stageId: string;
   teamName: string | null;
@@ -35,6 +36,8 @@ export function StageAssigneeSelect({
   onChange?: (v: string) => void;
   /** Extra classes merged onto the native <select> (e.g. `w-full`). */
   className?: string;
+  /** Disables the select (e.g. an excluded optional stage — no row is created). */
+  disabled?: boolean;
 }) {
   const t = useTranslations("tasks.create.assign");
 
@@ -49,8 +52,9 @@ export function StageAssigneeSelect({
       {...(!isControlled ? { name: `assignee:${stageId}`, defaultValue: "" } : {})}
       {...(isControlled ? { value } : {})}
       {...(onChange ? { onChange: (e) => onChange(e.target.value) } : {})}
+      disabled={disabled}
       aria-label={t("ariaLabel", { team: teamName })}
-      className={`h-9 rounded-md border border-input-border bg-input px-2 text-sm text-foreground focus-visible:outline-none focus-visible:border-primary ${className}`}
+      className={`h-9 rounded-md border border-input-border bg-input px-2 text-sm text-foreground focus-visible:outline-none focus-visible:border-primary disabled:cursor-not-allowed disabled:bg-muted/50 disabled:opacity-60 ${className}`}
     >
       <option value="">{t("unassigned")}</option>
       {members.map((m) => (
