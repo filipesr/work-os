@@ -63,7 +63,6 @@ function renderView(taskOver?: Record<string, unknown>, role: UserRole = UserRol
       activeLog={null}
       allTemplateStages={[]}
       canPerformActions={true}
-      typeStorage={{ rows: [], totalBytes: 0, totalFiles: 0 }}
     />
   );
 }

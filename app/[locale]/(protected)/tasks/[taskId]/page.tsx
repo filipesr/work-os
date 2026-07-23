@@ -5,7 +5,6 @@ import { TaskDetailView } from "@/components/tasks/TaskDetailView";
 import { mapArtifactRow } from "@/lib/artifacts/unify";
 import { getAvailableNextStages, getPreviousStages } from "@/lib/actions/task";
 import { getCurrentActiveLog } from "@/lib/actions/activity";
-import { storageByMediaType } from "@/lib/nas/storage-stats";
 import { UserRole } from "@prisma/client";
 
 interface TaskDetailPageProps {
@@ -172,11 +171,10 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
 
   // Get available next and previous stages for State Machine controls
   // Also get the user's current active log (for activity tracking)
-  const [availableNextStages, previousStages, activeLog, typeStorage] = await Promise.all([
+  const [availableNextStages, previousStages, activeLog] = await Promise.all([
     getAvailableNextStages(taskId),
     getPreviousStages(taskId),
     getCurrentActiveLog(session.user.id!),
-    storageByMediaType(taskId),
   ]);
 
   // Permission: can perform actions if assignee of an active stage or has managerial role
@@ -211,7 +209,6 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
         allTemplateStages={allTemplateStages}
         canPerformActions={canPerformActions}
         currentStageAssignee={currentStageAssignee}
-        typeStorage={typeStorage}
       />
     </div>
   );
