@@ -7,12 +7,12 @@ import { CompleteTaskButton } from "@/components/tasks/CompleteTaskButton";
 import prisma from "@/lib/prisma";
 import { mapArtifactRow } from "@/lib/artifacts/unify";
 import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
-import { StorageBreakdown } from "@/components/nas/StorageBreakdown";
-import { storageByMediaType } from "@/lib/nas/storage-stats";
 import { TaskLifecycleActions } from "@/components/tasks/TaskLifecycleActions";
 import { TimeLogsList } from "@/components/tasks/TimeLogsList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { taskStatusTone, priorityTone } from "@/lib/status-tone";
 import { Paperclip } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
@@ -47,8 +47,6 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
   if (!task) {
     notFound();
   }
-
-  const typeStorage = await storageByMediaType(taskId);
 
   // Artefatos de projeto/cliente (escopo) para a tabela única com Origem.
   const scoped = await prisma.project.findUnique({
@@ -97,21 +95,10 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                 <p className="text-muted-foreground">{task.description || t("noDescription")}</p>
               </div>
               <div className="ml-4">
-                <span
-                  className={`px-3 py-1 text-sm font-bold rounded-full ${
-                    task.status === "COMPLETED"
-                      ? "bg-green-100 text-green-800 border border-green-200"
-                      : task.status === "IN_PROGRESS"
-                        ? "bg-primary/10 text-primary border border-primary/20"
-                        : task.status === "CANCELLED"
-                          ? "bg-destructive/10 text-destructive border border-destructive/20"
-                          : task.status === "PAUSED"
-                            ? "bg-orange-100 text-orange-800 border border-orange-200"
-                            : "bg-muted text-muted-foreground border border-border"
-                  }`}
-                >
-                  {t(`taskStatus.${task.status}`)}
-                </span>
+                <StatusBadge
+                  tone={taskStatusTone(task.status)}
+                  label={t(`taskStatus.${task.status}`)}
+                />
               </div>
             </div>
 
@@ -129,19 +116,10 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
               <div>
                 <p className="text-sm font-semibold text-muted-foreground">{t("priority")}</p>
                 <p className="mt-1">
-                  <span
-                    className={`px-2 py-1 text-xs font-bold rounded-full ${
-                      task.priority === "URGENT"
-                        ? "bg-red-100 text-red-800 border border-red-200"
-                        : task.priority === "HIGH"
-                          ? "bg-orange-100 text-orange-800 border border-orange-200"
-                          : task.priority === "MEDIUM"
-                            ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
-                            : "bg-muted text-muted-foreground border border-border"
-                    }`}
-                  >
-                    {t(`taskPriority.${task.priority}`)}
-                  </span>
+                  <StatusBadge
+                    tone={priorityTone(task.priority)}
+                    label={t(`taskPriority.${task.priority}`)}
+                  />
                 </p>
               </div>
               <div>
@@ -349,9 +327,8 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                   canAdd
                   canRemove
                 />
-                <div className="mt-4">
-                  <StorageBreakdown title="Armazenamento no NAS — por tipo" stats={typeStorage} />
-                </div>
+                {/* §3: StorageBreakdown removido do detalhe da tarefa (infra/capacidade
+                    vive em Clientes/Projetos). */}
               </CardContent>
             </Card>
 
