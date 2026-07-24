@@ -229,6 +229,25 @@ Cada superfície e a razão de existir **daquela forma**.
 - **KPIs + tabela com aging e idade** → **P6/aging WIP**: o colaborador vê suas
   próprias exceções (auto-referenciado, não comparado — P2).
 
+### /help (Central de Ajuda)
+
+- **Grupo "Como fazer"** (3 guias passo a passo: template, hierarquia, dia a dia
+  do colaborador) → onboarding operacional; texto sem emoji decorativo.
+- **/help/principios** (os 8 princípios, cada um com afirmação → por quê →
+  exige/proíbe → fonte) → **P1/P8**: torna a fundamentação **legível dentro do
+  produto** — não só neste doc — para sustentar decisões e reuniões; bilíngue de
+  verdade via `t()`.
+- **/help/glossario** (as 18 métricas: o que é · responde · fonte/caveat) →
+  **P6/P8**: vocabulário compartilhado para ler relatórios e cockpit sem
+  ambiguidade.
+- Conteúdo **espelha §1/§2/§6** deste doc; renderizado por
+  `components/help/FundamentoView.tsx` a partir de `locales/{pt-BR,es-ES}/help.json`
+  (`fundamentos.*`). Ao alterar um princípio ou métrica aqui, **atualize também o
+  `help.json`** (nos dois locales) para não deixar a versão in-app divergir — o
+  guard de paridade cobre chaves, não conteúdo. O mapa de defesa por tela (esta §3)
+  e as anti-features (§5) ainda **não** estão expostos in-app: são o próximo passo
+  natural de expansão do grupo Fundamentos.
+
 ---
 
 ## 4. Decisões de arquitetura registradas (ADRs)
