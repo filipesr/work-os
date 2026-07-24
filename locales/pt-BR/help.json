@@ -1,8 +1,19 @@
 {
   "hub": {
     "title": "Central de Ajuda",
-    "subtitle": "Aprenda a configurar e operar o Work OS em três guias, na ordem natural de uso.",
-    "openGuide": "Abrir guia",
+    "subtitle": "Guias de como fazer e os fundamentos por trás de cada tela.",
+    "groups": {
+      "howto": {
+        "title": "Como fazer",
+        "subtitle": "Passo a passo para configurar e operar o Work OS, na ordem natural de uso.",
+        "cta": "Abrir guia"
+      },
+      "fundamentos": {
+        "title": "Fundamentos",
+        "subtitle": "Por que o Work OS é assim: os princípios e as métricas, cada um com a sua fonte.",
+        "cta": "Abrir"
+      }
+    },
     "guides": {
       "templates": {
         "badge": "1",
@@ -18,6 +29,16 @@
         "badge": "3",
         "title": "O dia a dia do colaborador",
         "description": "Pegar, executar e concluir etapas — e o paralelismo na prática."
+      },
+      "principios": {
+        "badge": "P",
+        "title": "Princípios inegociáveis",
+        "description": "As oito regras que sustentam cada decisão de produto — e a fonte de cada uma."
+      },
+      "glossario": {
+        "badge": "M",
+        "title": "Glossário de métricas",
+        "description": "O que cada métrica é, o que responde e de onde vem."
       }
     }
   },
@@ -285,7 +306,7 @@
               ],
               "callout": {
                 "label": "Bloqueada?",
-                "text": "Etapas com 🔒 “Bloqueado” ainda dependem de outra fase. Só dá para pegar quando ficam ativas."
+                "text": "Etapas marcadas como “Bloqueado” ainda dependem de outra fase. Só dá para pegar quando ficam ativas."
               },
               "image": "colaborador-03-pegar-etapa.png",
               "caption": "Botão Pegar Etapa no backlog."
@@ -358,9 +379,9 @@
               "title": "Como ler os indicadores",
               "body": ["Os badges mostram o estado de cada etapa e a prioridade:"],
               "bullets": [
-                "Etapa: Ativa (azul), Bloqueada (cinza/🔒), Concluída (verde).",
+                "Etapa: Ativa (azul), Bloqueada (cinza), Concluída (verde).",
                 "Prioridade: Urgente (vermelho), Alta (laranja), Média (amarelo), Baixa (verde).",
-                "Sinais: 🔥 atrasada, ⚠️ prazo próximo, 🆕 nova (criada há menos de 24h)."
+                "Sinais: atrasada, prazo próximo, nova (criada há menos de 24h)."
               ],
               "image": "colaborador-08-status.png",
               "caption": "Legenda de status e prioridade."
@@ -369,6 +390,381 @@
         }
       ],
       "closing": "No fim, cada colaborador só precisa olhar para as próprias etapas ativas — o fluxo cuida de quem entra em seguida."
+    }
+  },
+  "fundamentos": {
+    "principios": {
+      "title": "Princípios inegociáveis",
+      "intro": "A “constituição” do Work OS: oito regras que sustentam cada tela, componente e métrica. Toda feature nova precisa passar por elas. Cada princípio traz o argumento e a fonte que o defendem.",
+      "sourcesLabel": "Fontes (verificadas por research adversarial)",
+      "entries": [
+        {
+          "badge": "P1",
+          "term": "Informacional, nunca motivacional",
+          "summary": "Todo sinal do Work OS existe para informar decisão (coaching, staffing, previsão, triagem) — nunca para premiar ou punir (score composto, ranking público, vínculo a remuneração).",
+          "fields": [
+            {
+              "label": "Por quê",
+              "text": "Medir um indicador de desempenho tende a degradá-lo — a disfunção é a regra, não a exceção, sobretudo com trabalhadores do conhecimento. Uso motivacional (mudar comportamento via prêmio) e informacional (insight de processo) são incompatíveis; e nada num dado é inerentemente um ou outro — só o uso decide. A defesa é manter os sinais separados, nunca um número composto."
+            },
+            { "label": "Exige", "items": ["Dimensões separadas, lidas por exceção."] },
+            {
+              "label": "Proíbe",
+              "items": [
+                "Score composto único.",
+                "Leaderboard.",
+                "Vínculo a remuneração.",
+                "Bloquear uma ação com base num sinal."
+              ]
+            },
+            {
+              "label": "Fonte",
+              "text": "Austin, Measuring and Managing Performance in Organizations."
+            }
+          ]
+        },
+        {
+          "badge": "P2",
+          "term": "Variação é do sistema, não da pessoa",
+          "summary": "A maior parte da variação de desempenho vem do sistema (processo, cliente, dependências), não do indivíduo. Responsabilizar a pessoa é seguro só para coaching, nunca para ranking ou remuneração, e só depois de confirmar que o sinal excede o ruído do sistema.",
+          "fields": [
+            {
+              "label": "Por quê",
+              "text": "Deming: cerca de 94% da variação é common-cause (do sistema). O experimento das Red Beads mostra defeitos mal atribuídos a quem não os controla — ranquear por defeitos é informacionalmente inútil. Reagir a common-cause como se fosse special (individual) aumenta a variação. Empiricamente, notas individuais não predizem a efetividade do time (Google Aristotle); stack-ranking equivale a aleatório sob ruído, e a Microsoft o abandonou em 2013."
+            },
+            {
+              "label": "Exige",
+              "items": [
+                "Atribuir a variação ao processo ou à etapa.",
+                "Individual apenas como leitura de coaching, com contexto."
+              ]
+            },
+            { "label": "Proíbe", "items": ["Ranking individual por output ou por defeito."] },
+            {
+              "label": "Exceção registrada",
+              "text": "Há uma única métrica de qualidade ligada à pessoa — o FTR por pessoa — cercada por salvaguardas que a tornam defensável: auto-referenciada (nunca compara pessoas); defeito-only via reclassificação humana; motivos sempre à vista; reclassificação só do gestor; acesso fail-closed; e zero vínculo a remuneração ou ranking."
+            },
+            {
+              "label": "Fonte",
+              "text": "Deming/SPC (Red Bead), Google re:Work (Project Aristotle), SHRM (stack-ranking)."
+            }
+          ]
+        },
+        {
+          "badge": "P3",
+          "term": "Previsibilidade é probabilística, não determinística",
+          "summary": "Não se estima a tarefa criativa individual em horas; mede-se a distribuição e prevê-se por probabilidade (percentis, Monte Carlo). Comprometa-se com o p85, não com a média.",
+          "fields": [
+            {
+              "label": "Por quê",
+              "text": "A variabilidade criativa é irredutível por matemática: filas com variabilidade e alta utilização derivam para atraso persistente e não regridem à média (Markov / passeio aleatório). A estimativa determinística falha por estrutura, não por má gestão. A resposta é limitar WIP e prever probabilisticamente sobre o histórico."
+            },
+            {
+              "label": "Exige",
+              "items": ["Percentis (p50/p85/p95).", "Forecast probabilístico.", "WIP limitado."]
+            },
+            {
+              "label": "Proíbe",
+              "items": ["Prazo ou estimativa determinística apresentada como verdade."]
+            },
+            {
+              "label": "Fonte",
+              "text": "Reinertsen (variabilidade e filas), Vacanti (Monte Carlo e percentis), Lei de Little."
+            }
+          ]
+        },
+        {
+          "badge": "P4",
+          "term": "Outside view: prever pela classe, não pela tarefa",
+          "summary": "Posicione a tarefa na distribuição empírica da sua classe (tipo de trabalho), não numa estimativa bottom-up. Segmente por tipo. A experiência do executor entra como largura da banda, nunca como nota.",
+          "fields": [
+            {
+              "label": "Por quê",
+              "text": "A “inside view” (focar na tarefa específica) é sistematicamente otimista (planning fallacy); a “outside view” é a cura. Os desvios diferem muito por categoria — arte, landing page e vídeo precisam de classes separadas. A banda fica mais estreita só com evidência de ser melhor que os pares, e mais larga se pior; o percentil escolhido codifica a tolerância a risco."
+            },
+            {
+              "label": "Exige",
+              "items": [
+                "Forecast por template (classe).",
+                "Experiência ajusta a largura da banda (v2)."
+              ]
+            },
+            {
+              "label": "Proíbe",
+              "items": ["Um número global único de previsão.", "Experiência virar score."]
+            },
+            { "label": "Fonte", "text": "Flyvbjerg/Kahneman — reference-class forecasting." }
+          ]
+        },
+        {
+          "badge": "P5",
+          "term": "Qualidade na fonte; interno ≠ externo",
+          "summary": "Qualidade se constrói no processo (inspecionar na fonte); o retrabalho é atribuído à etapa que injetou o defeito; e distingue-se retrabalho interno (pego antes do cliente — o gate funcionando, desejável) de rejeição do cliente (escapou — custosa).",
+          "fields": [
+            {
+              "label": "Por quê",
+              "text": "Jidoka (TPS): parar na anormalidade para não passar defeito adiante; inspecionar na fonte é melhor que inspeção final reativa. O COPQ separa falha interna (antes do cliente) de externa (após a entrega, mais danosa). Contá-las juntas apaga a distinção que mais importa."
+            },
+            {
+              "label": "Exige",
+              "items": [
+                "Evento de qualidade por etapa, interno-vs-cliente, atribuído à etapa de origem (subsistema a construir)."
+              ]
+            },
+            {
+              "label": "Proíbe",
+              "items": [
+                "Contar retrabalho como um “revert” genérico indistinto.",
+                "Atribuir o defeito à pessoa."
+              ]
+            },
+            { "label": "Fonte", "text": "Toyota/TPS (jidoka), COPQ/OpEx." }
+          ]
+        },
+        {
+          "badge": "P6",
+          "term": "Gestão por exceção, não paredes de dados",
+          "summary": "O cockpit destaca exceções acionáveis (a restrição, quem está sobrecarregado, o que envelheceu) — não despeja tabelas de 40 linhas.",
+          "fields": [
+            {
+              "label": "Por quê",
+              "text": "Teoria das Restrições: existe uma restrição; melhorar em outro lugar não aumenta o throughput, então foque nela. DeGrandis: tornar o trabalho e as dependências visíveis, mas o valor está em agir na exceção. O feedback de uso confirmou: vira “parede de linhas” quando lista tudo sem priorizar."
+            },
+            {
+              "label": "Exige",
+              "items": ["Exceção primeiro; detalhe sob demanda (drawer ou drill-down)."]
+            },
+            { "label": "Proíbe", "items": ["Listar tudo sem priorizar."] },
+            {
+              "label": "Fonte",
+              "text": "Goldratt/ToC, DeGrandis (Making Work Visible) e feedback de uso."
+            }
+          ]
+        },
+        {
+          "badge": "P7",
+          "term": "Capacidade criativa não é horas fungíveis",
+          "summary": "Horas-capacidade é um instrumento fraco para planejar trabalho criativo. A capacidade real é throughput (itens por período, por tipo), que absorve a variabilidade; utilização (horas ÷ meta) é guarda de sobrecarga e ócio, não ferramenta de planejamento.",
+          "fields": [
+            {
+              "label": "Por quê",
+              "text": "Horas criativas não são intercambiáveis (pesquisa, iteração, espera de aprovação). Throughput por classe embute a variabilidade (P3/P4). Misturar volume na nota de qualidade suja o sinal e esconde o problema real; ócio é questão de capacidade e roteamento, não dedução de qualidade."
+            },
+            {
+              "label": "Exige",
+              "items": [
+                "Utilização como faixa indicativa, não alarme.",
+                "Throughput por classe como medida de capacidade."
+              ]
+            },
+            {
+              "label": "Proíbe",
+              "items": [
+                "Usar horas como verdade de planejamento.",
+                "Descontar volume da qualidade."
+              ]
+            },
+            { "label": "Fonte", "text": "Reinertsen/Vacanti (fluxo)." }
+          ]
+        },
+        {
+          "badge": "P8",
+          "term": "Bilíngue de verdade (pt-BR / es-ES)",
+          "summary": "Toda string de UI passa por t(), presente nos dois locales com chaves idênticas; o es-ES é espanhol real, sem ortografia portuguesa.",
+          "fields": [
+            {
+              "label": "Por quê",
+              "text": "Afeta a experiência real dos usuários es-ES, e regressões de i18n são silenciosas. Um guard de paridade (__tests__/i18n/locale-parity.test.ts) falha em divergência de chave ou vazamento de português."
+            },
+            { "label": "Exige", "items": ["Paridade de chaves testada em CI."] },
+            { "label": "Proíbe", "items": ["String hardcoded.", "Tradução placeholder."] },
+            { "label": "Fonte", "text": "Convenção do projeto e guard de CI." }
+          ]
+        }
+      ],
+      "sources": [
+        "Fluxo e previsibilidade: Vacanti (Actionable Agile) · Reinertsen (Principles of Product Development Flow) · Lei de Little · Flyvbjerg/Kahneman (reference-class forecasting) · Goldratt/ToC · DeGrandis (Making Work Visible).",
+        "Medição e pessoas: Austin (Measuring and Managing Performance) · Deming/SPC (Red Bead) · Google re:Work (Project Aristotle) · SHRM (stack-ranking) · Gallup (engajamento).",
+        "Qualidade: Toyota/TPS (jidoka) · COPQ (interno vs externo) · Lean inspect-at-source.",
+        "Cada afirmação passou por verificação adversarial (3 votos) nas rodadas de research do projeto."
+      ]
+    },
+    "glossario": {
+      "title": "Glossário de métricas",
+      "intro": "O que cada métrica é, o que ela responde e de onde vem — a base compartilhada para ler os relatórios e o cockpit sem ambiguidade.",
+      "entries": [
+        {
+          "term": "WIP",
+          "summary": "Itens ativos por pessoa ou etapa.",
+          "fields": [
+            { "label": "Responde", "text": "Quanto está em curso?" },
+            { "label": "Fonte · caveat", "text": "Lei de Little. Alavanca central (P3)." }
+          ]
+        },
+        {
+          "term": "Cycle time",
+          "summary": "completedAt − createdAt, em dias.",
+          "fields": [
+            { "label": "Responde", "text": "Quanto leva ponta a ponta?" },
+            { "label": "Fonte · caveat", "text": "Meta: curto e consistente." }
+          ]
+        },
+        {
+          "term": "Throughput",
+          "summary": "Concluídos por período (série no tempo).",
+          "fields": [
+            { "label": "Responde", "text": "Quanto sai — e para onde tende?" },
+            { "label": "Fonte · caveat", "text": "Base do forecast (P3/P7)." }
+          ]
+        },
+        {
+          "term": "Work item age",
+          "summary": "Tempo desde a ativação da etapa.",
+          "fields": [
+            { "label": "Responde", "text": "Está velho?" },
+            { "label": "Fonte · caveat", "text": "Vacanti — aging WIP." }
+          ]
+        },
+        {
+          "term": "Aging ratio",
+          "summary": "idade ÷ SLA (≥ 1 = passou).",
+          "fields": [
+            { "label": "Responde", "text": "Passou do esperado?" },
+            {
+              "label": "Fonte · caveat",
+              "text": "stageAgingRatio; SLA = expectedDurationHours ?? 72h."
+            }
+          ]
+        },
+        {
+          "term": "Flow efficiency",
+          "summary": "ACTIVE ÷ (ACTIVE + BLOCKED).",
+          "fields": [
+            { "label": "Responde", "text": "É lento ou fica esperando?" },
+            {
+              "label": "Fonte · caveat",
+              "text": "Reconstruído do log StageTransition; só desde a migração."
+            }
+          ]
+        },
+        {
+          "term": "Cycle-time percentis",
+          "summary": "p50/p85/p95 dos concluídos.",
+          "fields": [
+            { "label": "Responde", "text": "Qual é o meu prazo confiável?" },
+            { "label": "Fonte · caveat", "text": "p85 = compromisso (P3)." }
+          ]
+        },
+        {
+          "term": "Forecast Monte Carlo",
+          "summary": "Simulação sobre o throughput histórico.",
+          "fields": [
+            { "label": "Responde", "text": "Quando o backlog fica pronto (p85)?" },
+            { "label": "Fonte · caveat", "text": "Precisa de algumas semanas de histórico." }
+          ]
+        },
+        {
+          "term": "CFD (diagrama de fluxo cumulativo)",
+          "summary": "Contagem por status por dia (série).",
+          "fields": [
+            {
+              "label": "Responde",
+              "text": "Onde o trabalho acumula ou escasseia ao longo do tempo?"
+            },
+            { "label": "Fonte · caveat", "text": "Banda de bloqueadas alargando = gargalo." }
+          ]
+        },
+        {
+          "term": "Restrição do sistema",
+          "summary": "A etapa que mais represa (inversão do waitingOn).",
+          "fields": [
+            { "label": "Responde", "text": "Onde agir primeiro? (ToC)" },
+            { "label": "Fonte · caveat", "text": "getSystemConstraint; sinal causal, ao vivo." }
+          ]
+        },
+        {
+          "term": "Risco de dependência",
+          "summary": "Nº de pré-requisitos pendentes → baixo/médio/alto.",
+          "fields": [
+            { "label": "Responde", "text": "Quão travado está?" },
+            { "label": "Fonte · caveat", "text": "Heurística de composição de atraso." }
+          ]
+        },
+        {
+          "term": "WIP limit",
+          "summary": "Teto de itens em progresso por etapa.",
+          "fields": [
+            { "label": "Responde", "text": "Estourou o teto?" },
+            {
+              "label": "Fonte · caveat",
+              "text": "Enforcement de pull no claim; a auto-ativação nunca bloqueia."
+            }
+          ]
+        },
+        {
+          "term": "Utilização",
+          "summary": "horas de TimeLog ÷ capacidade prorrateada.",
+          "fields": [
+            { "label": "Responde", "text": "O tempo pago está sendo usado?" },
+            {
+              "label": "Fonte · caveat",
+              "text": "Faixa indicativa (P7); benchmarks de agência não verificados."
+            }
+          ]
+        },
+        {
+          "term": "Sinais de burnout",
+          "summary": "Utilização média + overtime + WIP (janela de 4 semanas).",
+          "fields": [
+            { "label": "Responde", "text": "Alguém em risco sustentado?" },
+            {
+              "label": "Fonte · caveat",
+              "text": "Indicativo, não diagnóstico (Gallup dá o agregado)."
+            }
+          ]
+        },
+        {
+          "term": "Cadência de 1:1",
+          "summary": "Dias desde o último 1:1 → atrasado.",
+          "fields": [
+            { "label": "Responde", "text": "Quem precisa de 1:1?" },
+            {
+              "label": "Fonte · caveat",
+              "text": "Gallup: o gestor responde por cerca de 70% da variância de engajamento."
+            }
+          ]
+        },
+        {
+          "term": "Medidor de carga (WIP)",
+          "summary": "WIP ÷ teto, cor por nível e marca da mediana.",
+          "fields": [
+            { "label": "Responde", "text": "Quem está acima ou abaixo do balanço?" },
+            { "label": "Fonte · caveat", "text": "Coerente com os totais do card." }
+          ]
+        },
+        {
+          "term": "Viabilidade de prazo",
+          "summary": "Dias disponíveis vs p50/p85 do tipo.",
+          "fields": [
+            { "label": "Responde", "text": "O prazo nasceu apertado?" },
+            {
+              "label": "Fonte · caveat",
+              "text": "Confortável/apertado/em risco; informacional (P1)."
+            }
+          ]
+        },
+        {
+          "term": "Previsão por classe",
+          "summary": "Percentis do template (tipo).",
+          "fields": [
+            { "label": "Responde", "text": "Quanto leva ESTE tipo?" },
+            {
+              "label": "Fonte · caveat",
+              "text": "getTypeForecast; aviso de baixa confiança se N < 8 (P4)."
+            }
+          ]
+        }
+      ]
     }
   }
 }
