@@ -82,6 +82,19 @@ describe("resolução de mensagens i18n", () => {
       for (const m of src.matchAll(DECL)) namespaces.set(m[1], m[2]);
       if (namespaces.size === 0) continue;
 
+      // O NAMESPACE em si tem que existir. Parece óbvio, mas foi o buraco por
+      // onde `useTranslations("tasks.taskStatus")` passou: o namespace não
+      // existia (os rótulos vivem em `admin.tasks.list`), e como não havia
+      // chave para conferir dentro dele, nada falhava até a tela abrir.
+      for (const ns of new Set(namespaces.values())) {
+        for (const locale of LOCALES) {
+          const node = resolve(messages[locale], ns);
+          if (node === undefined || typeof node !== "object") {
+            missing.push(`${locale}  ${ns}  (namespace inexistente, ${relative(ROOT, file)})`);
+          }
+        }
+      }
+
       for (const m of src.matchAll(CALL)) {
         const ns = namespaces.get(m[1]);
         const key = m[2];

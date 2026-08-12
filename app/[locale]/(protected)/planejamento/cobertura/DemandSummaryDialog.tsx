@@ -34,7 +34,9 @@ export function DemandSummaryDialog({
   onClose: () => void;
 }) {
   const t = useTranslations("planning.coverage.demand");
-  const tStatus = useTranslations("tasks.taskStatus");
+  // Os rótulos de status vivem em admin.tasks.list (mesma fonte da lista de
+  // demandas) — não há um namespace "tasks.taskStatus".
+  const tTasks = useTranslations("admin.tasks.list");
 
   if (!task) return null;
 
@@ -59,7 +61,10 @@ export function DemandSummaryDialog({
 
         <dl className="divide-y divide-border">
           <Row label={t("status")}>
-            <StatusBadge tone={taskStatusTone(task.status)} label={tStatus(task.status)} />
+            <StatusBadge
+              tone={taskStatusTone(task.status)}
+              label={tTasks(`taskStatus.${task.status}`)}
+            />
           </Row>
           <Row label={t("dueDate")}>
             <span className="text-sm tabular-nums text-foreground">{due ?? t("noDueDate")}</span>
