@@ -69,6 +69,46 @@ export function utilizationRatio(
   return hours / (weeklyCapacityHours * periodWeeks);
 }
 
+export type UtilizationPosition = "below" | "inside" | "above";
+
+/**
+ * Geometria do medidor de utilização: onde cai a pessoa numa régua `0..scaleMax`
+ * e onde fica a faixa de referência sombreada. Puro — o caller passa a faixa e a
+ * escala (`lib/reporting-constants.ts`), como em `loadMeter`.
+ *
+ * Por que medidor e não um número colorido: pintar >90% de vermelho e 60–90% de
+ * verde transforma um sinal de capacidade em NOTA — verde "boa", vermelho "ruim"
+ * — que é exatamente o que P7 e P1 proíbem. Aqui a informação está na POSIÇÃO
+ * (dá para ver o quanto está fora, e para que lado), e a cor não julga. `position`
+ * existe só para rótulo textual/leitor de tela, nunca para escolher cor de alarme.
+ *
+ * `markerPct` é clampado à régua: quem estourar muito encosta em 100% em vez de
+ * transbordar o container — o número exato continua ao lado, sem distorcer a barra.
+ */
+export function utilizationMeter(
+  utilization: number,
+  band: { min: number; max: number; scaleMax: number }
+): {
+  markerPct: number;
+  bandStartPct: number;
+  bandWidthPct: number;
+  position: UtilizationPosition;
+} {
+  const scaleMax = band.scaleMax > 0 ? band.scaleMax : 1;
+  const pct = (value: number) => Math.min(Math.max(value / scaleMax, 0), 1) * 100;
+
+  const bandStartPct = pct(band.min);
+  const position: UtilizationPosition =
+    utilization < band.min ? "below" : utilization > band.max ? "above" : "inside";
+
+  return {
+    markerPct: pct(utilization),
+    bandStartPct,
+    bandWidthPct: Math.max(0, pct(band.max) - bandStartPct),
+    position,
+  };
+}
+
 /**
  * ageHours / slaHours para uma etapa ativa — `>= 1` significa que passou do SLA
  * (envelhecendo). Puro; o caller resolve o SLA (ex.: `expectedDurationHours ??

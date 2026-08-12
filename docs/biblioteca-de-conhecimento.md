@@ -159,28 +159,28 @@ testada.
 
 Cada métrica: **o que é · fórmula/local · o que responde · fonte/caveat**.
 
-| Métrica                    | O que é / fórmula                                    | Responde                              | Fonte · caveat                                                                                           |
-| -------------------------- | ---------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| **WIP**                    | itens ativos por pessoa/etapa                        | "quanto está em curso?"               | Lei de Little. Alavanca central (P3).                                                                    |
-| **Lead time**              | `completedAt − createdAt` (dias)                     | "quanto o **cliente** espera?"        | Demanda → entrega; inclui a fila. É o que se promete.                                                    |
-| **Cycle time**             | `completedAt − startedAt` (dias)                     | "quanto leva **executar**?"           | Início → entrega. Meta: curto e **consistente**. Só desde a migração `20260812120000`.                   |
-| **Queue time**             | `startedAt − createdAt` (dias)                       | "quanto tempo ficou **parado**?"      | `lead − cycle`. Espera antes de alguém pegar. Idem caveat.                                               |
-| **Throughput**             | concluídos por período                               | "quanto sai?"                         | Base do forecast (P3/P7).                                                                                |
-| **Work item age**          | tempo desde ativação da etapa                        | "está velho?"                         | Vacanti aging WIP.                                                                                       |
-| **Aging ratio**            | `idade ÷ SLA` (`≥1` = passou)                        | "passou do esperado?"                 | `stageAgingRatio`; SLA = `expectedDurationHours ?? 72h`.                                                 |
-| **Flow efficiency**        | `ACTIVE ÷ (ACTIVE+BLOCKED)`                          | "é lento ou fica **esperando**?"      | Reconstruído do log `StageTransition`. Só desde a migração.                                              |
-| **Cycle-time percentis**   | p50/p85/p95 dos concluídos                           | "qual meu **prazo confiável**?"       | p85 = compromisso (P3).                                                                                  |
-| **Forecast Monte Carlo**   | simulação sobre throughput histórico                 | "quando o backlog fica pronto? (p85)" | Precisa de poucas semanas de histórico.                                                                  |
-| **CFD**                    | contagem por status/dia (série)                      | "onde acumula/escasseia?"             | Banda de bloqueadas alargando = gargalo.                                                                 |
-| **Restrição do sistema**   | etapa que mais **represa** (inversão do `waitingOn`) | "onde agir primeiro?" (ToC)           | `getSystemConstraint`; sinal causal, ao vivo.                                                            |
-| **Risco de dependência**   | nº de pré-requisitos pendentes → baixo/médio/alto    | "quão travado está?"                  | Heurística de composição de atraso.                                                                      |
-| **WIP limit**              | teto de itens em progresso por etapa                 | "estourou o teto?"                    | Enforcement de **pull** no claim; auto-ativação nunca bloqueia.                                          |
-| **Utilização**             | `horas TimeLog ÷ capacidade prorrateada`             | "o tempo pago está usado?"            | Faixa **indicativa** (P7); benchmarks de agência não verificados.                                        |
-| **Sinais de burnout**      | util média + overtime + WIP (4 sem)                  | "alguém em risco **sustentado**?"     | Indicativo, não diagnóstico (Gallup dá agregado).                                                        |
-| **Cadência de 1:1**        | dias desde o último 1:1 → atrasado                   | "quem precisa de 1:1?"                | Gallup: gestor = 70% da variância de engajamento.                                                        |
-| **Medidor de carga (WIP)** | `WIP ÷ teto`, cor por nível + marca da mediana       | "quem está acima/abaixo do balanço?"  | Coerente com os totais do card.                                                                          |
-| **Viabilidade de prazo**   | dias disponíveis vs p50/p85 do tipo                  | "o prazo nasceu apertado?"            | Confortável/apertado/em risco; **informacional** (P1).                                                   |
-| **Previsão por classe**    | percentis do **template** (tipo)                     | "quanto leva ESTE tipo?"              | `getTypeForecast`; usa **lead** time (a demanda ainda vai passar pela fila); N<8 = baixa confiança (P4). |
+| Métrica                    | O que é / fórmula                                    | Responde                              | Fonte · caveat                                                                                                                                |
+| -------------------------- | ---------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **WIP**                    | itens ativos por pessoa/etapa                        | "quanto está em curso?"               | Lei de Little. Alavanca central (P3).                                                                                                         |
+| **Lead time**              | `completedAt − createdAt` (dias)                     | "quanto o **cliente** espera?"        | Demanda → entrega; inclui a fila. É o que se promete.                                                                                         |
+| **Cycle time**             | `completedAt − startedAt` (dias)                     | "quanto leva **executar**?"           | Início → entrega. Meta: curto e **consistente**. Só desde a migração `20260812120000`.                                                        |
+| **Queue time**             | `startedAt − createdAt` (dias)                       | "quanto tempo ficou **parado**?"      | `lead − cycle`. Espera antes de alguém pegar. Idem caveat.                                                                                    |
+| **Throughput**             | concluídos por período                               | "quanto sai?"                         | Base do forecast (P3/P7).                                                                                                                     |
+| **Work item age**          | tempo desde ativação da etapa                        | "está velho?"                         | Vacanti aging WIP.                                                                                                                            |
+| **Aging ratio**            | `idade ÷ SLA` (`≥1` = passou)                        | "passou do esperado?"                 | `stageAgingRatio`; SLA = `expectedDurationHours ?? 72h`.                                                                                      |
+| **Flow efficiency**        | `ACTIVE ÷ (ACTIVE+BLOCKED)`                          | "é lento ou fica **esperando**?"      | Reconstruído do log `StageTransition`. Só desde a migração.                                                                                   |
+| **Cycle-time percentis**   | p50/p85/p95 dos concluídos                           | "qual meu **prazo confiável**?"       | p85 = compromisso (P3).                                                                                                                       |
+| **Forecast Monte Carlo**   | simulação sobre throughput histórico                 | "quando o backlog fica pronto? (p85)" | Precisa de poucas semanas de histórico.                                                                                                       |
+| **CFD**                    | contagem por status/dia (série)                      | "onde acumula/escasseia?"             | Banda de bloqueadas alargando = gargalo.                                                                                                      |
+| **Restrição do sistema**   | etapa que mais **represa** (inversão do `waitingOn`) | "onde agir primeiro?" (ToC)           | `getSystemConstraint`; sinal causal, ao vivo.                                                                                                 |
+| **Risco de dependência**   | nº de pré-requisitos pendentes → baixo/médio/alto    | "quão travado está?"                  | Heurística de composição de atraso.                                                                                                           |
+| **WIP limit**              | teto de itens em progresso por etapa                 | "estourou o teto?"                    | Enforcement de **pull** no claim; auto-ativação nunca bloqueia.                                                                               |
+| **Utilização**             | `horas TimeLog ÷ capacidade prorrateada`             | "o tempo pago está usado?"            | Faixa **indicativa** 60–90% (P7); benchmarks de agência não verificados. Exibida como medidor (`utilizationMeter`), nunca como escala de cor. |
+| **Sinais de burnout**      | util média + overtime + WIP (4 sem)                  | "alguém em risco **sustentado**?"     | Indicativo, não diagnóstico (Gallup dá agregado).                                                                                             |
+| **Cadência de 1:1**        | dias desde o último 1:1 → atrasado                   | "quem precisa de 1:1?"                | Gallup: gestor = 70% da variância de engajamento.                                                                                             |
+| **Medidor de carga (WIP)** | `WIP ÷ teto`, cor por nível + marca da mediana       | "quem está acima/abaixo do balanço?"  | Coerente com os totais do card.                                                                                                               |
+| **Viabilidade de prazo**   | dias disponíveis vs p50/p85 do tipo                  | "o prazo nasceu apertado?"            | Confortável/apertado/em risco; **informacional** (P1).                                                                                        |
+| **Previsão por classe**    | percentis do **template** (tipo)                     | "quanto leva ESTE tipo?"              | `getTypeForecast`; usa **lead** time (a demanda ainda vai passar pela fila); N<8 = baixa confiança (P4).                                      |
 
 ---
 
@@ -224,8 +224,19 @@ Cada superfície e a razão de existir **daquela forma**.
 
 ### /reports/productivity
 
-- **Utilização (coluna, faixa indicativa)** → **P7/P1**: horas viram utilização,
+- **Utilização (medidor com faixa sombreada)** → **P7/P1**: horas viram utilização,
   mas como **guarda**, não nota; benchmarks não verificados → faixa, não alarme.
+  A informação está na **posição** do marcador na régua (`UtilizationMeter`),
+  numa cor neutra única. **Correção registrada:** a coluna exibia o percentual
+  numa escala verde (60–90%) → vermelha (>90%), o que lê como aprovado/reprovado
+  e contradizia a própria legenda ("nunca um ranking"). Escala de julgamento por
+  pessoa é justamente o que P1 proíbe; estar fora da faixa é pauta de 1:1.
+- **Banner de total + quebras por projeto/cliente/etapa** → **P6**: o total
+  contextualiza; as quebras se **auto-ocultam** quando o filtro correspondente já
+  está ativo (não repetir na tabela o que a barra de filtro já diz).
+- **Exportar CSV/PDF nas quatro tabelas** → uso real: o dado sai para
+  fechamento/faturamento sem virar screenshot. A coluna de utilização vai como
+  número puro — a faixa vive na tela, onde o contexto está junto.
 
 ### Criação de tarefa (/admin/tasks/new)
 

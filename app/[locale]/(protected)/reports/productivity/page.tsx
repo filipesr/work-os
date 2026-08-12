@@ -15,8 +15,20 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { ExportButtons } from "@/components/reports/ExportButtons";
 import { ReportFilterBar } from "@/components/reports/ReportFilterBar";
+import { UtilizationMeter } from "@/components/reports/UtilizationMeter";
 import { CardSkeleton, SummarySkeleton } from "@/components/reports/skeletons";
 import { parseReportFilters } from "@/lib/reports/filters";
+import { utilizationMeter } from "@/lib/team-health-format";
+import {
+  UTILIZATION_BAND,
+  UTILIZATION_BAND_MIN,
+  UTILIZATION_BAND_MAX,
+  UTILIZATION_SCALE_MAX,
+} from "@/lib/reporting-constants";
+
+/** Chave i18n da posição na faixa (abaixo/dentro/acima) — rótulo, nunca cor. */
+const meterPosition = (utilization: number) =>
+  utilizationMeter(utilization, UTILIZATION_BAND).position;
 
 // Dedupe the user query across the summary banner and the "Hours by User" card
 // (both need it, in different layout positions) so it runs once per request.
@@ -51,6 +63,9 @@ async function HoursByUserSection({ filters, t }: { filters: ProductivityFilters
   const exportRows = hoursByUser.map((u) => ({
     user: u.userName || u.userEmail || "",
     hours: Number(u.totalHours.toFixed(1)),
+    // Exportado como número puro; a faixa vive na tela, não na planilha — um
+    // "%" solto numa coluna é o que mais facilmente vira ranking por engano.
+    utilization: u.utilization != null ? `${Math.round(u.utilization * 100)}%` : "—",
   }));
 
   return (
@@ -64,6 +79,7 @@ async function HoursByUserSection({ filters, t }: { filters: ProductivityFilters
           columns={[
             { key: "user", header: t("hoursByUser.userHeader") },
             { key: "hours", header: t("hoursByUser.hoursHeader") },
+            { key: "utilization", header: t("hoursByUser.utilizationHeader") },
           ]}
           rows={exportRows}
         />
@@ -73,40 +89,49 @@ async function HoursByUserSection({ filters, t }: { filters: ProductivityFilters
         <p className="text-sm text-muted-foreground">{t("hoursByUser.noData")}</p>
       ) : (
         <div className="space-y-2">
-          <div className="grid grid-cols-3 gap-2 border-b border-border pb-2 text-sm font-semibold">
+          <div className="grid grid-cols-[1fr_5rem_11rem] gap-2 border-b border-border pb-2 text-sm font-semibold">
             <div>{t("hoursByUser.userHeader")}</div>
             <div className="text-right">{t("hoursByUser.hoursHeader")}</div>
-            <div className="text-right">{t("hoursByUser.utilizationHeader")}</div>
+            <div>{t("hoursByUser.utilizationHeader")}</div>
           </div>
-          {hoursByUser.map((user) => {
-            const pct = user.utilization != null ? Math.round(user.utilization * 100) : null;
-            // Indicative band (agency utilization benchmarks were not
-            // adversarially verified) — a signal, not a ranking (P7).
-            const tone =
-              pct == null
-                ? "text-muted-foreground"
-                : pct > 90
-                  ? "text-danger"
-                  : pct >= 60
-                    ? "text-success"
-                    : "text-warning";
-            return (
-              <div key={user.userId} className="grid grid-cols-3 gap-2 text-sm">
-                <div className="truncate">
-                  {user.userName || user.userEmail || t("hoursByUser.noName")}
-                </div>
-                <div className="text-right font-medium tabular-nums">
-                  {user.totalHours.toFixed(1)}h
-                </div>
-                <div className={`text-right font-medium tabular-nums ${tone}`}>
-                  {pct != null ? `${pct}%` : "—"}
-                </div>
+          {hoursByUser.map((user) => (
+            <div
+              key={user.userId}
+              className="grid grid-cols-[1fr_5rem_11rem] items-center gap-2 text-sm"
+            >
+              <div className="truncate">
+                {user.userName || user.userEmail || t("hoursByUser.noName")}
               </div>
-            );
-          })}
-          <p className="pt-1 text-[11px] text-muted-foreground">
-            {t("hoursByUser.utilizationNote")}
-          </p>
+              <div className="text-right font-medium tabular-nums">
+                {user.totalHours.toFixed(1)}h
+              </div>
+              {/* Faixa, não nota: a leitura está na posição do marcador. Nenhuma
+                  cor de julgamento — estar fora da faixa é pauta de 1:1 (P7/P1). */}
+              <UtilizationMeter
+                utilization={user.utilization}
+                emptyLabel={t("hoursByUser.utilizationEmpty")}
+                bandLabel={
+                  user.utilization == null
+                    ? t("hoursByUser.utilizationEmpty")
+                    : t(`hoursByUser.band.${meterPosition(user.utilization)}`, {
+                        min: Math.round(UTILIZATION_BAND_MIN * 100),
+                        max: Math.round(UTILIZATION_BAND_MAX * 100),
+                      })
+                }
+              />
+            </div>
+          ))}
+          {/* Legenda da régua: sem ela, o sombreado é decoração sem significado. */}
+          <div className="flex items-center gap-2 pt-1 text-[11px] text-muted-foreground">
+            <span className="flex-1">
+              {t("hoursByUser.utilizationScale", {
+                min: Math.round(UTILIZATION_BAND_MIN * 100),
+                max: Math.round(UTILIZATION_BAND_MAX * 100),
+                scale: Math.round(UTILIZATION_SCALE_MAX * 100),
+              })}
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">{t("hoursByUser.utilizationNote")}</p>
         </div>
       )}
     </SectionCard>
@@ -116,8 +141,29 @@ async function HoursByUserSection({ filters, t }: { filters: ProductivityFilters
 async function HoursByProjectSection({ filters, t }: { filters: ProductivityFilters; t: T }) {
   const hoursByProject = await getHoursByProject(filters);
 
+  const exportRows = hoursByProject.map((p) => ({
+    project: p.projectName,
+    client: p.clientName,
+    hours: Number(p.totalHours.toFixed(1)),
+  }));
+
   return (
-    <SectionCard title={t("hoursByProject.title")} icon={Briefcase}>
+    <SectionCard
+      title={t("hoursByProject.title")}
+      icon={Briefcase}
+      action={
+        <ExportButtons
+          filename="hours-by-project"
+          title={t("hoursByProject.title")}
+          columns={[
+            { key: "project", header: t("hoursByProject.projectHeader") },
+            { key: "client", header: t("hoursByClient.clientHeader") },
+            { key: "hours", header: t("hoursByProject.hoursHeader") },
+          ]}
+          rows={exportRows}
+        />
+      }
+    >
       {hoursByProject.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("hoursByProject.noData")}</p>
       ) : (
@@ -146,8 +192,27 @@ async function HoursByProjectSection({ filters, t }: { filters: ProductivityFilt
 async function HoursByClientSection({ filters, t }: { filters: ProductivityFilters; t: T }) {
   const hoursByClient = await getHoursByClient(filters);
 
+  const exportRows = hoursByClient.map((c) => ({
+    client: c.clientName,
+    hours: Number(c.totalHours.toFixed(1)),
+  }));
+
   return (
-    <SectionCard title={t("hoursByClient.title")} icon={Building2}>
+    <SectionCard
+      title={t("hoursByClient.title")}
+      icon={Building2}
+      action={
+        <ExportButtons
+          filename="hours-by-client"
+          title={t("hoursByClient.title")}
+          columns={[
+            { key: "client", header: t("hoursByClient.clientHeader") },
+            { key: "hours", header: t("hoursByClient.hoursHeader") },
+          ]}
+          rows={exportRows}
+        />
+      }
+    >
       {hoursByClient.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("hoursByClient.noData")}</p>
       ) : (
@@ -173,8 +238,29 @@ async function HoursByClientSection({ filters, t }: { filters: ProductivityFilte
 async function HoursByStageSection({ filters, t }: { filters: ProductivityFilters; t: T }) {
   const hoursByStage = await getHoursByStage(filters);
 
+  const exportRows = hoursByStage.map((s) => ({
+    stage: s.stageName,
+    template: s.templateName,
+    hours: Number(s.totalHours.toFixed(1)),
+  }));
+
   return (
-    <SectionCard title={t("hoursByStage.title")} icon={Workflow}>
+    <SectionCard
+      title={t("hoursByStage.title")}
+      icon={Workflow}
+      action={
+        <ExportButtons
+          filename="hours-by-stage"
+          title={t("hoursByStage.title")}
+          columns={[
+            { key: "stage", header: t("hoursByStage.stageHeader") },
+            { key: "template", header: t("hoursByStage.templateHeader") },
+            { key: "hours", header: t("hoursByStage.hoursHeader") },
+          ]}
+          rows={exportRows}
+        />
+      }
+    >
       {hoursByStage.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("hoursByStage.noData")}</p>
       ) : (

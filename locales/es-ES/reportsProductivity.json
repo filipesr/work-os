@@ -23,7 +23,14 @@
     "hoursHeader": "Horas",
     "noName": "Sin nombre",
     "utilizationHeader": "Utilización",
-    "utilizationNote": "Banda indicativa (referencia de agencia no verificada) — una señal de capacidad, nunca un ranking."
+    "utilizationNote": "Franja indicativa y aproximada (referencia de agencia no verificada). Es resguardo de sobrecarga y de ociosidad — nunca una nota, nunca un ranking. Estar fuera de la franja no es un problema: es tema para el próximo 1:1.",
+    "utilizationEmpty": "Sin meta definida",
+    "utilizationScale": "Regla de 0 a {scale}%; la región sombreada es la franja de referencia ({min}–{max}%).",
+    "band": {
+      "below": "Por debajo de la franja de referencia ({min}–{max}%)",
+      "inside": "Dentro de la franja de referencia ({min}–{max}%)",
+      "above": "Por encima de la franja de referencia ({min}–{max}%)"
+    }
   },
   "hoursByProject": {
     "title": "Horas por Proyecto",
@@ -41,6 +48,7 @@
     "title": "Horas por Etapa",
     "noData": "No se encontraron registros de tiempo",
     "stageHeader": "Etapa",
-    "hoursHeader": "Horas"
+    "hoursHeader": "Horas",
+    "templateHeader": "Tipo de trabajo"
   }
 }
