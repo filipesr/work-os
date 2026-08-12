@@ -38,39 +38,43 @@ export function DemandChips({
       : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground";
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="space-y-1">
+      {/* Uma por linha, ocupando a largura toda: lado a lado, o título era
+          cortado com folga sobrando na direita. Assim as reticências só
+          aparecem quando o texto realmente não cabe. */}
       {shown.map((task) => (
         <button
           key={task.id}
           type="button"
           onClick={() => onPick(task)}
           title={`${task.clientName} · ${task.title}`}
-          className={`inline-flex max-w-[16rem] items-center rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${chip}`}
+          className={`block w-full truncate rounded-lg px-2.5 py-1 text-left text-xs font-medium transition-colors ${chip}`}
         >
-          <span className="truncate">
-            {task.clientName} · {task.title}
-          </span>
+          {task.clientName} · {task.title}
         </button>
       ))}
 
-      {hidden > 0 && (
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="rounded-full px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-accent"
-        >
-          {t("week.moreDemands", { count: hidden })}
-        </button>
-      )}
-
-      {expanded && tasks.length > VISIBLE && (
-        <button
-          type="button"
-          onClick={() => setExpanded(false)}
-          className="rounded-full px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent"
-        >
-          {t("week.collapse")}
-        </button>
+      {(hidden > 0 || (expanded && tasks.length > VISIBLE)) && (
+        <div className="flex flex-wrap gap-2 pt-0.5">
+          {hidden > 0 && (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="rounded-full px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-accent"
+            >
+              {t("week.moreDemands", { count: hidden })}
+            </button>
+          )}
+          {expanded && tasks.length > VISIBLE && (
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              className="rounded-full px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent"
+            >
+              {t("week.collapse")}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
