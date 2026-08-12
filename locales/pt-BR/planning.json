@@ -68,13 +68,6 @@
       "title": "Clientes parados na janela inteira",
       "subtitle": "Sem nenhuma demanda nas próximas {weeks} semanas — é diferente de ter uma semana vazia."
     },
-    "stats": {
-      "activeClients": "Clientes ativos",
-      "idleWindow": "Parados na janela",
-      "idleWindowHint": "Sem demanda em {weeks} semanas",
-      "weeksWithGap": "Semanas com lacuna",
-      "weeksWithGapHint": "Ao menos um cliente sem agenda"
-    },
     "window": {
       "weeks": "{count} semanas"
     },

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
-import { CalendarDays, Users, AlertTriangle } from "lucide-react";
+import { Users } from "lucide-react";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getWeeklyCoverage } from "@/lib/actions/weekly-coverage";
 import { getProjectsForSelect, getTemplatesForSelect } from "@/lib/actions/task";
@@ -59,7 +59,6 @@ export default async function CoveragePage({
   const templates = rawTemplates.map((tpl) => ({ id: tpl.id, name: tpl.name }));
 
   const total = coverage.activeClients.length;
-  const weeksWithGap = coverage.weeks.filter((w) => w.idle.length > 0).length;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -71,23 +70,6 @@ export default async function CoveragePage({
       />
 
       <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatTile icon={Users} label={t("stats.activeClients")} value={String(total)} />
-          <StatTile
-            icon={AlertTriangle}
-            label={t("stats.idleWindow")}
-            value={String(coverage.idleAllWindow.length)}
-            hint={t("stats.idleWindowHint", { weeks })}
-            tone={coverage.idleAllWindow.length > 0 ? "warning" : "info"}
-          />
-          <StatTile
-            icon={CalendarDays}
-            label={t("stats.weeksWithGap")}
-            value={`${weeksWithGap}/${weeks}`}
-            hint={t("stats.weeksWithGapHint")}
-          />
-        </div>
-
         {/* Ociosidade sustentada: sem NADA na janela inteira. Problema diferente
             de ter uma semana vazia, por isso vem separado e antes. */}
         {coverage.idleAllWindow.length > 0 && (
@@ -127,36 +109,6 @@ export default async function CoveragePage({
             </div>
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function StatTile({
-  icon: Icon,
-  label,
-  value,
-  hint,
-  tone = "info",
-}: {
-  icon: typeof CalendarDays;
-  label: string;
-  value: string;
-  hint?: string;
-  tone?: "info" | "warning";
-}) {
-  const chip = tone === "warning" ? "bg-warning-subtle text-warning" : "bg-primary/10 text-primary";
-  return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-      <div className="flex items-center gap-4">
-        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${chip}`}>
-          <Icon className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold tracking-tight tabular-nums text-foreground">{value}</p>
-          {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-        </div>
       </div>
     </div>
   );
