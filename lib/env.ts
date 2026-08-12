@@ -35,6 +35,16 @@ const envSchema = z.object({
   NEXT_PUBLIC_NAS_AGENT_URL_LAN: z.string().url().optional(),
   NEXT_PUBLIC_NAS_AGENT_URL_TUNNEL: z.string().url().optional(),
   CRON_SECRET: z.string().optional(), // Bearer secret for Vercel cron routes
+
+  // --- Modo TV / wallboard de presença ---
+  // Conta de serviço do monitor de parede. Opcional: sem ele a /tv simplesmente
+  // exige sessão de MANAGER/ADMIN (fail-closed — nunca fica aberta). Mínimo de
+  // 32 chars porque o token vai numa URL e é o único fator de autenticação
+  // (gere com `openssl rand -hex 32`).
+  TV_WALLBOARD_TOKEN: z
+    .string()
+    .min(32, "TV_WALLBOARD_TOKEN must be at least 32 chars (openssl rand -hex 32)")
+    .optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -2,6 +2,7 @@ import createMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { locales, defaultLocale } from "./lib/i18n";
 import { isProtectedPath } from "./lib/routes";
+import { WALLBOARD_COOKIE } from "./lib/tv-wallboard";
 
 const intlMiddleware = createMiddleware({
   locales,
@@ -59,7 +60,17 @@ export default function middleware(request: NextRequest) {
       request.cookies.get("workos.session-token") ||
       request.cookies.get("__Secure-workos.session-token");
 
-    if (!sessionCookie) {
+    // O wallboard (/tv) autentica por conta de serviço, não por sessão de
+    // usuário. Aqui só verificamos a PRESENÇA da credencial para deixar o
+    // request seguir; a verificação real (timing-safe contra
+    // TV_WALLBOARD_TOKEN) é feita na página, que é a autoridade. Sem isso o
+    // middleware mandaria o monitor de parede para o login antes de a página
+    // sequer ver o token.
+    const hasWallboardCredential =
+      pathnameWithoutLocale.startsWith("/tv") &&
+      (request.cookies.has(WALLBOARD_COOKIE) || request.nextUrl.searchParams.has("token"));
+
+    if (!sessionCookie && !hasWallboardCredential) {
       const signInUrl = new URL("/auth/signin", request.url);
       signInUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(signInUrl);

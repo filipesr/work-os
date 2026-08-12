@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
-import { requireMemberOrHigher, requireManagerOrAdmin } from "@/lib/permissions";
+import { requireMemberOrHigher } from "@/lib/permissions";
+import { requirePresenceRead } from "@/lib/presence-access";
 
 // Helper to get current user
 async function getCurrentUser() {
@@ -159,7 +160,7 @@ export async function stopWorkOnTask(activeLogId: string, taskId: string, descri
  * This is called from the dashboard every 10 seconds.
  */
 export async function getActiveWorkLogs() {
-  await requireManagerOrAdmin();
+  await requirePresenceRead();
   try {
     const activeLogs = await prisma.activityLog.findMany({
       where: { endedAt: null },
@@ -212,7 +213,7 @@ export async function getActiveWorkLogs() {
  * A user is considered online if they have a lastSeenAt timestamp from today (same calendar day).
  */
 export async function getOnlineUsers() {
-  await requireManagerOrAdmin();
+  await requirePresenceRead();
 
   try {
     // Get start of today (00:00:00)
@@ -259,7 +260,7 @@ export async function getOnlineUsers() {
  * - Their last activity was before today (previous day or earlier)
  */
 export async function getOfflineUsers() {
-  await requireManagerOrAdmin();
+  await requirePresenceRead();
 
   try {
     // Get start of today (00:00:00)

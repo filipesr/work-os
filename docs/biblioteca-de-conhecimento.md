@@ -238,6 +238,37 @@ Cada superfície e a razão de existir **daquela forma**.
   fechamento/faturamento sem virar screenshot. A coluna de utilização vai como
   número puro — a faixa vive na tela, onde o contexto está junto.
 
+### Presença ao vivo + modo TV (/reports/live-activity e /tv)
+
+- **Uma feature, duas apresentações** → board (operacional, com filtros e link
+  para a tarefa) e wallboard (`/tv`: tela cheia, escuro, tipografia grande,
+  relógio, sem navegação). Mesma fonte de dados, mesmo stream, mesmo
+  `PresenceCard`. Antes eram dois `activity.ts`, dois endpoints e dois cards
+  inline — que já divergiam no que mostravam.
+- **Informativo, nunca vigilância nem ranking** → **P1/P2**: nota à vista na
+  tela (não só na ajuda) e no próprio mural. O card **não** mostra acumulado de
+  horas do dia, não ordena por volume e não compara pessoas. "Desde quando" é o
+  tempo da tarefa **atual** — contexto para "posso interromper?", não placar.
+  Ausência de trabalho marcado ≠ ociosidade (reunião, leitura, não clicou).
+- **Ordem estável no mural** → reordenar por estado a cada tick de 10s faria os
+  cards pularem de lugar; de longe, ilegível. Board ordena online-primeiro
+  (triagem), TV ordena alfabeticamente.
+- **Contorno de autorização fechado** → **correção registrada:** a `/tv` exigia
+  `requireMemberOrHigher` enquanto o board exigia `requireManagerOrAdmin`, então
+  quem não podia abrir o board via a mesma informação (incluindo o nome do
+  cliente) pela TV. Agora existe **um** gate, `requirePresenceRead`.
+- **Wallboard autentica por conta de serviço, não por sessão de pessoa** → um
+  monitor de parede não é um usuário. `TV_WALLBOARD_TOKEN` (env, opcional) é
+  trocado por cookie httpOnly de 1 ano e a URL é limpa por redirect, tirando o
+  segredo do histórico e dos logs. **Fail-closed:** sem a env configurada,
+  `verifyWallboardToken` devolve false e a `/tv` volta a exigir gestor — uma
+  instalação não configurada nunca vira mural aberto. O escopo do token termina
+  na leitura de presença; ele não autoriza escrita nenhuma.
+- **Stream com 403 limpo** → o endpoint roda um snapshot antes de abrir o
+  stream. O `/api/tv/stream` removido devolvia `200 text/event-stream` e deixava
+  a exceção virar `: keep-alive`, mascarando a negação numa conexão que nunca
+  falhava visivelmente.
+
 ### Calendário (/planejamento/calendario)
 
 - **Mora em "Planejamento", não em "Relatórios"** → a tela **escreve** (reagenda

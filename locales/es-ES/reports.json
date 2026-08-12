@@ -79,7 +79,7 @@
     "allUsers": "Todos los Usuarios",
     "online": "En Línea",
     "offline": "Desconectado",
-    "working": "TRABAJANDO",
+    "working": "Trabajando",
     "lastSeen": "Visto",
     "neverAccessed": "Nunca accedió",
     "noTeam": "Sin equipo",
@@ -101,7 +101,12 @@
       "online": "Usuarios que accedieron al sistema hoy. Pueden estar trabajando activamente en una tarea o solo navegando.",
       "offline": "Usuarios que no accedieron al sistema hoy o que cerraron sesión explícitamente.",
       "working": "Cuando un colaborador hace clic en \"Iniciar Tarea\", el tiempo de trabajo se muestra en tiempo real junto con los detalles de la tarea.",
-      "autoUpdate": "Esta página se actualiza automáticamente cada 10 segundos."
+      "autoUpdate": "Esta página se actualiza automáticamente cada 10 segundos.",
+      "notSurveillance": "Esto es una señal de coordinación — sirve para saber a quién recurrir y si se puede interrumpir. No hay acumulado de horas, ni orden por volumen, ni comparación entre personas: presencia no es desempeño."
+    },
+    "notSurveillance": "Panel operativo: quién está disponible y en qué está el trabajo ahora. No mide productividad ni compara personas.",
+    "tv": {
+      "total": "en el equipo"
     }
   },
   "timeTracking": {

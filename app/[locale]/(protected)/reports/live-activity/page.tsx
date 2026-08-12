@@ -5,14 +5,14 @@ import Link from "next/link";
 import LiveActivityFilters from "./live-activity-filters";
 import { getActiveWorkLogs, getOnlineUsers, getOfflineUsers } from "@/lib/actions/activity";
 import { useLiveSnapshot } from "@/lib/hooks/useLiveSnapshot";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Activity, RefreshCw, Info, Tv } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR, es } from "date-fns/locale";
-import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
+import { PresenceCard } from "@/components/presence/PresenceCard";
+import { composePresence, type PresenceEntry } from "@/lib/presence-types";
 import {
   Dialog,
   DialogContent,
@@ -33,19 +33,6 @@ type LiveData = {
   activeLogs: ActiveLogData;
   onlineUsers: OnlineUserData;
   offlineUsers: OfflineUserData;
-};
-
-// Combined user type with status
-type UserWithStatus = {
-  id: string;
-  name: string | null;
-  email: string | null;
-  image: string | null;
-  role: string;
-  teams: { name: string }[];
-  lastSeenAt: Date | null;
-  isOnline: boolean;
-  activeLog?: ActiveLogData[0];
 };
 
 export default function LiveActivityPage() {
@@ -82,17 +69,9 @@ export default function LiveActivityPage() {
   const isLoading = data === null;
   const lastUpdated = updatedAt ?? new Date();
 
-  // Combine all users into a single list with status
-  const allUsers: UserWithStatus[] = [
-    ...onlineUsers.map((user) => {
-      const activeLog = activeLogs.find((log) => log.user.id === user.id);
-      return { ...user, isOnline: true, activeLog };
-    }),
-    ...offlineUsers.map((user) => ({ ...user, isOnline: false })),
-  ].sort((a, b) => {
-    if (a.isOnline && !b.isOnline) return -1;
-    if (!a.isOnline && b.isOnline) return 1;
-    return (a.name || a.email || "").localeCompare(b.name || b.email || "");
+  // Board: quem está aí agora vem primeiro (é uma tela de triagem).
+  const allUsers: PresenceEntry[] = composePresence(onlineUsers, offlineUsers, activeLogs, {
+    onlineFirst: true,
   });
 
   // Distinct team names present (for the filter modal).
@@ -136,6 +115,7 @@ export default function LiveActivityPage() {
                     <span className="block">{t("help.online")}</span>
                     <span className="block">{t("help.offline")}</span>
                     <span className="block">{t("help.working")}</span>
+                    <span className="block">{t("help.notSurveillance")}</span>
                     <span className="block text-xs text-muted-foreground">
                       {t("help.autoUpdate")}
                     </span>
@@ -166,6 +146,14 @@ export default function LiveActivityPage() {
         }
       />
 
+      {/* P1/P2: a tela informa coordenação, não vigia nem ranqueia. Fica à
+          vista, não enterrado no diálogo de ajuda — o enquadramento só protege
+          se for lido antes de alguém interpretar os pontos verdes. */}
+      <p className="mb-4 flex items-start gap-2 text-xs text-muted-foreground">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        {t("notSurveillance")}
+      </p>
+
       <SectionCard
         title={`${t("allUsers")} (${filteredUsers.length})`}
         icon={Activity}
@@ -186,85 +174,9 @@ export default function LiveActivityPage() {
           <EmptyState icon={Activity} title={t("noUsers")} description={t("subtitle")} />
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-            {filteredUsers.map((user) => {
-              let durationText = "";
-              if (user.activeLog) {
-                const duration =
-                  new Date().getTime() - new Date(user.activeLog.startedAt).getTime();
-                const mins = Math.floor(duration / 1000 / 60);
-                const hrs = Math.floor(mins / 60);
-                const remMins = mins % 60;
-                durationText = hrs > 0 ? `${hrs}h ${remMins}min` : `${mins}min`;
-              }
-
-              const card = (
-                <div
-                  className={`flex h-full flex-col rounded-xl border bg-card p-4 shadow-sm transition-colors ${
-                    user.isOnline
-                      ? "border-success/40 hover:border-success"
-                      : "border-border opacity-70"
-                  } ${user.activeLog ? "cursor-pointer" : ""}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="relative shrink-0">
-                      <Avatar className={`h-12 w-12 ${!user.isOnline ? "grayscale" : ""}`}>
-                        <AvatarImage src={getProxiedImageUrl(user.image) || undefined} />
-                        <AvatarFallback>{user.name?.charAt(0).toUpperCase() || "?"}</AvatarFallback>
-                      </Avatar>
-                      <span
-                        className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card ${
-                          user.isOnline ? "bg-success" : "bg-muted-foreground"
-                        } ${user.activeLog ? "animate-pulse" : ""}`}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate font-semibold text-foreground">
-                        {user.name || user.email}
-                      </h3>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {user.teams.length > 0
-                          ? user.teams.map((tm) => tm.name).join(", ")
-                          : t("noTeam")}
-                      </p>
-                    </div>
-                  </div>
-
-                  {user.activeLog ? (
-                    <div className="mt-3 rounded-lg bg-success-subtle px-3 py-2">
-                      <p className="truncate text-sm font-medium text-success">
-                        {user.activeLog.task.title}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {user.activeLog.task.project.name}
-                        {durationText && ` · ${durationText}`}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="mt-3 border-t border-border pt-2 text-xs text-muted-foreground">
-                      {user.lastSeenAt ? (
-                        <p>
-                          {t("lastSeen")}{" "}
-                          {formatDistanceToNow(new Date(user.lastSeenAt), {
-                            addSuffix: true,
-                            locale: dateLocale,
-                          })}
-                        </p>
-                      ) : (
-                        <p>{t("neverAccessed")}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-
-              return user.activeLog ? (
-                <Link key={user.id} href={`/tasks/${user.activeLog.task.id}`} target="_blank">
-                  {card}
-                </Link>
-              ) : (
-                <div key={user.id}>{card}</div>
-              );
-            })}
+            {filteredUsers.map((user) => (
+              <PresenceCard key={user.id} entry={user} variant="board" />
+            ))}
           </div>
         )}
       </SectionCard>
