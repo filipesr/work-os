@@ -80,15 +80,22 @@
       "idleTitle": "{count} cliente(s) sem demanda nesta semana",
       "createForClient": "Criar demanda para {client}",
       "moreIdle": "+{count} sem demanda",
-      "showCovered": "ver os {count} com agenda",
-      "collapse": "recolher",
-      "withDemandCount": "{count} cliente(s) com agenda"
+      "collapse": "recolher"
     },
-    "createDemand": "Criar demanda",
     "kind": {
       "HOLIDAY": "Feriado",
       "COMMERCIAL": "Data comercial",
       "EVENT": "Evento"
+    },
+    "create": "Criar",
+    "demand": {
+      "status": "Estado",
+      "dueDate": "Vencimento",
+      "noDueDate": "Sem prazo",
+      "assignee": "Responsável",
+      "unassigned": "Sem responsável",
+      "close": "Fechar",
+      "open": "Abrir demanda"
     }
   }
 }

@@ -31,6 +31,10 @@ interface BatchCreateDialogProps {
   /** Data do calendário de origem. Quando presente, as demandas nascem
    *  VINCULADAS a ela — é o que alimenta a cobertura em /planejamento/datas. */
   occurrenceId?: string;
+  /** Projetos já marcados ao abrir. Usado quando o gatilho é um CLIENTE
+   *  específico ("este está sem demanda"): sem isso o diálogo abriria vazio e
+   *  obrigaria a reencontrar o cliente que acabou de ser clicado. */
+  preselectedProjectIds?: string[];
   clients: ClientOption[];
   projects: ProjectOption[];
   templates: TemplateOption[];
@@ -41,6 +45,7 @@ export function BatchCreateDialog({
   date,
   eventTitle,
   occurrenceId,
+  preselectedProjectIds,
   clients,
   projects,
   templates,
@@ -56,7 +61,7 @@ export function BatchCreateDialog({
   const [titleDirty, setTitleDirty] = useState(false);
   const [dueDate, setDueDate] = useState(date);
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set(preselectedProjectIds ?? []));
 
   // Inline "create project for client" state
   const [creatingFor, setCreatingFor] = useState<string | null>(null);

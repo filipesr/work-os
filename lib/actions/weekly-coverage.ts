@@ -4,11 +4,23 @@ import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { formatISODate } from "@/lib/dates";
 import { weekSlots, windowRange, weekIndexOf } from "@/lib/calendar/weekly-window";
-import type { OccurrenceKind } from "@prisma/client";
+import type { OccurrenceKind, TaskStatus } from "@prisma/client";
 
 export interface CoverageClient {
   id: string;
   name: string;
+}
+
+/** Resumo de uma demanda vinculada a uma data — o suficiente para o card
+ *  mostrar a tag e o modal explicar do que se trata, sem abrir a tarefa. */
+export interface OccurrenceTask {
+  id: string;
+  title: string;
+  clientName: string;
+  projectName: string;
+  status: TaskStatus;
+  dueDateIso: string | null;
+  assigneeName: string | null;
 }
 
 export interface WeekOccurrence {
@@ -20,7 +32,7 @@ export interface WeekOccurrence {
   source: "CURATED" | "CUSTOM";
   /** Clientes com demanda VINCULADA a esta data específica. */
   linkedClients: number;
-  taskCount: number;
+  tasks: OccurrenceTask[];
 }
 
 export interface WeekCoverage {
@@ -88,8 +100,19 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
         titleEs: true,
         kind: true,
         source: true,
-        _count: { select: { tasks: true } },
-        tasks: { select: { project: { select: { clientId: true } } } },
+        tasks: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            dueDate: true,
+            assignee: { select: { name: true, email: true } },
+            project: {
+              select: { name: true, clientId: true, client: { select: { name: true } } },
+            },
+          },
+        },
       },
     }),
   ]);
@@ -114,7 +137,15 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
       kind: o.kind,
       source: o.source,
       linkedClients: new Set(o.tasks.map((t) => t.project.clientId)).size,
-      taskCount: o._count.tasks,
+      tasks: o.tasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        status: t.status,
+        dueDateIso: t.dueDate ? formatISODate(t.dueDate) : null,
+        assigneeName: t.assignee?.name ?? t.assignee?.email ?? null,
+        clientName: t.project.client.name,
+        projectName: t.project.name,
+      })),
     });
   }
 

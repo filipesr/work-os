@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, CalendarDays, Plus } from "lucide-react";
+import { CalendarDays, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { BatchCreateDialog } from "@/components/planejamento/calendario/BatchCreateDialog";
@@ -10,19 +10,32 @@ import type {
   ProjectOption,
   TemplateOption,
 } from "@/components/planejamento/calendario/monthly-types";
-import type { WeekCoverage } from "@/lib/actions/weekly-coverage";
+import type { WeekCoverage, OccurrenceTask, CoverageClient } from "@/lib/actions/weekly-coverage";
 import { ClientChips } from "./ClientChips";
+import { DemandSummaryDialog } from "./DemandSummaryDialog";
+
+interface BatchState {
+  date: string;
+  title?: string;
+  occurrenceId?: string;
+  preselectedProjectIds?: string[];
+}
 
 /**
  * Uma semana da janela de planejamento.
  *
- * O eixo é o CLIENTE: o cabeçalho responde "quantos clientes têm agenda nesta
- * semana", e o corpo nomeia **quem** está de fora. Antes a tela só dizia
- * "0 de 1 clientes" — um número sem sujeito, sobre o qual não dá para agir.
+ * O eixo é o CLIENTE: o cabeçalho responde "quantos têm agenda nesta semana" e o
+ * corpo nomeia **quem** está de fora. Uma semana sem feriado nenhum continua
+ * sendo um card — cliente parado é problema mesmo sem data comemorativa.
  *
- * As datas do calendário aparecem como contexto dentro da semana, não como a
- * estrutura: uma semana sem feriado nenhum continua sendo uma linha, porque
- * cliente parado é problema mesmo quando não há data comemorativa.
+ * Sem colapsar: com duas colunas o card já é curto, e esconder o conteúdo
+ * obrigava um clique só para descobrir se havia algo a fazer.
+ *
+ * Três gatilhos de criação, cada um com um preenchimento diferente — era essa a
+ * redundância anterior, em que todos abriam o mesmo diálogo vazio:
+ *  - cabeçalho → semana (data = segunda), nenhum projeto marcado;
+ *  - data      → aquele dia, vinculando a demanda à ocorrência;
+ *  - cliente   → semana, com os PROJETOS DAQUELE CLIENTE já marcados.
  */
 export function WeekBlock({
   week,
@@ -44,19 +57,12 @@ export function WeekBlock({
   locale: string;
 }) {
   const t = useTranslations("planning.coverage");
-  // Semanas sem ninguém coberto abrem sozinhas: são as que pedem ação.
-  const [open, setOpen] = useState(week.withDemand.length === 0 || isCurrent);
-  const [batch, setBatch] = useState<{
-    date: string;
-    title?: string;
-    occurrenceId?: string;
-  } | null>(null);
+  const [batch, setBatch] = useState<BatchState | null>(null);
+  const [demand, setDemand] = useState<OccurrenceTask | null>(null);
 
   const covered = week.withDemand.length;
   const tone = covered === 0 ? "warning" : covered >= totalClients ? "success" : "neutral";
 
-  // Numérico compacto (15/08) em vez de "15 de ago.": não quebra linha, cabe
-  // nas duas colunas e é inequívoco em pt-BR e es-ES.
   const fmt = new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "2-digit",
@@ -66,23 +72,19 @@ export function WeekBlock({
     new Date(`${week.endIso}T00:00:00Z`)
   )}`;
 
+  const openForClient = (client: CoverageClient) =>
+    setBatch({
+      date: week.startIso,
+      preselectedProjectIds: projects.filter((p) => p.clientId === client.id).map((p) => p.id),
+    });
+
   return (
     <div
       className={`overflow-hidden rounded-xl border bg-card shadow-sm ${
         isCurrent ? "border-primary/40 bg-primary/5" : "border-border"
       }`}
     >
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full flex-wrap items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-accent"
-      >
-        {open ? (
-          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        ) : (
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        )}
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3">
         <span className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums text-foreground">
           {rangeLabel}
         </span>
@@ -94,15 +96,23 @@ export function WeekBlock({
             {t("week.dates", { count: week.occurrences.length })}
           </span>
         )}
-      </button>
+        {/* Criar para a SEMANA — sem data comemorativa, sem cliente definido. */}
+        <button
+          type="button"
+          onClick={() => setBatch({ date: week.startIso })}
+          className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-accent"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+          {t("create")}
+        </button>
+      </div>
 
-      {open && (
-        <div className="space-y-4 border-t border-border px-4 pb-4 pt-3">
-          {/* Datas da semana — contexto e gancho de ação. */}
-          {week.occurrences.length > 0 && (
-            <div className="space-y-1.5">
-              {week.occurrences.map((o) => (
-                <div key={o.id} className="flex flex-wrap items-center gap-2 text-sm">
+      <div className="space-y-4 border-t border-border px-4 pb-4 pt-3">
+        {week.occurrences.length > 0 && (
+          <div className="space-y-2.5">
+            {week.occurrences.map((o) => (
+              <div key={o.id} className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span className="shrink-0 whitespace-nowrap tabular-nums text-muted-foreground">
                     {fmt.format(new Date(`${o.iso}T00:00:00Z`))}
                   </span>
@@ -119,11 +129,6 @@ export function WeekBlock({
                     }
                     label={t(`kind.${o.kind}`)}
                   />
-                  {o.linkedClients > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      {t("week.linkedClients", { count: o.linkedClients })}
-                    </span>
-                  )}
                   <button
                     type="button"
                     onClick={() =>
@@ -133,56 +138,64 @@ export function WeekBlock({
                         occurrenceId: o.id,
                       })
                     }
-                    className="inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-xs font-medium transition-colors hover:border-primary/40 hover:bg-accent"
+                    className="ml-auto inline-flex shrink-0 items-center gap-1 rounded border border-border px-2 py-0.5 text-xs font-medium transition-colors hover:border-primary/40 hover:bg-accent"
                   >
                     <Plus className="h-3 w-3" aria-hidden="true" />
-                    {t("createDemand")}
+                    {t("create")}
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
 
-          {/* QUEM está de fora — a resposta que o número sozinho não dava. */}
-          <div className="space-y-2">
-            {week.idle.length === 0 ? (
-              <p className="text-sm text-success">{t("week.allCovered")}</p>
-            ) : (
-              <>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t("week.idleTitle", { count: week.idle.length })}
-                </p>
-                <ClientChips
-                  clients={week.idle}
-                  variant="idle"
-                  onPick={() => setBatch({ date: week.startIso })}
-                />
-              </>
-            )}
-
-            {week.withDemand.length > 0 && (
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">
-                  {t("week.withDemandCount", { count: week.withDemand.length })}
-                </p>
-                <ClientChips clients={week.withDemand} variant="covered" />
+                {/* Demandas já vinculadas a ESTA data. O número sozinho ("1
+                    cliente já com demanda") não dizia qual era nem deixava
+                    conferir sem sair da tela. */}
+                {o.tasks.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pl-1">
+                    {o.tasks.map((task) => (
+                      <button
+                        key={task.id}
+                        type="button"
+                        onClick={() => setDemand(task)}
+                        title={`${task.clientName} · ${task.title}`}
+                        className="inline-flex max-w-[16rem] items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                      >
+                        <span className="truncate">
+                          {task.clientName} · {task.title}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            ))}
           </div>
-        </div>
-      )}
+        )}
+
+        {week.idle.length === 0 ? (
+          <p className="text-sm text-success">{t("week.allCovered")}</p>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("week.idleTitle", { count: week.idle.length })}
+            </p>
+            <ClientChips clients={week.idle} onPick={openForClient} />
+          </div>
+        )}
+      </div>
 
       {batch && (
         <BatchCreateDialog
           date={batch.date}
           eventTitle={batch.title}
           occurrenceId={batch.occurrenceId}
+          preselectedProjectIds={batch.preselectedProjectIds}
           clients={clients}
           projects={projects}
           templates={templates}
           onClose={() => setBatch(null)}
         />
       )}
+
+      <DemandSummaryDialog task={demand} locale={locale} onClose={() => setDemand(null)} />
     </div>
   );
 }

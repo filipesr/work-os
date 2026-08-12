@@ -11,54 +11,40 @@ import type { CoverageClient } from "@/lib/actions/weekly-coverage";
 const VISIBLE = 6;
 
 /**
- * Clientes de uma semana, colapsados quando são muitos.
+ * Clientes OCIOSOS de uma semana, colapsados quando são muitos.
  *
- * Os OCIOSOS são acionáveis (clicar cria demanda) e por isso vêm expandidos até
- * o limite; os que já têm agenda são só confirmação e nascem recolhidos num
- * contador.
+ * Clicar abre a criação com os projetos daquele cliente já marcados — é o que
+ * distingue este gatilho dos botões de semana e de data, que abrem vazios.
  */
 export function ClientChips({
   clients,
-  variant,
   onPick,
 }: {
   clients: CoverageClient[];
-  variant: "idle" | "covered";
-  onPick?: (client: CoverageClient) => void;
+  onPick: (client: CoverageClient) => void;
 }) {
   const t = useTranslations("planning.coverage");
   const [expanded, setExpanded] = useState(false);
 
   if (clients.length === 0) return null;
 
-  const isIdle = variant === "idle";
-  // "Com agenda" começa recolhido: é informação de conferência, não de ação.
-  const shown = expanded ? clients : clients.slice(0, isIdle ? VISIBLE : 0);
+  const shown = expanded ? clients : clients.slice(0, VISIBLE);
   const hidden = clients.length - shown.length;
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {shown.map((c) =>
-        isIdle && onPick ? (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => onPick(c)}
-            title={t("week.createForClient", { client: c.name })}
-            className="inline-flex max-w-[14rem] items-center gap-1 truncate rounded-full border border-warning/40 bg-warning-subtle px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-accent"
-          >
-            <span className="truncate">{c.name}</span>
-            <Plus className="h-3 w-3 shrink-0 opacity-60" aria-hidden="true" />
-          </button>
-        ) : (
-          <span
-            key={c.id}
-            className="inline-flex max-w-[14rem] truncate rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground"
-          >
-            {c.name}
-          </span>
-        )
-      )}
+      {shown.map((c) => (
+        <button
+          key={c.id}
+          type="button"
+          onClick={() => onPick(c)}
+          title={t("week.createForClient", { client: c.name })}
+          className="inline-flex max-w-[14rem] items-center gap-1 rounded-full border border-warning/40 bg-warning-subtle px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-accent"
+        >
+          <span className="truncate">{c.name}</span>
+          <Plus className="h-3 w-3 shrink-0 opacity-60" aria-hidden="true" />
+        </button>
+      ))}
 
       {hidden > 0 && (
         <button
@@ -66,9 +52,7 @@ export function ClientChips({
           onClick={() => setExpanded(true)}
           className="rounded-full px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-accent"
         >
-          {isIdle
-            ? t("week.moreIdle", { count: hidden })
-            : t("week.showCovered", { count: hidden })}
+          {t("week.moreIdle", { count: hidden })}
         </button>
       )}
 
