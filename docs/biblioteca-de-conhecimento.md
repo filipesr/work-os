@@ -238,6 +238,27 @@ Cada superfície e a razão de existir **daquela forma**.
   fechamento/faturamento sem virar screenshot. A coluna de utilização vai como
   número puro — a faixa vive na tela, onde o contexto está junto.
 
+### Administração — CRUD (usuários, equipes, fluxos)
+
+- **Um `FormDialog`, não modais artesanais** → `/admin/users` e `/admin/teams`
+  montavam `fixed inset-0` à mão. Além da inconsistência, o artesanal perde o que
+  o Radix dá: ESC, trava de foco, `aria-modal`, foco restaurado no gatilho e
+  scroll do fundo bloqueado. Reescrever a moldura por tela é como esses detalhes
+  somem, um de cada vez.
+- **Bug corrigido — perda silenciosa de membros** → "Gerir membros" salva com
+  `set:` (substitui a lista inteira), mas só enviava os checkboxes **renderizados**.
+  Com uma busca ativa, salvar removia do time todos os que o filtro escondeu.
+  Os selecionados fora do filtro agora viajam em inputs ocultos.
+- **Usuários é CRUD puro** → papel, times, datas, capacidade. A analítica da
+  pessoa vive em `/reports/user/[id]` (§10), guardada por P1/P2.
+- **SLA, teto de WIP e opcionalidade visíveis na lista de etapas** →
+  configuração invisível é configuração esquecida. Estavam só dentro do
+  formulário de edição, embora o SLA alimente o envelhecimento e o WIP limite o
+  pull. Ausente aparece como "sem SLA"/"sem limite" — que é diferente de zero.
+- **P8: namespace único** → `template.json` era o único arquivo de locale
+  próprio de uma tela de admin; foi fundido em `admin.workflows.*`, junto com a
+  remoção de 9 chaves órfãs da lista de fluxos.
+
 ### Projetos (/projects e /admin/projects/[id])
 
 - **Duas telas, dois propósitos** → `/admin/projects/[id]` é a visão de

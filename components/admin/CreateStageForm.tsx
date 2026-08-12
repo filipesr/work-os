@@ -20,7 +20,7 @@ interface CreateStageFormProps {
 }
 
 export function CreateStageForm({ templateId, teams, existingStages }: CreateStageFormProps) {
-  const t = useTranslations("template.createStage");
+  const t = useTranslations("admin.workflows.createStage");
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDeps, setSelectedDeps] = useState<Set<string>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);

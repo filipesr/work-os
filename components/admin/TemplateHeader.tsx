@@ -16,7 +16,7 @@ interface TemplateHeaderProps {
 }
 
 export function TemplateHeader({ template }: TemplateHeaderProps) {
-  const t = useTranslations("template.header");
+  const t = useTranslations("admin.workflows.header");
   const [isEditing, setIsEditing] = useState(false);
 
   if (isEditing) {

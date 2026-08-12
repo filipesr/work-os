@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { UserRole } from "@prisma/client";
 import { useTranslations } from "next-intl";
+import { FormDialog } from "@/components/ui/FormDialog";
+import { FieldLabel } from "@/components/ui/FieldLabel";
 
 interface User {
   id: string;
@@ -26,18 +28,24 @@ interface EditUserButtonProps {
   updateUser: (formData: FormData) => Promise<void>;
 }
 
+const FORM_ID = "edit-user-form";
+
+/**
+ * CRUD do usuário: papel, times, nascimento, admissão e capacidade semanal.
+ * **Só isso** — a analítica da pessoa (throughput/utilização/qualidade) vive em
+ * `/reports/user/[id]`, guardada por P1/P2.
+ *
+ * Migrado de um modal artesanal (`fixed inset-0` à mão) para o `FormDialog`
+ * padrão: ganha ESC, trava de foco, restauração do foco no gatilho e bloqueio de
+ * scroll do fundo, que a versão manual não tinha.
+ */
 export default function EditUserButton({ user, teams, updateUser }: EditUserButtonProps) {
   const t = useTranslations("admin.users.edit");
   const tRoles = useTranslations("admin.users.roles");
   const [isOpen, setIsOpen] = useState(false);
-  const [role, setRole] = useState(user.role);
+  const [isPending, startTransition] = useTransition();
   const [selectedTeams, setSelectedTeams] = useState<Set<string>>(
     new Set(user.teams.map((tm) => tm.id))
-  );
-  const [birthday, setBirthday] = useState(user.birthday ?? "");
-  const [admissionDate, setAdmissionDate] = useState(user.admissionDate ?? "");
-  const [weeklyCapacityHours, setWeeklyCapacityHours] = useState(
-    user.weeklyCapacityHours != null ? String(user.weeklyCapacityHours) : ""
   );
 
   const toggleTeam = (id: string) => {
@@ -49,164 +57,114 @@ export default function EditUserButton({ user, teams, updateUser }: EditUserButt
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    await updateUser(formData);
-    setIsOpen(false);
+    startTransition(async () => {
+      await updateUser(formData);
+      setIsOpen(false);
+    });
   };
 
   const fieldClass =
-    "w-full rounded-lg border-2 border-input-border bg-input text-foreground shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 px-3 py-2 transition-colors";
+    "w-full rounded-lg border-2 border-input-border bg-input px-3 py-2 text-foreground shadow-sm transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20";
 
   return (
-    <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="text-primary hover:text-primary/80 font-semibold transition-colors"
-      >
-        {t("button")}
-      </button>
+    <FormDialog
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      trigger={
+        <button
+          type="button"
+          className="font-semibold text-primary transition-colors hover:text-primary/80"
+        >
+          {t("button")}
+        </button>
+      }
+      title={`${t("title")} ${user.name || user.email}`}
+      description={t("description")}
+      formId={FORM_ID}
+      submitLabel={t("saveChanges")}
+      isPending={isPending}
+    >
+      <form id={FORM_ID} onSubmit={handleSubmit} className="space-y-4">
+        <input type="hidden" name="id" value={user.id} />
 
-      {isOpen && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="edit-user-title"
-            className="relative top-12 mx-auto p-6 border border-border w-[26rem] max-w-[92vw] shadow-lg rounded-xl bg-card"
-          >
-            <div className="mt-3">
-              <h3 id="edit-user-title" className="text-lg leading-6 font-bold text-foreground mb-4">
-                {t("title")} {user.name || user.email}
-              </h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <input type="hidden" name="id" value={user.id} />
+        <div>
+          <FieldLabel htmlFor="role" required>
+            {t("roleLabel")}
+          </FieldLabel>
+          <select id="role" name="role" defaultValue={user.role} required className={fieldClass}>
+            <option value={UserRole.ADMIN}>{tRoles("admin")}</option>
+            <option value={UserRole.MANAGER}>{tRoles("manager")}</option>
+            <option value={UserRole.SUPERVISOR}>{tRoles("supervisor")}</option>
+            <option value={UserRole.MEMBER}>{tRoles("member")}</option>
+            <option value={UserRole.CLIENT}>{tRoles("client")}</option>
+          </select>
+        </div>
 
-                {/* Role */}
-                <div>
-                  <label
-                    htmlFor="role"
-                    className="block text-sm font-semibold text-foreground mb-2"
-                  >
-                    {t("roleLabel")}
-                  </label>
-                  <select
-                    id="role"
-                    name="role"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as UserRole)}
-                    required
-                    className={fieldClass}
-                  >
-                    <option value={UserRole.ADMIN}>{tRoles("admin")}</option>
-                    <option value={UserRole.MANAGER}>{tRoles("manager")}</option>
-                    <option value={UserRole.SUPERVISOR}>{tRoles("supervisor")}</option>
-                    <option value={UserRole.MEMBER}>{tRoles("member")}</option>
-                    <option value={UserRole.CLIENT}>{tRoles("client")}</option>
-                  </select>
-                </div>
-
-                {/* Birthday + Admission */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label
-                      htmlFor="birthday"
-                      className="block text-sm font-semibold text-foreground mb-2"
-                    >
-                      {t("birthdayLabel")}
-                    </label>
-                    <input
-                      id="birthday"
-                      name="birthday"
-                      type="date"
-                      value={birthday}
-                      onChange={(e) => setBirthday(e.target.value)}
-                      className={fieldClass}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="admissionDate"
-                      className="block text-sm font-semibold text-foreground mb-2"
-                    >
-                      {t("admissionLabel")}
-                    </label>
-                    <input
-                      id="admissionDate"
-                      name="admissionDate"
-                      type="date"
-                      value={admissionDate}
-                      onChange={(e) => setAdmissionDate(e.target.value)}
-                      className={fieldClass}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="weeklyCapacityHours"
-                      className="block text-sm font-semibold text-foreground mb-2"
-                    >
-                      {t("capacityLabel")}
-                    </label>
-                    <input
-                      id="weeklyCapacityHours"
-                      name="weeklyCapacityHours"
-                      type="number"
-                      min="1"
-                      value={weeklyCapacityHours}
-                      onChange={(e) => setWeeklyCapacityHours(e.target.value)}
-                      placeholder={t("capacityPlaceholder")}
-                      className={fieldClass}
-                    />
-                  </div>
-                </div>
-
-                {/* Teams (multi-select) */}
-                <div>
-                  <span className="block text-sm font-semibold text-foreground mb-2">
-                    {t("teamsLabel")}
-                  </span>
-                  <div className="max-h-44 overflow-y-auto rounded-lg border-2 border-input-border p-2 space-y-1">
-                    {teams.map((team) => (
-                      <label
-                        key={team.id}
-                        className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-muted/60"
-                      >
-                        <input
-                          type="checkbox"
-                          name="teamIds"
-                          value={team.id}
-                          checked={selectedTeams.has(team.id)}
-                          onChange={() => toggleTeam(team.id)}
-                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm text-foreground">{team.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Buttons */}
-                <div className="flex gap-3 justify-end pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsOpen(false)}
-                    className="px-4 py-2 bg-muted text-muted-foreground font-semibold rounded-lg hover:bg-muted/80 transition-colors"
-                  >
-                    {t("cancel")}
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-md"
-                  >
-                    {t("saveChanges")}
-                  </button>
-                </div>
-              </form>
-            </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <FieldLabel htmlFor="birthday">{t("birthdayLabel")}</FieldLabel>
+            <input
+              id="birthday"
+              name="birthday"
+              type="date"
+              defaultValue={user.birthday ?? ""}
+              className={fieldClass}
+            />
+          </div>
+          <div>
+            <FieldLabel htmlFor="admissionDate">{t("admissionLabel")}</FieldLabel>
+            <input
+              id="admissionDate"
+              name="admissionDate"
+              type="date"
+              defaultValue={user.admissionDate ?? ""}
+              className={fieldClass}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <FieldLabel htmlFor="weeklyCapacityHours">{t("capacityLabel")}</FieldLabel>
+            <input
+              id="weeklyCapacityHours"
+              name="weeklyCapacityHours"
+              type="number"
+              min="1"
+              defaultValue={user.weeklyCapacityHours ?? ""}
+              placeholder={t("capacityPlaceholder")}
+              className={fieldClass}
+            />
+            {/* A capacidade é o DENOMINADOR da utilização e dos sinais de
+                sobrecarga; sem ela os dois ficam nulos, não zero. */}
+            <p className="mt-1 text-xs text-muted-foreground">{t("capacityHint")}</p>
           </div>
         </div>
-      )}
-    </>
+
+        <div>
+          <span className="mb-2 block text-sm font-semibold text-foreground">
+            {t("teamsLabel")}
+          </span>
+          <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border-2 border-input-border p-2">
+            {teams.map((team) => (
+              <label
+                key={team.id}
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-muted/60"
+              >
+                <input
+                  type="checkbox"
+                  name="teamIds"
+                  value={team.id}
+                  checked={selectedTeams.has(team.id)}
+                  onChange={() => toggleTeam(team.id)}
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <span className="text-sm text-foreground">{team.name}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </form>
+    </FormDialog>
   );
 }

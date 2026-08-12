@@ -156,5 +156,10 @@
       "INACTIVE": "Inativo"
     },
     "empty": "Nenhum projeto ainda."
+  },
+  "dialog": {
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "saving": "Salvando…"
   }
 }

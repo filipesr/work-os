@@ -29,7 +29,7 @@ export function DependencyManager({
   currentDependencies,
   onClose,
 }: DependencyManagerProps) {
-  const t = useTranslations("template.dependencyManager");
+  const t = useTranslations("admin.workflows.dependencyManager");
   const [selectedDeps, setSelectedDeps] = useState<Set<string>>(new Set(currentDependencies));
 
   // Filter out the current stage from available dependencies

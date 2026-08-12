@@ -23,7 +23,7 @@ export function DependencySelector({
   onToggle,
   currentStageId,
 }: DependencySelectorProps) {
-  const t = useTranslations("template.dependencies");
+  const t = useTranslations("admin.workflows.dependencies");
 
   const availableStages = currentStageId ? stages.filter((s) => s.id !== currentStageId) : stages;
 

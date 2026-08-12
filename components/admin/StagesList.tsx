@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { deleteTemplateStage } from "@/lib/actions/stage";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ConfirmActionButton } from "@/components/ui/ConfirmActionButton";
 import { StageEditForm } from "./StageEditForm";
 import { useTranslations } from "next-intl";
@@ -14,7 +15,7 @@ interface StagesListProps {
 }
 
 export function StagesList({ stages, templateId, teams }: StagesListProps) {
-  const t = useTranslations("template.stagesList");
+  const t = useTranslations("admin.workflows.stagesList");
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [editingDeps, setEditingDeps] = useState<Set<string>>(new Set());
 
@@ -86,6 +87,34 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                           {stage.dependents.map((dep) => dep.dependsOn.name).join(", ")}
                         </p>
                       )}
+                      {/* SLA, teto de WIP e opcionalidade ficavam visíveis só
+                          DENTRO do formulário de edição. Configuração invisível
+                          é configuração esquecida: o SLA alimenta o
+                          envelhecimento e o WIP limita o pull — quem abre o
+                          fluxo precisa ver o que está valendo sem clicar em
+                          Editar em cada etapa. Ausente = não configurado, que é
+                          diferente de zero. */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <StatusBadge
+                          tone={stage.expectedDurationHours ? "info" : "neutral"}
+                          label={
+                            stage.expectedDurationHours
+                              ? t("slaBadge", { hours: stage.expectedDurationHours })
+                              : t("slaUnset")
+                          }
+                        />
+                        <StatusBadge
+                          tone={stage.wipLimit ? "info" : "neutral"}
+                          label={
+                            stage.wipLimit
+                              ? t("wipBadge", { limit: stage.wipLimit })
+                              : t("wipUnset")
+                          }
+                        />
+                        {stage.optional && (
+                          <StatusBadge tone="warning" label={t("optionalBadge")} />
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="ml-4 flex gap-2">

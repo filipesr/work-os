@@ -18,7 +18,7 @@ export default async function TemplateEditorPage({
 }: {
   params: Promise<{ templateId: string }>;
 }) {
-  const t = await getTranslations("template.detail");
+  const t = await getTranslations("admin.workflows.detail");
   const { templateId } = await params;
   const template = await getWorkflowTemplate(templateId);
   const teams = await getTeamsForSelect();

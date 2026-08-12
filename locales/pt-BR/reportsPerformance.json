@@ -42,7 +42,9 @@
     "title": "Tempo Médio por Etapa",
     "noData": "Nenhum dado de etapa encontrado",
     "stageHeader": "Etapa",
-    "timeHeader": "Tempo Médio"
+    "timeHeader": "Tempo Médio",
+    "templateHeader": "Tipo de trabalho",
+    "countHeader": "Amostras"
   },
   "cycleTime": {
     "title": "Cycle Time (Percentis)",

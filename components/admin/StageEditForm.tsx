@@ -27,7 +27,7 @@ export function StageEditForm({
   onToggleDep,
   onClose,
 }: StageEditFormProps) {
-  const t = useTranslations("template.stagesList");
+  const t = useTranslations("admin.workflows.stagesList");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (

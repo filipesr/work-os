@@ -195,9 +195,9 @@ async function AvgTimeSection({ filters, t }: { filters: PerformanceFilters; t: 
           title={t("avgTimePerStage.title")}
           columns={[
             { key: "stage", header: t("avgTimePerStage.stageHeader") },
-            { key: "template", header: "Template" },
+            { key: "template", header: t("avgTimePerStage.templateHeader") },
             { key: "days", header: t("avgTimePerStage.timeHeader") },
-            { key: "count", header: "x" },
+            { key: "count", header: t("avgTimePerStage.countHeader") },
           ]}
           rows={exportRows}
         />

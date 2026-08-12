@@ -19,7 +19,8 @@ export async function getMessages(locale: Locale) {
     toasts: (await import(`@/locales/${locale}/toasts.json`)).default,
     account: (await import(`@/locales/${locale}/account.json`)).default,
     projects: (await import(`@/locales/${locale}/projects.json`)).default,
-    template: (await import(`@/locales/${locale}/template.json`)).default,
+    // (o antigo namespace `template` foi fundido em `admin.workflows` — o editor
+    // de fluxos era a única tela de admin com arquivo de locale próprio)
     quickCreate: (await import(`@/locales/${locale}/quickCreate.json`)).default,
     delete: (await import(`@/locales/${locale}/delete.json`)).default,
     taskFlow: (await import(`@/locales/${locale}/taskFlow.json`)).default,

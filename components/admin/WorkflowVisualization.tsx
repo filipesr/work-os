@@ -60,7 +60,7 @@ function groupStagesByLevel(stages: Stage[]): Stage[][] {
 }
 
 export function WorkflowVisualization({ stages }: WorkflowVisualizationProps) {
-  const t = useTranslations("template.visualization");
+  const t = useTranslations("admin.workflows.visualization");
 
   if (stages.length === 0) {
     return <div className="text-center text-muted-foreground py-8">{t("empty")}</div>;

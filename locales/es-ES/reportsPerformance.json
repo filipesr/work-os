@@ -62,7 +62,9 @@
     "title": "Tiempo Promedio por Etapa",
     "noData": "No se encontraron datos de etapa",
     "stageHeader": "Etapa",
-    "timeHeader": "Tiempo Promedio"
+    "timeHeader": "Tiempo Promedio",
+    "templateHeader": "Tipo de trabajo",
+    "countHeader": "Muestras"
   },
   "reworkRate": {
     "title": "Tasa de Retrabajo por Etapa",
