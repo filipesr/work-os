@@ -870,7 +870,21 @@ async function main() {
 
   const onlineUserIds = shuffledUsers.slice(0, 4);
   const onlineCandidates = activityLogCandidates.filter((c) => onlineUserIds.includes(c.userId));
-  const activeWorkers = shuffle(onlineCandidates).slice(0, randomInt(3, 6));
+
+  // UMA sessão aberta por pessoa. `activityLogCandidates` tem uma entrada por
+  // atribuição de etapa, então a mesma pessoa aparece várias vezes ali — um
+  // slice direto sorteava a mesma duas vezes e criava dois cronômetros
+  // simultâneos, que é o que o índice parcial `ActivityLog_userId_open_key`
+  // proíbe (e o que o quadro de presença mostraria como duas tarefas ao vivo).
+  const maxActive = randomInt(3, 6);
+  const seenUsers = new Set<string>();
+  const activeWorkers: typeof onlineCandidates = [];
+  for (const candidate of shuffle(onlineCandidates)) {
+    if (seenUsers.has(candidate.userId)) continue;
+    seenUsers.add(candidate.userId);
+    activeWorkers.push(candidate);
+    if (activeWorkers.length >= maxActive) break;
+  }
   let activityLogCount = 0;
   for (const worker of activeWorkers) {
     await prisma.activityLog.create({
