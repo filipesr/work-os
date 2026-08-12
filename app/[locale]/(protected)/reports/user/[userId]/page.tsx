@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
-import { requireManagerOrAdmin } from "@/lib/permissions";
+import { requireSelfOrManager, getSessionUser, getUserRole } from "@/lib/permissions";
 import { getTranslations } from "next-intl/server";
 import { getUserProductivityReport } from "@/lib/actions/reporting";
 import { currentMonthSaoPaulo, monthRangeSaoPaulo, formatMonthLabel } from "@/lib/dates";
@@ -8,6 +8,8 @@ import { Clock, CheckCircle2, Timer, Workflow, Info } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { ExportButtons } from "@/components/reports/ExportButtons";
+import { PersonAnalytics } from "@/components/people/PersonAnalytics";
+import { canReclassifyRework } from "@/lib/rework-policy";
 
 export const metadata: Metadata = {
   title: "Relatório do Colaborador",
@@ -46,13 +48,22 @@ function StatTile({
 }
 
 export default async function UserReportPage({ params, searchParams }: PageProps) {
+  const { userId, locale } = await params;
+
+  // Fail-closed: só a própria pessoa e gestor/admin (salvaguarda 5 da exceção
+  // 3b). Antes era requireManagerOrAdmin, o que trancava a pessoa fora do
+  // próprio relatório — o oposto de "auto-referenciado".
+  let viewerId: string;
   try {
-    await requireManagerOrAdmin();
+    await requireSelfOrManager(userId);
+    viewerId = (await getSessionUser()).id as string;
   } catch {
     redirect("/auth/signin");
   }
 
-  const { userId, locale } = await params;
+  const role = await getUserRole();
+  const canReclassify = canReclassifyRework({ viewerId, subjectId: userId, role });
+
   const { month: monthParam } = await searchParams;
   const month = monthParam || currentMonthSaoPaulo();
   const { start, end } = monthRangeSaoPaulo(month);
@@ -130,6 +141,15 @@ export default async function UserReportPage({ params, searchParams }: PageProps
             </div>
           )}
         </SectionCard>
+
+        {/* A mesma analítica que a pessoa vê em /minha-evolucao — throughput,
+            utilização em faixa, qualidade com os motivos, etapas ativas e horas.
+            Vista pelo gestor, com o controle de reclassificar. */}
+        <PersonAnalytics
+          userId={userId}
+          range={{ from: start, to: end }}
+          canReclassify={canReclassify}
+        />
 
         {/* Guard (P1/P2/P7): self-referential view, not a ranking. */}
         <p className="flex items-start gap-2 text-xs text-muted-foreground">

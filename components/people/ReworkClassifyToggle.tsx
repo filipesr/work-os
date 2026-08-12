@@ -11,7 +11,8 @@ export default function ReworkClassifyToggle({
   reworkEventId: string;
   current: "DEFECT" | "LEGITIMATE" | null;
 }) {
-  const t = useTranslations("admin.users.quality");
+  // Segue onde o componente passou a viver (PersonAnalytics), não onde nasceu.
+  const t = useTranslations("people.quality");
   const router = useRouter();
   const { run, isPending } = useServerAction(classifyReworkEvent, {
     onSuccess: () => router.refresh(),

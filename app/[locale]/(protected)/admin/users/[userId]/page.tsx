@@ -12,32 +12,32 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { StatCard } from "@/components/admin/StatCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
+// §3.1/§10: a analítica da pessoa (throughput, utilização, qualidade, etapas
+// ativas, horas) NÃO mora no CRUD — vive em /reports/user/[id], guardada por
+// P1/P2. Aqui ficam só identidade, edição e o link. As contagens abaixo são
+// contexto de UMA linha para quem vai mexer em papel/times/capacidade ("essa
+// pessoa tem trabalho em curso?"), não uma segunda cópia dos dados.
 async function getUser(userId: string) {
   await requireAdmin();
-  return await prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      teams: { select: { id: true, name: true }, orderBy: { name: "asc" } },
-      activeStages: {
-        where: { status: "ACTIVE" },
-        include: {
-          task: { select: { id: true, title: true } },
-          stage: { include: { template: { select: { name: true } } } },
+  const [user, hours] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        teams: { select: { id: true, name: true }, orderBy: { name: "asc" } },
+        _count: {
+          select: {
+            activeStages: { where: { status: "ACTIVE" } },
+            assignedTasks: true,
+          },
         },
-        orderBy: { activatedAt: "desc" },
       },
-      assignedTasks: {
-        select: { id: true, title: true, status: true, priority: true },
-        orderBy: { updatedAt: "desc" },
-        take: 10,
-      },
-      timeLogs: {
-        select: { id: true, hoursSpent: true, logDate: true, description: true },
-        orderBy: { logDate: "desc" },
-        take: 10,
-      },
-    },
-  });
+    }),
+    // Total real de horas. Antes era a soma dos 10 registros mais recentes que a
+    // tabela carregava — um "total" que parava no décimo lançamento.
+    prisma.timeLog.aggregate({ where: { userId }, _sum: { hoursSpent: true } }),
+  ]);
+
+  return user ? { ...user, totalHours: hours._sum.hoursSpent ?? 0 } : null;
 }
 
 async function getTeams() {
@@ -59,8 +59,6 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
   if (!user) {
     notFound();
   }
-
-  const totalHours = user.timeLogs.reduce((sum, log) => sum + Number(log.hoursSpent), 0);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -121,9 +119,9 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
 
       {/* Info Cards */}
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
-        <StatCard label={t("activeStages")} value={user.activeStages.length} />
-        <StatCard label={t("assignedTasks")} value={user.assignedTasks.length} />
-        <StatCard label={t("hoursLogged")} value={totalHours.toFixed(1)} />
+        <StatCard label={t("activeStages")} value={user._count.activeStages} />
+        <StatCard label={t("assignedTasks")} value={user._count.assignedTasks} />
+        <StatCard label={t("hoursLogged")} value={user.totalHours.toFixed(1)} />
       </div>
 
       {/* §3.1: as análises de pessoa (throughput/utilização/qualidade/retrabalho)
@@ -144,109 +142,6 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
         </div>
         <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
       </Link>
-
-      {/* Active Stages Table */}
-      <SectionCard title={t("activeStagesTable")} className="mt-6" bodyClassName="p-0">
-        {user.activeStages.length === 0 ? (
-          <div className="p-6">
-            <p className="text-sm text-muted-foreground">{t("noActiveStages")}</p>
-          </div>
-        ) : (
-          <table className="min-w-full divide-y divide-border">
-            <thead className="bg-muted">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-foreground">
-                  {t("task")}
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-foreground">
-                  {t("stage")}
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-foreground">
-                  {t("template")}
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-foreground">
-                  {t("activatedAt")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border bg-card">
-              {user.activeStages.map((activeStage) => (
-                <tr key={activeStage.id} className="transition-colors hover:bg-accent">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <Link
-                      href={`/admin/tasks/${activeStage.task.id}`}
-                      className="text-sm font-semibold text-primary transition-colors hover:text-primary/80"
-                    >
-                      {activeStage.task.title}
-                    </Link>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="text-sm text-foreground">{activeStage.stage.name}</span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="text-sm text-muted-foreground">
-                      {activeStage.stage.template.name}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="text-sm text-muted-foreground">
-                      {activeStage.activatedAt
-                        ? new Date(activeStage.activatedAt).toLocaleDateString()
-                        : "-"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </SectionCard>
-
-      {/* Recent Time Logs */}
-      <SectionCard title={t("recentTimeLogs")} className="mt-6" bodyClassName="p-0">
-        {user.timeLogs.length === 0 ? (
-          <div className="p-6">
-            <p className="text-sm text-muted-foreground">{t("noTimeLogs")}</p>
-          </div>
-        ) : (
-          <table className="min-w-full divide-y divide-border">
-            <thead className="bg-muted">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-foreground">
-                  {t("date")}
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-foreground">
-                  {t("hours")}
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-foreground">
-                  {t("description")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border bg-card">
-              {user.timeLogs.map((log) => (
-                <tr key={log.id} className="transition-colors hover:bg-accent">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="text-sm text-foreground">
-                      {new Date(log.logDate).toLocaleDateString()}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="text-sm text-foreground">
-                      {Number(log.hoursSpent).toFixed(1)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-muted-foreground">
-                      {log.description || t("noDescription")}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </SectionCard>
     </div>
   );
 }

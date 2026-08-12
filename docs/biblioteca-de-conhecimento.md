@@ -238,6 +238,28 @@ Cada superfície e a razão de existir **daquela forma**.
   fechamento/faturamento sem virar screenshot. A coluna de utilização vai como
   número puro — a faixa vive na tela, onde o contexto está junto.
 
+### Visão de UMA pessoa (/minha-evolucao e /reports/user/[id])
+
+- **Uma implementação só (`PersonAnalytics`), duas portas** → **P2**: a pessoa
+  (`/minha-evolucao`) e o gestor (`/reports/user/[id]`) veem **a mesma tela**. Se
+  divergissem, a 1:1 começaria com as duas partes olhando números diferentes.
+- **Acesso `requireSelfOrManager`, fail-closed** → salvaguarda (5) da exceção 3b.
+  **Correção registrada:** o relatório usava `requireManagerOrAdmin`, que trancava
+  a pessoa fora do próprio relatório — o contrário de "auto-referenciado".
+- **Throughput próprio no tempo, com eixos** → **P2/P3**: tendência contra o
+  próprio histórico, nunca contra colegas. Sem ranking, sem nota composta.
+- **Utilização como medidor de faixa** → **P7/P1**: mesmo `UtilizationMeter` do
+  relatório de horas. Faixa, não nota.
+- **Qualidade com o MOTIVO de cada retorno** → salvaguarda (3): o `reason` é o
+  material de coaching; o número nunca aparece sozinho. FTR é defeito-only.
+- **Reclassificar (defeito vs legítimo) só do gestor sobre OUTRA pessoa** →
+  salvaguardas (4) e o guarda contra gaming: `canReclassifyRework` nega também o
+  gestor sobre os **próprios** retornos — corrigir a própria nota é o mesmo
+  gaming pela porta dos fundos. Regra pura e testada, não enterrada no JSX.
+- **Etapas ativas + horas recentes aqui, não no CRUD** → **§3.1**: a analítica
+  saiu de `/admin/users/[id]`, que fica com identidade, edição (papel/times/
+  capacidade) e o link. Uma fonte por dado.
+
 ### Criação de tarefa (/admin/tasks/new)
 
 - **Checagem de viabilidade ao vivo** → **P1/P3/P4**: usa a distribuição do tipo

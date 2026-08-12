@@ -1,0 +1,42 @@
+{
+  "selfReferencedNote": "Comparado solo con tu propio historial — nunca con otras personas.",
+  "throughput": {
+    "title": "Entrega a lo largo del tiempo",
+    "empty": "Sin conclusiones recientes."
+  },
+  "workload": {
+    "label": "Carga actual",
+    "value": "{wip} etapa(s) activa(s) · {aging} envejeciendo"
+  },
+  "utilization": {
+    "label": "Utilización del mes",
+    "noTarget": "Sin meta de capacidad definida",
+    "note": "Franja indicativa y aproximada — resguardo de sobrecarga y de ociosidad, nunca una nota.",
+    "band": {
+      "below": "Por debajo de la franja de referencia ({min}–{max}%)",
+      "inside": "Dentro de la franja de referencia ({min}–{max}%)",
+      "above": "Por encima de la franja de referencia ({min}–{max}%)"
+    }
+  },
+  "quality": {
+    "title": "Calidad",
+    "confoundNote": "Buena parte de la variación viene del sistema, no de la persona. Léelo junto con los motivos — nunca como una nota.",
+    "ftr": "Bien a la primera",
+    "returns": "{total} devolución(es) · {internal} interna · {client} cliente",
+    "noReturns": "Ninguna devolución en el período.",
+    "kindInternal": "Interno",
+    "kindClient": "Cliente",
+    "classDefect": "Defecto",
+    "classLegitimate": "Legítimo",
+    "classUnclassified": "Sin clasificar"
+  },
+  "activeStages": {
+    "title": "Etapas activas ahora",
+    "empty": "Ninguna etapa activa.",
+    "aging": "Pasó lo esperado"
+  },
+  "timeLogs": {
+    "title": "Registros de tiempo recientes",
+    "empty": "Ningún registro de tiempo."
+  }
+}

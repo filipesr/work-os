@@ -170,3 +170,89 @@ export async function getPersonReworkEvents(
     reworkClass: r.reworkClass,
   }));
 }
+
+export interface PersonActiveStage {
+  id: string;
+  taskId: string;
+  taskTitle: string;
+  stageName: string;
+  templateName: string;
+  activatedAt: string; // ISO
+  /** idade ÷ SLA da etapa; `>= AGING_ALERT_RATIO` = envelhecendo. */
+  agingRatio: number;
+}
+
+/** Etapas ativas da pessoa agora, com o envelhecimento já resolvido. Antes
+ * vivia inline no CRUD `/admin/users/[userId]`, sem o aging e sem fail-closed. */
+export async function getPersonActiveStages(userId: string): Promise<PersonActiveStage[]> {
+  await requireSelfOrManager(userId);
+  const now = Date.now();
+  const rows = await prisma.taskActiveStage.findMany({
+    where: { assigneeId: userId, status: "ACTIVE" },
+    orderBy: { activatedAt: "asc" }, // mais antigas primeiro: a fila de atenção
+    select: {
+      id: true,
+      activatedAt: true,
+      task: { select: { id: true, title: true } },
+      stage: {
+        select: {
+          name: true,
+          expectedDurationHours: true,
+          template: { select: { name: true } },
+        },
+      },
+    },
+  });
+
+  return rows.map((r) => ({
+    id: r.id,
+    taskId: r.task.id,
+    taskTitle: r.task.title,
+    stageName: r.stage.name,
+    templateName: r.stage.template.name,
+    activatedAt: r.activatedAt.toISOString(),
+    agingRatio: stageAgingRatio(
+      r.activatedAt,
+      r.stage.expectedDurationHours ?? DEFAULT_SLA_HOURS,
+      now
+    ),
+  }));
+}
+
+export interface PersonTimeLogItem {
+  id: string;
+  logDate: string; // ISO
+  hoursSpent: number;
+  description: string | null;
+  taskTitle: string;
+  /** Null quando o registro não foi amarrado a uma etapa (stageId é opcional). */
+  stageName: string | null;
+}
+
+/** Registros de tempo recentes da pessoa (mais novos primeiro). O contexto por
+ * trás do número de utilização — sem ele, "112%" é uma acusação sem prova. */
+export async function getPersonTimeLogs(userId: string, limit = 10): Promise<PersonTimeLogItem[]> {
+  await requireSelfOrManager(userId);
+  const rows = await prisma.timeLog.findMany({
+    where: { userId },
+    orderBy: { logDate: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      logDate: true,
+      hoursSpent: true,
+      description: true,
+      task: { select: { title: true } },
+      stage: { select: { name: true } },
+    },
+  });
+
+  return rows.map((r) => ({
+    id: r.id,
+    logDate: r.logDate.toISOString(),
+    hoursSpent: Number(r.hoursSpent),
+    description: r.description,
+    taskTitle: r.task.title,
+    stageName: r.stage?.name ?? null,
+  }));
+}

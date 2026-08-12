@@ -3,7 +3,8 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { TrendingUp } from "lucide-react";
-import { MyGrowthWidget } from "@/components/dashboard/MyGrowthWidget";
+import { PersonAnalytics } from "@/components/people/PersonAnalytics";
+import { monthRangeSaoPaulo, currentMonthSaoPaulo } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Minha Evolução" };
 
@@ -15,6 +16,7 @@ export default async function MinhaEvolucaoPage() {
   if (!session?.user) return notFound();
   const userId = session.user.id as string;
   const t = await getTranslations("common.myEvolution");
+  const { start, end } = monthRangeSaoPaulo(currentMonthSaoPaulo());
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -27,7 +29,9 @@ export default async function MinhaEvolucaoPage() {
         <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </header>
 
-      <MyGrowthWidget userId={userId} />
+      {/* Mesmo componente que o gestor vê em /reports/user/[id] — sem o controle
+          de reclassificar (a pessoa vê a classificação, não a edita: salvaguarda 4). */}
+      <PersonAnalytics userId={userId} range={{ from: start, to: end }} />
     </div>
   );
 }
