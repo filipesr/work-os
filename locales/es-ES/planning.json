@@ -80,7 +80,9 @@
       "idleTitle": "{count} cliente(s) sin demanda esta semana",
       "createForClient": "Crear demanda para {client}",
       "moreIdle": "+{count} sin demanda",
-      "collapse": "contraer"
+      "collapse": "contraer",
+      "otherDemands": "{count} demanda(s) sin fecha asociada",
+      "moreDemands": "+{count} demandas"
     },
     "kind": {
       "HOLIDAY": "Feriado",

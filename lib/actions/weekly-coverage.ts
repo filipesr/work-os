@@ -45,6 +45,9 @@ export interface WeekCoverage {
   withDemand: CoverageClient[];
   /** Clientes ativos SEM nenhuma demanda na semana — o sinal de ociosidade. */
   idle: CoverageClient[];
+  /** Demandas da semana SEM vínculo com data. São a maior parte do trabalho —
+   *  sem elas o card mostrava só a agenda sazonal e escondia a operação. */
+  unlinked: OccurrenceTask[];
 }
 
 export interface WeeklyCoverage {
@@ -88,7 +91,16 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
         // não há trabalho previsto.
         status: { notIn: ["CANCELLED", "OBSOLETE"] },
       },
-      select: { dueDate: true, project: { select: { clientId: true } } },
+      orderBy: { dueDate: "asc" },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        dueDate: true,
+        calendarOccurrenceId: true,
+        assignee: { select: { name: true, email: true } },
+        project: { select: { name: true, clientId: true, client: { select: { name: true } } } },
+      },
     }),
     prisma.calendarOccurrence.findMany({
       where: { date: { gte: range.start, lte: range.end } },
@@ -117,12 +129,25 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
     }),
   ]);
 
-  // clientes com demanda, por índice de semana
+  // clientes com demanda, por índice de semana + as demandas sem vínculo
   const byWeek: Set<string>[] = slots.map(() => new Set<string>());
+  const unlinkedByWeek: OccurrenceTask[][] = slots.map(() => []);
   for (const t of tasks) {
     if (!t.dueDate) continue;
     const i = weekIndexOf(slots, t.dueDate);
-    if (i >= 0) byWeek[i].add(t.project.clientId);
+    if (i < 0) continue;
+    byWeek[i].add(t.project.clientId);
+    // As vinculadas já aparecem sob a sua data; repeti-las aqui duplicaria.
+    if (t.calendarOccurrenceId) continue;
+    unlinkedByWeek[i].push({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      dueDateIso: formatISODate(t.dueDate),
+      assigneeName: t.assignee?.name ?? t.assignee?.email ?? null,
+      clientName: t.project.client.name,
+      projectName: t.project.name,
+    });
   }
 
   const occByWeek: WeekOccurrence[][] = slots.map(() => []);
@@ -156,6 +181,7 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
     occurrences: occByWeek[i],
     withDemand: clients.filter((c) => byWeek[i].has(c.id)),
     idle: clients.filter((c) => !byWeek[i].has(c.id)),
+    unlinked: unlinkedByWeek[i],
   }));
 
   const anyWeek = new Set<string>();

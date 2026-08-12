@@ -12,6 +12,7 @@ import type {
 } from "@/components/planejamento/calendario/monthly-types";
 import type { WeekCoverage, OccurrenceTask, CoverageClient } from "@/lib/actions/weekly-coverage";
 import { ClientChips } from "./ClientChips";
+import { DemandChips } from "./DemandChips";
 import { DemandSummaryDialog } from "./DemandSummaryDialog";
 
 interface BatchState {
@@ -149,24 +150,25 @@ export function WeekBlock({
                     cliente já com demanda") não dizia qual era nem deixava
                     conferir sem sair da tela. */}
                 {o.tasks.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pl-1">
-                    {o.tasks.map((task) => (
-                      <button
-                        key={task.id}
-                        type="button"
-                        onClick={() => setDemand(task)}
-                        title={`${task.clientName} · ${task.title}`}
-                        className="inline-flex max-w-[16rem] items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
-                      >
-                        <span className="truncate">
-                          {task.clientName} · {task.title}
-                        </span>
-                      </button>
-                    ))}
+                  <div className="pl-1">
+                    <DemandChips tasks={o.tasks} onPick={setDemand} />
                   </div>
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Demandas de ROTINA da semana — sem vínculo com data. São a maior
+            parte do trabalho: sem elas o card mostrava só a agenda sazonal e
+            dava a impressão de uma semana vazia que estava cheia. Tom neutro
+            para não competir com as sazonais. */}
+        {week.unlinked.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("week.otherDemands", { count: week.unlinked.length })}
+            </p>
+            <DemandChips tasks={week.unlinked} onPick={setDemand} tone="muted" />
           </div>
         )}
 
