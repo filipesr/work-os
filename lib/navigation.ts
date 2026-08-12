@@ -10,6 +10,7 @@ import {
   Clock,
   CalendarRange,
   CalendarDays,
+  Target,
   Activity,
   type LucideIcon,
 } from "lucide-react";
@@ -70,6 +71,7 @@ const managerItems: NavItem[] = [
         href: "/planejamento/calendario",
         icon: CalendarRange,
       },
+      { id: "cobertura", labelKey: "cobertura", href: "/planejamento/cobertura", icon: Target },
       { id: "datas", labelKey: "datas", href: "/planejamento/datas", icon: CalendarDays },
     ],
   },

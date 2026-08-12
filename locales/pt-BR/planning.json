@@ -1,8 +1,8 @@
 {
   "dates": {
     "kicker": "Planejamento",
-    "title": "Planejamento de datas",
-    "subtitle": "Quem tem agenda em cada semana e quem está parado. As datas do calendário aparecem como oportunidade dentro da semana.",
+    "title": "Datas do calendário",
+    "subtitle": "Registro das datas: o catálogo dos três países e as datas próprias. A leitura de planejamento fica em Cobertura semanal.",
     "createButton": "Nova data",
     "createTitle": "Nova data do calendário",
     "editTitle": "Editar data",
@@ -42,15 +42,31 @@
       "subtitle": "Feriados e datas comerciais dos três países. Parte delas é móvel (Páscoa, Carnaval, Dia das Mães), então cada ano precisa ser gerado. Regerar não afeta as datas próprias.",
       "ownDates": "Datas próprias"
     },
-    "listTitle": "Datas no horizonte",
-    "createDemand": "Criar demanda",
+    "listTitle": "Datas cadastradas",
     "coverage": "{covered} de {total} clientes",
     "columns": {
       "date": "Data",
       "name": "Nome",
       "kind": "Tipo",
-      "coverage": "Cobertura",
+      "origin": "Origem",
       "actions": "Ações"
+    },
+    "listSubtitle": "{total} no horizonte · {own} próprias",
+    "catalogReadOnly": "Do catálogo"
+  },
+  "coverage": {
+    "kicker": "Planejamento",
+    "title": "Cobertura semanal",
+    "subtitle": "Quem tem agenda em cada semana e quem está parado. As datas do calendário aparecem como oportunidade dentro da semana.",
+    "noClients": "Nenhum cliente ativo",
+    "noClientsHint": "Cliente ativo é o que tem ao menos um projeto ativo. Cadastre um cliente e um projeto para a cobertura fazer sentido.",
+    "weekly": {
+      "title": "Semana a semana",
+      "subtitle": "Ancorado na segunda-feira: o recorte não muda de segunda a domingo."
+    },
+    "idleAll": {
+      "title": "Clientes parados na janela inteira",
+      "subtitle": "Sem nenhuma demanda nas próximas {weeks} semanas — é diferente de ter uma semana vazia."
     },
     "stats": {
       "activeClients": "Clientes ativos",
@@ -62,12 +78,6 @@
     "window": {
       "weeks": "{count} semanas"
     },
-    "weekly": {
-      "title": "Semana a semana",
-      "subtitle": "Ancorado na segunda-feira: o recorte não muda de segunda a domingo.",
-      "noClients": "Nenhum cliente ativo",
-      "noClientsHint": "Cliente ativo é o que tem ao menos um projeto ativo. Cadastre um cliente e um projeto para a cobertura fazer sentido."
-    },
     "week": {
       "current": "Semana atual",
       "coverage": "{covered} de {total} com agenda",
@@ -78,9 +88,6 @@
       "withDemand": "Com demanda: {clients}",
       "createForClient": "Criar demanda para {client}"
     },
-    "idleAll": {
-      "title": "Clientes parados na janela inteira",
-      "subtitle": "Sem nenhuma demanda nas próximas {weeks} semanas — é diferente de ter uma semana vazia."
-    }
+    "createDemand": "Criar demanda"
   }
 }

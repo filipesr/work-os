@@ -42,7 +42,7 @@ export function WeekBlock({
   templates: TemplateOption[];
   locale: string;
 }) {
-  const t = useTranslations("planning.dates");
+  const t = useTranslations("planning.coverage");
   // Semanas sem ninguém coberto abrem sozinhas: são as que pedem ação.
   const [open, setOpen] = useState(week.withDemand.length === 0 || isCurrent);
   const [batch, setBatch] = useState<{
@@ -54,25 +54,35 @@ export function WeekBlock({
   const covered = week.withDemand.length;
   const tone = covered === 0 ? "warning" : covered >= totalClients ? "success" : "neutral";
 
-  const fmt = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", timeZone: "UTC" });
+  // Numérico compacto (15/08) em vez de "15 de ago.": não quebra linha, cabe
+  // nas duas colunas e é inequívoco em pt-BR e es-ES.
+  const fmt = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "UTC",
+  });
   const rangeLabel = `${fmt.format(new Date(`${week.startIso}T00:00:00Z`))} – ${fmt.format(
     new Date(`${week.endIso}T00:00:00Z`)
   )}`;
 
   return (
-    <div className={`border-b border-border last:border-b-0 ${isCurrent ? "bg-primary/5" : ""}`}>
+    <div
+      className={`overflow-hidden rounded-xl border bg-card shadow-sm ${
+        isCurrent ? "border-primary/40 bg-primary/5" : "border-border"
+      }`}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-3 px-6 py-3 text-left transition-colors hover:bg-accent"
+        className="flex w-full flex-wrap items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-accent"
       >
         {open ? (
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         ) : (
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         )}
-        <span className="w-40 shrink-0 text-sm font-semibold tabular-nums text-foreground">
+        <span className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums text-foreground">
           {rangeLabel}
         </span>
         {isCurrent && <StatusBadge tone="info" label={t("week.current")} />}
@@ -86,13 +96,13 @@ export function WeekBlock({
       </button>
 
       {open && (
-        <div className="space-y-4 px-6 pb-4 pl-13">
+        <div className="space-y-4 border-t border-border px-4 pb-4 pt-3">
           {/* Datas da semana — contexto e gancho de ação. */}
           {week.occurrences.length > 0 && (
             <div className="space-y-1.5">
               {week.occurrences.map((o) => (
                 <div key={o.id} className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="w-16 shrink-0 tabular-nums text-muted-foreground">
+                  <span className="shrink-0 whitespace-nowrap tabular-nums text-muted-foreground">
                     {fmt.format(new Date(`${o.iso}T00:00:00Z`))}
                   </span>
                   <span className="font-medium text-foreground">

@@ -7,7 +7,7 @@ import { WEEK_WINDOW_OPTIONS, DEFAULT_WEEK_WINDOW } from "@/lib/calendar/weekly-
 /** Alterna a profundidade da janela (8 ou 12 semanas). Vive na URL para o
  *  recorte ser compartilhável e sobreviver ao refresh. */
 export function WeekWindowToggle({ current }: { current: number }) {
-  const t = useTranslations("planning.dates");
+  const t = useTranslations("planning.coverage");
   const { setParam } = useUrlFilters({ replace: true });
 
   return (
