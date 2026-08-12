@@ -25,7 +25,17 @@ export interface OccurrenceDraft {
  * rematerialização a desfaria). A server action recusa CURATED de todo jeito —
  * esta é a camada de UI da mesma regra, não a regra em si.
  */
-export function OccurrenceForm({ draft }: { draft?: OccurrenceDraft }) {
+export function OccurrenceForm({
+  draft,
+  minDate,
+  maxDate,
+}: {
+  draft?: OccurrenceDraft;
+  /** Limites do horizonte de planejamento. O servidor valida de novo — isto só
+   *  evita a viagem inútil e deixa o intervalo visível no seletor de data. */
+  minDate?: string;
+  maxDate?: string;
+}) {
   const t = useTranslations("planning.dates");
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -93,9 +103,16 @@ export function OccurrenceForm({ draft }: { draft?: OccurrenceDraft }) {
             name="date"
             type="date"
             required
+            min={minDate}
+            max={maxDate}
             defaultValue={draft?.iso ?? ""}
             className={fieldClass}
           />
+          {minDate && maxDate && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t("fields.dateHint", { min: minDate, max: maxDate })}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

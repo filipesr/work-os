@@ -16,19 +16,13 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ConfirmActionButton } from "@/components/ui/ConfirmActionButton";
-import { todayInSaoPaulo } from "@/lib/dates";
+import { todayInSaoPaulo, formatISODate } from "@/lib/dates";
+import { planningHorizon } from "@/lib/calendar/horizon";
 import { OccurrenceForm } from "./OccurrenceForm";
 import { MaterializeYearButton } from "./MaterializeYearButton";
 import { CreateDemandButton } from "./CreateDemandButton";
 
 export const metadata: Metadata = { title: "Datas do calendário" };
-
-/** De hoje ao fim do ano que vem. Data passada é histórico: não dá para agir
- *  sobre ela, e enchia a lista empurrando o que importa para baixo. */
-function horizon(today: Date) {
-  const year = today.getUTCFullYear();
-  return { start: today, end: new Date(Date.UTC(year + 1, 11, 31)), year };
-}
 
 const kindTone = (kind: string) =>
   kind === "HOLIDAY" ? "neutral" : kind === "COMMERCIAL" ? "info" : "success";
@@ -48,7 +42,10 @@ export default async function CalendarDatesPage() {
   }
 
   const today = todayInSaoPaulo();
-  const { start, end, year } = horizon(today);
+  // MESMA janela que a criação valida (lib/calendar/horizon.ts) — quando as duas
+  // divergiam, dava para criar uma data que nunca apareceria na lista.
+  const { start, end } = planningHorizon(today);
+  const year = today.getUTCFullYear();
 
   const [t, locale, occurrences, materialized, activeClients, rawProjects, rawTemplates, clients] =
     await Promise.all([
@@ -88,7 +85,7 @@ export default async function CalendarDatesPage() {
         kicker={t("kicker")}
         title={t("title")}
         subtitle={t("subtitle")}
-        actions={<OccurrenceForm />}
+        actions={<OccurrenceForm minDate={formatISODate(start)} maxDate={formatISODate(end)} />}
       />
 
       <div className="space-y-6">
@@ -188,6 +185,8 @@ export default async function CalendarDatesPage() {
                           {o.source === "CUSTOM" && (
                             <>
                               <OccurrenceForm
+                                minDate={formatISODate(start)}
+                                maxDate={formatISODate(end)}
                                 draft={{
                                   id: o.id,
                                   iso: o.iso,

@@ -25,7 +25,8 @@
       "titlePt": "Título (pt-BR)",
       "titleEs": "Título (es-ES)",
       "titleEsHint": "La fecha aparece en los dos idiomas de la app.",
-      "kind": "Tipo"
+      "kind": "Tipo",
+      "dateHint": "Entre {min} y {max}. Cumpleaños y admisiones son campos de la persona en Administración › Usuarios — el calendario ya los repite cada año."
     },
     "kind": {
       "HOLIDAY": "Feriado",

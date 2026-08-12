@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { materializeYear } from "@/lib/calendar/materialize";
 import { formatISODate } from "@/lib/dates";
+import { planningHorizon } from "@/lib/calendar/horizon";
 import type { EventCountry, OccurrenceKind } from "@prisma/client";
 
 const ALL_COUNTRIES: EventCountry[] = ["AR", "BR", "PY"];
@@ -136,6 +137,15 @@ function parseInput(formData: FormData): OccurrenceInput | { error: string } {
   const kind = String(formData.get("kind") ?? "EVENT") as OccurrenceKind;
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Data inválida" };
+
+  // Fora da janela a linha existiria sem aparecer em lugar nenhum.
+  const { start, end } = planningHorizon();
+  const parsedDate = new Date(`${date}T00:00:00.000Z`);
+  if (parsedDate < start || parsedDate > end) {
+    return {
+      error: `A data precisa estar entre ${formatISODate(start)} e ${formatISODate(end)}. Aniversários e datas de admissão não vão aqui — são campos da pessoa em Administração › Usuários, e o calendário já os mostra todo ano.`,
+    };
+  }
   if (!titlePt) return { error: "Título (pt) obrigatório" };
   // P8: a data aparece nos dois idiomas do app, então o título espanhol não é
   // opcional — cair no português no es-ES seria vazamento de idioma.
