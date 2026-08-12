@@ -77,3 +77,22 @@ export function taskStatusTone(status: string): Tone {
       return "neutral";
   }
 }
+
+/** Status PERSISTIDO do projeto (ACTIVE/INACTIVE) → tone. Inativo é `neutral`,
+ *  não `danger`: arquivar um projeto é decisão normal, não um problema. */
+export function projectStatusTone(status: string): Tone {
+  return status === "ACTIVE" ? "success" : "neutral";
+}
+
+/** Estado DERIVADO de conclusão (`computeProjectCompletion`) → tone. `pending`
+ *  é neutro de propósito: um projeto em andamento não é um alerta. */
+export function projectCompletionTone(state: string): Tone {
+  switch (state) {
+    case "completed":
+      return "success";
+    case "empty":
+      return "warning"; // projeto sem nenhuma tarefa ativa — provável esquecimento
+    default:
+      return "neutral";
+  }
+}

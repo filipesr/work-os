@@ -238,6 +238,24 @@ Cada superfície e a razão de existir **daquela forma**.
   fechamento/faturamento sem virar screenshot. A coluna de utilização vai como
   número puro — a faixa vive na tela, onde o contexto está junto.
 
+### Projetos (/projects e /admin/projects/[id])
+
+- **Duas telas, dois propósitos** → `/admin/projects/[id]` é a visão de
+  **gestão** (editar, contadores, tabela de tarefas, artefatos, armazenamento);
+  `/projects/[id]` é o **Kanban** de execução. Faltava a ponte: chegava-se ao
+  detalhe e não havia saída para o quadro. O índice linka para os dois.
+- **% de conclusão é derivada, nunca persistida** → `computeProjectCompletion`
+  sobre os status das tarefas; canceladas e obsoletas saem do denominador. Uma
+  coluna persistida entraria em desacordo com as tarefas no primeiro bug.
+- **Barra de progresso além do número** → com 12 cards lado a lado, "43%" não se
+  lê de relance; a barra sim.
+- **Inativo é `neutral`, não `danger`** → arquivar projeto é decisão normal de
+  gestão, não problema. E `pending` é neutro: se o estado mais comum fosse
+  âmbar, o painel inteiro ficaria amarelo e o aviso perderia significado.
+  `empty` (nenhuma tarefa ativa) é o único `warning` — provável esquecimento.
+- **Índice é MANAGER+, Kanban não** → o índice é ferramenta de gestão de
+  entregas; o quadro do projeto continua acessível a quem executa.
+
 ### Clientes (/admin/clients e /admin/clients/[id])
 
 - **Armazenamento por projeto mora aqui** → é informação de **capacidade**, e a

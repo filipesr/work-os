@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { taskStatusTone, priorityTone } from "@/lib/status-tone";
 import { updateProject, deleteProject } from "@/lib/actions/project";
 import { EditProjectHeader } from "./edit-project-header";
+import { LayoutGrid } from "lucide-react";
 
 async function getProject(projectId: string) {
   await requireManagerOrAdmin();
@@ -86,11 +87,19 @@ export default async function ProjectDetailPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <BackLink
-        href={`/admin/clients/${project.clientId}`}
-        label={t("backToProjects")}
-        className="mb-6"
-      />
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <BackLink href={`/admin/clients/${project.clientId}`} label={t("backToProjects")} />
+        {/* O detalhe é a visão de GESTÃO do projeto; o Kanban é a de execução.
+            Faltava a ponte entre as duas — chegava-se aqui e não havia saída
+            para o quadro. */}
+        <Link
+          href={`/projects/${project.id}`}
+          className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+        >
+          <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+          {t("openKanban")}
+        </Link>
+      </div>
 
       {/* Header Card */}
       <EditProjectHeader

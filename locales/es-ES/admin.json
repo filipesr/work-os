@@ -316,7 +316,8 @@
         "HIGH": "Alta",
         "MEDIUM": "Media",
         "LOW": "Baja"
-      }
+      },
+      "openKanban": "Abrir Kanban"
     }
   },
   "workflows": {

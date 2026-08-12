@@ -140,10 +140,21 @@
     "subtitle": "Una lectura de tu propio flujo a lo largo del tiempo — sin ranking, sin comparación con colegas."
   },
   "projectsList": {
+    "kicker": "Núcleo de trabajo",
     "title": "Proyectos",
-    "subtitle": "Todos los proyectos por cliente.",
+    "subtitle": "Todos los proyectos, con cliente, estado y avance.",
+    "clientLabel": "Cliente",
+    "allClients": "Todos los clientes",
+    "searchPlaceholder": "Buscar proyecto…",
+    "searchClear": "Limpiar búsqueda",
+    "noResults": "Ningún proyecto coincide con los filtros.",
     "tasksCount": "{count} tareas",
-    "empty": "Ningún proyecto todavía.",
-    "open": "Abrir"
+    "completionPct": "{pct}% completado",
+    "openKanban": "Abrir Kanban",
+    "status": {
+      "ACTIVE": "Activo",
+      "INACTIVE": "Inactivo"
+    },
+    "empty": "Ningún proyecto todavía."
   }
 }
