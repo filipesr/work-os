@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { requireMemberOrHigher } from "@/lib/permissions";
 import { requirePresenceRead } from "@/lib/presence-access";
+import { closeActivityLog } from "@/lib/activity-close";
 
 // Helper to get current user
 async function getCurrentUser() {
@@ -17,10 +18,27 @@ async function getCurrentUser() {
 }
 
 /**
- * Start working on a task.
- * This action is "intelligent" - it automatically stops any other task the user is currently working on.
+ * Inicia o trabalho numa tarefa — no máximo UMA por pessoa de cada vez.
+ *
+ * Se já houver outra tarefa em curso, ela é INTERROMPIDA: fechada com registro
+ * das horas e com a justificativa como descrição. A justificativa é
+ * **obrigatória** nesse caso (decisão do produto): trocar de tarefa no meio é
+ * exatamente o momento em que o contexto se perde, e é o único registro de por
+ * que aquele bloco de tempo foi cortado.
+ *
+ * Retorna `needsReason` quando falta o motivo, para a UI abrir o diálogo. A
+ * checagem é do servidor: a UI já sabe que há outra ativa e abre o modal antes,
+ * mas a regra não pode depender de a UI se comportar.
+ *
+ * A exclusividade também é garantida pelo banco (índice parcial único em
+ * `userId WHERE endedAt IS NULL`, migração 20260812160000) — sem isso, dois
+ * cliques simultâneos abririam dois cronômetros.
  */
-export async function startWorkOnTask(taskId: string, currentStageId: string) {
+export async function startWorkOnTask(
+  taskId: string,
+  currentStageId: string,
+  interruptionReason?: string
+) {
   const user = await requireMemberOrHigher();
   const userId = user.id as string;
 
@@ -30,45 +48,42 @@ export async function startWorkOnTask(taskId: string, currentStageId: string) {
 
   try {
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 1. Find and stop any *previous* active log for this user
       const previousActiveLog = await tx.activityLog.findFirst({
-        where: {
-          userId: userId,
-          endedAt: null,
-        },
+        where: { userId, endedAt: null },
+        select: { id: true, userId: true, taskId: true, stageId: true, startedAt: true },
       });
 
       if (previousActiveLog) {
-        // If the user clicked "Start" on the *same task* they are already working on, do nothing
+        // Clicou "Iniciar" na tarefa em que já está: nada a fazer.
         if (previousActiveLog.taskId === taskId) {
-          return { status: "already_active" };
+          return { status: "already_active" as const };
         }
 
-        // Stop the previous log
-        await tx.activityLog.update({
-          where: { id: previousActiveLog.id },
-          data: { endedAt: new Date() },
-        });
+        const reason = interruptionReason?.trim();
+        if (!reason) {
+          return { status: "needs_reason" as const, previousTaskId: previousActiveLog.taskId };
+        }
+
+        // Fecha REGISTRANDO as horas. Antes daqui só carimbava `endedAt` e o
+        // tempo da tarefa anterior era descartado em silêncio.
+        await closeActivityLog(tx, previousActiveLog, new Date(), reason);
       }
 
-      // 2. Create the new active log
       const newLog = await tx.activityLog.create({
-        data: {
-          userId: userId,
-          taskId: taskId,
-          stageId: currentStageId,
-          startedAt: new Date(),
-          endedAt: null,
-        },
+        data: { userId, taskId, stageId: currentStageId, startedAt: new Date(), endedAt: null },
       });
 
-      return { status: "started", log: newLog };
+      return { status: "started" as const, log: newLog };
     });
 
-    // Revalidate paths
+    if (result.status === "needs_reason") {
+      return { needsReason: true, previousTaskId: result.previousTaskId };
+    }
+
     revalidatePath(`/tasks/${taskId}`);
     revalidatePath(`/admin/tasks/${taskId}`);
     revalidatePath(`/reports/live-activity`);
+    revalidatePath(`/dashboard`);
 
     return { success: true, ...result };
   } catch (error) {
@@ -111,33 +126,11 @@ export async function stopWorkOnTask(activeLogId: string, taskId: string, descri
       return { error: "Unauthorized: This activity log does not belong to you" };
     }
 
-    const endedAt = new Date();
-
-    // Stop the activity log and create TimeLog entry in a transaction
+    // Mesmo caminho de fechamento da interrupção — é o que garante que os dois
+    // fluxos registrem as horas do mesmo jeito. Descrição opcional aqui:
+    // parar o próprio trabalho não exige justificar-se.
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 1. Stop the activity log
-      await tx.activityLog.update({
-        where: { id: activeLogId },
-        data: { endedAt },
-      });
-
-      // 2. Calculate hours worked
-      const durationMs = endedAt.getTime() - new Date(log.startedAt).getTime();
-      const hoursSpent = durationMs / (1000 * 60 * 60); // Convert to hours
-
-      // 3. Create TimeLog entry (only if duration > 0)
-      if (hoursSpent > 0) {
-        await tx.timeLog.create({
-          data: {
-            userId: log.userId,
-            taskId: log.taskId,
-            stageId: log.stageId,
-            hoursSpent: Math.round(hoursSpent * 100) / 100, // Round to 2 decimals
-            logDate: endedAt,
-            description: description?.trim() || null,
-          },
-        });
-      }
+      await closeActivityLog(tx, { id: activeLogId, ...log }, new Date(), description);
     });
 
     // Revalidate paths

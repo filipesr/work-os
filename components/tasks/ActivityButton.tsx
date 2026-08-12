@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { startWorkOnTask, stopWorkOnTask } from "@/lib/actions/activity";
-import { Play, Square, Loader2 } from "lucide-react";
+import { Play, Square, Loader2, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
-import { useControllableOpen } from "@/lib/hooks/useControllableOpen";
 import { useServerAction } from "@/lib/hooks/useServerAction";
+import { FormDialog } from "@/components/ui/FormDialog";
 
 interface ActiveLog {
   id: string;
@@ -25,23 +25,47 @@ interface ActivityButtonProps {
   activeLog: ActiveLog | null;
 }
 
+const STOP_FORM = "activity-stop-form";
+const SWITCH_FORM = "activity-switch-form";
+
+/**
+ * Iniciar/parar o cronômetro de uma tarefa. Uma pessoa só pode ter UMA tarefa
+ * contando tempo — o banco garante isso (índice parcial único), e aqui a
+ * troca é tratada explicitamente em vez de acontecer em silêncio.
+ *
+ * Dois diálogos, com exigências diferentes de propósito:
+ *  - **Parar**: descrição opcional. Encerrar o próprio trabalho não pede
+ *    justificativa a ninguém.
+ *  - **Trocar de tarefa**: motivo OBRIGATÓRIO. É o momento em que um bloco de
+ *    trabalho é cortado no meio, e o motivo é o único registro de por quê.
+ */
 export function ActivityButton({
   taskId,
   taskTitle,
   currentStageId,
   activeLog,
 }: ActivityButtonProps) {
-  const { open: showStopModal, setOpen: setShowStopModal } = useControllableOpen();
-  const [description, setDescription] = useState("");
   const t = useTranslations("tasks.activity");
+  const [showStop, setShowStop] = useState(false);
+  const [showSwitch, setShowSwitch] = useState(false);
+  const [description, setDescription] = useState("");
+  const [reason, setReason] = useState("");
 
   const { run: runStart, isPending: isStarting } = useServerAction(startWorkOnTask, {
     onSuccess: (result) => {
-      const r = result as { status?: string } | undefined;
+      const r = result as { status?: string; needsReason?: boolean } | undefined;
+      // Rede de segurança: o servidor recusou por falta de motivo. A UI já
+      // deveria ter aberto o diálogo, mas a regra não depende disso.
+      if (r?.needsReason) {
+        setShowSwitch(true);
+        return;
+      }
       if (r?.status === "already_active") {
         toast(t("alreadyActiveInfo"));
       } else {
         toast.success(t("startSuccess", { taskTitle }));
+        setShowSwitch(false);
+        setReason("");
       }
     },
   });
@@ -49,146 +73,159 @@ export function ActivityButton({
   const { run: runStop, isPending: isStopping } = useServerAction(stopWorkOnTask, {
     successMessage: t("stopSuccess", { taskTitle }),
     onSuccess: () => {
-      setShowStopModal(false);
+      setShowStop(false);
       setDescription("");
     },
   });
 
-  // Check if this specific task is active
   const isThisTaskActive = activeLog?.taskId === taskId;
+  const isWorkingOnOtherTask = Boolean(activeLog && activeLog.taskId !== taskId);
 
-  // Check if user is working on a different task
-  const isWorkingOnOtherTask = activeLog && activeLog.taskId !== taskId;
-
-  const handleStart = () => {
+  const handleStartClick = () => {
     if (!currentStageId) {
       toast.error(t("noStageError"));
+      return;
+    }
+    // Há outra em curso → o motivo vem antes da troca, não depois.
+    if (isWorkingOnOtherTask) {
+      setShowSwitch(true);
       return;
     }
     runStart(taskId, currentStageId);
   };
 
-  const handleStop = () => {
-    setShowStopModal(true);
+  const handleConfirmSwitch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!currentStageId || !reason.trim()) return;
+    runStart(taskId, currentStageId, reason.trim());
   };
 
-  const handleConfirmStop = () => {
+  const handleConfirmStop = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (!activeLog) return;
     runStop(activeLog.id, taskId, description);
   };
 
-  return (
-    <>
-      {isThisTaskActive ? (
-        // This task is currently active - show STOP button
-        <Button onClick={handleStop} disabled={isStopping} variant="destructive" className="w-full">
-          {isStopping ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {t("stopping")}
-            </>
-          ) : (
-            <>
-              <Square className="h-4 w-4 mr-2" />
-              {t("stopWork")}
-            </>
-          )}
-        </Button>
-      ) : (
-        // No task is active, or a different task is active - show START button
-        <div className="space-y-2">
-          <Button
-            onClick={handleStart}
-            disabled={isStarting}
-            variant="default"
-            className="w-full bg-success hover:bg-success/90"
-          >
-            {isStarting ? (
+  const textareaClass =
+    "w-full rounded-xl border-2 border-input bg-background px-4 py-3 text-foreground transition-all placeholder:text-muted-foreground focus:border-input focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50";
+
+  if (isThisTaskActive) {
+    return (
+      <FormDialog
+        open={showStop}
+        onOpenChange={(open) => {
+          setShowStop(open);
+          if (!open) setDescription("");
+        }}
+        trigger={
+          <Button disabled={isStopping} variant="destructive" className="w-full">
+            {isStopping ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {t("starting")}
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t("stopping")}
               </>
             ) : (
               <>
-                <Play className="h-4 w-4 mr-2" />
-                {t("startWork")}
+                <Square className="mr-2 h-4 w-4" />
+                {t("stopWork")}
               </>
             )}
           </Button>
-          {isWorkingOnOtherTask && (
-            <p className="text-xs text-muted-foreground text-center">
-              {t("switchWarning", { taskTitle: activeLog.task.title })}
-            </p>
-          )}
-        </div>
+        }
+        title={t("modal.title")}
+        description={t("modal.subtitle")}
+        formId={STOP_FORM}
+        submitLabel={t("modal.confirm")}
+        isPending={isStopping}
+      >
+        <form id={STOP_FORM} onSubmit={handleConfirmStop}>
+          <label htmlFor="activity-description" className="mb-2 block text-sm font-semibold">
+            {t("modal.label")}
+          </label>
+          <textarea
+            id="activity-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            disabled={isStopping}
+            className={textareaClass}
+            placeholder={t("modal.placeholder")}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">{t("modal.hint")}</p>
+        </form>
+      </FormDialog>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Button
+        onClick={handleStartClick}
+        disabled={isStarting}
+        className="w-full bg-success hover:bg-success/90"
+      >
+        {isStarting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            {t("starting")}
+          </>
+        ) : (
+          <>
+            <Play className="mr-2 h-4 w-4" />
+            {t("startWork")}
+          </>
+        )}
+      </Button>
+
+      {isWorkingOnOtherTask && activeLog && (
+        <p className="text-center text-xs text-muted-foreground">
+          {t("switchWarning", { taskTitle: activeLog.task.title })}
+        </p>
       )}
 
-      {/* Stop Activity Modal */}
-      {showStopModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="stop-activity-title"
-            className="bg-background rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 border border-border"
-          >
-            {/* Header */}
-            <div className="mb-6">
-              <h3 id="stop-activity-title" className="text-2xl font-bold text-foreground mb-2">
-                {t("modal.title")}
-              </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">{t("modal.subtitle")}</p>
-            </div>
-
-            {/* Description Field */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-foreground mb-2">
-                {t("modal.label")}
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-                disabled={isStopping}
-                className="w-full px-4 py-3 border-2 border-input bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-input disabled:opacity-50 transition-all placeholder:text-muted-foreground"
-                placeholder={t("modal.placeholder")}
+      {/* Diálogo de troca — só monta quando há outra tarefa em curso. */}
+      {isWorkingOnOtherTask && activeLog && (
+        <FormDialog
+          open={showSwitch}
+          onOpenChange={(open) => {
+            setShowSwitch(open);
+            if (!open) setReason("");
+          }}
+          trigger={<span className="hidden" aria-hidden="true" />}
+          title={t("switch.title")}
+          description={t("switch.subtitle", { from: activeLog.task.title, to: taskTitle })}
+          formId={SWITCH_FORM}
+          submitLabel={t("switch.confirm")}
+          isPending={isStarting}
+        >
+          <form id={SWITCH_FORM} onSubmit={handleConfirmSwitch}>
+            {/* O tempo da tarefa anterior É registrado — antes ele era
+                descartado em silêncio nesta troca. Dizer isso na tela evita
+                que alguém evite trocar por medo de perder as horas. */}
+            <p className="mb-3 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-subtle px-3 py-2 text-xs text-foreground">
+              <AlertTriangle
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning"
+                aria-hidden="true"
               />
-              <p className="text-xs text-muted-foreground mt-1">{t("modal.hint")}</p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => {
-                  setShowStopModal(false);
-                  setDescription("");
-                }}
-                disabled={isStopping}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 font-medium"
-              >
-                {t("modal.cancel")}
-              </button>
-              <button
-                onClick={handleConfirmStop}
-                disabled={isStopping}
-                className="px-4 py-2 bg-danger text-danger-foreground rounded-lg hover:bg-danger/90 transition-colors disabled:opacity-50 font-medium flex items-center gap-2"
-              >
-                {isStopping ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {t("stopping")}
-                  </>
-                ) : (
-                  <>
-                    <Square className="h-4 w-4" />
-                    {t("modal.confirm")}
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+              {t("switch.timeNotice", { from: activeLog.task.title })}
+            </p>
+            <label htmlFor="switch-reason" className="mb-2 block text-sm font-semibold">
+              {t("switch.label")}
+            </label>
+            <textarea
+              id="switch-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              required
+              disabled={isStarting}
+              className={textareaClass}
+              placeholder={t("switch.placeholder")}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">{t("switch.hint")}</p>
+          </form>
+        </FormDialog>
       )}
-    </>
+    </div>
   );
 }

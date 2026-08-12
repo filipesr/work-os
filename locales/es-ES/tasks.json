@@ -262,6 +262,15 @@
       "hint": "Esta descripción se incluirá en el registro de tiempo",
       "cancel": "Cancelar",
       "confirm": "Confirmar y Detener"
+    },
+    "switch": {
+      "title": "Cambiar de tarea",
+      "subtitle": "Estás en “{from}”. Iniciar “{to}” interrumpe la anterior.",
+      "timeNotice": "Las horas trabajadas en “{from}” hasta ahora quedan registradas.",
+      "label": "¿Por qué la estás interrumpiendo?",
+      "placeholder": "Ej.: el cliente pidió prioridad, bloqueado esperando aprobación…",
+      "hint": "Obligatorio. Queda registrado en las horas de la tarea interrumpida.",
+      "confirm": "Interrumpir e iniciar"
     }
   },
   "workflowHistory": {

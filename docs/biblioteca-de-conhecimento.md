@@ -238,6 +238,26 @@ Cada superfície e a razão de existir **daquela forma**.
   fechamento/faturamento sem virar screenshot. A coluna de utilização vai como
   número puro — a faixa vive na tela, onde o contexto está junto.
 
+### Cronômetro de tarefa (exclusividade e interrupção)
+
+- **Uma tarefa contando tempo por pessoa, garantido pelo BANCO** → índice
+  parcial único (`userId WHERE endedAt IS NULL`). Antes era só convenção do
+  código, e convenção não sobrevive a concorrência: dois cliques simultâneos
+  abriam dois cronômetros. O Prisma não declara índice parcial no schema —
+  há um aviso no modelo para que `migrate dev` não o derrube como drift.
+- **Bug corrigido — horas descartadas na troca de tarefa** → havia dois
+  caminhos de fechamento e só o "Parar" manual criava o `TimeLog`. Iniciar B com
+  A rodando fechava A **sem registrar nada**: as horas sumiam do relatório de
+  horas, da utilização e de todo denominador. `closeActivityLog` é agora o
+  caminho único — fechar um período sempre registra o tempo.
+- **Justificativa obrigatória só na INTERRUPÇÃO** → parar o próprio trabalho não
+  exige justificar-se (descrição opcional); cortar um bloco no meio para trocar
+  de tarefa, sim. É o único registro de por que aquele tempo foi interrompido, e
+  vira a descrição das horas da tarefa abandonada. A regra é validada no
+  servidor: a UI abre o diálogo antes, mas não é ela quem garante.
+- **O diálogo avisa que o tempo é preservado** → sem isso, alguém que soubesse
+  do comportamento antigo evitaria trocar de tarefa para não perder as horas.
+
 ### Apoio (conta, ajuda, login/home)
 
 - **Duas portas de logout, um mecanismo** → `signOutAction`. **Bug corrigido:**

@@ -645,6 +645,17 @@ model ActivityLog {
   stage   TemplateStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
 
   @@index([userId, endedAt]) // Index for quickly finding active tasks
+
+  // ATENÇÃO — existe no banco um índice que o Prisma NÃO consegue declarar aqui:
+  //
+  //   CREATE UNIQUE INDEX "ActivityLog_userId_open_key"
+  //     ON "ActivityLog"("userId") WHERE "endedAt" IS NULL;
+  //
+  // (migração 20260812160000). Ele garante UMA tarefa em execução por pessoa
+  // mesmo sob concorrência — dois cliques simultâneos não conseguem abrir dois
+  // cronômetros. O Prisma não suporta índice parcial no schema, então
+  // `prisma migrate dev` vai enxergar isso como drift e propor DROPÁ-LO.
+  // NÃO ACEITE: derrubar o índice devolve a corrida silenciosamente.
 }
 
 // --- 7. Calendário de datas (spec 2026-08-12) ---
