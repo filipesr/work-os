@@ -73,7 +73,7 @@ function renderSlide(key: SlideKey) {
         <BonusSlide
           slideKey="bonus1"
           items={[
-            { key: "calendar", href: "/reports/calendar", icon: Calendar },
+            { key: "calendar", href: "/planejamento/calendario", icon: Calendar },
             { key: "productivity", href: "/reports/performance", icon: TrendingUp },
           ]}
         />

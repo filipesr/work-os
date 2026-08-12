@@ -132,6 +132,11 @@ export function shiftMonth(first: Date, deltaMonths: number): Date {
   return new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + deltaMonths, 1));
 }
 
+/** SP-local date → "YYYY-MM" (a chave de mês usada na URL do calendário). */
+export function formatYearMonth(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 /** Current SP-local month as "YYYY-MM". */
 export function currentMonthSaoPaulo(ref: Date = new Date()): string {
   return formatISODate(nowInSaoPaulo(ref)).slice(0, 7);

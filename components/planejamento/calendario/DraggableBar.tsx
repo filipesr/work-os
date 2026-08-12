@@ -13,14 +13,20 @@ import { useMounted } from "@/lib/hooks/useMounted";
 export function DraggableBar({
   taskId,
   gridColumn,
+  enabled = true,
   children,
 }: {
   taskId: string;
   gridColumn?: { start: number; end: number };
+  /** Modo planejamento. Falso = a barra vira estática (sem arrastar). */
+  enabled?: boolean;
   children: React.ReactNode;
 }) {
   const mounted = useMounted();
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: taskId });
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: taskId,
+    disabled: !enabled,
+  });
 
   const positionStyle: CSSProperties = gridColumn
     ? { gridColumnStart: gridColumn.start, gridColumnEnd: gridColumn.end }
@@ -28,7 +34,9 @@ export function DraggableBar({
 
   // Until mounted, render the same plain positioned wrapper the server emits —
   // no dnd-kit refs/attributes — so hydration matches. Drag is enabled after.
-  if (!mounted) {
+  // Em modo leitura fica sempre nesse wrapper: sem cursor de arraste, para a
+  // tela não prometer uma interação que a trava vai recusar.
+  if (!mounted || !enabled) {
     return <div style={positionStyle}>{children}</div>;
   }
 

@@ -18,9 +18,15 @@
     "clear": "Limpar filtros"
   },
   "navigation": {
-    "previousWeek": "Semana anterior",
-    "nextWeek": "Próxima semana",
-    "currentWeek": "Semana atual",
+    "previous": {
+      "week": "Semana anterior",
+      "month": "Mês anterior"
+    },
+    "next": {
+      "week": "Próxima semana",
+      "month": "Próximo mês"
+    },
+    "today": "Hoje",
     "weekOf": "Semana de {start} a {end}",
     "range": "{start} – {end}"
   },
@@ -138,5 +144,13 @@
   "dnd": {
     "rescheduled": "Tarefa reagendada",
     "error": "Falha ao reagendar"
+  },
+  "planning": {
+    "toggle": "Planejar",
+    "enableHint": "Ligar o modo planejamento para reagendar e criar demandas",
+    "disableHint": "Voltar para somente leitura",
+    "bannerOn": "Modo planejamento ligado — arraste uma demanda para reagendar o vencimento, ou use o + de um dia para criar.",
+    "bannerOff": "Somente leitura. Ligue “Planejar” para reagendar ou criar demandas.",
+    "createOnDay": "Criar demanda neste dia"
   }
 }

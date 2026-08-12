@@ -18,9 +18,15 @@
     "clear": "Limpiar filtros"
   },
   "navigation": {
-    "previousWeek": "Semana anterior",
-    "nextWeek": "Próxima semana",
-    "currentWeek": "Semana actual",
+    "previous": {
+      "week": "Semana anterior",
+      "month": "Mes anterior"
+    },
+    "next": {
+      "week": "Próxima semana",
+      "month": "Próximo mes"
+    },
+    "today": "Hoy",
     "weekOf": "Semana del {start} al {end}",
     "range": "{start} – {end}"
   },
@@ -138,5 +144,13 @@
   "dnd": {
     "rescheduled": "Tarea reprogramada",
     "error": "Error al reprogramar"
+  },
+  "planning": {
+    "toggle": "Planificar",
+    "enableHint": "Activar el modo planificación para reprogramar y crear demandas",
+    "disableHint": "Volver a solo lectura",
+    "bannerOn": "Modo planificación activo — arrastra una demanda para reprogramar el vencimiento, o usa el + de un día para crear.",
+    "bannerOff": "Solo lectura. Activa “Planificar” para reprogramar o crear demandas.",
+    "createOnDay": "Crear demanda en este día"
   }
 }

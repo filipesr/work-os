@@ -56,11 +56,26 @@ const managerItems: NavItem[] = [
       { id: "projetos", labelKey: "projetos", href: "/projects", icon: PanelTop },
     ],
   },
+  // Planejamento = ferramentas OPERACIONAIS (escrevem: reagendam, criam demanda).
+  // O calendário morava em "Relatórios", o que o fazia parecer leitura
+  // retrospectiva — é o oposto do que ele faz.
+  {
+    id: "planejamento",
+    labelKey: "planejamento",
+    children: [
+      {
+        id: "calendario",
+        labelKey: "calendar",
+        href: "/planejamento/calendario",
+        icon: CalendarRange,
+      },
+    ],
+  },
   {
     id: "relatorios",
     labelKey: "reports",
     // Telas de relatório (§3.3 aplicado): "Fluxo & Entrega" absorveu
-    // team-productivity, e "Calendário" unifica semana/mês num único destino.
+    // team-productivity. Aqui só entra LEITURA — nada que escreva.
     children: [
       {
         id: "fluxo-entrega",
@@ -70,7 +85,6 @@ const managerItems: NavItem[] = [
       },
       { id: "horas", labelKey: "horasUtilizacao", href: "/reports/productivity", icon: Clock },
       { id: "pessoas", labelKey: "pessoas", href: "/reports", icon: UsersRound },
-      { id: "calendario", labelKey: "calendar", href: "/reports/calendar", icon: CalendarRange },
       { id: "presenca", labelKey: "presenca", href: "/reports/live-activity", icon: Activity },
     ],
   },

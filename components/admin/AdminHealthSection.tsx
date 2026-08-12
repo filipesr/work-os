@@ -29,7 +29,7 @@ export async function AdminHealthSection() {
   // depth. Live-triage signals (constraint, blocked, 1:1) live on this cockpit.
   const reviewSteps: ReviewStep[] = [
     { label: t("review.constraint"), href: "/reports/performance" },
-    { label: t("review.aging"), href: "/reports/calendar" },
+    { label: t("review.aging"), href: "/planejamento/calendario" },
     { label: t("review.blocked") },
     { label: t("review.wip"), href: "/reports/performance" },
     { label: t("review.load"), href: "/reports/performance" },

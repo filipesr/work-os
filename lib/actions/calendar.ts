@@ -30,7 +30,7 @@ export async function rescheduleTask(input: { taskId: string; dueDate: string })
       data: { dueDate: parsed.data.dueDate },
     });
 
-    revalidatePath("/reports/calendar");
+    revalidatePath("/planejamento/calendario");
     return { success: true };
   } catch (error) {
     logger.error("[RESCHEDULE TASK] Error:", error);

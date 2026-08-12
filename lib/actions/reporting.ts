@@ -1317,21 +1317,50 @@ export interface MonthlyClientDemands {
   tasks: MonthlyDemandTask[];
 }
 
+/** Mesmos filtros da visão semanal — antes o mês não aceitava nenhum, então
+ *  trocar de visão silenciosamente ampliava o escopo do que estava na tela. */
+export interface MonthlyDemandFilters {
+  teamId?: string;
+  projectId?: string;
+  userId?: string;
+  showCompleted?: boolean;
+}
+
 /**
  * Tasks with a dueDate inside [start, end], grouped by ISO day → client.
  * Used by the monthly event calendar to show which clients have demands per day.
+ *
+ * Escopo de time/pessoa segue a semana (`getCalendarTasks`): pela etapa ABERTA
+ * (ACTIVE/BLOCKED) — é onde o trabalho está agora, não onde já passou.
  */
-export async function getMonthlyCalendarDemands(range: {
-  start: Date;
-  end: Date;
-}): Promise<Record<string, MonthlyClientDemands[]>> {
+export async function getMonthlyCalendarDemands(
+  range: {
+    start: Date;
+    end: Date;
+  },
+  filters: MonthlyDemandFilters = {}
+): Promise<Record<string, MonthlyClientDemands[]>> {
   await requireManagerOrAdmin();
   range = startEndRangeSchema.parse(range);
+
+  // CANCELLED nunca aparece; COMPLETED só sob demanda, igual à semana — senão o
+  // mês fica entulhado do que já saiu e esconde o que ainda precisa de atenção.
+  const excluded: ("CANCELLED" | "COMPLETED")[] = filters.showCompleted
+    ? ["CANCELLED"]
+    : ["CANCELLED", "COMPLETED"];
+
+  const openStage: Prisma.TaskActiveStageWhereInput = {
+    status: { in: ["ACTIVE", "BLOCKED"] },
+  };
+  if (filters.teamId) openStage.stage = { defaultTeamId: filters.teamId };
+  if (filters.userId) openStage.assigneeId = filters.userId;
 
   const tasks = await prisma.task.findMany({
     where: {
       dueDate: { gte: range.start, lte: range.end },
-      status: { not: "CANCELLED" },
+      status: { notIn: excluded },
+      ...(filters.projectId ? { projectId: filters.projectId } : {}),
+      ...(filters.teamId || filters.userId ? { activeStages: { some: openStage } } : {}),
     },
     include: {
       project: { include: { client: true } },

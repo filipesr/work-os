@@ -1,13 +1,23 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import type { CalendarBuckets, CalendarTask } from "@/lib/actions/reporting";
-import { weekRangeFromMonday, todayInSaoPaulo } from "@/lib/dates";
+import { weekRangeFromMonday, todayInSaoPaulo, formatISODate } from "@/lib/dates";
 import { TaskBar, spanForDueDate } from "./TaskBar";
 import { DraggableBar } from "./DraggableBar";
 import { DayDropZones } from "./DayDropZones";
+import { DayCreateButton } from "./DayCreateButton";
+import type { ClientOption, ProjectOption, TemplateOption } from "./monthly-types";
 
 interface CalendarGridProps {
   buckets: CalendarBuckets;
   weekStart: Date;
+  /** Modo planejamento: libera arrastar (reagendar) e criar demanda no dia. */
+  planning?: boolean;
+  /** Opções do diálogo de criação — só necessárias em modo planejamento. */
+  createOptions?: {
+    clients: ClientOption[];
+    projects: ProjectOption[];
+    templates: TemplateOption[];
+  };
 }
 
 const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
@@ -66,7 +76,12 @@ function LaneShell({
   );
 }
 
-export async function CalendarGrid({ buckets, weekStart }: CalendarGridProps) {
+export async function CalendarGrid({
+  buckets,
+  weekStart,
+  planning = false,
+  createOptions,
+}: CalendarGridProps) {
   const [t, locale] = await Promise.all([getTranslations("reportsCalendar"), getLocale()]);
   const range = weekRangeFromMonday(weekStart);
 
@@ -107,6 +122,15 @@ export async function CalendarGrid({ buckets, weekStart }: CalendarGridProps) {
             <div className="text-xs text-muted-foreground tabular-nums">
               {dayFormatter.format(day)}
             </div>
+            {/* Criar demanda a partir do dia — só em modo planejamento. */}
+            {planning && createOptions && (
+              <DayCreateButton
+                date={formatISODate(day)}
+                clients={createOptions.clients}
+                projects={createOptions.projects}
+                templates={createOptions.templates}
+              />
+            )}
           </div>
         ))}
       </div>
@@ -118,7 +142,7 @@ export async function CalendarGrid({ buckets, weekStart }: CalendarGridProps) {
           <div className="relative px-2 py-2 flex flex-wrap gap-1.5">
             {buckets.noDueDate.map((task: CalendarTask) => (
               <div key={task.id} className="basis-[calc(25%-0.4rem)] min-w-[200px] grow max-w-sm">
-                <DraggableBar taskId={task.id}>
+                <DraggableBar taskId={task.id} enabled={planning}>
                   <TaskBar task={task} weekStart={weekStart} isNoDueDateLane />
                 </DraggableBar>
               </div>
@@ -136,7 +160,8 @@ export async function CalendarGrid({ buckets, weekStart }: CalendarGridProps) {
           zebra={idx % 2 === 1}
         >
           <DayBackdrop days={range.days} todayIdx={todayIdx} />
-          <DayDropZones />
+          {/* Alvos de soltura só existem quando dá para arrastar. */}
+          {planning && <DayDropZones />}
           <div
             className="relative grid gap-y-1 py-1.5 px-1 items-start"
             style={{
@@ -149,7 +174,7 @@ export async function CalendarGrid({ buckets, weekStart }: CalendarGridProps) {
                 ? spanForDueDate(task.dueDate, weekStart)
                 : { start: 1, end: 8 };
               return (
-                <DraggableBar key={task.id} taskId={task.id} gridColumn={span}>
+                <DraggableBar key={task.id} taskId={task.id} gridColumn={span} enabled={planning}>
                   <TaskBar task={task} weekStart={weekStart} disablePositioning />
                 </DraggableBar>
               );

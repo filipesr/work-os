@@ -20,8 +20,11 @@ interface DayDetailDialogProps {
   clients: ClientDemands[];
   anniversaries: DayAnniversaries | null;
   onClose: () => void;
-  onCreateForEvent: (event: MonthEvent) => void;
-  onCreateForDay: () => void;
+  /** Ausentes = modo leitura: o diálogo não oferece caminho de criação.
+   *  Esconder o botão é melhor do que exibi-lo inerte — a tela não promete
+   *  uma ação que a trava vai recusar. */
+  onCreateForEvent?: (event: MonthEvent) => void;
+  onCreateForDay?: () => void;
 }
 
 export function DayDetailDialog({
@@ -44,10 +47,12 @@ export function DayDetailDialog({
         </DialogHeader>
 
         <div className="pt-1">
-          <Button type="button" size="sm" onClick={onCreateForDay} className="w-full sm:w-auto">
-            <Plus className="mr-1.5 h-4 w-4" />
-            {t("dayDetail.createForDay")}
-          </Button>
+          {onCreateForDay && (
+            <Button type="button" size="sm" onClick={onCreateForDay} className="w-full sm:w-auto">
+              <Plus className="mr-1.5 h-4 w-4" />
+              {t("dayDetail.createForDay")}
+            </Button>
+          )}
         </div>
 
         <div className="max-h-[70vh] space-y-6 overflow-y-auto py-2">
@@ -95,9 +100,11 @@ export function DayDetailDialog({
                     className="flex items-center justify-between gap-3 rounded-lg border border-border p-2.5"
                   >
                     <EventPill event={event} variant="detail" />
-                    <Button type="button" size="sm" onClick={() => onCreateForEvent(event)}>
-                      {t("dayDetail.createForEvent")}
-                    </Button>
+                    {onCreateForEvent && (
+                      <Button type="button" size="sm" onClick={() => onCreateForEvent(event)}>
+                        {t("dayDetail.createForEvent")}
+                      </Button>
+                    )}
                   </li>
                 ))}
               </ul>

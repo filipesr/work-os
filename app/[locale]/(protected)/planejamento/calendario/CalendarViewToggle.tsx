@@ -1,17 +1,33 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CalendarDays, CalendarRange } from "lucide-react";
 
 type View = "week" | "month";
 
 /**
- * Week/month switch for the unified Calendar (§3.3 fusion). Switching modes drops
- * the params that belong to the other mode so the URL stays clean.
+ * Alternância semana/mês do calendário unificado (fusão §3.3).
+ *
+ * Preserva os filtros e o modo planejamento: antes os dois links apontavam para
+ * a rota pura, então trocar de visão **zerava time/projeto/pessoa/concluídas** —
+ * o gestor filtrava a semana, clicava em "Mês" e perdia tudo. Só a âncora de
+ * período é descartada, porque `week=` e `month=` não se traduzem entre si.
  */
 export function CalendarViewToggle({ view }: { view: View }) {
   const t = useTranslations("reportsCalendar.view");
+  const searchParams = useSearchParams();
+
+  const hrefFor = (target: View) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("week");
+    params.delete("month");
+    if (target === "month") params.set("view", "month");
+    else params.delete("view");
+    const qs = params.toString();
+    return `/planejamento/calendario${qs ? `?${qs}` : ""}`;
+  };
 
   const base =
     "inline-flex items-center gap-1.5 h-9 px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
@@ -25,7 +41,7 @@ export function CalendarViewToggle({ view }: { view: View }) {
       aria-label={t("label")}
     >
       <Link
-        href="/reports/calendar"
+        href={hrefFor("week")}
         role="tab"
         aria-selected={view === "week"}
         className={`${base} ${view === "week" ? active : inactive}`}
@@ -34,7 +50,7 @@ export function CalendarViewToggle({ view }: { view: View }) {
         {t("week")}
       </Link>
       <Link
-        href="/reports/calendar?view=month"
+        href={hrefFor("month")}
         role="tab"
         aria-selected={view === "month"}
         className={`${base} border-l border-border ${view === "month" ? active : inactive}`}

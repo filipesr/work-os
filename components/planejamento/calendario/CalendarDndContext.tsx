@@ -19,9 +19,12 @@ import { useMounted } from "@/lib/hooks/useMounted";
  */
 export function CalendarDndContext({
   dayDates,
+  enabled = true,
   children,
 }: {
   dayDates: string[];
+  /** Modo planejamento. Falso = só leitura: nada de reagendar por arraste. */
+  enabled?: boolean;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -52,7 +55,9 @@ export function CalendarDndContext({
 
   // Defer the DndContext (and its generated accessibility DOM) to the client so
   // SSR and the first client render match — avoids the dnd-kit hydration warning.
-  if (!mounted) return <>{children}</>;
+  // Fora do modo planejamento também não montamos o DndContext: a trava tira o
+  // gesto de circulação em vez de deixá-lo acontecer e ignorá-lo em silêncio.
+  if (!mounted || !enabled) return <>{children}</>;
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>

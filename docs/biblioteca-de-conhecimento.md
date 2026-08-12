@@ -238,6 +238,27 @@ Cada superfície e a razão de existir **daquela forma**.
   fechamento/faturamento sem virar screenshot. A coluna de utilização vai como
   número puro — a faixa vive na tela, onde o contexto está junto.
 
+### Calendário (/planejamento/calendario)
+
+- **Mora em "Planejamento", não em "Relatórios"** → a tela **escreve** (reagenda
+  vencimento, cria demanda). Listada como relatório, parecia leitura
+  retrospectiva — o oposto do que faz. A rota antiga responde com 308.
+- **Trava de escrita explícita (`?plan=1`)** → **P6/P1**: em leitura, arrastar e
+  criar ficam **desmontados**, não inertes. Arrastar é gesto barato demais para
+  uma ação que muda um **compromisso com o cliente**, e num grid denso o arraste
+  acidental passa despercebido. Vive na URL para sobreviver à navegação de
+  período e à troca de visão — liga-se uma vez por rodada de planejamento.
+- **Navegação de período única (anterior/hoje/próximo)** → uma implementação para
+  semana e mês. **Correção registrada:** a navegação do mês montava a URL do
+  zero e **descartava os filtros** a cada clique; o toggle semana/mês fazia o
+  mesmo. Agora ambos partem dos parâmetros atuais.
+- **Mesmos filtros nas duas visões** → o mês não tinha nenhum, então trocar de
+  visão ampliava silenciosamente o escopo do que estava na tela. Time e pessoa
+  escopam pela etapa **aberta** (onde o trabalho está agora), como na semana;
+  concluídas ficam ocultas por padrão nos dois lados.
+- **Feriados e aniversários como marcador discreto** → **P6**: contexto de
+  planejamento (não agendar entrega num feriado), nunca protagonista da grade.
+
 ### Visão de UMA pessoa (/minha-evolucao e /reports/user/[id])
 
 - **Uma implementação só (`PersonAnalytics`), duas portas** → **P2**: a pessoa

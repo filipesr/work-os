@@ -28,6 +28,9 @@ interface MonthlyCalendarProps {
   clients: ClientOption[];
   projects: ProjectOption[];
   templates: TemplateOption[];
+  /** Modo planejamento: libera criar demanda a partir de um dia/feriado.
+   *  Falso = o mês é só leitura (ver demandas, feriados e aniversários). */
+  planning?: boolean;
 }
 
 export function MonthlyCalendar({
@@ -38,9 +41,15 @@ export function MonthlyCalendar({
   clients,
   projects,
   templates,
+  planning = false,
 }: MonthlyCalendarProps) {
   const t = useTranslations("reportsCalendar.monthly");
-  const [batch, setBatch] = useState<{ date: string; eventTitle?: string } | null>(null);
+  const [batchState, setBatchState] = useState<{ date: string; eventTitle?: string } | null>(null);
+  // Guarda única: qualquer caminho de criação (dia, feriado, diálogo de detalhe)
+  // passa por aqui, então a trava não depende de lembrarmos de checá-la em cada
+  // gatilho. Em leitura, `batch` é sempre null.
+  const setBatch = planning ? setBatchState : () => {};
+  const batch = planning ? batchState : null;
   const [detailIso, setDetailIso] = useState<string | null>(null);
   const [dayClient, setDayClient] = useState<{
     clientName: string;
@@ -197,15 +206,23 @@ export function MonthlyCalendar({
           clients={demandsByDay[detailIso] ?? []}
           anniversaries={anniversariesByDay[detailIso] ?? null}
           onClose={() => setDetailIso(null)}
-          onCreateForEvent={(event) => {
-            setDetailIso(null);
-            setBatch({ date: event.iso, eventTitle: event.title });
-          }}
-          onCreateForDay={() => {
-            const iso = detailIso;
-            setDetailIso(null);
-            setBatch({ date: iso });
-          }}
+          onCreateForEvent={
+            planning
+              ? (event) => {
+                  setDetailIso(null);
+                  setBatch({ date: event.iso, eventTitle: event.title });
+                }
+              : undefined
+          }
+          onCreateForDay={
+            planning
+              ? () => {
+                  const iso = detailIso;
+                  setDetailIso(null);
+                  setBatch({ date: iso });
+                }
+              : undefined
+          }
         />
       )}
 
