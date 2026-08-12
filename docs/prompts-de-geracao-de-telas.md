@@ -296,116 +296,60 @@ relatório de fluxo, com **um** sistema visual e **uma** barra de filtro; segmen
 e por **time**.
 
 **Prompt de geração:**
+Crie o **relatório de fluxo e previsibilidade** de uma agência, segmentável por **tipo de trabalho** e por **time** (uma barra de filtro única: período + time + cliente + projeto + tipo). Blocos, nesta ordem: (1) **headline de lead time** (médio/mediano + amostra); (2) **cycle‑time em percentis** — p50/p85/p95 + um **scatter** dos concluídos com linhas de referência; enquadre o **p85 como o prazo confiável** (não a média); (3) **previsão de entrega (Monte Carlo)** — backlog atual, quando fica pronto no p85, entregas nos próximos 30 dias; (4) **throughput no tempo** (linha, eixos X/Y) e **CFD** (área empilhada por status, eixos X/Y — banda de bloqueadas alargando = represamento); (5) **on‑time por time** e **carga atual por time**; (6) **exceções**: gargalos (top‑3 etapas mais lentas), **eficiência de fluxo por etapa** (separa “lento” de “esperando” — diagnósticos opostos); (7) **qualidade agrupada num bloco só**: certo‑da‑primeira‑vez por etapa, retrabalho por **etapa‑origem** e a distinção **interno vs cliente**. Mostrar **aviso de baixa confiança** quando a amostra é pequena (N<8). Todos os gráficos com **eixos rotulados**.
 
-> Crie o **relatório de fluxo e previsibilidade** de uma agência, segmentável por **tipo de
-> trabalho** e por **time** (uma barra de filtro única: período + time + cliente + projeto +
-> tipo). Blocos, nesta ordem: (1) **headline de lead time** (médio/mediano + amostra);
-> (2) **cycle‑time em percentis** — p50/p85/p95 + um **scatter** dos concluídos com linhas de
-> referência; enquadre o **p85 como o prazo confiável** (não a média); (3) **previsão de entrega
-> (Monte Carlo)** — backlog atual, quando fica pronto no p85, entregas nos próximos 30 dias;
-> (4) **throughput no tempo** (linha, eixos X/Y) e **CFD** (área empilhada por status, eixos X/Y —
-> banda de bloqueadas alargando = represamento); (5) **on‑time por time** e **carga atual por
-> time**; (6) **exceções**: gargalos (top‑3 etapas mais lentas), **eficiência de fluxo por etapa**
-> (separa “lento” de “esperando” — diagnósticos opostos); (7) **qualidade agrupada num bloco só**:
-> certo‑da‑primeira‑vez por etapa, retrabalho por **etapa‑origem** e a distinção **interno vs
-> cliente**. Mostrar **aviso de baixa confiança** quando a amostra é pequena (N<8). Todos os
-> gráficos com **eixos rotulados**.
-
-**Dados:** lead time; cycle‑time percentis + pontos; forecast; throughput (série); CFD (série);
-on‑time e carga por time; gargalos; eficiência de fluxo por etapa; FTR + retrabalho por origem.
-**Restrições:** P3/P4 (probabilístico, por classe), P5 (qualidade na fonte, interno≠cliente),
-P6 (exceção). **Unificar:** throughput e duração‑por‑etapa aparecem **uma vez** (hoje duplicados
-entre as duas telas).
+**Dados:** lead time; cycle‑time percentis + pontos; forecast; throughput (série); CFD (série); on‑time e carga por time; gargalos; eficiência de fluxo por etapa; FTR + retrabalho por origem.
+**Restrições:** P3/P4 (probabilístico, por classe), P5 (qualidade na fonte, interno≠cliente), P6 (exceção). **Unificar:** throughput e duração‑por‑etapa aparecem **uma vez** (hoje duplicados entre as duas telas).
 
 ## 9. Horas & Utilização · `/reports/productivity`
 
 **Persona/acesso:** MANAGER+.
 
 **Prompt de geração:**
-
-> Crie o **relatório de horas** de um mês. Blocos: total de horas (banner); **horas por pessoa**
-> com a **utilização** de cada uma (horas ÷ meta) apresentada como **faixa indicativa** — jamais
-> como nota ou ranking (é guarda de sobrecarga/ócio, e o benchmark é aproximado); horas por
-> projeto, por cliente e por etapa (tabelas que se auto‑ocultam quando o respectivo filtro já está
-> ativo). Barra de filtro única (mês + time + cliente + projeto). Exportar CSV/PDF nas tabelas.
-> **Não** colorir a pessoa como “vermelha/ruim” — utilização é contexto, não julgamento.
+Crie o **relatório de horas** de um mês. Blocos: total de horas (banner); **horas por pessoa** com a **utilização** de cada uma (horas ÷ meta) apresentada como **faixa indicativa** — jamais como nota ou ranking (é guarda de sobrecarga/ócio, e o benchmark é aproximado); horas por projeto, por cliente e por etapa (tabelas que se auto‑ocultam quando o respectivo filtro já está ativo). Barra de filtro única (mês + time + cliente + projeto). Exportar CSV/PDF nas tabelas. **Não** colorir a pessoa como “vermelha/ruim” — utilização é contexto, não julgamento.
 
 **Dados:** horas por usuário (+ utilização), por projeto, por cliente, por etapa.
 **Restrições:** P7/P1 (utilização faixa, não nota).
 
 ## 10. Pessoas — visão por pessoa (reconciliada) · `/reports/user/[id]` (absorve analytics do admin)
 
-**Persona/acesso:** a própria pessoa e o gestor (fail‑closed). **Mudou vs hoje:** unifica o
-relatório por‑pessoa com as análises que hoje estão **enterradas no CRUD** `/admin/users/[id]`.
-É a **mesma** analítica da tela _Minha Evolução_ (§4), vista pelo gestor.
+**Persona/acesso:** a própria pessoa e o gestor (fail‑closed). **Mudou vs hoje:** unifica o relatório por‑pessoa com as análises que hoje estão **enterradas no CRUD** `/admin/users/[id]`. É a **mesma** analítica da tela _Minha Evolução_ (§4), vista pelo gestor.
 
 **Prompt de geração:**
+Crie a **visão de uma pessoa para o gestor** — coaching, não avaliação. Igual à tela “Minha Evolução”: throughput próprio no tempo (eixos), utilização como faixa, e qualidade (certo‑da‑primeira‑vez + retornos interno/cliente **com o motivo de cada um**), aqui com o controle de **reclassificar** um retorno (defeito vs mudança legítima) disponível só para o gestor. Acrescente as etapas ativas atuais da pessoa e seus registros de tempo recentes. **Auto‑referenciado, nunca comparado com outras pessoas.** O CRUD de editar a pessoa (papel, times, capacidade) **não** vive aqui — é uma tela separada de administração.
 
-> Crie a **visão de uma pessoa para o gestor** — coaching, não avaliação. Igual à tela “Minha
-> Evolução”: throughput próprio no tempo (eixos), utilização como faixa, e qualidade
-> (certo‑da‑primeira‑vez + retornos interno/cliente **com o motivo de cada um**), aqui com o
-> controle de **reclassificar** um retorno (defeito vs mudança legítima) disponível só para o
-> gestor. Acrescente as etapas ativas atuais da pessoa e seus registros de tempo recentes.
-> **Auto‑referenciado, nunca comparado com outras pessoas.** O CRUD de editar a pessoa (papel,
-> times, capacidade) **não** vive aqui — é uma tela separada de administração.
-
-**Dados:** throughput; utilização; FTR + retrabalho (com motivo, reclassificável); etapas ativas;
-time logs.
+**Dados:** throughput; utilização; FTR + retrabalho (com motivo, reclassificável); etapas ativas; time logs.
 **Restrições:** P1/P2 (exceção 3b), P7.
 
 ## 11. Calendário — semanal + mensal (unificado) · `/reports/calendar`
 
-**Persona/acesso:** MANAGER+. **Mudou vs hoje:** **uma** feature com **toggle semana/mês** (hoje
-são duas telas/dois cards); é uma ferramenta **operacional** (reagenda), então idealmente vive
-numa seção de planejamento, não “relatórios”.
+**Persona/acesso:** MANAGER+. **Mudou vs hoje:** **uma** feature com **toggle semana/mês** (hoje são duas telas/dois cards); é uma ferramenta **operacional** (reagenda), então idealmente vive numa seção de planejamento, não “relatórios”.
 
 **Prompt de geração:**
-
-> Crie um **calendário de demandas** com **alternância entre visão semanal e mensal** e uma
-> **navegação de período única** (anterior / hoje / próximo). **Semana:** grade de 7 dias com as
-> tarefas por dia; permitir **arrastar para reagendar** o vencimento. **Mês:** grade do mês com as
-> demandas, e uma sobreposição de **feriados** e **aniversários/aniversários de casa** (marcador
-> discreto). Filtros: time / projeto / pessoa / mostrar concluídas. Permitir **criar demanda(s)**
-> a partir de um dia (inclusive em lote para vários projetos). Deixe claro o que é planejamento
-> (escrita) vs leitura.
+Crie um **calendário de demandas** com **alternância entre visão semanal e mensal** e uma **navegação de período única** (anterior / hoje / próximo). **Semana:** grade de 7 dias com as tarefas por dia; permitir **arrastar para reagendar** o vencimento. **Mês:** grade do mês com as demandas, e uma sobreposição de **feriados** e **aniversários/aniversários de casa** (marcador discreto). Filtros: time / projeto / pessoa / mostrar concluídas. Permitir **criar demanda(s)** a partir de um dia (inclusive em lote para vários projetos). Deixe claro o que é planejamento (escrita) vs leitura.
 
 **Dados:** tarefas no intervalo (com vencimento); feriados; aniversários.
 **Restrições:** P6.
 
 ## 12. Presença ao vivo — board + modo TV (unificado) · `/reports/live-activity` (absorve `/tv`)
 
-**Persona/acesso:** MANAGER+ (board); modo TV é um wallboard. **Mudou vs hoje:** funde a
-“atividade ao vivo” e a tela `/tv` numa **feature só, com um “modo TV”** (tela cheia, escura, sem
-navegação).
+**Persona/acesso:** MANAGER+ (board); modo TV é um wallboard. **Mudou vs hoje:** funde a “atividade ao vivo” e a tela `/tv` numa **feature só, com um “modo TV”** (tela cheia, escura, sem navegação).
 
 **Prompt de geração:**
-
-> Crie um **quadro de presença em tempo real**: quem está **online / trabalhando (em qual tarefa) /
-> offline**, atualizado ao vivo (stream com fallback de polling), com contadores e filtros
-> (estado, visibilidade por time). Ofereça um **“modo TV”**: tela cheia, tema escuro, tipografia
-> grande, relógio, **sem navegação** — para um monitor de parede. Enquadre como **operacional/
-> informativo**, **não como vigilância nem ranking** (sem “quem trabalhou mais”). Extraia o card de
-> pessoa como um bloco reutilizável entre o board e o modo TV.
+Crie um **quadro de presença em tempo real**: quem está **online / trabalhando (em qual tarefa) / offline**, atualizado ao vivo (stream com fallback de polling), com contadores e filtros (estado, visibilidade por time). Ofereça um **“modo TV”**: tela cheia, tema escuro, tipografia grande, relógio, **sem navegação** — para um monitor de parede. Enquadre como **operacional/ informativo**, **não como vigilância nem ranking** (sem “quem trabalhou mais”). Extraia o card de pessoa como um bloco reutilizável entre o board e o modo TV.
 
 **Dados:** presença `{ pessoa, estado, tarefaAtual?, desde }`.
-**Restrições:** P1/P2 (informativo, não vigilância/nota). **Nota de segurança:** o modo TV público
-precisa ter os dados protegidos na API.
+**Restrições:** P1/P2 (informativo, não vigilância/nota). **Nota de segurança:** o modo TV público precisa ter os dados protegidos na API.
 
 ## 13. Clientes — lista e detalhe · `/admin/clients(+/[id])`
 
 **Persona/acesso:** MANAGER+.
 
 **Prompt de geração:**
-
-> **Lista:** clientes com número de projetos, criar/excluir inline, busca. **Detalhe:** cabeçalho
-> editável do cliente (nome, contato, pasta NAS com trava), contadores, **artefatos** do cliente e
-> **armazenamento (storage) por projeto** (barras por ocupação — é a casa certa dessa info de
-> capacidade), e a **lista de projetos** do cliente (criar projeto, ativar/desativar, abrir o
-> Kanban). Filtro de status de projeto (pendentes/concluídos) **traduzível**.
+**Lista:** clientes com número de projetos, criar/excluir inline, busca. **Detalhe:** cabeçalho editável do cliente (nome, contato, pasta NAS com trava), contadores, **artefatos** do cliente e **armazenamento (storage) por projeto** (barras por ocupação — é a casa certa dessa info de capacidade), e a **lista de projetos** do cliente (criar projeto, ativar/desativar, abrir o Kanban). Filtro de status de projeto (pendentes/concluídos) **traduzível**.
 
 **Dados:** **Cliente** (+ projetos, artefatos, storage por projeto).
-**Restrições:** P8 (traduzir os rótulos hoje hardcoded). **Recebe:** o `StorageBreakdown` que sai
-do detalhe da tarefa e do cockpit.
+**Restrições:** P8 (traduzir os rótulos hoje hardcoded). **Recebe:** o `StorageBreakdown` que saido detalhe da tarefa e do cockpit.
 
 ## 14. Projetos — lista (nova) e detalhe · `/projects` + `/admin/projects/[id]`
 
@@ -413,12 +357,7 @@ do detalhe da tarefa e do cockpit.
 são acessíveis via cliente; não há índice).
 
 **Prompt de geração:**
-
-> Crie uma **lista de projetos** (todos os projetos, com cliente, % de conclusão, status, busca/
-> filtro por cliente) e o **detalhe do projeto**: cabeçalho editável (nome, descrição, cliente),
-> **% de conclusão** + contadores de status das tarefas, a **tabela de tarefas** do projeto (com
-> badges consistentes), **artefatos** e **armazenamento por tarefa**, e atalho para criar tarefa
-> já no projeto. Link para o Kanban do projeto.
+Crie uma **lista de projetos** (todos os projetos, com cliente, % de conclusão, status, busca/filtro por cliente) e o **detalhe do projeto**: cabeçalho editável (nome, descrição, cliente), **% de conclusão** + contadores de status das tarefas, a **tabela de tarefas** do projeto (com badges consistentes), **artefatos** e **armazenamento por tarefa**, e atalho para criar tarefa já no projeto. Link para o Kanban do projeto.
 
 **Dados:** lista de **Projeto**; **Projeto** detalhado (+ tarefas, artefatos, storage).
 **Restrições:** P8; badges consistentes.
@@ -427,46 +366,28 @@ são acessíveis via cliente; não há índice).
 
 # Parte 4 — Administração (CRUD)
 
-> Estas três telas compartilham um **padrão de lista simples** (criar + tabela + excluir) e um
-> **padrão de detalhe editável**. Peça à ferramenta um **componente de lista CRUD reutilizável** e
-> um **modal padrão** (não modais artesanais diferentes por tela).
+Estas três telas compartilham um **padrão de lista simples** (criar + tabela + excluir) e um **padrão de detalhe editável**. Peça à ferramenta um **componente de lista CRUD reutilizável** e um **modal padrão** (não modais artesanais diferentes por tela).
 
 ## 15. Usuários · `/admin/users(+/[id])` — só ADMIN
 
 **Prompt:**
+**Lista:** diretório de usuários com busca, filtro (papel/time), ordenação e paginação; por linha, editar. **Editar (modal padrão):** papel, times, data de nascimento, admissão e **capacidade semanal (horas)**. **Importante:** a **analítica da pessoa** (throughput/utilização/ qualidade) **não** fica aqui — ela vive na tela _Pessoas_ (§10). Esta tela é **CRUD puro**.
 
-> **Lista:** diretório de usuários com busca, filtro (papel/time), ordenação e paginação; por
-> linha, editar. **Editar (modal padrão):** papel, times, data de nascimento, admissão e
-> **capacidade semanal (horas)**. **Importante:** a **analítica da pessoa** (throughput/utilização/
-> qualidade) **não** fica aqui — ela vive na tela _Pessoas_ (§10). Esta tela é **CRUD puro**.
-
-**Dados:** **Usuário**; times. **Mudou vs hoje:** move a analítica para _Pessoas_; usa o modal
-padrão (não artesanal).
+**Dados:** **Usuário**; times. **Mudou vs hoje:** move a analítica para _Pessoas_; usa o modal padrão (não artesanal).
 
 ## 16. Equipes · `/admin/teams(+/[id])` — só ADMIN
 
 **Prompt:**
-
-> **Lista:** times com contagem de membros, criar/excluir. **Detalhe:** editar nome, **gerir
-> membros** (busca + seleção por checkbox, modal padrão), e a lista de **etapas‑modelo que têm este
-> time como responsável padrão** (com link para o fluxo). Reusar o mesmo padrão de lista simples
-> dos Clientes.
+**Lista:** times com contagem de membros, criar/excluir. **Detalhe:** editar nome, **gerir membros** (busca + seleção por checkbox, modal padrão), e a lista de **etapas‑modelo que têm este time como responsável padrão** (com link para o fluxo). Reusar o mesmo padrão de lista simples dos Clientes.
 
 **Dados:** **Time** (+ membros, etapas‑padrão).
 
 ## 17. Fluxos de trabalho — editor de templates · `/admin/templates(+/[id])`
 
-**Persona/acesso:** MANAGER+ (ADMIN pra editar). Este subsistema é **coeso**; descreva‑o como
-uma ferramenta.
+**Persona/acesso:** MANAGER+ (ADMIN pra editar). Este subsistema é **coeso**; descreva‑o como uma ferramenta.
 
 **Prompt de geração:**
-
-> Crie um **editor de fluxo de trabalho (template)**. **Lista:** templates com nº de etapas e data,
-> criar. **Editor:** cabeçalho editável (nome/descrição) + excluir; **adicionar etapa** (nome, time
-> responsável, dependências); **lista de etapas** onde cada uma expande para editar (ordem, time,
-> SLA, opcionalidade, **limite de WIP**, dependências); e uma **visualização do grafo** de etapas e
-> dependências (DAG). É a única tela genuinamente “ferramenta de configuração” — priorize clareza
-> de edição e do grafo. Padronize o estilo de card e o namespace de textos com o resto do admin.
+Crie um **editor de fluxo de trabalho (template)**. **Lista:** templates com nº de etapas e data, criar. **Editor:** cabeçalho editável (nome/descrição) + excluir; **adicionar etapa** (nome, time responsável, dependências); **lista de etapas** onde cada uma expande para editar (ordem, time, SLA, opcionalidade, **limite de WIP**, dependências); e uma **visualização do grafo** de etapas e dependências (DAG). É a única tela genuinamente “ferramenta de configuração” — priorize clareza de edição e do grafo. Padronize o estilo de card e o namespace de textos com o resto do admin.
 
 **Dados:** **Template** (+ etapas‑modelo com dependências, SLA, wipLimit, time).
 **Restrições:** P8 (namespace de i18n consistente).
@@ -478,33 +399,21 @@ uma ferramenta.
 ## 18. Conta · `/account`
 
 **Prompt:**
+Crie a **tela de conta**: dossiê read‑only (nome, email, papel, time, aniversário, admissão) com nota de que os dados sincronizam do Google; e um bloco de **preferências** reunindo **idioma** e **tema** juntos, mais **sair**. Um único caminho de logout. Tudo traduzível.
 
-> Crie a **tela de conta**: dossiê read‑only (nome, email, papel, time, aniversário, admissão) com
-> nota de que os dados sincronizam do Google; e um bloco de **preferências** reunindo **idioma** e
-> **tema** juntos, mais **sair**. Um único caminho de logout. Tudo traduzível.
-
-**Restrições:** P8. **Mudou vs hoje:** o **tema** vem do menu para cá (ao lado do idioma); logout
-unificado.
+**Restrições:** P8. **Mudou vs hoje:** o **tema** vem do menu para cá (ao lado do idioma); logout unificado.
 
 ## 19. Ajuda · `/help(+guias)`
 
 **Prompt:**
-
-> Crie um **hub de ajuda** com cards para cada guia (colaborador, projetos, templates) e uma
-> **tela de guia** que renderiza seções, passos e destaques a partir de conteúdo estruturado, com
-> **figuras/screenshots** (placeholder rotulado quando a imagem ainda não existe) com zoom. Se
-> possível, deep‑link “experimentar” para a tela real que o passo documenta. Tudo traduzível.
+Crie um **hub de ajuda** com cards para cada guia (colaborador, projetos, templates) e uma **tela de guia** que renderiza seções, passos e destaques a partir de conteúdo estruturado, com **figuras/screenshots** (placeholder rotulado quando a imagem ainda não existe) com zoom. Se possível, deep‑link “experimentar” para a tela real que o passo documenta. Tudo traduzível.
 
 **Restrições:** P8.
 
 ## 20. Login / Home pública · `/auth/signin`, `/`
 
 **Prompt:**
-
-> **Login:** entrar com Google, com uma linha de termos **traduzível**, respeitando o destino
-> original (voltar para a página que o usuário tentou abrir após autenticar). **Home pública:**
-> hero com “Entrar” e “Ver apresentação” (deck de onboarding que explica a filosofia do produto).
-> Autenticado → redireciona para o Início.
+**Login:** entrar com Google, com uma linha de termos **traduzível**, respeitando o destino original (voltar para a página que o usuário tentou abrir após autenticar). **Home pública:** hero com “Entrar” e “Ver apresentação” (deck de onboarding que explica a filosofia do produto). Autenticado → redireciona para o Início.
 
 **Restrições:** P8; preservar o `callbackUrl` no login.
 

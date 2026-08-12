@@ -46,7 +46,8 @@
     "backToHelp": "Voltar para a Central de Ajuda",
     "routeBadge": "Onde encontrar",
     "figurePlaceholder": "O print deste passo entra aqui",
-    "stepLabel": "Passo"
+    "stepLabel": "Passo",
+    "tryIt": "Experimentar"
   },
   "guides": {
     "templates": {
@@ -244,7 +245,8 @@
                 "Data de Vencimento — opcional."
               ],
               "image": "hierarquia-05-criar-demanda.png",
-              "caption": "Formulário “Criar Nova Tarefa”."
+              "caption": "Formulário “Criar Nova Tarefa”.",
+              "try": "/admin/tasks/new"
             },
             {
               "n": "2",
@@ -291,7 +293,8 @@
                 "A página /tasks traz filtros (Minhas/Todas, Ativas/Bloqueadas/Concluídas, datas) e KPIs: Total, Ativas, Bloqueadas, Concluídas, Atrasadas e Horas Registradas."
               ],
               "image": "colaborador-02-minhas-tarefas.png",
-              "caption": "Página Minhas Tarefas."
+              "caption": "Página Minhas Tarefas.",
+              "try": "/tasks"
             }
           ]
         },
@@ -384,7 +387,8 @@
                 "Sinais: atrasada, prazo próximo, nova (criada há menos de 24h)."
               ],
               "image": "colaborador-08-status.png",
-              "caption": "Legenda de status e prioridade."
+              "caption": "Legenda de status e prioridade.",
+              "try": "/minha-evolucao"
             }
           ]
         }
@@ -407,7 +411,10 @@
               "label": "Por quê",
               "text": "Medir um indicador de desempenho tende a degradá-lo — a disfunção é a regra, não a exceção, sobretudo com trabalhadores do conhecimento. Uso motivacional (mudar comportamento via prêmio) e informacional (insight de processo) são incompatíveis; e nada num dado é inerentemente um ou outro — só o uso decide. A defesa é manter os sinais separados, nunca um número composto."
             },
-            { "label": "Exige", "items": ["Dimensões separadas, lidas por exceção."] },
+            {
+              "label": "Exige",
+              "items": ["Dimensões separadas, lidas por exceção."]
+            },
             {
               "label": "Proíbe",
               "items": [
@@ -439,7 +446,10 @@
                 "Individual apenas como leitura de coaching, com contexto."
               ]
             },
-            { "label": "Proíbe", "items": ["Ranking individual por output ou por defeito."] },
+            {
+              "label": "Proíbe",
+              "items": ["Ranking individual por output ou por defeito."]
+            },
             {
               "label": "Exceção registrada",
               "text": "Há uma única métrica de qualidade ligada à pessoa — o FTR por pessoa — cercada por salvaguardas que a tornam defensável: auto-referenciada (nunca compara pessoas); defeito-only via reclassificação humana; motivos sempre à vista; reclassificação só do gestor; acesso fail-closed; e zero vínculo a remuneração ou ranking."
@@ -493,7 +503,10 @@
               "label": "Proíbe",
               "items": ["Um número global único de previsão.", "Experiência virar score."]
             },
-            { "label": "Fonte", "text": "Flyvbjerg/Kahneman — reference-class forecasting." }
+            {
+              "label": "Fonte",
+              "text": "Flyvbjerg/Kahneman — reference-class forecasting."
+            }
           ]
         },
         {
@@ -518,7 +531,10 @@
                 "Atribuir o defeito à pessoa."
               ]
             },
-            { "label": "Fonte", "text": "Toyota/TPS (jidoka), COPQ/OpEx." }
+            {
+              "label": "Fonte",
+              "text": "Toyota/TPS (jidoka), COPQ/OpEx."
+            }
           ]
         },
         {
@@ -534,7 +550,10 @@
               "label": "Exige",
               "items": ["Exceção primeiro; detalhe sob demanda (drawer ou drill-down)."]
             },
-            { "label": "Proíbe", "items": ["Listar tudo sem priorizar."] },
+            {
+              "label": "Proíbe",
+              "items": ["Listar tudo sem priorizar."]
+            },
             {
               "label": "Fonte",
               "text": "Goldratt/ToC, DeGrandis (Making Work Visible) e feedback de uso."
@@ -564,7 +583,10 @@
                 "Descontar volume da qualidade."
               ]
             },
-            { "label": "Fonte", "text": "Reinertsen/Vacanti (fluxo)." }
+            {
+              "label": "Fonte",
+              "text": "Reinertsen/Vacanti (fluxo)."
+            }
           ]
         },
         {
@@ -576,9 +598,18 @@
               "label": "Por quê",
               "text": "Afeta a experiência real dos usuários es-ES, e regressões de i18n são silenciosas. Um guard de paridade (__tests__/i18n/locale-parity.test.ts) falha em divergência de chave ou vazamento de português."
             },
-            { "label": "Exige", "items": ["Paridade de chaves testada em CI."] },
-            { "label": "Proíbe", "items": ["String hardcoded.", "Tradução placeholder."] },
-            { "label": "Fonte", "text": "Convenção do projeto e guard de CI." }
+            {
+              "label": "Exige",
+              "items": ["Paridade de chaves testada em CI."]
+            },
+            {
+              "label": "Proíbe",
+              "items": ["String hardcoded.", "Tradução placeholder."]
+            },
+            {
+              "label": "Fonte",
+              "text": "Convenção do projeto e guard de CI."
+            }
           ]
         }
       ],
@@ -597,39 +628,66 @@
           "term": "WIP",
           "summary": "Itens ativos por pessoa ou etapa.",
           "fields": [
-            { "label": "Responde", "text": "Quanto está em curso?" },
-            { "label": "Fonte · caveat", "text": "Lei de Little. Alavanca central (P3)." }
+            {
+              "label": "Responde",
+              "text": "Quanto está em curso?"
+            },
+            {
+              "label": "Fonte · caveat",
+              "text": "Lei de Little. Alavanca central (P3)."
+            }
           ]
         },
         {
           "term": "Cycle time",
           "summary": "completedAt − createdAt, em dias.",
           "fields": [
-            { "label": "Responde", "text": "Quanto leva ponta a ponta?" },
-            { "label": "Fonte · caveat", "text": "Meta: curto e consistente." }
+            {
+              "label": "Responde",
+              "text": "Quanto leva ponta a ponta?"
+            },
+            {
+              "label": "Fonte · caveat",
+              "text": "Meta: curto e consistente."
+            }
           ]
         },
         {
           "term": "Throughput",
           "summary": "Concluídos por período (série no tempo).",
           "fields": [
-            { "label": "Responde", "text": "Quanto sai — e para onde tende?" },
-            { "label": "Fonte · caveat", "text": "Base do forecast (P3/P7)." }
+            {
+              "label": "Responde",
+              "text": "Quanto sai — e para onde tende?"
+            },
+            {
+              "label": "Fonte · caveat",
+              "text": "Base do forecast (P3/P7)."
+            }
           ]
         },
         {
           "term": "Work item age",
           "summary": "Tempo desde a ativação da etapa.",
           "fields": [
-            { "label": "Responde", "text": "Está velho?" },
-            { "label": "Fonte · caveat", "text": "Vacanti — aging WIP." }
+            {
+              "label": "Responde",
+              "text": "Está velho?"
+            },
+            {
+              "label": "Fonte · caveat",
+              "text": "Vacanti — aging WIP."
+            }
           ]
         },
         {
           "term": "Aging ratio",
           "summary": "idade ÷ SLA (≥ 1 = passou).",
           "fields": [
-            { "label": "Responde", "text": "Passou do esperado?" },
+            {
+              "label": "Responde",
+              "text": "Passou do esperado?"
+            },
             {
               "label": "Fonte · caveat",
               "text": "stageAgingRatio; SLA = expectedDurationHours ?? 72h."
@@ -640,7 +698,10 @@
           "term": "Flow efficiency",
           "summary": "ACTIVE ÷ (ACTIVE + BLOCKED).",
           "fields": [
-            { "label": "Responde", "text": "É lento ou fica esperando?" },
+            {
+              "label": "Responde",
+              "text": "É lento ou fica esperando?"
+            },
             {
               "label": "Fonte · caveat",
               "text": "Reconstruído do log StageTransition; só desde a migração."
@@ -651,16 +712,28 @@
           "term": "Cycle-time percentis",
           "summary": "p50/p85/p95 dos concluídos.",
           "fields": [
-            { "label": "Responde", "text": "Qual é o meu prazo confiável?" },
-            { "label": "Fonte · caveat", "text": "p85 = compromisso (P3)." }
+            {
+              "label": "Responde",
+              "text": "Qual é o meu prazo confiável?"
+            },
+            {
+              "label": "Fonte · caveat",
+              "text": "p85 = compromisso (P3)."
+            }
           ]
         },
         {
           "term": "Forecast Monte Carlo",
           "summary": "Simulação sobre o throughput histórico.",
           "fields": [
-            { "label": "Responde", "text": "Quando o backlog fica pronto (p85)?" },
-            { "label": "Fonte · caveat", "text": "Precisa de algumas semanas de histórico." }
+            {
+              "label": "Responde",
+              "text": "Quando o backlog fica pronto (p85)?"
+            },
+            {
+              "label": "Fonte · caveat",
+              "text": "Precisa de algumas semanas de histórico."
+            }
           ]
         },
         {
@@ -671,30 +744,48 @@
               "label": "Responde",
               "text": "Onde o trabalho acumula ou escasseia ao longo do tempo?"
             },
-            { "label": "Fonte · caveat", "text": "Banda de bloqueadas alargando = gargalo." }
+            {
+              "label": "Fonte · caveat",
+              "text": "Banda de bloqueadas alargando = gargalo."
+            }
           ]
         },
         {
           "term": "Restrição do sistema",
           "summary": "A etapa que mais represa (inversão do waitingOn).",
           "fields": [
-            { "label": "Responde", "text": "Onde agir primeiro? (ToC)" },
-            { "label": "Fonte · caveat", "text": "getSystemConstraint; sinal causal, ao vivo." }
+            {
+              "label": "Responde",
+              "text": "Onde agir primeiro? (ToC)"
+            },
+            {
+              "label": "Fonte · caveat",
+              "text": "getSystemConstraint; sinal causal, ao vivo."
+            }
           ]
         },
         {
           "term": "Risco de dependência",
           "summary": "Nº de pré-requisitos pendentes → baixo/médio/alto.",
           "fields": [
-            { "label": "Responde", "text": "Quão travado está?" },
-            { "label": "Fonte · caveat", "text": "Heurística de composição de atraso." }
+            {
+              "label": "Responde",
+              "text": "Quão travado está?"
+            },
+            {
+              "label": "Fonte · caveat",
+              "text": "Heurística de composição de atraso."
+            }
           ]
         },
         {
           "term": "WIP limit",
           "summary": "Teto de itens em progresso por etapa.",
           "fields": [
-            { "label": "Responde", "text": "Estourou o teto?" },
+            {
+              "label": "Responde",
+              "text": "Estourou o teto?"
+            },
             {
               "label": "Fonte · caveat",
               "text": "Enforcement de pull no claim; a auto-ativação nunca bloqueia."
@@ -705,7 +796,10 @@
           "term": "Utilização",
           "summary": "horas de TimeLog ÷ capacidade prorrateada.",
           "fields": [
-            { "label": "Responde", "text": "O tempo pago está sendo usado?" },
+            {
+              "label": "Responde",
+              "text": "O tempo pago está sendo usado?"
+            },
             {
               "label": "Fonte · caveat",
               "text": "Faixa indicativa (P7); benchmarks de agência não verificados."
@@ -716,7 +810,10 @@
           "term": "Sinais de burnout",
           "summary": "Utilização média + overtime + WIP (janela de 4 semanas).",
           "fields": [
-            { "label": "Responde", "text": "Alguém em risco sustentado?" },
+            {
+              "label": "Responde",
+              "text": "Alguém em risco sustentado?"
+            },
             {
               "label": "Fonte · caveat",
               "text": "Indicativo, não diagnóstico (Gallup dá o agregado)."
@@ -727,7 +824,10 @@
           "term": "Cadência de 1:1",
           "summary": "Dias desde o último 1:1 → atrasado.",
           "fields": [
-            { "label": "Responde", "text": "Quem precisa de 1:1?" },
+            {
+              "label": "Responde",
+              "text": "Quem precisa de 1:1?"
+            },
             {
               "label": "Fonte · caveat",
               "text": "Gallup: o gestor responde por cerca de 70% da variância de engajamento."
@@ -738,15 +838,24 @@
           "term": "Medidor de carga (WIP)",
           "summary": "WIP ÷ teto, cor por nível e marca da mediana.",
           "fields": [
-            { "label": "Responde", "text": "Quem está acima ou abaixo do balanço?" },
-            { "label": "Fonte · caveat", "text": "Coerente com os totais do card." }
+            {
+              "label": "Responde",
+              "text": "Quem está acima ou abaixo do balanço?"
+            },
+            {
+              "label": "Fonte · caveat",
+              "text": "Coerente com os totais do card."
+            }
           ]
         },
         {
           "term": "Viabilidade de prazo",
           "summary": "Dias disponíveis vs p50/p85 do tipo.",
           "fields": [
-            { "label": "Responde", "text": "O prazo nasceu apertado?" },
+            {
+              "label": "Responde",
+              "text": "O prazo nasceu apertado?"
+            },
             {
               "label": "Fonte · caveat",
               "text": "Confortável/apertado/em risco; informacional (P1)."
@@ -757,7 +866,10 @@
           "term": "Previsão por classe",
           "summary": "Percentis do template (tipo).",
           "fields": [
-            { "label": "Responde", "text": "Quanto leva ESTE tipo?" },
+            {
+              "label": "Responde",
+              "text": "Quanto leva ESTE tipo?"
+            },
             {
               "label": "Fonte · caveat",
               "text": "getTypeForecast; aviso de baixa confiança se N < 8 (P4)."

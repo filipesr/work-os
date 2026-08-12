@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { ArrowLeft, MapPin, ExternalLink } from "lucide-react";
 import { HelpFigure } from "./HelpFigure";
 
 interface Callout {
@@ -15,6 +15,10 @@ interface Step {
   callout?: Callout;
   image?: string;
   caption?: string;
+  /** Rota que ESTE passo documenta, quando diferente da rota do guia. Opcional:
+   *  a maioria dos passos acontece na tela principal do guia, e repetir o mesmo
+   *  link em cada um viraria ruído. */
+  try?: string;
 }
 
 interface Section {
@@ -36,6 +40,8 @@ interface GuideUi {
   backToHelp: string;
   routeBadge: string;
   figurePlaceholder: string;
+  /** Rótulo do deep-link que leva à tela real ("Experimentar"). */
+  tryIt: string;
 }
 
 export function GuideView({ guide, ui }: { guide: Guide; ui: GuideUi }) {
@@ -54,10 +60,15 @@ export function GuideView({ guide, ui }: { guide: Guide; ui: GuideUi }) {
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground text-base font-bold">
             {guide.badge}
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs font-mono text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5" />
+          {/* Era só texto: mostrava a rota e deixava o leitor digitá-la à mão.
+              Agora leva até lá — a ajuda existe para ser seguida fazendo. */}
+          <Link
+            href={guide.route}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+          >
+            <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
             {ui.routeBadge}: {guide.route}
-          </span>
+          </Link>
         </div>
         <h1 className="text-3xl font-bold text-foreground mb-3">{guide.title}</h1>
         <p className="text-lg text-muted-foreground leading-relaxed">{guide.intro}</p>
@@ -107,6 +118,15 @@ export function GuideView({ guide, ui }: { guide: Guide; ui: GuideUi }) {
                           <span className="text-muted-foreground">{step.callout.text}</span>
                         </p>
                       </div>
+                    ) : null}
+                    {step.try ? (
+                      <Link
+                        href={step.try}
+                        className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                        {ui.tryIt}
+                      </Link>
                     ) : null}
                     {step.image || step.caption ? (
                       <HelpFigure

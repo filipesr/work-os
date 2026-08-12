@@ -1,8 +1,19 @@
 import { signIn } from "@/auth";
 import { getTranslations } from "next-intl/server";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
-export default async function SignInPage() {
-  const t = await getTranslations("auth.signIn");
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string | string[] }>;
+}) {
+  const [t, sp] = await Promise.all([getTranslations("auth.signIn"), searchParams]);
+
+  // O middleware carimba `?callbackUrl=<rota tentada>` ao barrar um anônimo, mas
+  // esta página ignorava o parâmetro e mandava todo mundo para "/": quem clicava
+  // num link de tarefa perdia o destino no login. Validado contra open redirect
+  // — o valor vem da URL, então não é confiável.
+  const redirectTo = safeRedirectPath(sp.callbackUrl);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -17,7 +28,7 @@ export default async function SignInPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("google", { redirectTo: "/" });
+              await signIn("google", { redirectTo });
             }}
           >
             <button
@@ -45,9 +56,7 @@ export default async function SignInPage() {
               {t("signInWithGoogle")}
             </button>
           </form>
-          <p className="text-xs text-center text-muted-foreground mt-6">
-            Ao entrar, você concorda com nossos termos de uso
-          </p>
+          <p className="mt-6 text-center text-xs text-muted-foreground">{t("terms")}</p>
         </div>
       </div>
     </div>

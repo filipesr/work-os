@@ -238,6 +238,27 @@ Cada superfície e a razão de existir **daquela forma**.
   fechamento/faturamento sem virar screenshot. A coluna de utilização vai como
   número puro — a faixa vive na tela, onde o contexto está junto.
 
+### Apoio (conta, ajuda, login/home)
+
+- **Duas portas de logout, um mecanismo** → `signOutAction`. **Bug corrigido:**
+  o botão de `/account` chamava `signOut()` do next-auth direto e **não zerava
+  `lastSeenAt`** — quem saía por ali seguia "online" no quadro de presença e no
+  mural de TV até o dia virar, corrompendo justamente o dado de §12.
+- **`callbackUrl` preservado no login** → o middleware carimbava a rota tentada,
+  mas a página ignorava e mandava todos para `/`. Quem clicava num link de tarefa
+  perdia o destino ao autenticar.
+- **`safeRedirectPath` contra open redirect** → o destino vem da URL, logo não é
+  confiável. Só caminho relativo à raiz; rejeita absoluto, protocol-relative
+  (`//host`), `\` (que navegadores normalizam para `//`), percent-encoding que
+  esconde o `//`, esquemas executáveis, credenciais embutidas e o laço de voltar
+  ao próprio login. Sem isso, `?callbackUrl=https://falso.com` faria phishing
+  com a credibilidade do nosso domínio.
+- **Ajuda: badge de rota é link, não texto** → mostrava a rota e deixava o leitor
+  digitá-la à mão. Passos ganham `try` opcional só quando documentam outra tela —
+  repetir o mesmo link em todo passo viraria ruído.
+- **Preferências juntas em `/account`** → idioma e tema no mesmo bloco; o tema
+  saiu do menu de avatar (§3.1).
+
 ### Administração — CRUD (usuários, equipes, fluxos)
 
 - **Um `FormDialog`, não modais artesanais** → `/admin/users` e `/admin/teams`
