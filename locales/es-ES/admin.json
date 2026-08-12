@@ -335,6 +335,7 @@
     "createButton": "Crear Plantilla",
     "noTemplates": "No hay plantillas aún. Crea tu primera plantilla arriba.",
     "noDescription": "Sin descripción",
+    "stagesCount": "{count} etapas",
     "created": "Creado el {date}",
     "header": {
       "edit": "Editar Plantilla",

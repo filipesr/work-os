@@ -335,6 +335,7 @@
     "createButton": "Criar Template",
     "noTemplates": "Nenhum template ainda. Crie seu primeiro template acima.",
     "noDescription": "Sem descrição",
+    "stagesCount": "{count} etapas",
     "created": "Criado em {date}",
     "header": {
       "edit": "Editar Template",
