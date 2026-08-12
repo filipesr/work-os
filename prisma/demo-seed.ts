@@ -602,19 +602,32 @@ async function main() {
       for (let i = 0; i < dist.count; i++) {
         const title = titlePool[titleIdx++ % titlePool.length];
         const projectId = pick(projectIds);
-        const createdAt = daysAgo(randomInt(5, 80));
         const priority = pickPriority();
-        const dueDate = pickDueDate(createdAt);
 
         let completedStageCount: number;
         if (dist.status === "COMPLETED") completedStageCount = stages.length;
         else completedStageCount = dist.stage - 1;
 
-        // Cycle time (completed tasks): smooth-ish distribution per stage count.
-        const completedAt =
+        // FILA (criação → alguém pegar) e EXECUÇÃO (início → entrega) são sorteadas
+        // ANTES da data de criação, para que a cadeia inteira caiba no passado:
+        // ancorar a entrega em createdAt podia jogar conclusões para o futuro, o que
+        // some do throughput (buckets terminam hoje) mas contamina os percentis.
+        // A fila precisa ser materialmente > 0 — com fila ~0, cycle ≈ lead e a
+        // separação some justamente na tela que existe para mostrá-la.
+        const queueDays = dist.status === "BACKLOG" ? 0 : randomFloat(0.5, 6);
+        const execDays =
           dist.status === "COMPLETED"
-            ? addDays(createdAt, randomInt(completedStageCount * 2, completedStageCount * 5 + 8))
-            : null;
+            ? randomInt(completedStageCount * 2, completedStageCount * 5 + 8)
+            : 0;
+
+        const createdAt = daysAgo(randomInt(Math.ceil(queueDays + execDays) + 1, 80));
+        const dueDate = pickDueDate(createdAt);
+
+        // BACKLOG nunca foi pega → startedAt null, como na vida real (e sai da
+        // base de cycle time, que é o comportamento correto).
+        const startedAt = dist.status === "BACKLOG" ? null : addDays(createdAt, queueDays);
+        const completedAt =
+          dist.status === "COMPLETED" ? addDays(startedAt ?? createdAt, execDays) : null;
 
         const task = await prisma.task.create({
           data: {
@@ -624,6 +637,7 @@ async function main() {
             priority,
             createdAt,
             dueDate,
+            startedAt,
             completedAt,
             projectId,
             workflowTemplateId: template.id,
@@ -631,7 +645,8 @@ async function main() {
         });
         totalTasks++;
 
-        let stageStartDate = addDays(createdAt, randomFloat(0, 1));
+        // As etapas começam quando a tarefa começa (não na criação).
+        let stageStartDate = addDays(startedAt ?? createdAt, randomFloat(0, 1));
 
         for (let s = 0; s < completedStageCount && s < stages.length; s++) {
           const stage = stages[s];
@@ -725,6 +740,8 @@ async function main() {
             status: "CANCELLED",
             priority: pickPriority(),
             createdAt,
+            // Chegou a ser trabalhada (1ª etapa concluída antes do cancelamento).
+            startedAt: createdAt,
             dueDate: null,
             projectId,
             workflowTemplateId: template.id,

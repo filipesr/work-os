@@ -112,18 +112,73 @@ explicando o efeito composto. i18n `admin.health.blocked.risk.*` (pt+es).
 
 ## 4. Percentis de cycle time + scatterplot — P0.2
 
-**O que é.** Distribuição do tempo de conclusão das tarefas (`createdAt →
+**O que é.** Distribuição do tempo de **execução** das tarefas (`startedAt →
 completedAt`, em dias) com p50/p85/p95. Base da previsibilidade probabilística:
 comprometa-se com o **p85** (o prazo cumprido ~85% das vezes) em vez da média.
 
 **Fórmula.** `lib/stats.percentile(values, p)` — interpolação linear
 (PERCENTILE.INC), puro/testado. `reporting.getCycleTimePercentiles(filters)`
-retorna `count`, `p50`, `p85`, `p95` (população cheia) e `points` (scatter,
-capado aos `CYCLE_SCATTER_CAP=300` mais recentes).
+retorna `count`, `p50`, `p85`, `p95` (população cheia), `points` (scatter,
+capado aos `CYCLE_SCATTER_CAP=300` mais recentes) e `excludedLegacy`
+(ver §4-bis).
 
 **Superfície.** Card **"Cycle Time (Percentis)"** em `/reports/performance`:
 três números grandes (p85 destacado) + scatterplot **SVG server-side** (sem lib
 de chart) com linhas de referência p50/p85/p95. i18n `reportsPerformance.cycleTime.*`.
+
+---
+
+## 4-bis. Separação lead / fila / cycle — `Task.startedAt`
+
+**O problema.** Até a migração `20260812120000`, "Lead Time" e "Cycle Time"
+eram exibidos como métricas distintas mas usavam a **mesma fórmula**
+(`completedAt − createdAt`), porque o instante em que a tarefa saía da fila não
+era persistido em lugar nenhum. O p85 que a ferramenta manda usar como
+compromisso embutia o tempo parado — e não havia como distinguir "somos lentos
+executando" de "a demanda espera muito antes de alguém pegar", diagnósticos com
+ações opostas.
+
+**As três métricas.**
+
+```
+lead time  = completedAt − createdAt   (demanda → entrega)   ← o que o cliente sente
+cycle time = completedAt − startedAt   (início  → entrega)   ← o que a execução controla
+queue time = startedAt   − createdAt   (espera na fila)      ← a diferença
+```
+
+**Como `startedAt` é carimbado.** `lib/task-start.markTaskStarted(client, taskId)`,
+chamado nos **três** pontos de `lib/actions/task.ts` que promovem a tarefa para
+`IN_PROGRESS`: criação com etapa inicial pré-atribuída (fila zero, correto — o
+trabalho já nasceu com dono), `claimStage` (o caminho normal) e `completeStage`
+(rede de segurança para o admin que conclui etapa nunca reivindicada).
+
+É **write-once**, implementado como `updateMany` com `startedAt: null` no
+`where` — compare-and-set atômico: sem read-then-write, seguro sob claims
+simultâneos, idempotente. Um `update` simples reiniciaria a contagem a cada
+re-promoção, inclusive após uma **reversão**; retrabalho deve _alongar_ o cycle
+time, não zerá-lo.
+
+**Caveat de dados — sem backfill (deliberado).** Tarefas anteriores à migração
+ficam com `startedAt = null` e **saem da base de cycle time**, contadas em
+`excludedLegacy` e declaradas na UI (`cycleTime.legacyExcluded` /
+`cycleTime.noDataLegacy`). Os dois proxies possíveis foram rejeitados:
+`min(TaskActiveStage.assignedAt)` é sobrescrito a cada reatribuição (só daria um
+limite inferior), e `createdAt` fabricaria "fila zero" — exatamente o erro sendo
+corrigido. Mesma postura já adotada para o CFD e a eficiência de fluxo. O card
+enche conforme as tarefas novas forem entregues.
+
+**Por que `getTypeForecast` NÃO mudou.** O check de viabilidade em
+`/admin/tasks/new` continua em **lead time**, de propósito: quem cria a demanda
+pergunta "de hoje (a criação) até o `dueDate`, dá?" — e a tarefa ainda vai passar
+pela fila. Medir a partir de `startedAt` subestimaria o prazo justamente pelo
+tempo de espera. Cycle time diagnostica execução; lead time promete data. Há
+teste de regressão sobre isso em `__tests__/lib/actions/type-forecast.test.ts`.
+
+**Superfície.** Quarto tile no bloco de lead time em `/reports/performance`
+("Fila (mediana)", `getLeadTimeMetrics.medianQueueTimeDays`) — `null`, não zero,
+quando nenhuma concluída no escopo tem carimbo (ausência ≠ "não houve espera").
+`prisma/demo-seed.ts` sorteia fila de 0,5–6 dias e ancora a entrega no início,
+senão cycle ≈ lead e a separação fica invisível no demo.
 
 ---
 
@@ -281,7 +336,10 @@ com modelo + UI de survey; fora do escopo desta entrega.
 
 - **Migrações a aplicar em produção** (`prisma migrate deploy`):
   `StageTransition` (P0.1, aplicada), `20260721140000` (wipLimit + capacity),
-  `20260721150000` (OneOnOneLog).
+  `20260721150000` (OneOnOneLog), `20260812120000` (`Task.startedAt`, §4-bis).
+- **Cycle time começa vazio em produção** (§4-bis, sem backfill): o card enche
+  conforme as tarefas iniciadas após a migração forem entregues. Até lá, o lead
+  time cobre a leitura de prazo. Nada a configurar — é só tempo.
 - **Configurar dados:** WIP limits por etapa, capacidade por pessoa começam
   nulos; sinais de burnout precisam da capacidade setada; 1:1 enche ao registrar.
 - **Validação com dados reais:** cards de fluxo/forecast/pessoas enchem conforme
@@ -289,3 +347,8 @@ com modelo + UI de survey; fora do escopo desta entrega.
 - **Roadmap concluído (P0–P3).** Follow-ups: health-check survey (clima),
   subdividir `ACTIVE` por `assignedAt`, materializar o CFD se o replay pesar,
   notas no 1:1, benchmarks de utilização com fonte primária (2ª rodada de research).
+- **Log de status da tarefa (`TaskStatusTransition`)** — considerado e adiado em
+  favor do campo `startedAt` (§4-bis). Só vale a pena se surgir a necessidade de
+  tempo-em-status **da tarefa**: cycle time descontando `PAUSED`, ou um CFD no
+  nível de tarefa (hoje o CFD é por instância de etapa). O padrão a seguir seria
+  o de `StageTransition` (append-only + replay puro em `lib/`).

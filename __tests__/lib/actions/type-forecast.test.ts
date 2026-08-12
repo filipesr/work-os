@@ -46,4 +46,19 @@ describe("getTypeForecast", () => {
     expect(Math.round(r.p50)).toBe(4);
     expect(r.lowConfidence).toBe(MIN_CLASS_SAMPLES > 3);
   });
+
+  // Guarda de regressão sobre uma decisão deliberada: quando lead e cycle time
+  // foram separados, ESTA função ficou em LEAD time (createdAt → completedAt).
+  // Quem cria a demanda pergunta "de hoje até o dueDate, dá?" — a tarefa ainda
+  // vai passar pela fila, então medir de startedAt subestimaria o prazo.
+  it("mede da CRIAÇÃO (lead time), não do início — não filtra por startedAt", async () => {
+    db.task.findMany.mockResolvedValue([daysAgo(10, 0)] as never);
+    const r = await getTypeForecast("tpl");
+
+    const arg = db.task.findMany.mock.calls[0][0]!;
+    expect(arg.where).not.toHaveProperty("startedAt");
+    expect(arg.select).toEqual({ createdAt: true, completedAt: true });
+    // 10 dias de criação a entrega — o tempo de fila está INCLUÍDO de propósito.
+    expect(Math.round(r.p50)).toBe(10);
+  });
 });

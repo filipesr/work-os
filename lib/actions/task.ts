@@ -17,6 +17,7 @@ import {
   computeStageReadiness,
 } from "@/lib/stage-assignment-helpers";
 import { recordStageTransition, recordStageTransitions } from "@/lib/stage-transitions";
+import { markTaskStarted } from "@/lib/task-start";
 import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
 // Re-export types for backward compatibility
@@ -105,6 +106,9 @@ export async function createTask(formData: FormData) {
     // a etapa já nasce com responsável, então a tarefa ficaria presa em BACKLOG.
     if (initialAssigned) {
       await tx.task.update({ where: { id: newTask.id }, data: { status: "IN_PROGRESS" } });
+      // Começou na criação → startedAt == createdAt, ou seja, queue time zero.
+      // É a leitura correta: ninguém esperou na fila, o trabalho já tinha dono.
+      await markTaskStarted(tx, newTask.id);
     }
 
     return newTask;
@@ -927,6 +931,9 @@ export async function completeStageAndAdvance(
         where: { id: taskId },
         data: { status: "IN_PROGRESS" },
       });
+      // Rede de segurança: admin/gerente pode concluir etapa de tarefa que
+      // ninguém chegou a reivindicar. Write-once, então é no-op no caso normal.
+      await markTaskStarted(prisma, taskId);
     } else {
       // Auto-conclusão: todas as etapas incluídas foram concluídas.
       await prisma.task.update({
@@ -1282,6 +1289,9 @@ export async function claimActiveStage(taskId: string, stageId: string) {
       where: { id: taskId },
       data: { status: "IN_PROGRESS" },
     });
+    // Reivindicar é o caminho normal de saída da fila: aqui nasce o cycle time.
+    // Write-once — reivindicar outra etapa depois não reinicia a contagem.
+    await markTaskStarted(prisma, taskId);
 
     // Add comment
     const userName = currentUser.name || currentUser.email;

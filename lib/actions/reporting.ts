@@ -788,10 +788,29 @@ export async function getFirstTimeRightByStage(
   return Array.from(agg.values()).sort((a, b) => a.firstTimeRight - b.firstTimeRight);
 }
 
+export interface LeadTimeMetrics {
+  averageLeadTimeDays: number;
+  medianLeadTimeDays: number;
+  count: number;
+  /** Mediana do tempo de FILA (createdAt → startedAt), em dias. Null quando
+   *  nenhuma tarefa concluída no escopo tem startedAt (base 100% pré-migração). */
+  medianQueueTimeDays: number | null;
+  /** Quantas das `count` tarefas têm startedAt — a base do tempo de fila. */
+  queueCount: number;
+}
+
 /**
- * Calculate lead time metrics (time from task creation to completion)
+ * LEAD TIME: demanda → entrega (`completedAt − createdAt`). É o que o cliente
+ * sente: inclui o tempo parado na fila antes de alguém pegar o trabalho.
+ *
+ * Deliberadamente DIFERENTE do cycle time (`getCycleTimePercentiles`), que mede
+ * início → entrega. A diferença entre os dois é o tempo de fila, devolvido aqui
+ * como `medianQueueTimeDays` — é ele que separa "somos lentos executando" de "a
+ * demanda espera muito antes de começar", diagnósticos com ações opostas.
  */
-export async function getLeadTimeMetrics(filters: PerformanceFilters = {}) {
+export async function getLeadTimeMetrics(
+  filters: PerformanceFilters = {}
+): Promise<LeadTimeMetrics> {
   await requireManagerOrAdmin();
   filters = performanceFiltersSchema.parse(filters);
 
@@ -802,6 +821,7 @@ export async function getLeadTimeMetrics(filters: PerformanceFilters = {}) {
     select: {
       id: true,
       createdAt: true,
+      startedAt: true,
       completedAt: true,
     },
   });
@@ -811,6 +831,8 @@ export async function getLeadTimeMetrics(filters: PerformanceFilters = {}) {
       averageLeadTimeDays: 0,
       medianLeadTimeDays: 0,
       count: 0,
+      medianQueueTimeDays: null,
+      queueCount: 0,
     };
   }
 
@@ -823,16 +845,17 @@ export async function getLeadTimeMetrics(filters: PerformanceFilters = {}) {
   // Calculate average
   const averageLeadTimeDays = leadTimes.reduce((sum, time) => sum + time, 0) / leadTimes.length;
 
-  // Calculate median
-  const sorted = leadTimes.sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  const medianLeadTimeDays =
-    sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+  // Fila: só as tarefas carimbadas (as anteriores à migração não têm startedAt).
+  const queueTimes = tasks
+    .filter((t) => t.startedAt !== null)
+    .map((t) => (new Date(t.startedAt!).getTime() - new Date(t.createdAt).getTime()) / DAY_MS);
 
   return {
     averageLeadTimeDays,
-    medianLeadTimeDays,
+    medianLeadTimeDays: percentile(leadTimes, 0.5),
     count: tasks.length,
+    medianQueueTimeDays: queueTimes.length > 0 ? percentile(queueTimes, 0.5) : null,
+    queueCount: queueTimes.length,
   };
 }
 
@@ -843,17 +866,26 @@ export interface CycleTimePercentiles {
   p95: number; // days
   points: { days: number; at: string }[]; // scatter (ISO completion date), newest-capped
   lowConfidence: boolean; // sample size below MIN_CLASS_SAMPLES — treat percentiles as indicative only
+  /** Concluídas no escopo SEM startedAt (anteriores à migração) — ficaram de
+   *  fora dos percentis. Exposto para a UI declarar o buraco em vez de escondê-lo. */
+  excludedLegacy: number;
 }
 
 // Bound the scatter payload; percentiles still use the full population.
 const CYCLE_SCATTER_CAP = 300;
 
 /**
- * Cycle-time distribution for completed tasks (createdAt → completedAt), in
- * days, with p50/p85/p95. Probabilistic forecasting starts here: instead of an
- * average, commit to the 85th-percentile duration — the date you hit ~85% of
- * the time. `points` powers a scatterplot (capped to the most recent
- * CYCLE_SCATTER_CAP completions); percentiles use the full population.
+ * CYCLE TIME: início → entrega (`completedAt − startedAt`), em dias, com
+ * p50/p85/p95. É o que a execução controla — o tempo de fila (que o lead time
+ * inclui) fica de fora de propósito. O forecasting probabilístico começa aqui:
+ * em vez da média, comprometa-se com o p85 — o prazo cumprido ~85% das vezes.
+ * `points` alimenta o scatterplot (limitado às CYCLE_SCATTER_CAP conclusões mais
+ * recentes); os percentis usam a população inteira.
+ *
+ * Só enxerga tarefas iniciadas a partir da migração 20260812120000, quando
+ * `startedAt` passou a ser carimbado — não houve backfill (o único proxy
+ * disponível fabricaria fila zero, exatamente o erro corrigido). As concluídas
+ * sem carimbo saem da conta e são contadas em `excludedLegacy`.
  */
 export async function getCycleTimePercentiles(
   filters: PerformanceFilters = {}
@@ -862,18 +894,23 @@ export async function getCycleTimePercentiles(
   filters = performanceFiltersSchema.parse(filters);
 
   const where = buildLeadTimeWhere(filters);
-  const tasks = await prisma.task.findMany({
-    where,
-    select: { createdAt: true, completedAt: true },
-    orderBy: { completedAt: "desc" },
-  });
+  const [tasks, completedInScope] = await Promise.all([
+    prisma.task.findMany({
+      where: { ...where, startedAt: { not: null } },
+      select: { startedAt: true, completedAt: true },
+      orderBy: { completedAt: "desc" },
+    }),
+    prisma.task.count({ where }),
+  ]);
+
+  const excludedLegacy = Math.max(0, completedInScope - tasks.length);
 
   if (tasks.length === 0) {
-    return { count: 0, p50: 0, p85: 0, p95: 0, points: [], lowConfidence: true };
+    return { count: 0, p50: 0, p85: 0, p95: 0, points: [], lowConfidence: true, excludedLegacy };
   }
 
   const days = tasks.map(
-    (t) => (new Date(t.completedAt!).getTime() - new Date(t.createdAt).getTime()) / 8.64e7
+    (t) => (new Date(t.completedAt!).getTime() - new Date(t.startedAt!).getTime()) / 8.64e7
   );
 
   const points = tasks.slice(0, CYCLE_SCATTER_CAP).map((t, i) => ({
@@ -888,13 +925,21 @@ export async function getCycleTimePercentiles(
     p95: percentile(days, 0.95),
     points,
     lowConfidence: tasks.length < MIN_CLASS_SAMPLES,
+    excludedLegacy,
   };
 }
 
 /**
- * Lightweight reference-class forecast for ONE work type (template): cycle-time
- * percentiles (days) over that template's completed tasks. Powers the live
- * feasibility check on the task-creation form. Informational only.
+ * Lightweight reference-class forecast for ONE work type (template): percentis
+ * (dias) sobre as tarefas concluídas daquele template. Alimenta o check de
+ * viabilidade ao vivo no formulário de criação. Informacional.
+ *
+ * ATENÇÃO — usa LEAD time (`createdAt → completedAt`), não cycle time, e isso é
+ * deliberado: quem está criando a demanda pergunta "daqui (hoje, a criação) até
+ * o dueDate, dá?". A tarefa ainda vai passar pela fila antes de alguém pegar,
+ * então medir a partir de `startedAt` subestimaria o prazo sistematicamente —
+ * justamente pelo tempo de fila. Cycle time é para diagnosticar execução
+ * (`getCycleTimePercentiles`); lead time é para prometer data.
  */
 export async function getTypeForecast(templateId: string): Promise<{
   p50: number;

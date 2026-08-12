@@ -7,7 +7,8 @@ vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
 vi.mock("@/lib/prisma", () => ({
   default: {
-    task: { update: vi.fn().mockResolvedValue({}) },
+    // updateMany: carimbo write-once de startedAt (lib/task-start.ts).
+    task: { update: vi.fn().mockResolvedValue({}), updateMany: vi.fn().mockResolvedValue({}) },
     taskActiveStage: {
       updateMany: vi.fn().mockResolvedValue({}),
       findUnique: vi.fn(),

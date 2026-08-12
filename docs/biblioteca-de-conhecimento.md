@@ -159,26 +159,28 @@ testada.
 
 Cada métrica: **o que é · fórmula/local · o que responde · fonte/caveat**.
 
-| Métrica                    | O que é / fórmula                                    | Responde                              | Fonte · caveat                                                    |
-| -------------------------- | ---------------------------------------------------- | ------------------------------------- | ----------------------------------------------------------------- |
-| **WIP**                    | itens ativos por pessoa/etapa                        | "quanto está em curso?"               | Lei de Little. Alavanca central (P3).                             |
-| **Cycle time**             | `completedAt − createdAt` (dias)                     | "quanto leva ponta-a-ponta?"          | Meta: curto e **consistente**.                                    |
-| **Throughput**             | concluídos por período                               | "quanto sai?"                         | Base do forecast (P3/P7).                                         |
-| **Work item age**          | tempo desde ativação da etapa                        | "está velho?"                         | Vacanti aging WIP.                                                |
-| **Aging ratio**            | `idade ÷ SLA` (`≥1` = passou)                        | "passou do esperado?"                 | `stageAgingRatio`; SLA = `expectedDurationHours ?? 72h`.          |
-| **Flow efficiency**        | `ACTIVE ÷ (ACTIVE+BLOCKED)`                          | "é lento ou fica **esperando**?"      | Reconstruído do log `StageTransition`. Só desde a migração.       |
-| **Cycle-time percentis**   | p50/p85/p95 dos concluídos                           | "qual meu **prazo confiável**?"       | p85 = compromisso (P3).                                           |
-| **Forecast Monte Carlo**   | simulação sobre throughput histórico                 | "quando o backlog fica pronto? (p85)" | Precisa de poucas semanas de histórico.                           |
-| **CFD**                    | contagem por status/dia (série)                      | "onde acumula/escasseia?"             | Banda de bloqueadas alargando = gargalo.                          |
-| **Restrição do sistema**   | etapa que mais **represa** (inversão do `waitingOn`) | "onde agir primeiro?" (ToC)           | `getSystemConstraint`; sinal causal, ao vivo.                     |
-| **Risco de dependência**   | nº de pré-requisitos pendentes → baixo/médio/alto    | "quão travado está?"                  | Heurística de composição de atraso.                               |
-| **WIP limit**              | teto de itens em progresso por etapa                 | "estourou o teto?"                    | Enforcement de **pull** no claim; auto-ativação nunca bloqueia.   |
-| **Utilização**             | `horas TimeLog ÷ capacidade prorrateada`             | "o tempo pago está usado?"            | Faixa **indicativa** (P7); benchmarks de agência não verificados. |
-| **Sinais de burnout**      | util média + overtime + WIP (4 sem)                  | "alguém em risco **sustentado**?"     | Indicativo, não diagnóstico (Gallup dá agregado).                 |
-| **Cadência de 1:1**        | dias desde o último 1:1 → atrasado                   | "quem precisa de 1:1?"                | Gallup: gestor = 70% da variância de engajamento.                 |
-| **Medidor de carga (WIP)** | `WIP ÷ teto`, cor por nível + marca da mediana       | "quem está acima/abaixo do balanço?"  | Coerente com os totais do card.                                   |
-| **Viabilidade de prazo**   | dias disponíveis vs p50/p85 do tipo                  | "o prazo nasceu apertado?"            | Confortável/apertado/em risco; **informacional** (P1).            |
-| **Previsão por classe**    | percentis do **template** (tipo)                     | "quanto leva ESTE tipo?"              | `getTypeForecast`; aviso de baixa confiança se N<8 (P4).          |
+| Métrica                    | O que é / fórmula                                    | Responde                              | Fonte · caveat                                                                                           |
+| -------------------------- | ---------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **WIP**                    | itens ativos por pessoa/etapa                        | "quanto está em curso?"               | Lei de Little. Alavanca central (P3).                                                                    |
+| **Lead time**              | `completedAt − createdAt` (dias)                     | "quanto o **cliente** espera?"        | Demanda → entrega; inclui a fila. É o que se promete.                                                    |
+| **Cycle time**             | `completedAt − startedAt` (dias)                     | "quanto leva **executar**?"           | Início → entrega. Meta: curto e **consistente**. Só desde a migração `20260812120000`.                   |
+| **Queue time**             | `startedAt − createdAt` (dias)                       | "quanto tempo ficou **parado**?"      | `lead − cycle`. Espera antes de alguém pegar. Idem caveat.                                               |
+| **Throughput**             | concluídos por período                               | "quanto sai?"                         | Base do forecast (P3/P7).                                                                                |
+| **Work item age**          | tempo desde ativação da etapa                        | "está velho?"                         | Vacanti aging WIP.                                                                                       |
+| **Aging ratio**            | `idade ÷ SLA` (`≥1` = passou)                        | "passou do esperado?"                 | `stageAgingRatio`; SLA = `expectedDurationHours ?? 72h`.                                                 |
+| **Flow efficiency**        | `ACTIVE ÷ (ACTIVE+BLOCKED)`                          | "é lento ou fica **esperando**?"      | Reconstruído do log `StageTransition`. Só desde a migração.                                              |
+| **Cycle-time percentis**   | p50/p85/p95 dos concluídos                           | "qual meu **prazo confiável**?"       | p85 = compromisso (P3).                                                                                  |
+| **Forecast Monte Carlo**   | simulação sobre throughput histórico                 | "quando o backlog fica pronto? (p85)" | Precisa de poucas semanas de histórico.                                                                  |
+| **CFD**                    | contagem por status/dia (série)                      | "onde acumula/escasseia?"             | Banda de bloqueadas alargando = gargalo.                                                                 |
+| **Restrição do sistema**   | etapa que mais **represa** (inversão do `waitingOn`) | "onde agir primeiro?" (ToC)           | `getSystemConstraint`; sinal causal, ao vivo.                                                            |
+| **Risco de dependência**   | nº de pré-requisitos pendentes → baixo/médio/alto    | "quão travado está?"                  | Heurística de composição de atraso.                                                                      |
+| **WIP limit**              | teto de itens em progresso por etapa                 | "estourou o teto?"                    | Enforcement de **pull** no claim; auto-ativação nunca bloqueia.                                          |
+| **Utilização**             | `horas TimeLog ÷ capacidade prorrateada`             | "o tempo pago está usado?"            | Faixa **indicativa** (P7); benchmarks de agência não verificados.                                        |
+| **Sinais de burnout**      | util média + overtime + WIP (4 sem)                  | "alguém em risco **sustentado**?"     | Indicativo, não diagnóstico (Gallup dá agregado).                                                        |
+| **Cadência de 1:1**        | dias desde o último 1:1 → atrasado                   | "quem precisa de 1:1?"                | Gallup: gestor = 70% da variância de engajamento.                                                        |
+| **Medidor de carga (WIP)** | `WIP ÷ teto`, cor por nível + marca da mediana       | "quem está acima/abaixo do balanço?"  | Coerente com os totais do card.                                                                          |
+| **Viabilidade de prazo**   | dias disponíveis vs p50/p85 do tipo                  | "o prazo nasceu apertado?"            | Confortável/apertado/em risco; **informacional** (P1).                                                   |
+| **Previsão por classe**    | percentis do **template** (tipo)                     | "quanto leva ESTE tipo?"              | `getTypeForecast`; usa **lead** time (a demanda ainda vai passar pela fila); N<8 = baixa confiança (P4). |
 
 ---
 
@@ -206,7 +208,13 @@ Cada superfície e a razão de existir **daquela forma**.
 
 ### /reports/performance
 
+- **Lead / fila / cycle lado a lado** → **P5/fluxo**: o mesmo par de diagnósticos
+  opostos que a eficiência de fluxo faz DENTRO da etapa, agora ANTES dela — "somos
+  lentos executando" (cycle alto) vs "a demanda espera para ser pega" (fila alta).
+  Enquanto as duas métricas usavam a mesma fórmula, essa distinção era invisível.
 - **Cycle time (percentis) + scatter** → **P3**: prazo confiável p85, não média.
+  Mede do **início**, não da criação: o compromisso é sobre o que a execução
+  controla. A espera fica no lead time, onde o cliente de fato a sente.
 - **Previsão de entrega (Monte Carlo)** → **P3**: compromisso probabilístico.
 - **Throughput no tempo + CFD** → **P3/P6**: tendência e detecção visual de gargalo.
 - **Eficiência de fluxo por etapa** → **P5-ish/fluxo**: separa "lento" de

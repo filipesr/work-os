@@ -29,6 +29,7 @@ import {
   TrendingDown,
   AlertTriangle,
   Timer,
+  Hourglass,
   Activity,
   Gauge,
   Target,
@@ -88,25 +89,44 @@ async function LeadTimeSection({ filters, t }: { filters: PerformanceFilters; t:
   const leadTimeMetrics = await getLeadTimeMetrics(filters);
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <StatTile
-        icon={Timer}
-        tone="info"
-        label={t("leadTimeMetrics.average")}
-        value={`${leadTimeMetrics.averageLeadTimeDays.toFixed(1)} ${t("leadTimeMetrics.days")}`}
-      />
-      <StatTile
-        icon={Activity}
-        tone="success"
-        label={t("leadTimeMetrics.median")}
-        value={`${leadTimeMetrics.medianLeadTimeDays.toFixed(1)} ${t("leadTimeMetrics.days")}`}
-      />
-      <StatTile
-        icon={TrendingDown}
-        tone="info"
-        label={t("leadTimeMetrics.count")}
-        value={`${leadTimeMetrics.count}`}
-      />
+    <div className="space-y-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <StatTile
+          icon={Timer}
+          tone="info"
+          label={t("leadTimeMetrics.average")}
+          value={`${leadTimeMetrics.averageLeadTimeDays.toFixed(1)} ${t("leadTimeMetrics.days")}`}
+        />
+        <StatTile
+          icon={Activity}
+          tone="success"
+          label={t("leadTimeMetrics.median")}
+          value={`${leadTimeMetrics.medianLeadTimeDays.toFixed(1)} ${t("leadTimeMetrics.days")}`}
+        />
+        {/* Tempo de fila = lead − cycle. É a parte do prazo que a execução NÃO
+            controla; sem ele o gestor confunde "somos lentos" com "esperou muito". */}
+        <StatTile
+          icon={Hourglass}
+          tone="warning"
+          label={t("leadTimeMetrics.queue")}
+          value={
+            leadTimeMetrics.medianQueueTimeDays === null
+              ? "—"
+              : `${leadTimeMetrics.medianQueueTimeDays.toFixed(1)} ${t("leadTimeMetrics.days")}`
+          }
+        />
+        <StatTile
+          icon={TrendingDown}
+          tone="info"
+          label={t("leadTimeMetrics.count")}
+          value={`${leadTimeMetrics.count}`}
+        />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {leadTimeMetrics.medianQueueTimeDays === null
+          ? t("leadTimeMetrics.queueNoData")
+          : t("leadTimeMetrics.queueHint", { count: leadTimeMetrics.queueCount })}
+      </p>
     </div>
   );
 }
@@ -221,7 +241,13 @@ async function CycleTimeSection({ filters, t }: { filters: PerformanceFilters; t
   return (
     <SectionCard title={t("cycleTime.title")} subtitle={t("cycleTime.description")} icon={Target}>
       {cycle.count === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("cycleTime.noData")}</p>
+        // Estado esperado logo após a migração: há concluídas, mas nenhuma foi
+        // iniciada com o carimbo. Explicar o vazio em vez de só dizer "sem dados".
+        <p className="text-sm text-muted-foreground">
+          {cycle.excludedLegacy > 0
+            ? t("cycleTime.noDataLegacy", { count: cycle.excludedLegacy })
+            : t("cycleTime.noData")}
+        </p>
       ) : (
         <>
           {cycle.lowConfidence && (
@@ -254,6 +280,8 @@ async function CycleTimeSection({ filters, t }: { filters: PerformanceFilters; t
           />
           <p className="mt-2 text-xs text-muted-foreground">
             {t("cycleTime.footnote", { count: cycle.count })}
+            {cycle.excludedLegacy > 0 &&
+              ` ${t("cycleTime.legacyExcluded", { count: cycle.excludedLegacy })}`}
           </p>
         </>
       )}

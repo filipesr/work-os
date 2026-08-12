@@ -26,7 +26,10 @@
     "average": "Lead Time Médio",
     "median": "Lead Time Mediano",
     "count": "Tarefas Analisadas",
-    "days": "dias"
+    "days": "dias",
+    "queue": "Fila (mediana)",
+    "queueHint": "Lead time conta da criação à entrega; a fila é o tempo até alguém pegar o trabalho. Lead − fila = cycle time, o que a execução controla. Base da fila: {count} tarefa(s).",
+    "queueNoData": "Sem tempo de fila ainda: nenhuma tarefa concluída no período foi iniciada depois que o app passou a registrar o início."
   },
   "bottlenecks": {
     "title": "Gargalos Identificados",
@@ -43,13 +46,15 @@
   },
   "cycleTime": {
     "title": "Cycle Time (Percentis)",
-    "description": "Distribuição do tempo de conclusão das tarefas (criação → concluída). Comprometa-se com o p85 — o prazo que você cumpre ~85% das vezes — em vez da média.",
+    "description": "Distribuição do tempo de execução das tarefas (início → concluída). O tempo parado na fila fica de fora — ele está no lead time. Comprometa-se com o p85, o prazo que você cumpre ~85% das vezes, em vez da média.",
     "noData": "Nenhuma tarefa concluída no período",
     "p50": "p50 (mediana)",
     "p85": "p85 (confiável)",
     "p95": "p95",
     "footnote": "Base: {count} tarefa(s) concluída(s)",
-    "lowConfidence": "Base pequena (N={count}) — confiança baixa."
+    "lowConfidence": "Base pequena (N={count}) — confiança baixa.",
+    "noDataLegacy": "Nenhuma tarefa com início registrado ainda. As {count} concluídas no período começaram antes de o app passar a registrar o início — o gráfico enche conforme as novas tarefas forem entregues.",
+    "legacyExcluded": "{count} concluída(s) ficaram de fora por não terem início registrado (anteriores à mudança)."
   },
   "flowEfficiency": {
     "title": "Eficiência de Fluxo por Etapa",

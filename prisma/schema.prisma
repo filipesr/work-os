@@ -302,6 +302,14 @@ model Task {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   dueDate     DateTime?
+  // Carimbado UMA vez, na PRIMEIRA promoção para IN_PROGRESS (ver lib/task-start.ts).
+  // Separa as três métricas que antes colapsavam numa só:
+  //   lead time  = completedAt − createdAt (demanda → entrega, o que o cliente sente)
+  //   cycle time = completedAt − startedAt (início → entrega, o que a execução controla)
+  //   queue time = startedAt   − createdAt (espera na fila)
+  // Null = tarefa anterior à migração 20260812... ou nunca iniciada — sai da base de
+  // cycle time por decisão explícita (sem backfill: não fabricamos histórico).
+  startedAt   DateTime?
   completedAt DateTime? // Set when final stage is completed (for lead time calculation)
 
   // Relations

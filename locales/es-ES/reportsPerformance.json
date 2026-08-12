@@ -26,7 +26,10 @@
     "average": "Lead Time Promedio",
     "median": "Lead Time Mediano",
     "count": "Tareas Analizadas",
-    "days": "días"
+    "days": "días",
+    "queue": "Cola (mediana)",
+    "queueHint": "El lead time cuenta desde la creación hasta la entrega; la cola es el tiempo hasta que alguien toma el trabajo. Lead − cola = cycle time, lo que la ejecución controla. Base de la cola: {count} tarea(s).",
+    "queueNoData": "Todavía no hay tiempo de cola: ninguna tarea completada en el período se inició después de que la app empezara a registrar el inicio."
   },
   "bottlenecks": {
     "title": "Cuellos de Botella Identificados",
@@ -37,13 +40,15 @@
   },
   "cycleTime": {
     "title": "Cycle Time (Percentiles)",
-    "description": "Distribución del tiempo de conclusión de las tareas (creación → completada). Comprométete con el p85 — el plazo que cumples ~85% de las veces — en vez del promedio.",
+    "description": "Distribución del tiempo de ejecución de las tareas (inicio → completada). El tiempo detenido en la cola queda fuera — ese está en el lead time. Comprométete con el p85, el plazo que cumples ~85% de las veces, en vez del promedio.",
     "noData": "Ninguna tarea completada en el período",
     "p50": "p50 (mediana)",
     "p85": "p85 (confiable)",
     "p95": "p95",
     "footnote": "Base: {count} tarea(s) completada(s)",
-    "lowConfidence": "Base pequeña (N={count}) — confianza baja."
+    "lowConfidence": "Base pequeña (N={count}) — confianza baja.",
+    "noDataLegacy": "Todavía no hay tareas con inicio registrado. Las {count} completadas en el período comenzaron antes de que la app registrara el inicio — el gráfico se llenará a medida que se entreguen las nuevas tareas.",
+    "legacyExcluded": "{count} completada(s) quedaron fuera por no tener inicio registrado (anteriores al cambio)."
   },
   "flowEfficiency": {
     "title": "Eficiencia de Flujo por Etapa",
