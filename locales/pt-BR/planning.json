@@ -39,6 +39,23 @@
     "catalog": {
       "title": "Catálogo de datas",
       "subtitle": "Feriados e datas comerciais dos três países. Parte delas é móvel (Páscoa, Carnaval, Dia das Mães), então cada ano precisa ser gerado. Regerar não afeta as datas próprias."
+    },
+    "listTitle": "Datas no horizonte",
+    "createDemand": "Criar demanda",
+    "coverage": "{covered} de {total} clientes",
+    "columns": {
+      "date": "Data",
+      "name": "Nome",
+      "kind": "Tipo",
+      "coverage": "Cobertura",
+      "actions": "Ações"
+    },
+    "stats": {
+      "dates": "Datas no horizonte",
+      "covered": "Datas com demanda",
+      "uncoveredHint": "{count} sem nenhuma demanda",
+      "activeClients": "Clientes ativos",
+      "activeClientsHint": "Com ao menos um projeto ativo"
     }
   }
 }

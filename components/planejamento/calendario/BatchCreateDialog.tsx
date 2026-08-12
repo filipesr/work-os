@@ -28,6 +28,9 @@ import {
 interface BatchCreateDialogProps {
   date: string;
   eventTitle?: string;
+  /** Data do calendário de origem. Quando presente, as demandas nascem
+   *  VINCULADAS a ela — é o que alimenta a cobertura em /planejamento/datas. */
+  occurrenceId?: string;
   clients: ClientOption[];
   projects: ProjectOption[];
   templates: TemplateOption[];
@@ -37,6 +40,7 @@ interface BatchCreateDialogProps {
 export function BatchCreateDialog({
   date,
   eventTitle,
+  occurrenceId,
   clients,
   projects,
   templates,
@@ -146,6 +150,7 @@ export function BatchCreateDialog({
           templateId,
           title: title.trim(),
           dueDate,
+          calendarOccurrenceId: occurrenceId,
         });
         toast.success(t("success", { count: result.created }));
         onClose();

@@ -39,6 +39,23 @@
     "catalog": {
       "title": "Catálogo de fechas",
       "subtitle": "Feriados y fechas comerciales de los tres países. Parte de ellas es móvil (Pascua, Carnaval, Día de la Madre), así que cada año debe generarse. Regenerar no afecta las fechas propias."
+    },
+    "listTitle": "Fechas en el horizonte",
+    "createDemand": "Crear demanda",
+    "coverage": "{covered} de {total} clientes",
+    "columns": {
+      "date": "Fecha",
+      "name": "Nombre",
+      "kind": "Tipo",
+      "coverage": "Cobertura",
+      "actions": "Acciones"
+    },
+    "stats": {
+      "dates": "Fechas en el horizonte",
+      "covered": "Fechas con demanda",
+      "uncoveredHint": "{count} sin ninguna demanda",
+      "activeClients": "Clientes activos",
+      "activeClientsHint": "Con al menos un proyecto activo"
     }
   }
 }

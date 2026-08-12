@@ -19,6 +19,9 @@ export interface OccurrenceRow {
   source: "CURATED" | "CUSTOM";
   /** Demandas já vinculadas a esta data. */
   taskCount: number;
+  /** Clientes DISTINTOS com pelo menos uma demanda vinculada. É a métrica que
+   *  importa: 10 demandas de um cliente só não é cobertura, é concentração. */
+  coveredClients: number;
 }
 
 function revalidateCalendar() {
@@ -54,6 +57,21 @@ export async function getOccurrencesInRange(range: {
     },
   });
 
+  // Clientes distintos por data. Uma query só para todas as datas da janela, e a
+  // deduplicação em memória — o Prisma não faz "contar distintos por grupo", e o
+  // volume aqui é o das demandas vinculadas, não o da base inteira.
+  const linked = await prisma.task.findMany({
+    where: { calendarOccurrenceId: { in: rows.map((r) => r.id) } },
+    select: { calendarOccurrenceId: true, project: { select: { clientId: true } } },
+  });
+  const clientsByOccurrence = new Map<string, Set<string>>();
+  for (const t of linked) {
+    if (!t.calendarOccurrenceId) continue;
+    const set = clientsByOccurrence.get(t.calendarOccurrenceId) ?? new Set<string>();
+    set.add(t.project.clientId);
+    clientsByOccurrence.set(t.calendarOccurrenceId, set);
+  }
+
   return rows.map((r) => ({
     id: r.id,
     iso: formatISODate(r.date),
@@ -63,7 +81,19 @@ export async function getOccurrencesInRange(range: {
     countries: r.countries,
     source: r.source,
     taskCount: r._count.tasks,
+    coveredClients: clientsByOccurrence.get(r.id)?.size ?? 0,
   }));
+}
+
+/**
+ * Denominador da cobertura: clientes com pelo menos um projeto ATIVO.
+ *
+ * Cliente sem projeto ativo apareceria como lacuna eterna em toda data e
+ * empurraria a estatística para baixo sem que houvesse ação possível.
+ */
+export async function getActiveClientCount(): Promise<number> {
+  await requireManagerOrAdmin();
+  return prisma.client.count({ where: { projects: { some: { status: "ACTIVE" } } } });
 }
 
 /** Anos que já têm ocorrências CURATED materializadas. */

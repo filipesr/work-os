@@ -133,6 +133,10 @@ export async function createTasksBatch(input: {
   templateId: string;
   title: string;
   dueDate: string;
+  /** Data do calendário que estas demandas atendem. Criar a partir de uma data
+   *  já nasce VINCULADO — é o que faz a cobertura da tela de datas subir sem
+   *  ninguém precisar confirmar nada depois. */
+  calendarOccurrenceId?: string;
 }): Promise<{ created: number }> {
   const user = await requireMemberOrHigher();
   const userId = user.id as string;
@@ -167,6 +171,7 @@ export async function createTasksBatch(input: {
           projectId,
           assigneeId: null,
           workflowTemplateId: input.templateId,
+          calendarOccurrenceId: input.calendarOccurrenceId ?? null,
         },
       });
       await createTaskStages(tx, { taskId: task.id, templateId: input.templateId, userId });
@@ -174,6 +179,7 @@ export async function createTasksBatch(input: {
   });
 
   revalidatePath("/planejamento/calendario");
+  revalidatePath("/planejamento/datas");
   revalidatePath("/admin/tasks");
   revalidatePath("/dashboard");
 
