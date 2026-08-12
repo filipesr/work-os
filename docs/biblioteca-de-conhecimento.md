@@ -238,6 +238,22 @@ Cada superfície e a razão de existir **daquela forma**.
   fechamento/faturamento sem virar screenshot. A coluna de utilização vai como
   número puro — a faixa vive na tela, onde o contexto está junto.
 
+### Clientes (/admin/clients e /admin/clients/[id])
+
+- **Armazenamento por projeto mora aqui** → é informação de **capacidade**, e a
+  casa certa é o cliente que a consome. O `StorageBreakdown` já havia saído do
+  detalhe da tarefa e do cockpit (§3); o detalhe do projeto mantém a quebra
+  por tarefa, que é o nível dele.
+- **Busca no banco, não na lista carregada** → `?q=` + `contains` insensitive,
+  para a lista funcionar igual com 5 ou 500 clientes e o resultado ser
+  compartilhável. Campo opcional no `SimpleEntityCrudList`, então
+  `/admin/teams` e `/admin/templates` podem adotar com uma prop.
+- **"Nada encontrado" ≠ "não há nada"** → vazio de busca tem texto próprio;
+  reusar o "nenhum cliente cadastrado" faz o usuário achar que apagou a base.
+- **P8 fechado** → o título do bloco de armazenamento era a única string
+  hardcoded em português destas telas (`"Armazenamento no NAS — por projeto"`).
+  O filtro de status de projeto já era traduzível (`admin.projectStatusFilter`).
+
 ### Presença ao vivo + modo TV (/reports/live-activity e /tv)
 
 - **Uma feature, duas apresentações** → board (operacional, com filtros e link

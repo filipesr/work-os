@@ -227,8 +227,12 @@
       "statusInactive": "Inativo",
       "deactivate": "Desativar",
       "activate": "Ativar",
-      "artifacts": "Artefatos"
-    }
+      "artifacts": "Artefatos",
+      "storageByProject": "Armazenamento no NAS — por projeto"
+    },
+    "searchPlaceholder": "Buscar cliente…",
+    "searchClear": "Limpar busca",
+    "searchNoResults": "Nenhum cliente corresponde à busca."
   },
   "projects": {
     "title": "Projetos",

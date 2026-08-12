@@ -7,15 +7,20 @@ import { toNasClientFolder } from "@/lib/nas/path";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getTranslations } from "next-intl/server";
 import { SimpleEntityCrudList, type CrudItem } from "@/components/admin/SimpleEntityCrudList";
+import { parseSearchTerm } from "@/lib/search-param";
 import { DeleteClientButton } from "./delete-client-button";
 
 export const metadata: Metadata = {
   title: "Clientes",
 };
 
-async function getClients() {
+async function getClients(search?: string) {
   await requireManagerOrAdmin();
   return await prisma.client.findMany({
+    // Filtro no BANCO, não na lista já carregada: a busca precisa funcionar
+    // igual com 5 ou 500 clientes. `insensitive` porque ninguém digita a
+    // capitalização exata do nome de um cliente.
+    where: search ? { name: { contains: search, mode: "insensitive" } } : undefined,
     include: {
       _count: {
         select: { projects: true },
@@ -59,9 +64,14 @@ async function deleteClient(formData: FormData) {
   revalidatePath("/admin/clients");
 }
 
-export default async function ClientsPage() {
-  const clients = await getClients();
-  const t = await getTranslations("admin.clients");
+export default async function ClientsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const sp = await searchParams;
+  const search = parseSearchTerm(sp.q);
+  const [clients, t] = await Promise.all([getClients(search), getTranslations("admin.clients")]);
 
   const items: CrudItem[] = clients.map((client) => ({
     id: client.id,
@@ -83,6 +93,12 @@ export default async function ClientsPage() {
       items={items}
       emptyLabel={t("noClients")}
       emptyIcon={Building2}
+      search={{
+        value: search ?? "",
+        placeholder: t("searchPlaceholder"),
+        clearLabel: t("searchClear"),
+        noResultsLabel: t("searchNoResults"),
+      }}
     />
   );
 }

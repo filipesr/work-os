@@ -109,7 +109,7 @@ export default async function ClientDetailPage({
       </div>
 
       <div className="mt-6">
-        <StorageBreakdown title="Armazenamento no NAS — por projeto" stats={projectStorage} />
+        <StorageBreakdown title={t("storageByProject")} stats={projectStorage} />
       </div>
 
       {/* Artefatos do cliente (Origem: Cliente) — visíveis nas demandas do cliente */}

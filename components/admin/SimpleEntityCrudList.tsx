@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FieldLabel } from "@/components/ui/FieldLabel";
+import { CrudSearchBox } from "@/components/admin/CrudSearchBox";
 
 /**
  * Lista CRUD simples e canônica (§3.2 UNIFICAR): PageHeader + formulário de
@@ -45,6 +46,18 @@ interface SimpleEntityCrudListProps {
   items: CrudItem[];
   emptyLabel: string;
   emptyIcon: LucideIcon;
+  /** Busca opcional sobre a lista. O FILTRO é do chamador (no banco, via `?q=`);
+   *  aqui só mora o campo. Omitir = lista sem busca, como antes. */
+  search?: {
+    /** Termo atual, para o campo refletir a URL. */
+    value: string;
+    placeholder: string;
+    clearLabel: string;
+    /** Texto do vazio quando a busca não achou nada — diferente de "não há
+     *  nenhum cliente ainda", que é `emptyLabel`. Confundir os dois faz o
+     *  usuário achar que apagou a base. */
+    noResultsLabel: string;
+  };
 }
 
 export function SimpleEntityCrudList({
@@ -58,6 +71,7 @@ export function SimpleEntityCrudList({
   items,
   emptyLabel,
   emptyIcon,
+  search,
 }: SimpleEntityCrudListProps) {
   // Uma linha só (um campo de texto) → layout inline; senão, empilhado.
   const inline = createFields.length === 1 && (createFields[0].type ?? "text") === "text";
@@ -111,9 +125,24 @@ export function SimpleEntityCrudList({
         </form>
       </SectionCard>
 
+      {search && (
+        <div className="mb-4 flex justify-end">
+          <CrudSearchBox
+            initialValue={search.value}
+            placeholder={search.placeholder}
+            clearLabel={search.clearLabel}
+          />
+        </div>
+      )}
+
       {/* List */}
       {items.length === 0 ? (
-        <EmptyState variant="card" icon={emptyIcon} title={title} description={emptyLabel} />
+        <EmptyState
+          variant="card"
+          icon={emptyIcon}
+          title={title}
+          description={search && search.value ? search.noResultsLabel : emptyLabel}
+        />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <ul className="divide-y divide-border">
