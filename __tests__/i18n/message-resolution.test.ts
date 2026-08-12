@@ -61,6 +61,13 @@ function sourceFiles(): string[] {
 const DECL = /(?:const|let)\s+(\w+)\s*=\s*(?:await\s+)?(?:get|use)Translations\(\s*"([^"]+)"/g;
 /** Qualquer `algo("chave")` — cruzado com as declarações acima. */
 const CALL = /\b(\w+)\(\s*"([^"]+)"/g;
+/**
+ * Chave montada em runtime: `` t(`kind.${x}`) ``. O VALOR não é verificável
+ * estaticamente, mas o PREFIXO é — e é o prefixo que some numa refatoração.
+ * Foi assim que `planning.coverage.kind` inteiro ficou para trás numa divisão
+ * de namespace: o guard passava e a tela quebrava em runtime.
+ */
+const TEMPLATE_CALL = /\b(\w+)\(\s*`([^`$]*)\$\{/g;
 
 describe("resolução de mensagens i18n", () => {
   const messages = Object.fromEntries(LOCALES.map((l) => [l, loadMessages(l)]));
@@ -78,12 +85,27 @@ describe("resolução de mensagens i18n", () => {
       for (const m of src.matchAll(CALL)) {
         const ns = namespaces.get(m[1]);
         const key = m[2];
-        // Chaves montadas em runtime (`status.${x}`) não são verificáveis aqui.
         if (!ns || key.includes("${")) continue;
 
         for (const locale of LOCALES) {
           if (resolve(messages[locale], `${ns}.${key}`) === undefined) {
             missing.push(`${locale}  ${ns}.${key}  (${relative(ROOT, file)})`);
+          }
+        }
+      }
+
+      // Prefixo das chaves dinâmicas: `t(`kind.${x}`)` exige que `ns.kind`
+      // exista e seja um OBJETO (o subtree que contém os valores possíveis).
+      for (const m of src.matchAll(TEMPLATE_CALL)) {
+        const ns = namespaces.get(m[1]);
+        const prefix = m[2].replace(/\.$/, "");
+        // `t(`${x}.title`)` não tem prefixo literal — nada a verificar.
+        if (!ns || prefix.length === 0) continue;
+
+        for (const locale of LOCALES) {
+          const node = resolve(messages[locale], `${ns}.${prefix}`);
+          if (node === undefined || typeof node !== "object") {
+            missing.push(`${locale}  ${ns}.${prefix}.*  (${relative(ROOT, file)})`);
           }
         }
       }

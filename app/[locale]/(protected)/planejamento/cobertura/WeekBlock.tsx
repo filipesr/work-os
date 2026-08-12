@@ -11,6 +11,7 @@ import type {
   TemplateOption,
 } from "@/components/planejamento/calendario/monthly-types";
 import type { WeekCoverage } from "@/lib/actions/weekly-coverage";
+import { ClientChips } from "./ClientChips";
 
 /**
  * Uma semana da janela de planejamento.
@@ -151,29 +152,21 @@ export function WeekBlock({
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {t("week.idleTitle", { count: week.idle.length })}
                 </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {week.idle.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setBatch({ date: week.startIso })}
-                      title={t("week.createForClient", { client: c.name })}
-                      className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-warning-subtle px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-accent"
-                    >
-                      {c.name}
-                      <Plus className="h-3 w-3 opacity-60" aria-hidden="true" />
-                    </button>
-                  ))}
-                </div>
+                <ClientChips
+                  clients={week.idle}
+                  variant="idle"
+                  onPick={() => setBatch({ date: week.startIso })}
+                />
               </>
             )}
 
             {week.withDemand.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {t("week.withDemand", {
-                  clients: week.withDemand.map((c) => c.name).join(", "),
-                })}
-              </p>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  {t("week.withDemandCount", { count: week.withDemand.length })}
+                </p>
+                <ClientChips clients={week.withDemand} variant="covered" />
+              </div>
             )}
           </div>
         </div>

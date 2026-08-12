@@ -85,9 +85,17 @@
       "linkedClients": "{count} cliente(s) ya con demanda",
       "allCovered": "Todos los clientes tienen demanda esta semana.",
       "idleTitle": "{count} cliente(s) sin demanda esta semana",
-      "withDemand": "Con demanda: {clients}",
-      "createForClient": "Crear demanda para {client}"
+      "createForClient": "Crear demanda para {client}",
+      "moreIdle": "+{count} sin demanda",
+      "showCovered": "ver los {count} con agenda",
+      "collapse": "contraer",
+      "withDemandCount": "{count} cliente(s) con agenda"
     },
-    "createDemand": "Crear demanda"
+    "createDemand": "Crear demanda",
+    "kind": {
+      "HOLIDAY": "Feriado",
+      "COMMERCIAL": "Fecha comercial",
+      "EVENT": "Evento"
+    }
   }
 }
