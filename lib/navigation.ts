@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Clock,
   CalendarRange,
+  CalendarDays,
   Activity,
   type LucideIcon,
 } from "lucide-react";
@@ -69,6 +70,7 @@ const managerItems: NavItem[] = [
         href: "/planejamento/calendario",
         icon: CalendarRange,
       },
+      { id: "datas", labelKey: "datas", href: "/planejamento/datas", icon: CalendarDays },
     ],
   },
   {

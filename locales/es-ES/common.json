@@ -44,7 +44,8 @@
     "goHome": "Ir a la página de inicio",
     "openProfile": "Abrir menú de perfil",
     "openNav": "Abrir navegación",
-    "closeNav": "Cerrar navegación"
+    "closeNav": "Cerrar navegación",
+    "datas": "Fechas"
   },
   "buttons": {
     "save": "Guardar",

@@ -1,0 +1,44 @@
+{
+  "dates": {
+    "kicker": "Planejamento",
+    "title": "Datas do calendário",
+    "subtitle": "Feriados, datas comerciais e eventos próprios. Toda data vale para todos os clientes — quem não participa pode aproveitar o momento.",
+    "createButton": "Nova data",
+    "createTitle": "Nova data do calendário",
+    "editTitle": "Editar data",
+    "formDescription": "Datas próprias: feiras, ativações, eventos locais. As do catálogo são geradas automaticamente.",
+    "created": "Data criada.",
+    "updated": "Data atualizada.",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "cancel": "Cancelar",
+    "empty": "Nenhuma data no horizonte. Gere o catálogo do ano acima ou cadastre uma data própria.",
+    "linkedTasks": "{count} demanda(s)",
+    "deleteTitle": "Excluir esta data?",
+    "deleteDescription": "“{title}” sai do calendário. As {count} demanda(s) vinculadas continuam existindo — só perdem o vínculo com a data.",
+    "deleteConfirm": "Excluir",
+    "generateYear": "Gerar {year}",
+    "regenerateYear": "Regerar {year}",
+    "materialized": "{year}: {created} criada(s), {updated} atualizada(s).",
+    "fields": {
+      "date": "Data",
+      "titlePt": "Título (pt-BR)",
+      "titleEs": "Título (es-ES)",
+      "titleEsHint": "A data aparece nos dois idiomas do app.",
+      "kind": "Tipo"
+    },
+    "kind": {
+      "HOLIDAY": "Feriado",
+      "COMMERCIAL": "Data comercial",
+      "EVENT": "Evento"
+    },
+    "source": {
+      "CURATED": "Catálogo",
+      "CUSTOM": "Própria"
+    },
+    "catalog": {
+      "title": "Catálogo de datas",
+      "subtitle": "Feriados e datas comerciais dos três países. Parte delas é móvel (Páscoa, Carnaval, Dia das Mães), então cada ano precisa ser gerado. Regerar não afeta as datas próprias."
+    }
+  }
+}

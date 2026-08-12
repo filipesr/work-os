@@ -10,7 +10,7 @@ import {
 } from "@/lib/actions/reporting";
 import { getProjectsForSelect, getTemplatesForSelect } from "@/lib/actions/task";
 import { getClients } from "@/lib/actions/client";
-import { getEventsInRange } from "@/lib/calendar/events";
+import { getOccurrencesInRange } from "@/lib/actions/calendar-occurrence";
 import {
   parseWeekParam,
   weekRangeFromMonday,
@@ -249,7 +249,12 @@ async function MonthView({
     }
   }
 
-  const rawEvents = getEventsInRange(formatISODate(range.gridStart), formatISODate(range.gridEnd));
+  // Lê do BANCO, não mais do catálogo em código: é o que faz uma data cadastrada
+  // à mão (FestPop, feira local) aparecer na grade junto das datas curadas.
+  const rawEvents = await getOccurrencesInRange({
+    start: range.gridStart,
+    end: range.gridEnd,
+  });
   const eventsByDay: Record<string, MonthEvent[]> = {};
   for (const e of rawEvents) {
     (eventsByDay[e.iso] ??= []).push({
@@ -257,7 +262,10 @@ async function MonthView({
       iso: e.iso,
       title: isEs ? e.titleEs : e.titlePt,
       countries: e.countries,
-      type: e.type,
+      // O tipo visual do pill segue o que já existia: feriado vs "comercial".
+      // EVENT (data própria) entra como comercial — é oportunidade de campanha,
+      // não folga.
+      type: e.kind === "HOLIDAY" ? "holiday" : "commercial",
     });
   }
 

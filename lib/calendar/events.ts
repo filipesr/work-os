@@ -15,12 +15,18 @@ export type EventCountry = "AR" | "BR" | "PY";
 export type EventType = "holiday" | "commercial";
 
 export interface CalendarEvent {
+  /** `YYYY-MM-DD-<slug>` — determinístico. É a chave de deduplicação usada pelo
+   *  materializador (`CalendarOccurrence.curatedId`), NUNCA o vínculo da tarefa:
+   *  esse usa o cuid da linha, então mexer no slugify duplica linhas em vez de
+   *  transformar vínculos existentes em ponteiros para o nada. */
   id: string;
   iso: string; // YYYY-MM-DD
   titlePt: string;
   titleEs: string;
   countries: EventCountry[];
   type: EventType;
+  /** O slug sem a data: liga as edições anuais da MESMA data (2026 e 2027). */
+  seriesKey: string;
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -63,7 +69,8 @@ function nthWeekday(year: number, month0: number, weekday: number, n: number): s
   return iso(year, month0 + 1, 1 + offset + (n - 1) * 7);
 }
 
-type Spec = Omit<CalendarEvent, "id">;
+/** `id` e `seriesKey` são DERIVADOS do spec — não se declaram à mão. */
+type Spec = Omit<CalendarEvent, "id" | "seriesKey">;
 
 /** All curated events for a single year. */
 export function eventsForYear(year: number): CalendarEvent[] {
@@ -377,7 +384,11 @@ export function eventsForYear(year: number): CalendarEvent[] {
     },
   ];
 
-  return specs.map((spec) => ({ ...spec, id: `${spec.iso}-${slugify(spec.titleEs)}` }));
+  return specs.map((spec) => ({
+    ...spec,
+    id: `${spec.iso}-${slugify(spec.titleEs)}`,
+    seriesKey: slugify(spec.titleEs),
+  }));
 }
 
 /**

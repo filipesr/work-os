@@ -98,7 +98,7 @@ enum ReworkKind {
 }
 
 enum ReworkClass {
-  DEFECT     // falha de qualidade real (conta contra o FTR)
+  DEFECT // falha de qualidade real (conta contra o FTR)
   LEGITIMATE // mudança legítima (ex.: cliente mudou direção) — NÃO conta
 }
 
@@ -187,9 +187,9 @@ model User {
   createdShareLinks ArtifactShareLink[]
   artifactAuditLogs ArtifactAuditLog[]
 
-  oneOnOnesReceived OneOnOneLog[] @relation("OneOnOneSubject")
-  oneOnOnesGiven    OneOnOneLog[] @relation("OneOnOneManager")
-  reworkEventsBy    ReworkEvent[] @relation("ReworkBy")
+  oneOnOnesReceived    OneOnOneLog[] @relation("OneOnOneSubject")
+  oneOnOnesGiven       OneOnOneLog[] @relation("OneOnOneManager")
+  reworkEventsBy       ReworkEvent[] @relation("ReworkBy")
   reworkEventsAsSource ReworkEvent[] @relation("ReworkSourceAssignee")
 }
 
@@ -335,7 +335,16 @@ model Task {
   workflowTemplateId String?
   workflowTemplate   WorkflowTemplate? @relation(fields: [workflowTemplateId], references: [id], onDelete: SetNull)
 
+  // Data/evento do calendário que esta demanda atende (Dia das Crianças 2026,
+  // FestPop de outubro…). Null = demanda de rotina, sem vínculo com data.
+  // FK de verdade, e não um slug: uma mudança no gerador de ids do catálogo não
+  // pode transformar vínculos existentes em ponteiros para o nada.
+  // onDelete: SetNull — apagar a data não pode levar a demanda junto.
+  calendarOccurrenceId String?
+  calendarOccurrence   CalendarOccurrence? @relation(fields: [calendarOccurrenceId], references: [id], onDelete: SetNull)
+
   @@index([workflowTemplateId, completedAt])
+  @@index([calendarOccurrenceId])
 }
 
 // TaskActiveStage: Represents active/blocked/completed stages for a task
@@ -636,4 +645,67 @@ model ActivityLog {
   stage   TemplateStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
 
   @@index([userId, endedAt]) // Index for quickly finding active tasks
+}
+
+// --- 7. Calendário de datas (spec 2026-08-12) ---
+// Datas comemorativas, feriados e eventos próprios. Antes viviam SÓ em código
+// (lib/calendar/events.ts), o que impedia cadastrar data local ou evento
+// próprio (ex.: FestPop) sem deploy.
+
+enum EventCountry {
+  AR
+  BR
+  PY
+}
+
+enum OccurrenceKind {
+  HOLIDAY // feriado nacional
+  COMMERCIAL // data comercial (Dia das Mães, Black Friday)
+  EVENT // evento próprio ou local (FestPop, feira, ativação)
+}
+
+enum OccurrenceSource {
+  CURATED // materializado do catálogo em código — rematerializável
+  CUSTOM // cadastrado à mão; o materializador NUNCA toca nestas linhas
+}
+
+// OCORRÊNCIA-PRIMEIRO: cada edição anual é uma linha própria. "Dia das Crianças
+// 2026" e "2027" têm ids distintos, então uma tarefa vinculada a uma edição não
+// contamina a seguinte. Também é o que permite eventos que não são anuais nem
+// recorrentes de forma calculável (FestPop acontece duas vezes por ano, em datas
+// anunciadas).
+//
+// Toda ocorrência vale para TODOS os clientes: mesmo quem não participa do
+// evento pode aproveitar o hype. Por isso não há escopo por cliente — um cliente
+// sem demanda numa data é sempre um sinal legítimo, nunca ruído.
+model CalendarOccurrence {
+  id        String         @id @default(cuid())
+  // Meia-noite UTC representando o dia no calendário de SP (convenção de lib/dates.ts).
+  date      DateTime
+  titlePt   String
+  titleEs   String
+  kind      OccurrenceKind
+  // Hoje sempre os três: a operação é de fronteira e todos os clientes se
+  // relacionam com AR/BR/PY. O campo existe para o dia em que isso mudar.
+  countries EventCountry[]
+
+  // Liga as edições anuais da MESMA data sem que compartilhem id — permite
+  // perguntar "no ano passado a gente cobriu essa data?". Null em evento avulso.
+  seriesKey String?
+
+  source OccurrenceSource @default(CUSTOM)
+
+  // Id determinístico do catálogo em código (`YYYY-MM-DD-slug`). É a chave de
+  // deduplicação do materializador — por isso é único e existe só em CURATED.
+  // O vínculo da tarefa usa o `id` (cuid), não este campo, então uma mudança no
+  // slugify duplicaria linhas em vez de órfãos silenciosos.
+  curatedId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks Task[]
+
+  @@index([date])
+  @@index([seriesKey])
 }

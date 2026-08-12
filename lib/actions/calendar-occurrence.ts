@@ -1,0 +1,191 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import prisma from "@/lib/prisma";
+import { requireManagerOrAdmin } from "@/lib/permissions";
+import { materializeYear } from "@/lib/calendar/materialize";
+import { formatISODate } from "@/lib/dates";
+import type { EventCountry, OccurrenceKind } from "@prisma/client";
+
+const ALL_COUNTRIES: EventCountry[] = ["AR", "BR", "PY"];
+
+export interface OccurrenceRow {
+  id: string;
+  iso: string; // YYYY-MM-DD
+  titlePt: string;
+  titleEs: string;
+  kind: OccurrenceKind;
+  countries: EventCountry[];
+  source: "CURATED" | "CUSTOM";
+  /** Demandas já vinculadas a esta data. */
+  taskCount: number;
+}
+
+function revalidateCalendar() {
+  revalidatePath("/planejamento/calendario");
+  revalidatePath("/planejamento/datas");
+}
+
+/**
+ * Ocorrências num intervalo [start, end], mais antigas primeiro.
+ *
+ * Substitui `getEventsInRange` (que lia do código) como fonte em tempo de
+ * execução. Datas cadastradas à mão aparecem lado a lado com as do catálogo —
+ * era exatamente isso que a versão em código impedia.
+ */
+export async function getOccurrencesInRange(range: {
+  start: Date;
+  end: Date;
+}): Promise<OccurrenceRow[]> {
+  await requireManagerOrAdmin();
+
+  const rows = await prisma.calendarOccurrence.findMany({
+    where: { date: { gte: range.start, lte: range.end } },
+    orderBy: [{ date: "asc" }, { titlePt: "asc" }],
+    select: {
+      id: true,
+      date: true,
+      titlePt: true,
+      titleEs: true,
+      kind: true,
+      countries: true,
+      source: true,
+      _count: { select: { tasks: true } },
+    },
+  });
+
+  return rows.map((r) => ({
+    id: r.id,
+    iso: formatISODate(r.date),
+    titlePt: r.titlePt,
+    titleEs: r.titleEs,
+    kind: r.kind,
+    countries: r.countries,
+    source: r.source,
+    taskCount: r._count.tasks,
+  }));
+}
+
+/** Anos que já têm ocorrências CURATED materializadas. */
+export async function getMaterializedYears(): Promise<number[]> {
+  await requireManagerOrAdmin();
+  const rows = await prisma.calendarOccurrence.findMany({
+    where: { source: "CURATED" },
+    select: { date: true },
+  });
+  return Array.from(new Set(rows.map((r) => r.date.getUTCFullYear()))).sort();
+}
+
+/**
+ * Gera (ou atualiza) as datas do catálogo para um ano. Idempotente e seguro:
+ * casa por `curatedId`, então nunca encosta no que foi cadastrado à mão.
+ */
+export async function materializeCatalogYear(year: number) {
+  await requireManagerOrAdmin();
+
+  if (!Number.isInteger(year) || year < 2020 || year > 2100) {
+    return { error: "Ano inválido" };
+  }
+
+  const result = await materializeYear(prisma, year);
+  revalidateCalendar();
+  return { success: true, ...result };
+}
+
+export interface OccurrenceInput {
+  date: string; // YYYY-MM-DD
+  titlePt: string;
+  titleEs: string;
+  kind: OccurrenceKind;
+}
+
+function parseInput(formData: FormData): OccurrenceInput | { error: string } {
+  const date = String(formData.get("date") ?? "").trim();
+  const titlePt = String(formData.get("titlePt") ?? "").trim();
+  const titleEs = String(formData.get("titleEs") ?? "").trim();
+  const kind = String(formData.get("kind") ?? "EVENT") as OccurrenceKind;
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Data inválida" };
+  if (!titlePt) return { error: "Título (pt) obrigatório" };
+  // P8: a data aparece nos dois idiomas do app, então o título espanhol não é
+  // opcional — cair no português no es-ES seria vazamento de idioma.
+  if (!titleEs) return { error: "Título (es) obrigatório" };
+  if (!["HOLIDAY", "COMMERCIAL", "EVENT"].includes(kind)) return { error: "Tipo inválido" };
+
+  return { date, titlePt, titleEs, kind };
+}
+
+/** Cadastra uma data própria (FestPop, feira, ativação local). Sempre CUSTOM. */
+export async function createOccurrence(formData: FormData) {
+  await requireManagerOrAdmin();
+  const parsed = parseInput(formData);
+  if ("error" in parsed) return parsed;
+
+  await prisma.calendarOccurrence.create({
+    data: {
+      date: new Date(`${parsed.date}T00:00:00.000Z`),
+      titlePt: parsed.titlePt,
+      titleEs: parsed.titleEs,
+      kind: parsed.kind,
+      countries: ALL_COUNTRIES,
+      source: "CUSTOM",
+      // seriesKey null: um evento avulso não pertence a uma série anual. Duas
+      // edições da FestPop no mesmo ano são duas linhas independentes.
+      seriesKey: null,
+    },
+  });
+
+  revalidateCalendar();
+  return { success: true };
+}
+
+export async function updateOccurrence(formData: FormData) {
+  await requireManagerOrAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Id ausente" };
+
+  const parsed = parseInput(formData);
+  if ("error" in parsed) return parsed;
+
+  const existing = await prisma.calendarOccurrence.findUnique({
+    where: { id },
+    select: { source: true },
+  });
+  if (!existing) return { error: "Data não encontrada" };
+  // Editar uma linha CURATED seria perdido na próxima rematerialização — melhor
+  // recusar do que aceitar em silêncio uma edição com prazo de validade.
+  if (existing.source === "CURATED") return { error: "Datas do catálogo não são editáveis" };
+
+  await prisma.calendarOccurrence.update({
+    where: { id },
+    data: {
+      date: new Date(`${parsed.date}T00:00:00.000Z`),
+      titlePt: parsed.titlePt,
+      titleEs: parsed.titleEs,
+      kind: parsed.kind,
+    },
+  });
+
+  revalidateCalendar();
+  return { success: true };
+}
+
+export async function deleteOccurrence(formData: FormData) {
+  await requireManagerOrAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Id ausente" };
+
+  const existing = await prisma.calendarOccurrence.findUnique({
+    where: { id },
+    select: { source: true },
+  });
+  if (!existing) return { error: "Data não encontrada" };
+  if (existing.source === "CURATED") return { error: "Datas do catálogo não são removíveis" };
+
+  // As demandas vinculadas sobrevivem: a FK é SET NULL. Apagar uma data do
+  // calendário não pode arrastar o trabalho junto.
+  await prisma.calendarOccurrence.delete({ where: { id } });
+
+  revalidateCalendar();
+  return { success: true };
+}
