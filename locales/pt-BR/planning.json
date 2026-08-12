@@ -1,8 +1,8 @@
 {
   "dates": {
     "kicker": "Planejamento",
-    "title": "Datas do calendário",
-    "subtitle": "Feriados, datas comerciais e eventos próprios. Toda data vale para todos os clientes — quem não participa pode aproveitar o momento.",
+    "title": "Planejamento de datas",
+    "subtitle": "Quem tem agenda em cada semana e quem está parado. As datas do calendário aparecem como oportunidade dentro da semana.",
     "createButton": "Nova data",
     "createTitle": "Nova data do calendário",
     "editTitle": "Editar data",
@@ -38,8 +38,9 @@
       "CUSTOM": "Própria"
     },
     "catalog": {
-      "title": "Catálogo de datas",
-      "subtitle": "Feriados e datas comerciais dos três países. Parte delas é móvel (Páscoa, Carnaval, Dia das Mães), então cada ano precisa ser gerado. Regerar não afeta as datas próprias."
+      "title": "Calendário de datas",
+      "subtitle": "Feriados e datas comerciais dos três países. Parte delas é móvel (Páscoa, Carnaval, Dia das Mães), então cada ano precisa ser gerado. Regerar não afeta as datas próprias.",
+      "ownDates": "Datas próprias"
     },
     "listTitle": "Datas no horizonte",
     "createDemand": "Criar demanda",
@@ -52,11 +53,34 @@
       "actions": "Ações"
     },
     "stats": {
-      "dates": "Datas no horizonte",
-      "covered": "Datas com demanda",
-      "uncoveredHint": "{count} sem nenhuma demanda",
       "activeClients": "Clientes ativos",
-      "activeClientsHint": "Com ao menos um projeto ativo"
+      "idleWindow": "Parados na janela",
+      "idleWindowHint": "Sem demanda em {weeks} semanas",
+      "weeksWithGap": "Semanas com lacuna",
+      "weeksWithGapHint": "Ao menos um cliente sem agenda"
+    },
+    "window": {
+      "weeks": "{count} semanas"
+    },
+    "weekly": {
+      "title": "Semana a semana",
+      "subtitle": "Ancorado na segunda-feira: o recorte não muda de segunda a domingo.",
+      "noClients": "Nenhum cliente ativo",
+      "noClientsHint": "Cliente ativo é o que tem ao menos um projeto ativo. Cadastre um cliente e um projeto para a cobertura fazer sentido."
+    },
+    "week": {
+      "current": "Semana atual",
+      "coverage": "{covered} de {total} com agenda",
+      "dates": "{count} data(s)",
+      "linkedClients": "{count} cliente(s) já com demanda",
+      "allCovered": "Todos os clientes têm demanda nesta semana.",
+      "idleTitle": "{count} cliente(s) sem demanda nesta semana",
+      "withDemand": "Com demanda: {clients}",
+      "createForClient": "Criar demanda para {client}"
+    },
+    "idleAll": {
+      "title": "Clientes parados na janela inteira",
+      "subtitle": "Sem nenhuma demanda nas próximas {weeks} semanas — é diferente de ter uma semana vazia."
     }
   }
 }
