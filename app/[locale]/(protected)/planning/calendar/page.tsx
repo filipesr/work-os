@@ -201,7 +201,11 @@ async function MonthView({
   const todayIso = formatISODate(todayInSaoPaulo());
   const showCompleted = params.showCompleted === "1";
 
-  const [demandsByDay, people, options, createOptions] = await Promise.all([
+  // `rawEvents` entra aqui, e não numa busca depois do laço de aniversários:
+  // depende só de `range`, que já existe acima. Fora do Promise.all virava uma
+  // ida ao banco em SÉRIE — o laço no meio é CPU sobre dado já carregado e
+  // escondia bem a cascata.
+  const [demandsByDay, people, options, createOptions, rawEvents] = await Promise.all([
     getMonthlyCalendarDemands(
       { start: range.gridStart, end: range.gridEnd },
       {
@@ -214,6 +218,9 @@ async function MonthView({
     getTeamAnniversaries(),
     loadFilterOptions(params.team, params.user),
     loadCreateOptions(),
+    // Lê do BANCO, não do catálogo em código: é o que faz uma data cadastrada à
+    // mão (FestPop, feira local) aparecer na grade junto das datas curadas.
+    getOccurrencesInRange({ start: range.gridStart, end: range.gridEnd }),
   ]);
 
   // Birthdays + contract anniversaries falling on each grid day (matched by month/day).
@@ -249,12 +256,6 @@ async function MonthView({
     }
   }
 
-  // Lê do BANCO, não mais do catálogo em código: é o que faz uma data cadastrada
-  // à mão (FestPop, feira local) aparecer na grade junto das datas curadas.
-  const rawEvents = await getOccurrencesInRange({
-    start: range.gridStart,
-    end: range.gridEnd,
-  });
   const eventsByDay: Record<string, MonthEvent[]> = {};
   for (const e of rawEvents) {
     (eventsByDay[e.iso] ??= []).push({

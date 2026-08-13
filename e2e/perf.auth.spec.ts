@@ -25,7 +25,7 @@ const ROTAS = [
 
 test("perfil de tempo das telas", async ({ page }) => {
   test.setTimeout(180_000);
-  const linhas: { rota: string; ttfb: number; domReady: number; total: number }[] = [];
+  const linhas: { rota: string; ttfb: number; fcp: number; conteudo: number; total: number }[] = [];
 
   for (const rota of ROTAS) {
     // Duas passadas: a primeira aquece cache de query/conexão; medimos a segunda,
@@ -33,30 +33,43 @@ test("perfil de tempo das telas", async ({ page }) => {
     await page.goto(rota);
     const t0 = Date.now();
     await page.goto(rota, { waitUntil: "domcontentloaded" });
-    const domReady = Date.now() - t0;
 
-    const nav = await page.evaluate(() => {
-      const e = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
-      return { ttfb: e.responseStart - e.requestStart, total: e.loadEventEnd - e.startTime };
+    // O `h1` só existe na tela pronta — nenhum dos `loading.tsx` tem heading.
+    // É o que separa "apareceu alguma coisa" de "apareceu a tela": a diferença
+    // entre FCP e este número é quanto tempo a pessoa passa olhando o esqueleto.
+    await page.getByRole("heading", { level: 1 }).first().waitFor({ state: "visible" });
+    const conteudo = Date.now() - t0;
+
+    const m = await page.evaluate(() => {
+      const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
+      const fcp = performance.getEntriesByName("first-contentful-paint")[0];
+      return {
+        ttfb: nav.responseStart - nav.requestStart,
+        fcp: fcp ? fcp.startTime : -1,
+        total: nav.loadEventEnd - nav.startTime,
+      };
     });
 
     linhas.push({
       rota,
-      ttfb: Math.round(nav.ttfb),
-      domReady,
-      total: Math.round(nav.total),
+      ttfb: Math.round(m.ttfb),
+      fcp: Math.round(m.fcp),
+      conteudo,
+      total: Math.round(m.total),
     });
   }
 
-  linhas.sort((a, b) => b.ttfb - a.ttfb);
-  console.log("\nrota                            TTFB   DOM   total  (ms)");
+  linhas.sort((a, b) => b.conteudo - a.conteudo);
+  console.log("\nrota                            TTFB    FCP  conteúdo  esqueleto   total  (ms)");
   for (const l of linhas) {
+    const esqueleto = l.fcp >= 0 ? l.conteudo - Math.round(l.fcp) : -1;
     console.log(
-      `${l.rota.padEnd(30)} ${String(l.ttfb).padStart(5)} ${String(l.domReady).padStart(5)} ${String(l.total).padStart(6)}`
+      `${l.rota.padEnd(30)} ${String(l.ttfb).padStart(4)} ${String(l.fcp).padStart(6)} ` +
+        `${String(l.conteudo).padStart(9)} ${String(esqueleto).padStart(10)} ${String(l.total).padStart(7)}`
     );
   }
 
   // Única asserção: nenhuma tela pode estourar 10s, que já seria quebra e não
   // lentidão. Limiar fino aqui só geraria falha intermitente.
-  for (const l of linhas) expect(l.ttfb, `${l.rota} muito lenta`).toBeLessThan(10_000);
+  for (const l of linhas) expect(l.conteudo, `${l.rota} muito lenta`).toBeLessThan(10_000);
 });
