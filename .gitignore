@@ -53,3 +53,9 @@ docs/cert/
 # Projeto de UX exportado (referência, não versionar)
 docs/868a8391-bb4d-434c-a1c8-f0a0c73c2f74/
 docs/868a8391-bb4d-434c-a1c8-f0a0c73c2f74.zip
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

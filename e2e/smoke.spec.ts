@@ -27,10 +27,13 @@ test.describe("smoke", () => {
     expect(decodeURIComponent(page.url())).toContain("/admin/tasks");
   });
 
-  test("a rota antiga do calendário redireciona para planejamento", async ({ page }) => {
-    // 308 preservando a query: link salvo e favorito continuam funcionando.
+  test("a rota antiga do calendário sobrevive ao login", async ({ page }) => {
+    // O 308 vive na PÁGINA, e o middleware barra antes dela — anônimo nunca o
+    // alcança. O que dá para verificar sem autenticar é que o caminho antigo
+    // chega inteiro ao callbackUrl: depois do login o usuário cai nele e só
+    // então o 308 o leva a /planejamento/calendario.
     await page.goto("/reports/calendar?view=month");
     await expect(page).toHaveURL(/\/auth\/signin/);
-    expect(decodeURIComponent(page.url())).toContain("/planejamento/calendario");
+    expect(decodeURIComponent(page.url())).toContain("/reports/calendar");
   });
 });
