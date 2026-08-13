@@ -85,6 +85,10 @@ export interface OneOnOneCadenceRow {
   lastOneOnOne: string | null; // ISO date, or null if never
   daysSince: number | null;
   overdue: boolean;
+  /** Anotação da última conversa, se houve. Registrar que o 1:1 aconteceu sem
+   *  guardar o que foi dito esvazia a cadência: o gestor chega no próximo sem
+   *  lembrar do combinado no anterior. */
+  lastNotes: string | null;
 }
 
 /** Median of a numeric list (0 for empty). Pure helper. */
@@ -512,7 +516,7 @@ export async function getOneOnOneCadence(teamIds?: string[]): Promise<OneOnOneCa
       oneOnOnesReceived: {
         orderBy: { occurredAt: "desc" },
         take: 1,
-        select: { occurredAt: true },
+        select: { occurredAt: true, notes: true },
       },
     },
     orderBy: { name: "asc" },
@@ -527,6 +531,7 @@ export async function getOneOnOneCadence(teamIds?: string[]): Promise<OneOnOneCa
         userId: m.id,
         name: m.name ?? "—",
         lastOneOnOne: last ? last.toISOString() : null,
+        lastNotes: m.oneOnOnesReceived[0]?.notes ?? null,
         daysSince,
         overdue: daysSince === null || daysSince > ONE_ON_ONE_OVERDUE_DAYS,
       };

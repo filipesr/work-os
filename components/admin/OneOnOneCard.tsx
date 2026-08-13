@@ -80,7 +80,7 @@ export default function OneOnOneCard({ rows }: { rows: OneOnOneCadenceRow[] }) {
                 <li className="py-3 text-sm text-muted-foreground">{t("noMatch")}</li>
               ) : (
                 filtered.map((r) => (
-                  <li key={r.userId} className="flex items-center justify-between gap-2 py-2">
+                  <li key={r.userId} className="flex items-start justify-between gap-2 py-2">
                     <div className="min-w-0">
                       <span className="truncate text-sm font-medium text-foreground">{r.name}</span>
                       <span className="block text-xs text-muted-foreground">
@@ -89,6 +89,14 @@ export default function OneOnOneCard({ rows }: { rows: OneOnOneCadenceRow[] }) {
                           <span className="ml-1 font-semibold text-danger">· {t("overdue")}</span>
                         )}
                       </span>
+                      {/* A anotação da última conversa, onde ela é útil: na hora
+                          de marcar a próxima. É aqui que o gestor lembra do que
+                          ficou combinado, em vez de recomeçar do zero. */}
+                      {r.lastNotes && (
+                        <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-muted-foreground">
+                          {r.lastNotes}
+                        </p>
+                      )}
                     </div>
                     <RegisterOneOnOneButton userId={r.userId} name={r.name} />
                   </li>

@@ -686,7 +686,10 @@
       "noMatch": "Ningún colaborador encontrado.",
       "confirmTitle": "Registrar 1:1",
       "confirmDesc": "¿Registrar un 1:1 realizado hoy con {name}?",
-      "confirmYes": "Registrar"
+      "confirmYes": "Registrar",
+      "notesLabel": "Notas de la conversación (opcional)",
+      "notesPlaceholder": "Qué se conversó, qué quedó acordado, qué revisar la próxima vez…",
+      "notesHint": "Queda visible para quien conduzca el próximo 1:1 — es lo que evita empezar de cero."
     },
     "review": {
       "title": "Rutina de gestión del flujo",

@@ -377,4 +377,29 @@ describe("getOneOnOneCadence", () => {
     expect(caio.overdue).toBe(true);
     expect(caio.lastOneOnOne).toBeNull();
   });
+
+  it("devolve a anotação da última conversa", async () => {
+    // A cadência existia só como data. Registrar que o 1:1 aconteceu sem o que
+    // foi dito transforma a rotina em caixinha de "feito": quem conduz o próximo
+    // chega sem o combinado do anterior.
+    asManager();
+    db.user.findMany.mockResolvedValue([
+      {
+        id: "a",
+        name: "Ana",
+        oneOnOnesReceived: [
+          { occurredAt: new Date(Date.now() - 5 * 8.64e7), notes: "quer assumir motion" },
+        ],
+      },
+      { id: "b", name: "Bruno", oneOnOnesReceived: [{ occurredAt: new Date(), notes: null }] },
+      { id: "c", name: "Caio", oneOnOnesReceived: [] },
+    ] as never);
+
+    const rows = await getOneOnOneCadence();
+    expect(rows.find((r) => r.userId === "a")!.lastNotes).toBe("quer assumir motion");
+    // Nota é opcional: sem ela, o campo é null — nunca `undefined`, que vazaria
+    // como "sem 1:1" na renderização.
+    expect(rows.find((r) => r.userId === "b")!.lastNotes).toBeNull();
+    expect(rows.find((r) => r.userId === "c")!.lastNotes).toBeNull();
+  });
 });
