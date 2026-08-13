@@ -59,7 +59,14 @@ export function FormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      {/* Sem descrição o Radix avisa no console a cada abertura. A forma
+          documentada de dizer "não há descrição, de propósito" é ter a CHAVE
+          `aria-describedby` presente com valor undefined — por isso o spread
+          condicional: passá-la sempre seria indistinguível de não passar. */}
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto"
+        {...(description ? {} : { "aria-describedby": undefined })}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {/* DialogDescription é o que o leitor de tela anuncia junto do título.
