@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "e2e": "playwright test",
+    "e2e:session": "node --env-file=.env scripts/e2e-session.mjs",
     "e2e:ui": "playwright test --ui",
     "prepare": "husky",
     "db:seed": "prisma db seed",

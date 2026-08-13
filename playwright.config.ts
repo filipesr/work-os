@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
 // 3100 é a porta do `pnpm dev` deste projeto (package.json). O default era
@@ -6,6 +7,9 @@ import { defineConfig, devices } from "@playwright/test";
 // @playwright/test só foi instalado agora), o descompasso ficou invisível.
 const PORT = process.env.E2E_PORT ?? "3100";
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
+
+// Sessão gravada por `pnpm e2e:session`. É uma credencial real — gitignorada.
+const AUTH_STATE = "e2e/.auth/state.json";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -20,10 +24,24 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
+    // Anônimo: middleware, redirects, tela de login.
     {
       name: "chromium",
+      testIgnore: /.*\.auth\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
+    // Autenticado: só entra na lista se o storageState existir. Sem isso o
+    // Playwright falharia na carga do config para quem nunca rodou
+    // `pnpm e2e:session` — melhor a suíte anônima rodar sozinha.
+    ...(fs.existsSync(AUTH_STATE)
+      ? [
+          {
+            name: "chromium-auth",
+            testMatch: /.*\.auth\.spec\.ts/,
+            use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+          },
+        ]
+      : []),
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

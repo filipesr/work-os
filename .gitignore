@@ -59,3 +59,4 @@ docs/868a8391-bb4d-434c-a1c8-f0a0c73c2f74.zip
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/e2e/.auth/
