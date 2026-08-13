@@ -9,6 +9,7 @@ import { Prisma, type ActiveStageStatus, type ReworkKind } from "@prisma/client"
 import { auth } from "@/auth";
 import { requireMemberOrHigher, requireManagerOrAdmin, getSessionUser } from "@/lib/permissions";
 import { createTaskSchema } from "@/lib/validations";
+import { availableStageWhere } from "@/lib/task-availability";
 import {
   createTaskStages,
   parseStageAssignments,
@@ -1000,6 +1001,7 @@ export async function getMyActiveStages() {
     where: {
       assigneeId: currentUserId,
       status: "ACTIVE",
+      ...availableStageWhere(),
     },
     include: {
       assignee: {
@@ -1047,7 +1049,9 @@ export async function getMyAllStages(filters?: {
   const onlyMine = filters?.onlyMine !== false;
 
   // Build where clause
-  const where: Record<string, unknown> = {};
+  // A demanda aparece A PARTIR do início planejado. Nunca some depois: uma que
+  // já deveria ter começado e não começou é a que mais precisa ser vista.
+  const where: Record<string, unknown> = { ...availableStageWhere() };
 
   if (onlyMine) {
     where.assigneeId = currentUserId;
@@ -1196,6 +1200,10 @@ export async function getTeamBacklog(teamIds: string[]) {
       stage: {
         defaultTeamId: { in: teamIds },
       },
+      // Demanda cujo início planejado ainda não chegou não é trabalho para
+      // pegar hoje — apareceria como disponível e puxaria alguém para começar
+      // cedo, gastando a folga que existe justamente para o imprevisto.
+      ...availableStageWhere(),
     },
     include: {
       task: {

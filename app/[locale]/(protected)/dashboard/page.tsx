@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { availableStageWhere } from "@/lib/task-availability";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Activity, Hourglass, AlertTriangle, CheckCircle2, Clock, Info } from "lucide-react";
@@ -70,7 +71,12 @@ export default async function DashboardPage() {
 
   const [myStages, completedThisWeek, hoursAgg, backlog] = await Promise.all([
     prisma.taskActiveStage.findMany({
-      where: { assigneeId: userId, status: { in: ["ACTIVE", "BLOCKED"] } },
+      // Só o que já entrou na janela de execução (ver lib/task-availability).
+      where: {
+        assigneeId: userId,
+        status: { in: ["ACTIVE", "BLOCKED"] },
+        ...availableStageWhere(),
+      },
       include: { task: { include: { project: { include: { client: true } } } }, stage: true },
       orderBy: { task: { dueDate: "asc" } },
     }),
