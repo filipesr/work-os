@@ -1,7 +1,9 @@
 // One-off import of the GoOn team roster (docs/goon - EQUIPE.xlsx).
 // - Creates/keeps teams (English names), assigns users to teams (many-to-many).
-// - Restores existing users' teams from /tmp/users_backup.json (captured before
-//   the teamId column was dropped).
+// - Optionally restores existing users' teams from /tmp/users_backup.json
+//   (captured in jun/2026, antes de a coluna teamId ser removida). O arquivo era
+//   temporário e já não existe; quando ausente, a etapa é pulada — a importação
+//   da planilha não depende dela.
 // - Creates/updates users that have an email, setting birthday + admissionDate.
 //
 // Run: node scripts/import-roster.mjs
@@ -118,8 +120,16 @@ async function main() {
     });
   }
 
-  // Existing users' teams (captured before teamId was dropped).
-  const backup = JSON.parse(fs.readFileSync("/tmp/users_backup.json", "utf8"));
+  // Restauração de times de usuários pré-existentes. Opcional: o arquivo era
+  // temporário e desapareceu. Sem ele o script segue — quem vem da planilha traz
+  // o próprio time no cargo.
+  const BACKUP_PATH = "/tmp/users_backup.json";
+  const backup = fs.existsSync(BACKUP_PATH)
+    ? JSON.parse(fs.readFileSync(BACKUP_PATH, "utf8"))
+    : [];
+  if (backup.length === 0) {
+    console.log("Backup de times ausente — etapa de restauração pulada.");
+  }
 
   // All team names to ensure exist: from roster + from backup.
   const teamNames = new Set();
@@ -131,15 +141,22 @@ async function main() {
   }
   console.log(`Teams garantidas: ${teamNames.size}`);
 
-  // Restore existing users' teams.
+  // Restore existing users' teams (no-op sem backup).
   for (const u of backup) {
     if (!u.team?.name) continue;
-    await prisma.user.update({
-      where: { id: u.id },
-      data: { teams: { connect: { name: u.team.name } } },
-    });
+    // O usuário pode não existir mais; não vale derrubar a importação inteira.
+    try {
+      await prisma.user.update({
+        where: { id: u.id },
+        data: { teams: { connect: { name: u.team.name } } },
+      });
+    } catch {
+      /* usuário do backup não existe mais */
+    }
   }
-  console.log(`Times restaurados para ${backup.filter((u) => u.team).length} usuários existentes`);
+  if (backup.length > 0) {
+    console.log(`Times restaurados para ${backup.filter((u) => u.team).length} usuários existentes`);
+  }
 
   // Create/update roster users that have an email.
   let created = 0,
