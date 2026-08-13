@@ -2,11 +2,6 @@
   "kicker": "Planejamento",
   "title": "Semanal",
   "subtitle": "Visão semanal das tarefas em andamento por equipe",
-  "view": {
-    "label": "Modo de visualização",
-    "week": "Semana",
-    "month": "Mês"
-  },
   "filters": {
     "team": "Equipe",
     "project": "Projeto",

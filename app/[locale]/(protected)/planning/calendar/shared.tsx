@@ -1,7 +1,6 @@
 import prisma from "@/lib/prisma";
 import { getProjectsForSelect, getTemplatesForSelect } from "@/lib/actions/task";
 import { getClients } from "@/lib/actions/client";
-import { CalendarViewToggle } from "./CalendarViewToggle";
 import { PeriodNavigator } from "./PeriodNavigator";
 import { PlanningModeToggle } from "./PlanningModeToggle";
 
@@ -93,29 +92,41 @@ export type CreateOptions = Awaited<ReturnType<typeof loadCreateOptions>>;
  *  o contrato dos componentes, que esperam as listas sempre presentes. */
 export const NO_CREATE_OPTIONS: CreateOptions = { clients: [], projects: [], templates: [] };
 
-// A barra de controle é IDÊNTICA nas duas visões: alternância, navegação de
-// período, trava de planejamento e filtros.
-export function ControlBar({
+/**
+ * Ações do cabeçalho: navegação de período + trava de planejamento.
+ *
+ * Saíram do card de filtro. Navegar entre semanas e filtrar por time são gestos
+ * de natureza diferente — um muda O QUE se olha, o outro RECORTA o que já está
+ * na tela — e amontoá-los numa barra só fazia a navegação parecer mais um filtro.
+ *
+ * O alternador semana/mês foi removido: as duas visões viraram entradas próprias
+ * no menu de Planejamento, e manter o botão duplicava a mesma escolha em dois
+ * lugares, com o risco de divergirem no que preservam.
+ */
+export function PeriodActions({
   view,
   anchor,
   periodLabel,
   planning,
-  filters,
 }: {
   view: "week" | "month";
   anchor: Date;
   periodLabel: string;
   planning: boolean;
-  filters: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-3 overflow-x-auto rounded-xl border border-border bg-card p-3 shadow-sm">
-      <CalendarViewToggle view={view} />
+    <div className="flex flex-wrap items-center gap-2">
       <PeriodNavigator view={view} anchor={anchor} label={periodLabel} />
-      <div className="ml-auto flex items-center gap-3">
-        {filters}
-        <PlanningModeToggle enabled={planning} />
-      </div>
+      <PlanningModeToggle enabled={planning} />
+    </div>
+  );
+}
+
+/** Card de filtros — agora só filtros. */
+export function FiltersCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 overflow-x-auto rounded-xl border border-border bg-card p-3 shadow-sm">
+      {children}
     </div>
   );
 }
