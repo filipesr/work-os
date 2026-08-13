@@ -5,6 +5,7 @@ import { Users } from "lucide-react";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getWeeklyCoverage } from "@/lib/actions/weekly-coverage";
 import { getProjectsForSelect, getTemplatesForSelect } from "@/lib/actions/task";
+import { sumStageHours } from "../calendar/shared";
 import { getClients } from "@/lib/actions/client";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
@@ -56,7 +57,11 @@ export default async function CoveragePage({
     clientId: p.clientId,
     clientName: p.client.name,
   }));
-  const templates = rawTemplates.map((tpl) => ({ id: tpl.id, name: tpl.name }));
+  const templates = rawTemplates.map((tpl) => ({
+    id: tpl.id,
+    name: tpl.name,
+    totalDurationHours: sumStageHours(tpl.stages),
+  }));
 
   const total = coverage.activeClients.length;
 

@@ -118,7 +118,8 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
               type="number"
               id="expectedDurationHours"
               name="expectedDurationHours"
-              min="0"
+              required
+              min="1"
               placeholder={t("slaPlaceholder")}
             />
           </div>

@@ -72,7 +72,7 @@ function renderBlock(week: WeekCoverage) {
       isEs={false}
       clients={CLIENTS}
       projects={PROJECTS}
-      templates={[{ id: "tpl1", name: "Post" }]}
+      templates={[{ id: "tpl1", name: "Post", totalDurationHours: 48 }]}
       locale="pt-BR"
     />
   );

@@ -60,8 +60,30 @@ export async function loadCreateOptions() {
       clientId: p.clientId,
       clientName: p.client.name,
     })),
-    templates: rawTemplates.map((tpl) => ({ id: tpl.id, name: tpl.name })),
+    templates: rawTemplates.map((tpl) => ({
+      id: tpl.id,
+      name: tpl.name,
+      totalDurationHours: sumStageHours(tpl.stages),
+    })),
   };
+}
+
+/**
+ * Soma as previsões das etapas — ou null se QUALQUER uma estiver sem número.
+ *
+ * O tudo-ou-nada é o ponto: somar só as preenchidas devolveria um total menor que
+ * o real, e o início sugerido cairia mais tarde do que o fluxo aguenta. Um número
+ * errado aqui é pior que nenhum, porque o gestor confia nele. A previsão passou a
+ * ser obrigatória no cadastro de etapa, então isto cobre os fluxos criados antes.
+ */
+export function sumStageHours(stages: { expectedDurationHours: number | null }[]): number | null {
+  if (stages.length === 0) return null;
+  let total = 0;
+  for (const s of stages) {
+    if (s.expectedDurationHours == null) return null;
+    total += s.expectedDurationHours;
+  }
+  return total;
 }
 
 export type CreateOptions = Awaited<ReturnType<typeof loadCreateOptions>>;

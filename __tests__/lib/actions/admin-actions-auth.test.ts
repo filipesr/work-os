@@ -58,6 +58,9 @@ function stageFormData(overrides: Record<string, string> = {}) {
   const fd = new FormData();
   fd.set("name", overrides.name ?? "Design");
   fd.set("order", overrides.order ?? "1");
+  // Previsão de horas é obrigatória desde que passou a alimentar o cálculo de
+  // início sugerido da demanda.
+  fd.set("expectedDurationHours", overrides.expectedDurationHours ?? "8");
   if (overrides.defaultTeamId) fd.set("defaultTeamId", overrides.defaultTeamId);
   return fd;
 }

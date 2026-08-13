@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createTasksBatch } from "@/lib/actions/task";
 import { createProject } from "@/lib/actions/project";
-import { subtractDays } from "@/lib/calendar/planning-dates";
+import { daysBetweenIso, subtractDays, suggestedStartIso } from "@/lib/calendar/planning-dates";
 import {
   isoToDisplay,
   type ClientOption,
@@ -70,6 +70,32 @@ export function BatchCreateDialog({
   // mas ninguém corrige um padrão que parece certo.
   const [leadDays, setLeadDays] = useState("");
   const dueDate = useMemo(() => subtractDays(date, leadDays), [date, leadDays]);
+
+  // Início SUGERIDO: o prazo menos a duração somada das etapas do template.
+  // Vazio quando o fluxo não tem previsão configurada — a sugestão some em vez
+  // de chutar, porque um "comece hoje" errado é pior que nenhuma sugestão.
+  const totalHoras = templates.find((x) => x.id === templateId)?.totalDurationHours ?? null;
+  const suggestedStart = useMemo(
+    () => (dueDate ? suggestedStartIso(dueDate, totalHoras) : ""),
+    [dueDate, totalHoras]
+  );
+
+  // Início EDITÁVEL. Segue a sugestão enquanto o gestor não a contraria; a partir
+  // do momento em que ele digita, é a escolha dele que manda — mudar template ou
+  // prazo depois disso não deve sobrescrever uma decisão consciente.
+  const [startDirty, setStartDirty] = useState(false);
+  const [plannedStart, setPlannedStart] = useState("");
+  const effectiveStart = startDirty ? plannedStart : suggestedStart;
+
+  // Começar DEPOIS do sugerido = espremer o cronograma: menos tempo de execução
+  // do que as etapas declaram precisar. Não é proibido — prazo de cliente às
+  // vezes obriga — mas não pode passar despercebido.
+  const compressedDays =
+    startDirty && plannedStart && suggestedStart
+      ? (daysBetweenIso(suggestedStart, plannedStart) ?? 0)
+      : 0;
+  const isCompressed = compressedDays > 0;
+  const [acceptedCompression, setAcceptedCompression] = useState(false);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set(preselectedProjectIds ?? []));
 
@@ -154,7 +180,14 @@ export function BatchCreateDialog({
   };
 
   const canSubmit =
-    templateId !== "" && title.trim() !== "" && dueDate !== "" && selected.size > 0 && !isPending;
+    templateId !== "" &&
+    title.trim() !== "" &&
+    dueDate !== "" &&
+    selected.size > 0 &&
+    !isPending &&
+    // O aceite é a "confirmação com alerta": não basta ver o aviso, é preciso
+    // marcar que se está assumindo o cronograma comprimido.
+    (!isCompressed || acceptedCompression);
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -165,6 +198,7 @@ export function BatchCreateDialog({
           templateId,
           title: title.trim(),
           dueDate,
+          plannedStartAt: effectiveStart || undefined,
           calendarOccurrenceId: occurrenceId,
         });
         toast.success(t("success", { count: result.created }));
@@ -232,6 +266,55 @@ export function BatchCreateDialog({
                 })
               : t("leadDaysHint", { usage: isoToDisplay(date) })}
           </p>
+
+          {/* Início planejado. Só aparece quando há prazo — antes disso não há o
+              que recuar, e um campo vazio pediria uma data sem referência. */}
+          {dueDate && (
+            <div className="space-y-1.5">
+              <Label htmlFor="batch-start">{t("startLabel")}</Label>
+              <Input
+                id="batch-start"
+                type="date"
+                value={effectiveStart}
+                onChange={(e) => {
+                  setStartDirty(true);
+                  setPlannedStart(e.target.value);
+                  setAcceptedCompression(false);
+                }}
+                aria-describedby="batch-start-hint"
+              />
+              <p id="batch-start-hint" className="text-xs text-muted-foreground">
+                {suggestedStart
+                  ? t("startSuggested", { date: isoToDisplay(suggestedStart) })
+                  : /* Sem previsão nas etapas do fluxo não há o que sugerir. Dizer
+                       isso é melhor que um campo mudo: aponta o que configurar. */
+                    t("startNoEstimate")}
+              </p>
+
+              {isCompressed && (
+                <div className="rounded-lg border border-warning/40 bg-warning-subtle p-3">
+                  <p className="text-xs font-semibold text-foreground">
+                    {t("compressedTitle", { days: compressedDays })}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("compressedBody", {
+                      suggested: isoToDisplay(suggestedStart),
+                      chosen: isoToDisplay(plannedStart),
+                    })}
+                  </p>
+                  <label className="mt-2 flex items-start gap-2 text-xs text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={acceptedCompression}
+                      onChange={(e) => setAcceptedCompression(e.target.checked)}
+                      className="mt-0.5"
+                    />
+                    <span>{t("compressedAccept")}</span>
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="batch-title">{t("titleLabel")}</Label>

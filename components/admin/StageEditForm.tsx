@@ -120,7 +120,8 @@ export function StageEditForm({
             type="number"
             id={`edit-sla-${stage.id}`}
             name="expectedDurationHours"
-            min="0"
+            required
+            min="1"
             defaultValue={stage.expectedDurationHours ?? ""}
             placeholder={t("slaPlaceholder")}
           />

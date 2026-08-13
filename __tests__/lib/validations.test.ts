@@ -171,6 +171,7 @@ describe("templateStageSchema", () => {
     const result = templateStageSchema.safeParse({
       name: "Design",
       order: "2",
+      expectedDurationHours: "8",
       defaultTeamId: "team-1",
       dependencies: ["stage-a", "stage-b"],
     });
@@ -181,7 +182,11 @@ describe("templateStageSchema", () => {
   });
 
   it("defaults dependencies to an empty array", () => {
-    const result = templateStageSchema.safeParse({ name: "QC", order: 0 });
+    const result = templateStageSchema.safeParse({
+      name: "QC",
+      order: 0,
+      expectedDurationHours: 4,
+    });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.dependencies).toEqual([]);
@@ -200,6 +205,33 @@ describe("templateStageSchema", () => {
 
   it("rejects a missing order", () => {
     const result = templateStageSchema.safeParse({ name: "Design" });
+    expect(result.success).toBe(false);
+  });
+
+  it("exige a previsão de horas", () => {
+    // Passou a ser obrigatória porque é somada entre as etapas para calcular o
+    // início sugerido de uma demanda. UMA etapa sem previsão invalida a soma do
+    // fluxo inteiro — e o cálculo passaria a mentir por omissão, sugerindo um
+    // início mais tarde do que a execução realmente exige.
+    const semPrevisao = templateStageSchema.safeParse({ name: "Design", order: 1 });
+    expect(semPrevisao.success).toBe(false);
+
+    const vazia = templateStageSchema.safeParse({
+      name: "Design",
+      order: 1,
+      expectedDurationHours: "",
+    });
+    expect(vazia.success).toBe(false);
+  });
+
+  it("recusa previsão de zero hora", () => {
+    // Etapa que leva zero hora não é etapa — e zero somaria nada, dando o mesmo
+    // efeito de não ter previsão, só que sem avisar.
+    const result = templateStageSchema.safeParse({
+      name: "Design",
+      order: 1,
+      expectedDurationHours: 0,
+    });
     expect(result.success).toBe(false);
   });
 });

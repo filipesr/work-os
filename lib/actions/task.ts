@@ -137,6 +137,10 @@ export async function createTasksBatch(input: {
    *  já nasce VINCULADO — é o que faz a cobertura da tela de datas subir sem
    *  ninguém precisar confirmar nada depois. */
   calendarOccurrenceId?: string;
+  /** Início PLANEJADO (yyyy-mm-dd). Sugerido pelo prazo menos a duração do
+   *  fluxo, e possivelmente editado pelo gestor — inclusive para depois do
+   *  sugerido, que é uma compressão consciente do cronograma. */
+  plannedStartAt?: string;
 }): Promise<{ created: number }> {
   const user = await requireMemberOrHigher();
   const userId = user.id as string;
@@ -151,6 +155,12 @@ export async function createTasksBatch(input: {
 
   const dueDate = input.dueDate ? new Date(input.dueDate) : null;
   if (!dueDate || Number.isNaN(dueDate.getTime())) throw new Error(t("invalidDueDate"));
+
+  // Data inválida vira null em vez de erro: o início planejado é auxiliar ao
+  // cronograma, e derrubar a criação da demanda inteira por causa dele seria
+  // desproporcional.
+  const plannedRaw = input.plannedStartAt ? new Date(input.plannedStartAt) : null;
+  const plannedStartAt = plannedRaw && !Number.isNaN(plannedRaw.getTime()) ? plannedRaw : null;
 
   const projects = await prisma.project.findMany({
     where: { id: { in: projectIds } },
@@ -167,6 +177,7 @@ export async function createTasksBatch(input: {
           description: null,
           priority: "MEDIUM",
           dueDate,
+          plannedStartAt,
           status: "BACKLOG",
           projectId,
           assigneeId: null,
@@ -233,6 +244,9 @@ export async function getTemplatesForSelect() {
       _count: {
         select: { stages: true },
       },
+      // Previsão de cada etapa: a SOMA responde "quanto tempo este fluxo leva",
+      // que é o que recua o prazo até o início sugerido.
+      stages: { select: { expectedDurationHours: true } },
     },
     orderBy: { name: "asc" },
   });

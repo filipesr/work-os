@@ -49,6 +49,10 @@ export interface DayAnniversaries {
 export interface TemplateOption {
   id: string;
   name: string;
+  /** Soma de `expectedDurationHours` das etapas. Null quando alguma etapa está
+   *  sem previsão: a soma parcial mentiria por omissão, sugerindo um início mais
+   *  tarde do que o fluxo realmente exige. Melhor não sugerir. */
+  totalDurationHours: number | null;
 }
 
 export const COUNTRY_FLAG: Record<MonthEvent["countries"][number], string> = {

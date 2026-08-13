@@ -167,11 +167,17 @@ export const templateStageSchema = z.object({
     .number({ error: "Valid order number is required" })
     .int("Valid order number is required"),
   defaultTeamId: z.string().optional(),
-  // Optional SLA target in hours. Empty form values normalize to undefined.
-  expectedDurationHours: z.preprocess(
-    (v) => (v === "" || v === null || v === undefined ? undefined : v),
-    z.coerce.number().int("Valid hours required").min(0).optional()
-  ),
+  // Previsão de tempo da etapa, em horas. OBRIGATÓRIA: além de ser o SLA que
+  // dispara o alerta de envelhecimento, é somada entre as etapas do template para
+  // calcular o início sugerido de uma demanda. Uma etapa sem previsão zera a soma
+  // do fluxo inteiro, e o cálculo passa a mentir por omissão — sugere um início
+  // mais tarde do que o real, exatamente para quem confiou nele.
+  //
+  // `min(1)` e não `min(0)`: etapa que leva zero hora não é etapa.
+  expectedDurationHours: z.coerce
+    .number({ error: "Previsão de horas é obrigatória" })
+    .int("Valid hours required")
+    .min(1, "Previsão deve ser de ao menos 1 hora"),
   // WIP limit (max concurrent ACTIVE instances). Empty form values → undefined.
   wipLimit: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? undefined : v),
