@@ -15,7 +15,7 @@ import {
   type CalendarSearchParams,
 } from "../shared";
 
-export const metadata: Metadata = { title: "Calendário — Semana" };
+export const metadata: Metadata = { title: "Semanal" };
 
 /**
  * Calendário SEMANAL: execução. Quem está com o quê nesta semana, e criação de

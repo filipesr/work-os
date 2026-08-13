@@ -9,7 +9,7 @@
     "signOut": "Cerrar Sesión",
     "taskFlow": "Presentación",
     "help": "Centro de Ayuda",
-    "calendarMonthly": "Eventos",
+    "calendarMonthly": "Mensual",
     "clients": "Clientes",
     "myAccount": "Mi Cuenta",
     "settings": "Configuración",
@@ -17,7 +17,7 @@
     "productivity": "Horas",
     "performance": "Cuellos de Botella",
     "liveActivity": "Actividad en Vivo",
-    "calendar": "Calendario",
+    "calendar": "Semanal",
     "teamProductivity": "Productividad",
     "inicio": "Inicio",
     "meuTrabalho": "Mi Trabajo",
@@ -46,7 +46,7 @@
     "openNav": "Abrir navegación",
     "closeNav": "Cerrar navegación",
     "datas": "Fechas",
-    "cobertura": "Cobertura"
+    "cobertura": "Demandas"
   },
   "buttons": {
     "save": "Guardar",

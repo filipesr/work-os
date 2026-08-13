@@ -22,7 +22,7 @@ import {
   type CalendarSearchParams,
 } from "../shared";
 
-export const metadata: Metadata = { title: "Calendário — Eventos & Demandas" };
+export const metadata: Metadata = { title: "Mensal" };
 
 /**
  * Calendário MENSAL: contexto. Datas comemorativas, feriados e aniversários no

@@ -56,10 +56,10 @@
   },
   "coverage": {
     "kicker": "Planejamento",
-    "title": "Cobertura semanal",
+    "title": "Demandas",
     "subtitle": "Quem tem agenda em cada semana e quem está parado. As datas do calendário aparecem como oportunidade dentro da semana.",
     "noClients": "Nenhum cliente ativo",
-    "noClientsHint": "Cliente ativo é o que tem ao menos um projeto ativo. Cadastre um cliente e um projeto para a cobertura fazer sentido.",
+    "noClientsHint": "Cliente ativo é o que tem ao menos um projeto ativo. Cadastre um cliente e um projeto para as demandas fazerem sentido.",
     "weekly": {
       "title": "Semana a semana",
       "subtitle": "Ancorado na segunda-feira: o recorte não muda de segunda a domingo."

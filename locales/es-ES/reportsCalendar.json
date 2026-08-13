@@ -1,6 +1,6 @@
 {
-  "kicker": "Informes",
-  "title": "Calendario",
+  "kicker": "Planificación",
+  "title": "Semanal",
   "subtitle": "Vista semanal de tareas en curso por equipo",
   "view": {
     "label": "Modo de visualización",
@@ -57,7 +57,7 @@
     "clear": "Limpiar filtros"
   },
   "monthly": {
-    "title": "Calendario de Eventos y Demandas",
+    "title": "Mensual",
     "subtitle": "Feriados y fechas conmemorativas de AR, BR y PY, con las demandas de cada cliente por día",
     "status": {
       "BACKLOG": "Backlog",

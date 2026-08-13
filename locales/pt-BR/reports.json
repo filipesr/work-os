@@ -44,14 +44,14 @@
       "tipText": "Use os filtros de data para comparar períodos diferentes e identificar tendências ao longo do tempo."
     },
     "calendar": {
-      "title": "Calendário de Tarefas",
+      "title": "Semanal",
       "description": "Visão semanal das tarefas em andamento agrupadas por equipe, com prazo e responsável",
       "feature1": "Navegação entre semanas",
       "feature2": "Filtros por equipe, projeto e colaborador",
       "feature3": "Destaque visual de tarefas atrasadas e próximas do vencimento"
     },
     "calendarMonthly": {
-      "title": "Calendário de Eventos & Demandas",
+      "title": "Mensal",
       "description": "Visão mensal com feriados e datas comemorativas de AR, BR e PY e as demandas de cada cliente por dia",
       "feature1": "Feriados e datas comerciais dos 3 países",
       "feature2": "Demandas por cliente em cada dia",

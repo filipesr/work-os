@@ -9,7 +9,7 @@
     "signOut": "Sair",
     "taskFlow": "Apresentação",
     "help": "Central de Ajuda",
-    "calendarMonthly": "Eventos",
+    "calendarMonthly": "Mensal",
     "clients": "Clientes",
     "myAccount": "Minha Conta",
     "settings": "Configurações",
@@ -17,7 +17,7 @@
     "productivity": "Horas",
     "performance": "Gargalos",
     "liveActivity": "Atividade ao Vivo",
-    "calendar": "Calendário",
+    "calendar": "Semanal",
     "teamProductivity": "Produtividade",
     "inicio": "Início",
     "meuTrabalho": "Meu Trabalho",
@@ -46,7 +46,7 @@
     "openNav": "Abrir navegação",
     "closeNav": "Fechar navegação",
     "datas": "Datas",
-    "cobertura": "Cobertura"
+    "cobertura": "Demandas"
   },
   "buttons": {
     "save": "Salvar",

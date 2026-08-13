@@ -1,6 +1,6 @@
 {
-  "kicker": "Relatórios",
-  "title": "Calendário",
+  "kicker": "Planejamento",
+  "title": "Semanal",
   "subtitle": "Visão semanal das tarefas em andamento por equipe",
   "view": {
     "label": "Modo de visualização",
@@ -57,7 +57,7 @@
     "clear": "Limpar filtros"
   },
   "monthly": {
-    "title": "Calendário de Eventos & Demandas",
+    "title": "Mensal",
     "subtitle": "Feriados e datas comemorativas de AR, BR e PY, com as demandas de cada cliente por dia",
     "status": {
       "BACKLOG": "Backlog",
