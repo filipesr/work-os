@@ -33,10 +33,15 @@ test.describe("smoke", () => {
     // ele traz de volta já é o novo. Feito na página seria o contrário: o
     // callbackUrl guardaria o endereço defunto e o desvio custaria um render
     // inteiro do layout autenticado antes de quicar.
+    // `?view=month` é o caso que exercita as duas defasagens de uma vez: o
+    // endereço mudou de lugar E a visão virou rota. O callbackUrl tem que trazer
+    // o mês, não a semana — cair na visão errada depois do login é o tipo de
+    // detalhe que ninguém reporta e todo mundo sente.
     await page.goto("/reports/calendar?view=month");
     await expect(page).toHaveURL(/\/auth\/signin/);
     const url = decodeURIComponent(page.url());
-    expect(url).toContain("/planning/calendar");
+    expect(url).toContain("/planning/calendar/month");
     expect(url).not.toContain("/reports/calendar");
+    expect(url).not.toContain("view=month");
   });
 });

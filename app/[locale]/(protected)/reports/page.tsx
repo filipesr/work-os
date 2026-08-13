@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 const REPORT_LINKS: { key: string; href: string; icon: LucideIcon }[] = [
   { key: "performance", href: "/reports/performance", icon: TrendingUp },
   { key: "productivity", href: "/reports/productivity", icon: Clock },
-  { key: "calendar", href: "/planning/calendar", icon: CalendarRange },
+  { key: "calendar", href: "/planning/calendar/week", icon: CalendarRange },
   { key: "liveActivity", href: "/reports/live-activity", icon: Activity },
 ];
 

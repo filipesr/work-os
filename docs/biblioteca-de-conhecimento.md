@@ -365,11 +365,20 @@ Cada superfície e a razão de existir **daquela forma**.
   a exceção virar `: keep-alive`, mascarando a negação numa conexão que nunca
   falhava visivelmente.
 
-### Calendário (/planning/calendar)
+### Calendário (/planning/calendar/week e /planning/calendar/month)
 
 - **Mora em "Planejamento", não em "Relatórios"** → a tela **escreve** (reagenda
   vencimento, cria demanda). Listada como relatório, parecia leitura
   retrospectiva — o oposto do que faz. A rota antiga responde com 308.
+- **Duas telas, não uma com alternador** → respondem a perguntas diferentes: a
+  semana é **execução** (quem está com o quê, arrastar para reagendar), o mês é
+  **contexto** (datas comemorativas, feriados, aniversários — de onde sai a
+  campanha). Já foram uma só; a fusão existia para acabar com a barra de controle
+  duplicada, e essa parte continua: `shared.tsx` mantém UMA barra, filtros e trava.
+  O que a separação devolveu foi o **esqueleto fiel** — `loading.tsx` não enxerga
+  `searchParams`, então a tela única desenhava sempre a grade da semana, inclusive
+  para quem abria o mês — e ~40 kB de JS a menos na visão mensal, que carregava o
+  grafo de chunks da semana. `/planning/calendar` e `?view=` respondem com 308.
 - **Trava de escrita explícita (`?plan=1`)** → **P6/P1**: em leitura, arrastar e
   criar ficam **desmontados**, não inertes. Arrastar é gesto barato demais para
   uma ação que muda um **compromisso com o cliente**, e num grid denso o arraste

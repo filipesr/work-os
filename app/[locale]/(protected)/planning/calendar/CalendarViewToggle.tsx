@@ -8,12 +8,14 @@ import { CalendarDays, CalendarRange } from "lucide-react";
 type View = "week" | "month";
 
 /**
- * Alternância semana/mês do calendário unificado (fusão §3.3).
+ * Alternância semana/mês. As visões são telas separadas, então isto navega entre
+ * ROTAS — não troca mais um `?view=`.
  *
- * Preserva os filtros e o modo planejamento: antes os dois links apontavam para
- * a rota pura, então trocar de visão **zerava time/projeto/pessoa/concluídas** —
- * o gestor filtrava a semana, clicava em "Mês" e perdia tudo. Só a âncora de
- * período é descartada, porque `week=` e `month=` não se traduzem entre si.
+ * Preserva os filtros e o modo planejamento ao atravessar: os dois links já
+ * apontaram para a rota pura, e trocar de visão **zerava
+ * time/projeto/pessoa/concluídas** — o gestor filtrava a semana, clicava em
+ * "Mês" e perdia tudo. Só a âncora de período é descartada, porque `week=` e
+ * `month=` não se traduzem entre si.
  */
 export function CalendarViewToggle({ view }: { view: View }) {
   const t = useTranslations("reportsCalendar.view");
@@ -23,10 +25,10 @@ export function CalendarViewToggle({ view }: { view: View }) {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("week");
     params.delete("month");
-    if (target === "month") params.set("view", "month");
-    else params.delete("view");
+    // `view` já não é parâmetro; some se vier de um link antigo.
+    params.delete("view");
     const qs = params.toString();
-    return `/planning/calendar${qs ? `?${qs}` : ""}`;
+    return `/planning/calendar/${target}${qs ? `?${qs}` : ""}`;
   };
 
   const base =

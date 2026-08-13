@@ -65,10 +65,20 @@ const managerItems: NavItem[] = [
     id: "planejamento",
     labelKey: "planejamento",
     children: [
+      // Duas entradas, não uma com alternador embutido: a semana é execução
+      // (quem está com o quê, arrastar para reagendar) e o mês é contexto
+      // (datas comemorativas, aniversários, densidade de demanda). Perguntas
+      // diferentes, então cada uma tem endereço próprio.
       {
         id: "calendario",
         labelKey: "calendar",
-        href: "/planning/calendar",
+        href: "/planning/calendar/week",
+        icon: CalendarDays,
+      },
+      {
+        id: "calendario-mes",
+        labelKey: "calendarMonthly",
+        href: "/planning/calendar/month",
         icon: CalendarRange,
       },
       { id: "cobertura", labelKey: "cobertura", href: "/planning/coverage", icon: Target },

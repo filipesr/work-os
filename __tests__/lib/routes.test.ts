@@ -3,10 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  CALENDAR_MONTH_PATH,
+  CALENDAR_WEEK_PATH,
   LEGACY_PATH_REDIRECTS,
   PROTECTED_PATHS,
   isProtectedPath,
+  resolveCalendarView,
   resolveLegacyPath,
+  resolveRedirectTarget,
 } from "@/lib/routes";
 
 /**
@@ -119,6 +123,86 @@ describe("resolveLegacyPath", () => {
     // ao renomear duas vezes.
     for (const destino of Object.values(LEGACY_PATH_REDIRECTS)) {
       expect(resolveLegacyPath(destino), `${destino} redireciona de novo`).toBeNull();
+    }
+  });
+});
+
+describe("resolveCalendarView", () => {
+  it("escolhe a rota pela visão pedida", () => {
+    expect(resolveCalendarView("/planning/calendar", "month")).toBe(CALENDAR_MONTH_PATH);
+    expect(resolveCalendarView("/planning/calendar", "week")).toBe(CALENDAR_WEEK_PATH);
+  });
+
+  it("sem visão declarada cai na semana", () => {
+    // Era o padrão quando as duas dividiam uma rota (`view` ausente = semana);
+    // quem tem `/planning/calendar` no favorito continua chegando no mesmo lugar.
+    expect(resolveCalendarView("/planning/calendar", null)).toBe(CALENDAR_WEEK_PATH);
+    expect(resolveCalendarView("/planning/calendar", "qualquer-coisa")).toBe(CALENDAR_WEEK_PATH);
+  });
+
+  it("não mexe nas rotas já separadas", () => {
+    // Sem isto o desvio se aplicaria ao próprio destino e viraria laço.
+    expect(resolveCalendarView(CALENDAR_WEEK_PATH, null)).toBeNull();
+    expect(resolveCalendarView(CALENDAR_MONTH_PATH, "month")).toBeNull();
+    expect(resolveCalendarView("/planning/coverage", "month")).toBeNull();
+  });
+});
+
+describe("resolveRedirectTarget", () => {
+  it("resolve renomeação e visão num salto só", () => {
+    // O caso que justifica a composição: o endereço é antigo NOS DOIS sentidos
+    // — nome em português e visão por query. Em sequência seriam dois 308.
+    expect(resolveRedirectTarget("/planejamento/calendario", "month")).toEqual({
+      pathname: CALENDAR_MONTH_PATH,
+      dropView: true,
+    });
+    expect(resolveRedirectTarget("/reports/calendar", "month")).toEqual({
+      pathname: CALENDAR_MONTH_PATH,
+      dropView: true,
+    });
+    expect(resolveRedirectTarget("/planejamento/calendario", null)).toEqual({
+      pathname: CALENDAR_WEEK_PATH,
+      dropView: true,
+    });
+  });
+
+  it("descarta `view` só quando ele decidiu a rota", () => {
+    // Numa renomeação comum não há `view` para descartar; apagar parâmetro alheio
+    // seria perder filtro de quem salvou o link.
+    expect(resolveRedirectTarget("/planejamento/datas", null)).toEqual({
+      pathname: "/planning/dates",
+      dropView: false,
+    });
+  });
+
+  it("deixa em paz quem já está no lugar certo", () => {
+    expect(resolveRedirectTarget(CALENDAR_WEEK_PATH, null)).toBeNull();
+    expect(resolveRedirectTarget(CALENDAR_MONTH_PATH, null)).toBeNull();
+    expect(resolveRedirectTarget("/dashboard", null)).toBeNull();
+  });
+
+  it("todo destino final é uma rota com página no disco", () => {
+    // A garantia que fecha a cadeia: 308 é permanente, então um destino sem
+    // página vira 404 que o navegador guarda e nem tenta de novo. Verifica o
+    // resultado da composição, não os elos.
+    const entradas = [
+      ...Object.keys(LEGACY_PATH_REDIRECTS),
+      "/planning/calendar",
+      ...Object.values(LEGACY_PATH_REDIRECTS),
+    ];
+
+    for (const entrada of entradas) {
+      for (const view of [null, "month"]) {
+        const destino = resolveRedirectTarget(entrada, view)?.pathname ?? entrada;
+        // Um segundo passe não pode mover de novo: seria 308 encadeado.
+        expect(resolveRedirectTarget(destino, null), `${entrada} desvia duas vezes`).toBeNull();
+
+        const pasta = path.join(DIR_PROTEGIDO, ...destino.split("/").filter(Boolean));
+        expect(
+          fs.existsSync(path.join(pasta, "page.tsx")),
+          `${entrada} (view=${view}) → ${destino}, que não tem page.tsx`
+        ).toBe(true);
+      }
     }
   });
 });

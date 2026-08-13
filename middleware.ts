@@ -1,7 +1,7 @@
 import createMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { locales, defaultLocale } from "./lib/i18n";
-import { isProtectedPath, resolveLegacyPath } from "./lib/routes";
+import { isProtectedPath, resolveRedirectTarget } from "./lib/routes";
 import { WALLBOARD_COOKIE } from "./lib/tv-wallboard";
 
 const intlMiddleware = createMiddleware({
@@ -55,10 +55,15 @@ export default function middleware(request: NextRequest) {
   // Endereços que mudaram de nome. Antes da checagem de sessão de propósito: o
   // anônimo com um link antigo é levado ao endereço ATUAL e só então ao login,
   // então o callbackUrl que ele traz de volta já é o novo — não o defunto.
-  const destinoAtual = resolveLegacyPath(pathnameWithoutLocale);
-  if (destinoAtual) {
+  const destino = resolveRedirectTarget(
+    pathnameWithoutLocale,
+    request.nextUrl.searchParams.get("view")
+  );
+
+  if (destino) {
     const url = request.nextUrl.clone();
-    url.pathname = pathname.replace(pathnameWithoutLocale, destinoAtual);
+    url.pathname = pathname.replace(pathnameWithoutLocale, destino.pathname);
+    if (destino.dropView) url.searchParams.delete("view");
     // 308 preserva método e query, e autoriza navegador e buscador a trocarem o
     // destino no histórico em vez de bater no endereço antigo para sempre.
     return NextResponse.redirect(url, 308);

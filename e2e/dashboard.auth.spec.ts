@@ -28,17 +28,25 @@ test.describe("telas internas (autenticado)", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
-  test("os endereços antigos em português redirecionam preservando a query", async ({ page }) => {
-    // As rotas passaram de português para inglês. Autenticado é o único lugar
-    // onde dá para ver o 308 acontecer: anônimo é barrado pelo middleware antes
-    // de chegar ao stub. A query importa tanto quanto o caminho — um favorito
-    // do calendário guarda ?view=month, e perder isso abre a tela errada.
+  test("os endereços antigos chegam ao atual num salto só", async ({ page }) => {
+    // Duas mudanças se acumulam aqui: os caminhos passaram de português para
+    // inglês, e o calendário deixou de ser uma tela com `?view=` para virar duas
+    // rotas. Um link antigo pode carregar as duas defasagens ao mesmo tempo
+    // (`/planejamento/calendario?view=month`), e o middleware resolve as duas de
+    // uma vez — encadear seria 308 em cima de 308.
+    //
+    // Autenticado é o único lugar onde dá para ver o desvio terminar: anônimo é
+    // mandado ao login no meio do caminho.
     const mudancas: [string, string][] = [
-      ["/planejamento/calendario?view=month", "/planning/calendar?view=month"],
+      ["/planejamento/calendario?view=month", "/planning/calendar/month"],
+      ["/planejamento/calendario", "/planning/calendar/week"],
+      ["/planning/calendar?view=month", "/planning/calendar/month"],
+      ["/planning/calendar", "/planning/calendar/week"],
+      ["/planejamento", "/planning/calendar/week"],
       ["/planejamento/cobertura", "/planning/coverage"],
       ["/planejamento/datas", "/planning/dates"],
       ["/minha-evolucao", "/my-evolution"],
-      ["/reports/calendar?view=month", "/planning/calendar?view=month"],
+      ["/reports/calendar?view=month", "/planning/calendar/month"],
     ];
 
     for (const [antigo, novo] of mudancas) {
@@ -60,7 +68,8 @@ test.describe("telas internas (autenticado)", () => {
       "/dashboard",
       "/planning/coverage",
       "/planning/dates",
-      "/planning/calendar",
+      "/planning/calendar/week",
+      "/planning/calendar/month",
       "/reports/performance",
       "/reports/productivity",
       "/admin/users",

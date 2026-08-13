@@ -1,8 +1,7 @@
 /**
- * Espelha a visão SEMANAL, que é o padrão (`view=week` quando o parâmetro não
- * vem). `loading.tsx` não enxerga searchParams, então quem abre direto no mês vê
- * o esqueleto da semana por um instante — aceitável, porque a semana é o que a
- * maioria abre; o contrário é que seria errar no caso comum.
+ * Esqueleto da visão semanal. Com as visões em rotas separadas ele finalmente
+ * pode ser exato: enquanto era uma tela só, `loading.tsx` não enxergava
+ * `searchParams` e quem abria no mês via a grade da semana por um instante.
  */
 export default function CalendarLoading() {
   return (

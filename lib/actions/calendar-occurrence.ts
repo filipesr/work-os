@@ -26,7 +26,8 @@ export interface OccurrenceRow {
 }
 
 function revalidateCalendar() {
-  revalidatePath("/planning/calendar");
+  revalidatePath("/planning/calendar/week");
+  revalidatePath("/planning/calendar/month");
   revalidatePath("/planning/dates");
 }
 
