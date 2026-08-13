@@ -83,5 +83,6 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2",
     "vitest": "^4.0.18"
-  }
+  },
+  "packageManager": "pnpm@10.29.3"
 }
