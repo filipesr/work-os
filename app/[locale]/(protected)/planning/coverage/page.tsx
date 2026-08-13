@@ -15,7 +15,7 @@ import { parseWeekWindow } from "@/lib/calendar/weekly-window";
 import { WeekBlock } from "./WeekBlock";
 import { WeekWindowToggle } from "./WeekWindowToggle";
 
-export const metadata: Metadata = { title: "Demandas" };
+export const metadata: Metadata = { title: "Cobertura Semanal" };
 
 /**
  * Cobertura semanal: quem tem agenda em cada semana e quem está parado.
