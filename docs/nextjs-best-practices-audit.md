@@ -178,7 +178,7 @@ Do spec `docs/superpowers/specs/2026-06-19-calendar-and-team-productivity-design
 seção "Fora de escopo / próximos passos":
 
 - ✅ **SLA por etapa** (`expectedDurationHours`) + métrica No prazo/Acima na produtividade por equipe.
-- ✅ **Drag-and-drop para reagendar** no calendário (Gantt) via `@dnd-kit/core`.
+- ⛔️ **Drag-and-drop para reagendar** no calendário: removido (a semana é visualização e criação). `@dnd-kit/core` saiu das dependências.
 - ✅ **Exportação CSV/PDF** (produtividade, performance, produtividade por equipe).
 - ✅ **Relatório individual por colaborador** (`/reports/user/[userId]`).
 - ⏳ **Notificação de "tarefa atrasada"** — adiada (requer infra de e-mail/cron; decisão do usuário).

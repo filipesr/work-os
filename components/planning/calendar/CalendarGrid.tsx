@@ -2,15 +2,13 @@ import { getTranslations, getLocale } from "next-intl/server";
 import type { CalendarBuckets, CalendarTask } from "@/lib/actions/reporting";
 import { weekRangeFromMonday, todayInSaoPaulo, formatISODate } from "@/lib/dates";
 import { TaskBar, spanForDueDate } from "./TaskBar";
-import { DraggableBar } from "./DraggableBar";
-import { DayDropZones } from "./DayDropZones";
 import { DayCreateButton } from "./DayCreateButton";
 import type { ClientOption, ProjectOption, TemplateOption } from "./monthly-types";
 
 interface CalendarGridProps {
   buckets: CalendarBuckets;
   weekStart: Date;
-  /** Modo planejamento: libera arrastar (reagendar) e criar demanda no dia. */
+  /** Modo planejamento: libera criar demanda a partir de um dia. */
   planning?: boolean;
   /** Opções do diálogo de criação — só necessárias em modo planejamento. */
   createOptions?: {
@@ -142,9 +140,7 @@ export async function CalendarGrid({
           <div className="relative px-2 py-2 flex flex-wrap gap-1.5">
             {buckets.noDueDate.map((task: CalendarTask) => (
               <div key={task.id} className="basis-[calc(25%-0.4rem)] min-w-[200px] grow max-w-sm">
-                <DraggableBar taskId={task.id} enabled={planning}>
-                  <TaskBar task={task} weekStart={weekStart} isNoDueDateLane />
-                </DraggableBar>
+                <TaskBar task={task} weekStart={weekStart} isNoDueDateLane />
               </div>
             ))}
           </div>
@@ -160,8 +156,6 @@ export async function CalendarGrid({
           zebra={idx % 2 === 1}
         >
           <DayBackdrop days={range.days} todayIdx={todayIdx} />
-          {/* Alvos de soltura só existem quando dá para arrastar. */}
-          {planning && <DayDropZones />}
           <div
             className="relative grid gap-y-1 py-1.5 px-1 items-start"
             style={{
@@ -174,9 +168,12 @@ export async function CalendarGrid({
                 ? spanForDueDate(task.dueDate, weekStart)
                 : { start: 1, end: 8 };
               return (
-                <DraggableBar key={task.id} taskId={task.id} gridColumn={span} enabled={planning}>
+                // Quem posiciona é este div, não a barra — daí o
+                // `disablePositioning`. A tarefa ocupa o intervalo de colunas
+                // que `spanForDueDate` calculou, ou a semana toda se não tem prazo.
+                <div key={task.id} style={{ gridColumnStart: span.start, gridColumnEnd: span.end }}>
                   <TaskBar task={task} weekStart={weekStart} disablePositioning />
-                </DraggableBar>
+                </div>
               );
             })}
           </div>

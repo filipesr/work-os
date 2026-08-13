@@ -7,11 +7,13 @@ import { useUrlFilters } from "@/lib/hooks/useUrlFilters";
 /**
  * Trava de escrita do calendário: sem ela ligada, a tela é SÓ LEITURA.
  *
- * O calendário mistura duas naturezas — ler a semana e **reagendar** entregas de
- * cliente. Arrastar é um gesto barato demais para uma ação que muda um
- * compromisso externo, e num grid denso um arraste acidental passa despercebido.
- * O modo explícito separa as duas coisas: quem só está olhando não consegue
- * mover nada por acidente.
+ * O calendário mistura duas naturezas — ler o período e **criar** demandas para
+ * clientes. O modo explícito separa as duas: quem só está olhando não dispara
+ * escrita por acidente, e os gatilhos de criação nem são montados.
+ *
+ * A trava nasceu para conter o arraste de reagendamento, que era um gesto barato
+ * demais para uma ação que muda um compromisso externo. O arraste foi removido;
+ * a trava continua porque a criação em lote tem o mesmo peso.
  *
  * Vive na URL (`?plan=1`) e não em estado local de propósito — sobrevive à
  * navegação de período e à troca semana/mês, então o gestor liga uma vez e

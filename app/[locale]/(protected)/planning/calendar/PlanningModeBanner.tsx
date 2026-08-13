@@ -4,7 +4,8 @@ import { Lock, Pencil } from "lucide-react";
 /**
  * Diz, em uma linha, o que a tela permite AGORA — o pedido de "deixar claro o
  * que é planejamento (escrita) vs leitura". Sem isso, a trava seria só um botão
- * misterioso: o usuário arrastaria, nada aconteceria, e não haveria explicação.
+ * misterioso: o usuário procuraria o botão de criar, não o acharia, e não haveria
+ * explicação.
  */
 export async function PlanningModeBanner({ enabled }: { enabled: boolean }) {
   const t = await getTranslations("reportsCalendar.planning");

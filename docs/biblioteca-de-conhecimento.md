@@ -367,11 +367,11 @@ Cada superfície e a razão de existir **daquela forma**.
 
 ### Calendário (/planning/calendar/week e /planning/calendar/month)
 
-- **Mora em "Planejamento", não em "Relatórios"** → a tela **escreve** (reagenda
-  vencimento, cria demanda). Listada como relatório, parecia leitura
-  retrospectiva — o oposto do que faz. A rota antiga responde com 308.
+- **Mora em "Planejamento", não em "Relatórios"** → a tela **escreve** (cria
+  demanda). Listada como relatório, parecia leitura retrospectiva — o oposto do
+  que faz. A rota antiga responde com 308.
 - **Duas telas, não uma com alternador** → respondem a perguntas diferentes: a
-  semana é **execução** (quem está com o quê, arrastar para reagendar), o mês é
+  semana é **execução** (quem está com o quê, e criar demanda no dia), o mês é
   **contexto** (datas comemorativas, feriados, aniversários — de onde sai a
   campanha). Já foram uma só; a fusão existia para acabar com a barra de controle
   duplicada, e essa parte continua: `shared.tsx` mantém UMA barra, filtros e trava.
@@ -379,11 +379,18 @@ Cada superfície e a razão de existir **daquela forma**.
   `searchParams`, então a tela única desenhava sempre a grade da semana, inclusive
   para quem abria o mês — e ~40 kB de JS a menos na visão mensal, que carregava o
   grafo de chunks da semana. `/planning/calendar` e `?view=` respondem com 308.
-- **Trava de escrita explícita (`?plan=1`)** → **P6/P1**: em leitura, arrastar e
-  criar ficam **desmontados**, não inertes. Arrastar é gesto barato demais para
-  uma ação que muda um **compromisso com o cliente**, e num grid denso o arraste
-  acidental passa despercebido. Vive na URL para sobreviver à navegação de
-  período e à troca de visão — liga-se uma vez por rodada de planejamento.
+- **Trava de escrita explícita (`?plan=1`)** → **P6/P1**: em leitura, os gatilhos
+  de criação ficam **desmontados**, não inertes. Vive na URL para sobreviver à
+  navegação de período e à troca de visão — liga-se uma vez por rodada de
+  planejamento.
+- **Sem arrastar para reagendar** → o gesto existiu e foi **removido**: a semana é
+  visualização e criação, não edição de prazo. Arrastar é barato demais para uma
+  ação que muda um **compromisso com o cliente**, e num grid denso o arraste
+  acidental passa despercebido — a trava `?plan=1` nasceu justamente para conter
+  isso. **Consequência aberta:** `rescheduleTask` era a ÚNICA escrita de `dueDate`
+  depois da criação, e saiu junto. Hoje não há como remarcar um prazo pela
+  interface; se voltar, deve voltar como campo explícito no detalhe da tarefa, não
+  como gesto no calendário.
 - **Navegação de período única (anterior/hoje/próximo)** → uma implementação para
   semana e mês. **Correção registrada:** a navegação do mês montava a URL do
   zero e **descartava os filtros** a cada clique; o toggle semana/mês fazia o

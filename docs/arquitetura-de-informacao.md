@@ -42,7 +42,7 @@
    e duração por etapa em ambos, com dois sistemas visuais) → candidatos a **fusão**.
    _(§2, §3)_
 6. **Conteúdo operacional (escrita) dentro de "relatórios" (análise):** calendário
-   (semanal reagenda por drag) e live‑activity/TV. `/reports/calendar` e
+   (semanal: grade de execução) e live‑activity/TV. `/reports/calendar` e
    `/reports/calendar/monthly` são **uma feature em dois zooms** vendida como dois cards;
    `/reports/live-activity` e `/tv` são a **mesma coisa em duas UIs**. _(§2, §3)_
 7. **Três barras de filtro incompatíveis** (`ReportFilterBar`, `PeriodSelector`,
@@ -268,7 +268,7 @@ agrupadas.
   fortemente `/reports/performance`** (throughput e duração por etapa em ambos) _(→ fundir, §3)_;
   `CurrentLoadGrid` (carga ao vivo) sobrepõe o `TeamBacklogWidget` do dashboard.
 - **`/reports/calendar` + `/calendar/monthly`:** **uma feature em dois zooms** (semanal com
-  drag‑to‑reschedule; mensal com feriados/aniversários). Operacional (escrita) dentro de
+  grade de execução; mensal com feriados/aniversários). Operacional (escrita) dentro de
   "relatórios". Terceira barra de filtro (`CalendarFiltersBar`, `useUrlFilters`). Nav mensal
   reinventada em vez de reusar `WeekNavigator`. _(→ fundir + mover, §3)_
 - **`/reports/live-activity`:** board de presença em tempo real (335 linhas, card inline
@@ -318,17 +318,17 @@ componentes viram um canônico), **FUNDIR** (duas telas viram uma). Cada linha m
 
 ### 3.2 UNIFICAR — duplicação a colapsar num canônico
 
-| Duplicatas                     | Imports atuais                                                                                                              | Canônico proposto                                                      | Motivo                                                        |
+| Duplicatas | Imports atuais | Canônico proposto | Motivo |
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------ |
-| Tabela de etapas ativas        | `components/dashboard/ActiveStagesTable.tsx` **vs** `components/my-stages/MyStagesTable.tsx`                                | uma `StageList` compartilhada (colunas configuráveis, interação única) | Mesmos dados, 3 interações; contadores podem divergir (P6/P2) |
-| KPIs pessoais                  | `components/dashboard/StatsCards.tsx` **vs** `components/my-stages/MyStagesKPIs.tsx`                                        | um `PersonalKPIs` derivado da **mesma** fetch da lista                 | Contador único e coerente (P6)                                |
-| Mapas de cor status/prioridade | inline em `TaskDetailView.tsx`, `TaskCard.tsx`, `/admin/tasks/page.tsx`, `/admin/projects/[id]/page.tsx`                    | `lib/status-styles` (já existe) → `StatusBadge` em `components/ui/`    | Uma linguagem visual de status (consistência)                 |
-| Barras de filtro               | `components/reports/ReportFilterBar.tsx`, `.../team-productivity/PeriodSelector.tsx`, `.../calendar/CalendarFiltersBar.tsx` | um sistema de filtro sobre `lib/hooks/useUrlFilters`                   | 3 modelos mentais → 1                                         |
-| Skeletons                      | `components/reports/skeletons.tsx`, `SectionSkeleton` (team‑prod), `components/dashboard/DashboardSkeleton.tsx`             | um conjunto compartilhado                                              | DRY                                                           |
-| Modais                         | `EditUserButton`, `ManageTeamMembers` (artesanais)                                                                          | `components/ui/dialog` (+ `ConfirmActionButton` já existente)          | Consistência/a11y (memória: shared foundations)               |
-| Listas CRUD simples            | `/admin/clients`, `/admin/teams`, `/admin/templates`                                                                        | um `SimpleEntityCrudList`                                              | 4 layouts → 1                                                 |
-| Server actions inline          | inline em `/admin/clients`, `/admin/teams`                                                                                  | `lib/actions/client                                                    | team` (já existem)                                            | Remove duplicação/código morto |
-| Logout                         | `components/auth/SignOutButton.tsx` (next-auth/react) **vs** `signOutAction`                                                | um componente sobre `signOutAction`                                    | Um caminho de sessão                                          |
+| Tabela de etapas ativas | `components/dashboard/ActiveStagesTable.tsx` **vs** `components/my-stages/MyStagesTable.tsx` | uma `StageList` compartilhada (colunas configuráveis, interação única) | Mesmos dados, 3 interações; contadores podem divergir (P6/P2) |
+| KPIs pessoais | `components/dashboard/StatsCards.tsx` **vs** `components/my-stages/MyStagesKPIs.tsx` | um `PersonalKPIs` derivado da **mesma** fetch da lista | Contador único e coerente (P6) |
+| Mapas de cor status/prioridade | inline em `TaskDetailView.tsx`, `TaskCard.tsx`, `/admin/tasks/page.tsx`, `/admin/projects/[id]/page.tsx` | `lib/status-styles` (já existe) → `StatusBadge` em `components/ui/` | Uma linguagem visual de status (consistência) |
+| Barras de filtro | `components/reports/ReportFilterBar.tsx`, `.../team-productivity/PeriodSelector.tsx`, `.../calendar/CalendarFiltersBar.tsx` | um sistema de filtro sobre `lib/hooks/useUrlFilters` | 3 modelos mentais → 1 |
+| Skeletons | `components/reports/skeletons.tsx`, `SectionSkeleton` (team‑prod), `components/dashboard/DashboardSkeleton.tsx` | um conjunto compartilhado | DRY |
+| Modais | `EditUserButton`, `ManageTeamMembers` (artesanais) | `components/ui/dialog` (+ `ConfirmActionButton` já existente) | Consistência/a11y (memória: shared foundations) |
+| Listas CRUD simples | `/admin/clients`, `/admin/teams`, `/admin/templates` | um `SimpleEntityCrudList` | 4 layouts → 1 |
+| Server actions inline | inline em `/admin/clients`, `/admin/teams` | `lib/actions/client                                                    | team` (já existem) | Remove duplicação/código morto |
+| Logout | `components/auth/SignOutButton.tsx` (next-auth/react) **vs** `signOutAction` | um componente sobre `signOutAction` | Um caminho de sessão |
 
 ### 3.3 FUNDIR — telas a colapsar
 

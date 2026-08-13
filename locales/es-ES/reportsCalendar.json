@@ -141,16 +141,12 @@
       "projectError": "No se pudo crear el proyecto"
     }
   },
-  "dnd": {
-    "rescheduled": "Tarea reprogramada",
-    "error": "Error al reprogramar"
-  },
   "planning": {
     "toggle": "Planificar",
-    "enableHint": "Activar el modo planificación para reprogramar y crear demandas",
+    "enableHint": "Activar el modo planificación para crear demandas",
     "disableHint": "Volver a solo lectura",
-    "bannerOn": "Modo planificación activo — arrastra una demanda para reprogramar el vencimiento, o usa el + de un día para crear.",
-    "bannerOff": "Solo lectura. Activa “Planificar” para reprogramar o crear demandas.",
+    "bannerOn": "Modo planificación activo — usa el + de un día para crear demandas.",
+    "bannerOff": "Solo lectura. Activa “Planificar” para crear demandas.",
     "createOnDay": "Crear demanda en este día"
   }
 }

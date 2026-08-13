@@ -141,16 +141,12 @@
       "projectError": "Não foi possível criar o projeto"
     }
   },
-  "dnd": {
-    "rescheduled": "Tarefa reagendada",
-    "error": "Falha ao reagendar"
-  },
   "planning": {
     "toggle": "Planejar",
-    "enableHint": "Ligar o modo planejamento para reagendar e criar demandas",
+    "enableHint": "Ligar o modo planejamento para criar demandas",
     "disableHint": "Voltar para somente leitura",
-    "bannerOn": "Modo planejamento ligado — arraste uma demanda para reagendar o vencimento, ou use o + de um dia para criar.",
-    "bannerOff": "Somente leitura. Ligue “Planejar” para reagendar ou criar demandas.",
+    "bannerOn": "Modo planejamento ligado — use o + de um dia para criar demandas.",
+    "bannerOff": "Somente leitura. Ligue “Planejar” para criar demandas.",
     "createOnDay": "Criar demanda neste dia"
   }
 }

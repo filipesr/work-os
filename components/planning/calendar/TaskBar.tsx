@@ -7,7 +7,7 @@ interface TaskBarProps {
   task: CalendarTask;
   weekStart: Date;
   isNoDueDateLane?: boolean;
-  /** When true the bar does not set its own grid column (a draggable wrapper positions it). */
+  /** When true the bar does not set its own grid column (the lane wrapper positions it). */
   disablePositioning?: boolean;
 }
 

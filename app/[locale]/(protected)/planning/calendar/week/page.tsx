@@ -8,7 +8,6 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { CalendarFiltersBar } from "../CalendarFiltersBar";
 import { PlanningModeBanner } from "../PlanningModeBanner";
 import { CalendarGrid } from "@/components/planning/calendar/CalendarGrid";
-import { CalendarDndContext } from "@/components/planning/calendar/CalendarDndContext";
 import {
   ControlBar,
   loadCreateOptions,
@@ -19,9 +18,10 @@ import {
 export const metadata: Metadata = { title: "Calendário — Semana" };
 
 /**
- * Calendário SEMANAL: execução. Quem está com o quê nesta semana, com arraste
- * para reagendar. Não mostra datas comemorativas nem aniversários — para isso
- * existe a visão mensal, que é a tela de contexto.
+ * Calendário SEMANAL: execução. Quem está com o quê nesta semana, e criação de
+ * demanda a partir de um dia. Não reagenda — o arraste foi removido de propósito:
+ * a tela é visualização e criação. Também não mostra datas comemorativas nem
+ * aniversários; para isso existe a visão mensal, que é a tela de contexto.
  */
 export default async function WeekCalendarPage({
   searchParams,
@@ -42,8 +42,7 @@ export default async function WeekCalendarPage({
 
   const [t, locale] = await Promise.all([getTranslations("reportsCalendar"), getLocale()]);
   const weekStart = parseWeekParam(params.week);
-  const { end: weekEnd, days } = weekRangeFromMonday(weekStart);
-  const dayDates = days.map((d) => d.toISOString());
+  const { end: weekEnd } = weekRangeFromMonday(weekStart);
 
   const [buckets, options, createOptions] = await Promise.all([
     getCalendarTasks({
@@ -87,14 +86,12 @@ export default async function WeekCalendarPage({
         />
         <PlanningModeBanner enabled={planning} />
 
-        <CalendarDndContext dayDates={dayDates} enabled={planning}>
-          <CalendarGrid
-            buckets={buckets}
-            weekStart={weekStart}
-            planning={planning}
-            createOptions={createOptions ?? undefined}
-          />
-        </CalendarDndContext>
+        <CalendarGrid
+          buckets={buckets}
+          weekStart={weekStart}
+          planning={planning}
+          createOptions={createOptions ?? undefined}
+        />
       </div>
     </div>
   );
