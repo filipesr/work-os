@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createTasksBatch } from "@/lib/actions/task";
 import { createProject } from "@/lib/actions/project";
+import { subtractDays } from "@/lib/calendar/planning-dates";
 import {
   isoToDisplay,
   type ClientOption,
@@ -59,7 +60,16 @@ export function BatchCreateDialog({
   const [templateId, setTemplateId] = useState("");
   const [title, setTitle] = useState("");
   const [titleDirty, setTitleDirty] = useState(false);
-  const [dueDate, setDueDate] = useState(date);
+  // ANTECEDÊNCIA, em dias, entre a conclusão da demanda e a data em que o
+  // material é usado (publicado, instalado, apresentado). Começa VAZIA de
+  // propósito: quanto tempo o material precisa estar pronto antes é julgamento
+  // do gestor e varia por campanha — um padrão viraria resposta automática.
+  //
+  // Antes não existia: `dueDate` nascia na própria data do evento, ou seja, a
+  // demanda vencia no dia do Natal em vez de estar pronta antes dele. Editável,
+  // mas ninguém corrige um padrão que parece certo.
+  const [leadDays, setLeadDays] = useState("");
+  const dueDate = useMemo(() => subtractDays(date, leadDays), [date, leadDays]);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set(preselectedProjectIds ?? []));
 
@@ -197,15 +207,31 @@ export function BatchCreateDialog({
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="batch-due">{t("dueDateLabel")}</Label>
+              <Label htmlFor="batch-lead">{t("leadDaysLabel")}</Label>
               <Input
-                id="batch-due"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                id="batch-lead"
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={leadDays}
+                onChange={(e) => setLeadDays(e.target.value)}
+                placeholder={t("leadDaysPlaceholder")}
+                aria-describedby="batch-lead-hint"
               />
             </div>
           </div>
+
+          {/* A conta, à vista. O campo pede dias; o que o gestor precisa julgar é
+              a DATA que sai deles — mostrá-la aqui é o que transforma um número
+              abstrato numa decisão verificável. */}
+          <p id="batch-lead-hint" className="text-xs text-muted-foreground">
+            {dueDate
+              ? t("leadDaysResolved", {
+                  usage: isoToDisplay(date),
+                  due: isoToDisplay(dueDate),
+                })
+              : t("leadDaysHint", { usage: isoToDisplay(date) })}
+          </p>
 
           <div className="space-y-1.5">
             <Label htmlFor="batch-title">{t("titleLabel")}</Label>

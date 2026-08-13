@@ -138,7 +138,11 @@
       "newProjectPlaceholder": "Nome do projeto",
       "saveProject": "Criar",
       "projectCreated": "Projeto criado",
-      "projectError": "Não foi possível criar o projeto"
+      "projectError": "Não foi possível criar o projeto",
+      "leadDaysLabel": "Antecedência (dias)",
+      "leadDaysPlaceholder": "ex.: 14",
+      "leadDaysHint": "Quantos dias ANTES de {usage} o material precisa estar pronto? Informe para calcular o prazo.",
+      "leadDaysResolved": "Uso em {usage} · a demanda precisa estar concluída até {due}."
     }
   },
   "planning": {

@@ -10,9 +10,9 @@ vi.mock("next-intl", () => ({
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
-const logOneOnOne = vi.fn(async () => undefined);
+const logOneOnOne = vi.fn(async (_userId: string, _notes?: string) => undefined);
 vi.mock("@/lib/actions/one-on-one", () => ({
-  logOneOnOne: (...a: unknown[]) => logOneOnOne(...a),
+  logOneOnOne: (userId: string, notes?: string) => logOneOnOne(userId, notes),
 }));
 
 vi.mock("react-hot-toast", () => ({
