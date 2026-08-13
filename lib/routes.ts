@@ -9,7 +9,13 @@ export const PROTECTED_PATHS = [
   "/tasks",
   "/admin",
   "/reports",
+  "/planejamento",
+  "/projects",
+  "/minha-evolucao",
+  "/help",
   "/account",
+  // /tv não está em (protected): tem layout próprio (wallboard, sem navegação)
+  // e autentica por conta de serviço além de sessão. Ver lib/tv-wallboard.ts.
   "/tv",
 ] as const;
 

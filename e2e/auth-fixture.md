@@ -62,10 +62,29 @@ Serve para um teste pontual; expira e precisa ser refeito.
 ```
 
 > `domain` é `localhost` **sem porta** — cookie não distingue porta.
-> `secure: false` porque o dev é http; em produção o nome ganha o prefixo
-> `__Secure-` e exige https.
+> O `script` grava **dois** cookies com o mesmo token: `workos.session-token` e
+> `__Secure-workos.session-token`. Ver abaixo por quê.
 
 6. `pnpm e2e`.
+
+## Rodar contra um build de produção
+
+Necessário para medir desempenho: em `pnpm dev` cada rota compila sob demanda e o
+tempo não significa nada. Duas armadilhas, ambas com o mesmo sintoma enganoso —
+a página responde **200** e parece funcionar, porque o casco do streaming sai
+antes dos dados; a falha só aparece depois, como `Not Authenticated` no log do
+servidor e `net::ERR_ABORTED` no Playwright.
+
+1. **Nome do cookie.** `auth.config.ts` escolhe por `NODE_ENV`, e `next start`
+   roda em produção mesmo em localhost — o cookie vira `__Secure-workos.session-token`.
+   Por isso a fixture grava os dois nomes: cada servidor lê o que espera.
+2. **Host confiável.** Fora da Vercel o Auth.js não confia no host sozinho.
+
+```bash
+npm run build
+AUTH_TRUST_HOST=true NEXTAUTH_URL=http://localhost:3100 npx next start -p 3100
+E2E_BASE_URL=http://localhost:3100 npx playwright test perf --reporter=list
+```
 
 ## Segurança
 

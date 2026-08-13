@@ -16,9 +16,17 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Mesmo nome definido em auth.config.ts. Em http (dev) não há prefixo
-// `__Secure-`; em https teria, e o cookie exigiria secure: true.
-const COOKIE_NAME = "workos.session-token";
+// auth.config.ts decide o nome do cookie por NODE_ENV: em dev é
+// `workos.session-token`; num build de produção vira `__Secure-workos.session-token`
+// com secure: true. Como `next start` roda em produção mesmo em localhost, gravar
+// só o nome de dev faz a fixture autenticar contra `pnpm dev` e falhar contra
+// `next start` — com um sintoma enganoso: a página responde 200 (o casco do
+// streaming sai antes), e só depois quebra com "Not Authenticated".
+//
+// Gravamos os DOIS. Cada servidor lê o nome que espera e ignora o outro, então a
+// mesma fixture serve dev e build de produção sem flag. Chromium trata localhost
+// como origem segura, então envia o cookie `secure` mesmo em http.
+const COOKIE_NAMES = ["workos.session-token", "__Secure-workos.session-token"];
 const OUT = path.join("e2e", ".auth", "state.json");
 const DAYS = 7;
 
@@ -48,20 +56,18 @@ async function main() {
   await prisma.session.create({ data: { sessionToken, userId: user.id, expires } });
 
   const state = {
-    cookies: [
-      {
-        name: COOKIE_NAME,
-        value: sessionToken,
-        // Sem porta de propósito: cookie não distingue porta, e o dev roda em
-        // 3100 enquanto outra instância poderia usar outra.
-        domain: "localhost",
-        path: "/",
-        httpOnly: true,
-        secure: false,
-        sameSite: "Lax",
-        expires: Math.floor(expires.getTime() / 1000),
-      },
-    ],
+    cookies: COOKIE_NAMES.map((name) => ({
+      name,
+      value: sessionToken,
+      // Sem porta de propósito: cookie não distingue porta, e o dev roda em
+      // 3100 enquanto outra instância poderia usar outra.
+      domain: "localhost",
+      path: "/",
+      httpOnly: true,
+      secure: name.startsWith("__Secure-"),
+      sameSite: "Lax",
+      expires: Math.floor(expires.getTime() / 1000),
+    })),
     origins: [],
   };
 

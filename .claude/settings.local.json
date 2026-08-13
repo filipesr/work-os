@@ -32,9 +32,26 @@
       "Bash(curl:*)",
       "Bash(pnpm start)",
       "Bash(pkill:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(wc:*)",
+      "Bash(npx vitest:*)",
+      "Bash(git -C*)",
+      "Bash(git status:*)",
+      "Bash(gh api:*)",
+      "Bash(sed -n '/export async function createProject/,/^}/p' lib/actions/project.ts)",
+      "Bash(sed -n '/export async function getClients/,/^}/p' lib/actions/client.ts)",
+      "Bash(cp:*)",
+      "Read(/Users/fsrezende/.claude/image-cache/**)",
+      "Bash(sed -E 's/=\\(.*\\)/=<redacted>/' /Users/fsrezende/Documents/algorithm/work-os/.env)",
+      "Bash(sed -E 's/=\\(.*\\)/=<redacted>/' /Users/fsrezende/Documents/algorithm/work-os/nas-poc/.env)",
+      "Read(//tmp/**)",
+      "Bash(cd *)",
+      "Bash(git commit *)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": ["/Users/fsrezende/.claude/image-cache/"]
   }
 }

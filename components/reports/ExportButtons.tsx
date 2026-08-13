@@ -1,9 +1,7 @@
 "use client";
 
-import Papa from "papaparse";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import { Download } from "lucide-react";
+import { useState } from "react";
+import { Download, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 export type ExportColumn<T> = { key: keyof T & string; header: string };
@@ -35,28 +33,51 @@ export function ExportButtons<T extends Record<string, unknown>>({
   title?: string;
 }) {
   const t = useTranslations("reports.export");
+  const [busy, setBusy] = useState<"csv" | "pdf" | null>(null);
 
   if (rows.length === 0) return null;
 
-  const downloadCsv = () => {
-    const data = rows.map((r) =>
-      Object.fromEntries(columns.map((c) => [c.header, r[c.key] ?? ""]))
-    );
-    const csv = Papa.unparse(data);
-    triggerDownload(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" }), `${filename}.csv`);
+  // PapaParse e jsPDF entram no bundle só QUANDO o usuário exporta. Importados
+  // estaticamente, somavam ~140 kB ao primeiro carregamento das três telas de
+  // relatório (271 kB contra ~120 kB das demais) — para uma ação que a maioria
+  // das visitas nunca dispara.
+  const downloadCsv = async () => {
+    setBusy("csv");
+    try {
+      const { default: Papa } = await import("papaparse");
+      const data = rows.map((r) =>
+        Object.fromEntries(columns.map((c) => [c.header, r[c.key] ?? ""]))
+      );
+      const csv = Papa.unparse(data);
+      triggerDownload(
+        new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" }),
+        `${filename}.csv`
+      );
+    } finally {
+      setBusy(null);
+    }
   };
 
-  const downloadPdf = () => {
-    const doc = new jsPDF();
-    if (title) doc.text(title, 14, 16);
-    autoTable(doc, {
-      startY: title ? 22 : 14,
-      head: [columns.map((c) => c.header)],
-      body: rows.map((r) => columns.map((c) => String(r[c.key] ?? ""))),
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [37, 99, 235] },
-    });
-    doc.save(`${filename}.pdf`);
+  const downloadPdf = async () => {
+    setBusy("pdf");
+    try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
+      const doc = new jsPDF();
+      if (title) doc.text(title, 14, 16);
+      autoTable(doc, {
+        startY: title ? 22 : 14,
+        head: [columns.map((c) => c.header)],
+        body: rows.map((r) => columns.map((c) => String(r[c.key] ?? ""))),
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [37, 99, 235] },
+      });
+      doc.save(`${filename}.pdf`);
+    } finally {
+      setBusy(null);
+    }
   };
 
   const btn =
@@ -64,11 +85,21 @@ export function ExportButtons<T extends Record<string, unknown>>({
 
   return (
     <div className="flex gap-2">
-      <button type="button" onClick={downloadCsv} className={btn}>
-        <Download className="h-4 w-4" /> {t("csv")}
+      <button type="button" onClick={downloadCsv} disabled={busy !== null} className={btn}>
+        {busy === "csv" ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Download className="h-4 w-4" />
+        )}{" "}
+        {t("csv")}
       </button>
-      <button type="button" onClick={downloadPdf} className={btn}>
-        <Download className="h-4 w-4" /> {t("pdf")}
+      <button type="button" onClick={downloadPdf} disabled={busy !== null} className={btn}>
+        {busy === "pdf" ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Download className="h-4 w-4" />
+        )}{" "}
+        {t("pdf")}
       </button>
     </div>
   );
