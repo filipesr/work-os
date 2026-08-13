@@ -644,18 +644,36 @@ model ActivityLog {
   stageId String
   stage   TemplateStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
 
+  /// Carrega o `userId` ENQUANTO o período está aberto, e volta a null ao fechar.
+  ///
+  /// É o que garante UMA tarefa em execução por pessoa mesmo sob concorrência:
+  /// dois cliques simultâneos não conseguem abrir dois cronômetros. O truque é o
+  /// NULL — no Postgres, nulos não colidem num índice único, então os milhares de
+  /// logs fechados convivem e só os abertos disputam a unicidade.
+  ///
+  /// Existe como coluna, e não como índice parcial em `userId WHERE endedAt IS
+  /// NULL`, porque índice parcial o Prisma não declara: ele some do schema, um
+  /// `db push` não o recria (comprovado numa recuperação de banco) e `migrate dev`
+  /// o lê como drift e propõe derrubá-lo. Um `@unique` comum é versionado, gerado
+  /// e reproduzível.
+  ///
+  /// INVARIANTE: não-nulo exatamente quando `endedAt` é nulo. Na aplicação há só
+  /// dois pontos de escrita, ambos únicos por construção — `startWorkOnTask` abre,
+  /// `closeActivityLog` fecha. Não abra nem feche por fora deles. O terceiro é o
+  /// `prisma/demo-seed.ts`, que fabrica os dois estados direto.
+  ///
+  /// O modo de falha é assimétrico e vale conhecer: esquecer de PREENCHER ao abrir
+  /// só enfraquece a garantia (a checagem em `startWorkOnTask` ainda pega o caso
+  /// comum); esquecer de LIMPAR ao fechar TRAVA a pessoa — ela não consegue mais
+  /// iniciar nada, e o erro aparece longe daqui, como violação de unicidade.
+  openForUserId String? @unique
+
   @@index([userId, endedAt]) // Index for quickly finding active tasks
 
-  // ATENÇÃO — existe no banco um índice que o Prisma NÃO consegue declarar aqui:
-  //
-  //   CREATE UNIQUE INDEX "ActivityLog_userId_open_key"
-  //     ON "ActivityLog"("userId") WHERE "endedAt" IS NULL;
-  //
-  // (migração 20260812160000). Ele garante UMA tarefa em execução por pessoa
-  // mesmo sob concorrência — dois cliques simultâneos não conseguem abrir dois
-  // cronômetros. O Prisma não suporta índice parcial no schema, então
-  // `prisma migrate dev` vai enxergar isso como drift e propor DROPÁ-LO.
-  // NÃO ACEITE: derrubar o índice devolve a corrida silenciosamente.
+  // O banco também tem o índice parcial `ActivityLog_userId_open_key` (migração
+  // 20260812160000), que garante o mesmo derivando de `endedAt`. Virou defesa
+  // REDUNDANTE: se um `migrate dev` propuser derrubá-lo, pode aceitar — a coluna
+  // acima sustenta a regra sozinha.
 }
 
 // --- 7. Calendário de datas (spec 2026-08-12) ---

@@ -240,11 +240,23 @@ Cada superfície e a razão de existir **daquela forma**.
 
 ### Cronômetro de tarefa (exclusividade e interrupção)
 
-- **Uma tarefa contando tempo por pessoa, garantido pelo BANCO** → índice
-  parcial único (`userId WHERE endedAt IS NULL`). Antes era só convenção do
-  código, e convenção não sobrevive a concorrência: dois cliques simultâneos
-  abriam dois cronômetros. O Prisma não declara índice parcial no schema —
-  há um aviso no modelo para que `migrate dev` não o derrube como drift.
+- **Uma tarefa contando tempo por pessoa, garantido pelo BANCO** → antes era só
+  convenção do código, e convenção não sobrevive a concorrência: a checagem lê
+  antes de escrever, então dois cliques simultâneos leem "nenhuma ativa" ao mesmo
+  tempo e abrem dois cronômetros.
+- **A garantia é uma COLUNA, não um índice parcial** → `ActivityLog.openForUserId`
+  carrega o `userId` enquanto o período está aberto e volta a null ao fechar; um
+  `@unique` comum faz o resto, porque no Postgres nulos não colidem — os fechados
+  convivem aos milhares e só os abertos disputam. A primeira versão foi um índice
+  parcial (`userId WHERE endedAt IS NULL`), que funciona mas o Prisma não declara:
+  sumia do schema, um `db push` não o recriava (comprovado numa recuperação de
+  banco, teve que ser recriado à mão) e `migrate dev` o lia como drift e propunha
+  derrubá-lo. **O custo aceito:** a coluna duplica o `userId` e vira estado a
+  manter — e o modo de falha é assimétrico. Não preencher ao abrir só enfraquece a
+  garantia; não limpar ao fechar **trava a pessoa**, com o erro aparecendo longe,
+  no próximo "Iniciar". Por isso as duas escritas são ponto único
+  (`startWorkOnTask` e `closeActivityLog`) e cada lado tem teste que falha se a
+  coluna for esquecida. O índice parcial continua no banco como defesa redundante.
 - **Bug corrigido — horas descartadas na troca de tarefa** → havia dois
   caminhos de fechamento e só o "Parar" manual criava o `TimeLog`. Iniciar B com
   A rodando fechava A **sem registrar nada**: as horas sumiam do relatório de

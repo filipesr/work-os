@@ -86,6 +86,45 @@ describe("closeActivityLog — o caminho único de fechamento", () => {
     expect(result.recorded).toBe(false);
   });
 
+  it("libera `openForUserId` ao fechar — senão a pessoa fica travada", async () => {
+    // A invariante do schema: `openForUserId` é não-nulo EXATAMENTE enquanto
+    // `endedAt` é nulo. Este é o lado perigoso dela. Esquecer de limpar não
+    // quebra nada visível na hora: o período fica fechado, as horas entram, o
+    // relatório fecha. Mas o índice único continua enxergando a pessoa como
+    // ocupada, e o próximo "Iniciar" dela falha — com erro de constraint, longe
+    // daqui, sem nada apontando para o fechamento que não limpou.
+    const client = makeClient();
+    await closeActivityLog(client as never, LOG, new Date("2026-08-12T10:00:00Z"), "x");
+
+    const data = (client.activityLog.update.mock.calls[0][0] as { data: Record<string, unknown> })
+      .data;
+    expect(data.openForUserId).toBeNull();
+  });
+
+  it("fecha e libera na MESMA escrita", async () => {
+    // Dois updates separados abririam uma janela em que o período está fechado
+    // mas a pessoa ainda consta ocupada. Uma escrita só torna isso atômico.
+    const client = makeClient();
+    await closeActivityLog(client as never, LOG, new Date("2026-08-12T10:00:00Z"));
+
+    expect(client.activityLog.update).toHaveBeenCalledTimes(1);
+    const data = (client.activityLog.update.mock.calls[0][0] as { data: Record<string, unknown> })
+      .data;
+    expect(Object.keys(data).sort()).toEqual(["endedAt", "openForUserId"]);
+  });
+
+  it("libera mesmo quando a duração é zero e não há TimeLog", async () => {
+    // O caminho que sai mais cedo: sem horas para registrar, é fácil o
+    // fechamento virar um atalho que esquece a coluna.
+    const client = makeClient();
+    await closeActivityLog(client as never, LOG, LOG.startedAt);
+
+    const data = (client.activityLog.update.mock.calls[0][0] as { data: Record<string, unknown> })
+      .data;
+    expect(data.openForUserId).toBeNull();
+    expect(client.timeLog.create).not.toHaveBeenCalled();
+  });
+
   it("fecha com o instante recebido, não com 'agora'", async () => {
     // O caller controla o instante para que o fechamento e o TimeLog usem
     // exatamente o mesmo — senão as horas e o `logDate` divergem.

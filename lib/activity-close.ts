@@ -49,7 +49,15 @@ export async function closeActivityLog(
   endedAt: Date,
   description?: string | null
 ): Promise<{ hoursSpent: number; recorded: boolean }> {
-  await client.activityLog.update({ where: { id: log.id }, data: { endedAt } });
+  // `openForUserId` volta a null JUNTO com o carimbo de `endedAt`, na mesma
+  // escrita — é o que mantém a invariante do schema (não-nulo exatamente
+  // enquanto aberto). Separar as duas em updates distintos abriria a janela em
+  // que a pessoa aparece ocupada com um período já encerrado, e ela não
+  // conseguiria iniciar mais nada.
+  await client.activityLog.update({
+    where: { id: log.id },
+    data: { endedAt, openForUserId: null },
+  });
 
   const hoursSpent = hoursBetween(log.startedAt, endedAt);
   const recorded = shouldRecordTime(hoursSpent);

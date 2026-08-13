@@ -30,9 +30,11 @@ async function getCurrentUser() {
  * checagem é do servidor: a UI já sabe que há outra ativa e abre o modal antes,
  * mas a regra não pode depender de a UI se comportar.
  *
- * A exclusividade também é garantida pelo banco (índice parcial único em
- * `userId WHERE endedAt IS NULL`, migração 20260812160000) — sem isso, dois
- * cliques simultâneos abririam dois cronômetros.
+ * A exclusividade também é garantida pelo BANCO, por índice único em
+ * `ActivityLog.openForUserId` — o campo carrega o `userId` enquanto o período
+ * está aberto e volta a null ao fechar. Sem isso, dois cliques simultâneos
+ * abririam dois cronômetros: a checagem acima lê antes de escrever, e duas
+ * transações concorrentes leem "nenhuma ativa" ao mesmo tempo.
  */
 export async function startWorkOnTask(
   taskId: string,
@@ -70,7 +72,18 @@ export async function startWorkOnTask(
       }
 
       const newLog = await tx.activityLog.create({
-        data: { userId, taskId, stageId: currentStageId, startedAt: new Date(), endedAt: null },
+        data: {
+          userId,
+          taskId,
+          stageId: currentStageId,
+          startedAt: new Date(),
+          endedAt: null,
+          // Marca o período como ABERTO para esta pessoa. É este campo, e não o
+          // `endedAt`, que o banco usa para recusar um segundo cronômetro
+          // simultâneo (índice único; nulos não colidem). Sai junto com o
+          // `endedAt` em closeActivityLog.
+          openForUserId: userId,
+        },
       });
 
       return { status: "started" as const, log: newLog };

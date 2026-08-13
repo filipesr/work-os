@@ -47,6 +47,36 @@ describe("startWorkOnTask — exclusividade e justificativa", () => {
     expect(tx.timeLog.create).not.toHaveBeenCalled();
   });
 
+  it("marca o período como aberto para a pessoa", async () => {
+    // O outro lado da invariante de `ActivityLog.openForUserId`. Sem este campo
+    // preenchido, o índice único não vê o período aberto e a exclusividade
+    // depende só do read-then-write acima — que não protege contra dois cliques
+    // simultâneos, porque as duas transações leem "nenhuma ativa" ao mesmo tempo.
+    tx.activityLog.findFirst.mockResolvedValue(null);
+    await startWorkOnTask("task-B", "stage-B");
+
+    const data = (tx.activityLog.create.mock.calls[0][0] as { data: Record<string, unknown> }).data;
+    expect(data.openForUserId).toBe("u1");
+    expect(data.userId).toBe("u1");
+    // Aberto = endedAt nulo E openForUserId preenchido. Os dois juntos, sempre.
+    expect(data.endedAt).toBeNull();
+  });
+
+  it("ao interromper, o período anterior é liberado antes de abrir o novo", async () => {
+    // O caminho mais arriscado para a invariante: fecha um e abre outro na MESMA
+    // transação, para a mesma pessoa. Se o fechamento não limpasse a coluna, o
+    // índice único recusaria o novo período e a interrupção falharia inteira.
+    tx.activityLog.findFirst.mockResolvedValue(PREVIOUS);
+    await startWorkOnTask("task-B", "stage-B", "cliente pediu urgência");
+
+    const fechamento = (tx.activityLog.update.mock.calls[0][0] as { data: Record<string, unknown> })
+      .data;
+    const abertura = (tx.activityLog.create.mock.calls[0][0] as { data: Record<string, unknown> })
+      .data;
+    expect(fechamento.openForUserId).toBeNull();
+    expect(abertura.openForUserId).toBe("u1");
+  });
+
   it("iniciar a tarefa em que já está é no-op", async () => {
     tx.activityLog.findFirst.mockResolvedValue(PREVIOUS);
     const res = (await startWorkOnTask("task-A", "stage-A")) as { status?: string };

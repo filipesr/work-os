@@ -874,7 +874,7 @@ async function main() {
   // UMA sessão aberta por pessoa. `activityLogCandidates` tem uma entrada por
   // atribuição de etapa, então a mesma pessoa aparece várias vezes ali — um
   // slice direto sorteava a mesma duas vezes e criava dois cronômetros
-  // simultâneos, que é o que o índice parcial `ActivityLog_userId_open_key`
+  // simultâneos, que é o que o índice único de `ActivityLog.openForUserId`
   // proíbe (e o que o quadro de presença mostraria como duas tarefas ao vivo).
   const maxActive = randomInt(3, 6);
   const seenUsers = new Set<string>();
@@ -894,6 +894,10 @@ async function main() {
         stageId: worker.stageId,
         startedAt: minutesAgo(randomInt(5, 120)),
         endedAt: null,
+        // Aberto: a coluna carrega o dono. É a invariante do schema — não-nulo
+        // exatamente enquanto `endedAt` é nulo. Sem isto o seed produziria
+        // períodos que a aplicação lê como abertos e o índice não vê.
+        openForUserId: worker.userId,
       },
     });
     activityLogCount++;
@@ -909,6 +913,9 @@ async function main() {
         stageId: candidate.stageId,
         startedAt,
         endedAt,
+        // Fechado: coluna nula, e é o nulo que permite milhares deles convivendo
+        // sob o índice único.
+        openForUserId: null,
       },
     });
     activityLogCount++;
