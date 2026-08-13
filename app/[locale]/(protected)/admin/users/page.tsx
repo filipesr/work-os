@@ -21,6 +21,19 @@ import { DEFAULT_PAGE_SIZE, paginate, parsePage } from "@/lib/pagination";
 const SORTABLE_FIELDS = ["name", "email", "role"] as const;
 type SortField = (typeof SORTABLE_FIELDS)[number];
 
+/** Diretório de pessoas se procura por NOME — era o email, que ninguém decora.
+ *  Constante única: o padrão era repetido na query e no cabeçalho da tabela, e
+ *  dois lugares com o mesmo default acabam divergindo. */
+const DEFAULT_SORT: SortField = "name";
+
+/** Ordenação, com nome nulo por último. Uma conta recém-criada pelo Google pode
+ *  não ter nome ainda; sem isso ela encabeçaria a lista. */
+function buildOrderBy(field: SortField, direction: Prisma.SortOrder) {
+  return field === "name"
+    ? { name: { sort: direction, nulls: "last" as const } }
+    : { [field]: direction };
+}
+
 type UsersQuery = {
   q?: string;
   role?: string;
@@ -53,14 +66,14 @@ async function getUsers(page: number, pageSize: number, query: UsersQuery) {
 
   const sortField: SortField = (SORTABLE_FIELDS as readonly string[]).includes(query.sort ?? "")
     ? (query.sort as SortField)
-    : "email";
+    : DEFAULT_SORT;
   const direction: Prisma.SortOrder = query.dir === "desc" ? "desc" : "asc";
 
   const [items, total] = await Promise.all([
     prisma.user.findMany({
       where,
       include: { teams: { select: { id: true, name: true }, orderBy: { name: "asc" } } },
-      orderBy: { [sortField]: direction },
+      orderBy: buildOrderBy(sortField, direction),
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
@@ -100,7 +113,7 @@ export default async function UsersPage({
 
   const currentSort: SortField = (SORTABLE_FIELDS as readonly string[]).includes(query.sort ?? "")
     ? (query.sort as SortField)
-    : "email";
+    : DEFAULT_SORT;
   const currentDir = query.dir === "desc" ? "desc" : "asc";
 
   // Sort link for a column header: toggle direction when already active, else asc.
