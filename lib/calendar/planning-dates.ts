@@ -56,20 +56,71 @@ export function daysBetweenIso(de: string, ate: string): number | null {
   return Math.round((b.getTime() - a.getTime()) / DIA_MS);
 }
 
+/** Horas de trabalho por dia. A previsão das etapas é em horas; a agenda é em dias. */
+export const HORAS_POR_DIA_UTIL = 8;
+
+/** Sábado ou domingo. `getUTCDay()`: 0 = domingo, 6 = sábado. */
+function isFimDeSemana(d: Date): boolean {
+  const dia = d.getUTCDay();
+  return dia === 0 || dia === 6;
+}
+
 /**
- * Início sugerido: o prazo menos o tempo que o fluxo inteiro consome.
+ * Horas de previsão → dias ÚTEIS de trabalho, arredondando para cima.
+ *
+ * Para cima porque 9h não cabem num dia de 8h: exigem dois. Arredondar para
+ * baixo espremeria o cronograma exatamente onde ele já não cabe.
+ */
+export function horasParaDiasUteis(horas: number): number {
+  return Math.ceil(horas / HORAS_POR_DIA_UTIL);
+}
+
+/**
+ * O dia útil em que o trabalho precisa COMEÇAR para terminar em `fimIso`,
+ * dispondo de `diasUteis` dias de trabalho.
+ *
+ * A contagem é INCLUSIVA nas duas pontas: 1 dia útil com entrega na segunda
+ * significa começar e terminar na segunda — não na sexta anterior. Foi a decisão
+ * que exigiu mais cuidado aqui, porque a intuição de "subtrair N dias" dá sempre
+ * um dia a mais de folga do que existe.
+ *
+ * Quando `fimIso` cai no fim de semana, o último dia de trabalho vira a sexta
+ * anterior: ninguém entrega no sábado, e contar a partir dele daria um início
+ * mais tarde do que o real.
+ */
+export function startForWorkingDays(fimIso: string, diasUteis: number): string {
+  const fim = parseIso(fimIso);
+  if (!fim || !Number.isFinite(diasUteis) || diasUteis < 1) return "";
+
+  // Recua até um dia útil: prazo no sábado significa pronto até sexta.
+  const cursor = new Date(fim.getTime());
+  while (isFimDeSemana(cursor)) cursor.setUTCDate(cursor.getUTCDate() - 1);
+
+  // O próprio dia final já conta como o primeiro dos dias úteis (inclusivo).
+  let restantes = diasUteis - 1;
+  while (restantes > 0) {
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+    if (!isFimDeSemana(cursor)) restantes--;
+  }
+  return toIso(cursor);
+}
+
+/**
+ * Início sugerido: o prazo recuado pelo tempo que o fluxo inteiro consome.
  *
  * `totalHoras` é a soma de `expectedDurationHours` das etapas do template — o
- * mesmo número que hoje serve de SLA por etapa, agora somado para responder
- * "quando isto precisa começar?". Convertido em dias CORRIDOS, não úteis: a
- * conta é de calendário, e tratar fim de semana exigiria feriado por país, que o
- * app tem mas por outra via (CalendarOccurrence) e para outro fim.
+ * mesmo número que serve de SLA por etapa, agora somado para responder "quando
+ * isto precisa começar?".
+ *
+ * A conversão é 8h por dia, de segunda a sexta. Feriado NÃO é descontado: o app
+ * conhece feriados de três países (AR/BR/PY) via `CalendarOccurrence`, e qual
+ * deles se aplica depende do cliente — descontar o feriado errado erraria a data
+ * com ares de precisão. O sábado e o domingo são universais; o feriado não.
  *
  * Devolve "" quando não há duração configurada — sem isso a conta produziria
  * "comece hoje" para todo fluxo não configurado, que é pior que não responder.
  */
 export function suggestedStartIso(dueIso: string, totalHoras: number | null): string {
   if (!totalHoras || totalHoras <= 0) return "";
-  const dias = Math.ceil(totalHoras / 24);
-  return subtractDays(dueIso, dias);
+  return startForWorkingDays(dueIso, horasParaDiasUteis(totalHoras));
 }

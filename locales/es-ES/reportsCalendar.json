@@ -144,7 +144,7 @@
       "leadDaysHint": "¿Cuántos días ANTES de {usage} el material tiene que estar listo? Indícalo para calcular el plazo.",
       "leadDaysResolved": "Uso el {usage} · la demanda debe estar concluida el {due}.",
       "startLabel": "Inicio planificado",
-      "startSuggested": "Sugerido: {date}, por la suma de las etapas del flujo. Ajústalo si sabes mejor.",
+      "startSuggested": "Sugerido: {date}, por las etapas del flujo (8h/día, lun–vie). Ajústalo si sabes mejor.",
       "startNoEstimate": "Sin sugerencia: las etapas de este flujo no tienen previsión de horas configurada.",
       "compressedTitle": "Cronograma comprimido en {days} día(s)",
       "compressedBody": "Las etapas de este flujo piden inicio el {suggested}. Empezando el {chosen}, la ejecución tendrá menos tiempo del configurado — el riesgo de atraso es real.",
