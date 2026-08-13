@@ -98,6 +98,15 @@
       "unassigned": "Sem responsável",
       "close": "Fechar",
       "open": "Abrir demanda"
-    }
+    },
+    "state": {
+      "delivered": "Entregue no prazo",
+      "deliveredLate": "Entregue com atraso",
+      "late": "Atrasada",
+      "atRisk": "Em risco — deveria ter começado",
+      "inProgress": "Em execução",
+      "planned": "Planejada"
+    },
+    "planState": "Situação no plano"
   }
 }

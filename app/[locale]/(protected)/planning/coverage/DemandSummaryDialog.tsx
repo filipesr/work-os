@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { taskStatusTone } from "@/lib/status-tone";
+import { DEMAND_STATE_TONE } from "@/lib/calendar/demand-state";
 import type { OccurrenceTask } from "@/lib/actions/weekly-coverage";
 
 /**
@@ -37,6 +38,9 @@ export function DemandSummaryDialog({
   // Os rótulos de status vivem em admin.tasks.list (mesma fonte da lista de
   // demandas) — não há um namespace "tasks.taskStatus".
   const tTasks = useTranslations("admin.tasks.list");
+  // Os rótulos de estado são compartilhados com as tags (DemandChips) e vivem um
+  // nível acima. Duplicá-los aqui faria uma das cópias envelhecer sozinha.
+  const tCoverage = useTranslations("planning.coverage");
 
   if (!task) return null;
 
@@ -60,6 +64,15 @@ export function DemandSummaryDialog({
         </DialogHeader>
 
         <dl className="divide-y divide-border">
+          {/* Duas leituras, lado a lado e nomeadas: onde a demanda está no FLUXO
+              e onde ela está no PLANO. Uma IN_PROGRESS pode estar tranquila ou
+              atrasada, e mostrar só a primeira escondia a segunda. */}
+          <Row label={tCoverage("planState")}>
+            <StatusBadge
+              tone={DEMAND_STATE_TONE[task.state]}
+              label={tCoverage(`state.${task.state}`)}
+            />
+          </Row>
           <Row label={t("status")}>
             <StatusBadge
               tone={taskStatusTone(task.status)}

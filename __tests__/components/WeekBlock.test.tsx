@@ -59,6 +59,7 @@ const OCC = {
       status: "IN_PROGRESS" as const,
       dueDateIso: "2026-08-15",
       assigneeName: "Ana",
+      state: "inProgress" as const,
     },
   ],
 };
@@ -154,6 +155,7 @@ describe("WeekBlock — conteúdo", () => {
             status: "BACKLOG" as const,
             dueDateIso: "2026-08-12",
             assigneeName: null,
+            state: "planned" as const,
           },
         ],
       })

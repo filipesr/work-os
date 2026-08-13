@@ -5,6 +5,7 @@ import { requireManagerOrAdmin } from "@/lib/permissions";
 import { formatISODate } from "@/lib/dates";
 import { weekSlots, windowRange, weekIndexOf } from "@/lib/calendar/weekly-window";
 import type { OccurrenceKind, TaskStatus } from "@prisma/client";
+import { demandState, type DemandState } from "@/lib/calendar/demand-state";
 
 export interface CoverageClient {
   id: string;
@@ -21,6 +22,10 @@ export interface OccurrenceTask {
   status: TaskStatus;
   dueDateIso: string | null;
   assigneeName: string | null;
+  /** Posição em relação ao PLANO (entregue / atrasada / em risco / …). Diferente
+   *  de `status`, que diz onde a demanda está no fluxo. É esta leitura que faz a
+   *  demanda concluída aparecer como boa notícia em vez de sumir. */
+  state: DemandState;
 }
 
 export interface WeekOccurrence {
@@ -75,6 +80,10 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
 
   const slots = weekSlots(weeks);
   const range = windowRange(slots);
+  // Um instante só para a página inteira. Recalcular `new Date()` por linha faria
+  // duas demandas idênticas caírem em estados diferentes se o render atravessasse
+  // a meia-noite — raro, e impossível de reproduzir depois.
+  const agora = new Date();
 
   const [clients, tasks, occurrences] = await Promise.all([
     // Cliente ativo = tem projeto ativo. Sem isso, um cliente arquivado
@@ -97,6 +106,9 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
         title: true,
         status: true,
         dueDate: true,
+        plannedStartAt: true,
+        startedAt: true,
+        completedAt: true,
         calendarOccurrenceId: true,
         assignee: { select: { name: true, email: true } },
         project: { select: { name: true, clientId: true, client: { select: { name: true } } } },
@@ -119,6 +131,9 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
             title: true,
             status: true,
             dueDate: true,
+            plannedStartAt: true,
+            startedAt: true,
+            completedAt: true,
             assignee: { select: { name: true, email: true } },
             project: {
               select: { name: true, clientId: true, client: { select: { name: true } } },
@@ -147,6 +162,7 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
       assigneeName: t.assignee?.name ?? t.assignee?.email ?? null,
       clientName: t.project.client.name,
       projectName: t.project.name,
+      state: demandState(t, agora),
     });
   }
 
@@ -170,6 +186,7 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
         assigneeName: t.assignee?.name ?? t.assignee?.email ?? null,
         clientName: t.project.client.name,
         projectName: t.project.name,
+        state: demandState(t, agora),
       })),
     });
   }
