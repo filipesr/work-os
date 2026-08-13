@@ -68,11 +68,11 @@ const managerItems: NavItem[] = [
       {
         id: "calendario",
         labelKey: "calendar",
-        href: "/planejamento/calendario",
+        href: "/planning/calendar",
         icon: CalendarRange,
       },
-      { id: "cobertura", labelKey: "cobertura", href: "/planejamento/cobertura", icon: Target },
-      { id: "datas", labelKey: "datas", href: "/planejamento/datas", icon: CalendarDays },
+      { id: "cobertura", labelKey: "cobertura", href: "/planning/coverage", icon: Target },
+      { id: "datas", labelKey: "datas", href: "/planning/dates", icon: CalendarDays },
     ],
   },
   {

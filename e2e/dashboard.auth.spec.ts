@@ -17,15 +17,36 @@ test.describe("telas internas (autenticado)", () => {
   test("cobertura semanal renderiza as semanas", async ({ page }) => {
     // A tela que mais iteramos. Verifica o que teste de componente não alcança:
     // que a página inteira monta com dados reais, sem erro de servidor.
-    await page.goto("/planejamento/cobertura");
+    await page.goto("/planning/coverage");
     await expect(page).not.toHaveURL(/\/auth\/signin/);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
   test("datas do calendário renderiza a tabela", async ({ page }) => {
-    await page.goto("/planejamento/datas");
+    await page.goto("/planning/dates");
     await expect(page).not.toHaveURL(/\/auth\/signin/);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  });
+
+  test("os endereços antigos em português redirecionam preservando a query", async ({ page }) => {
+    // As rotas passaram de português para inglês. Autenticado é o único lugar
+    // onde dá para ver o 308 acontecer: anônimo é barrado pelo middleware antes
+    // de chegar ao stub. A query importa tanto quanto o caminho — um favorito
+    // do calendário guarda ?view=month, e perder isso abre a tela errada.
+    const mudancas: [string, string][] = [
+      ["/planejamento/calendario?view=month", "/planning/calendar?view=month"],
+      ["/planejamento/cobertura", "/planning/coverage"],
+      ["/planejamento/datas", "/planning/dates"],
+      ["/minha-evolucao", "/my-evolution"],
+      ["/reports/calendar?view=month", "/planning/calendar?view=month"],
+    ];
+
+    for (const [antigo, novo] of mudancas) {
+      await page.goto(antigo);
+      await expect(page, `${antigo} deveria levar a ${novo}`).toHaveURL(
+        new RegExp(`${novo.replace(/[?]/g, "\\?")}$`)
+      );
+    }
   });
 
   test("nenhuma tela de gestão vaza MISSING_MESSAGE", async ({ page }) => {
@@ -37,9 +58,9 @@ test.describe("telas internas (autenticado)", () => {
     // domínio ou nome de arquivo casaria e a falha seria misteriosa.
     const rotas = [
       "/dashboard",
-      "/planejamento/cobertura",
-      "/planejamento/datas",
-      "/planejamento/calendario",
+      "/planning/coverage",
+      "/planning/dates",
+      "/planning/calendar",
       "/reports/performance",
       "/reports/productivity",
       "/admin/users",

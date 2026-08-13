@@ -10,9 +10,9 @@ import { test, expect } from "@playwright/test";
  */
 const ROTAS = [
   "/dashboard",
-  "/planejamento/cobertura",
-  "/planejamento/datas",
-  "/planejamento/calendario",
+  "/planning/coverage",
+  "/planning/dates",
+  "/planning/calendar",
   "/reports/performance",
   "/reports/productivity",
   "/reports/live-activity",

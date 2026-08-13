@@ -25,14 +25,14 @@ import { CalendarFiltersBar } from "./CalendarFiltersBar";
 import { CalendarViewToggle } from "./CalendarViewToggle";
 import { PlanningModeToggle } from "./PlanningModeToggle";
 import { PlanningModeBanner } from "./PlanningModeBanner";
-import { CalendarGrid } from "@/components/planejamento/calendario/CalendarGrid";
-import { CalendarDndContext } from "@/components/planejamento/calendario/CalendarDndContext";
-import { MonthlyCalendar } from "@/components/planejamento/calendario/MonthlyCalendar";
+import { CalendarGrid } from "@/components/planning/calendar/CalendarGrid";
+import { CalendarDndContext } from "@/components/planning/calendar/CalendarDndContext";
+import { MonthlyCalendar } from "@/components/planning/calendar/MonthlyCalendar";
 import type {
   DayAnniversaries,
   MonthDay,
   MonthEvent,
-} from "@/components/planejamento/calendario/monthly-types";
+} from "@/components/planning/calendar/monthly-types";
 
 export const metadata: Metadata = {
   title: "Calendário",

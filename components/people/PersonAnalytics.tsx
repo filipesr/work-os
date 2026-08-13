@@ -23,7 +23,7 @@ import ReworkClassifyToggle from "@/components/people/ReworkClassifyToggle";
 
 /**
  * A analítica de UMA pessoa — a mesma superfície vista por ela mesma
- * (`/minha-evolucao`) e pelo gestor (`/reports/user/[id]`). Uma implementação
+ * (`/my-evolution`) e pelo gestor (`/reports/user/[id]`). Uma implementação
  * só: se a leitura do gestor divergisse da que a pessoa vê, a conversa de 1:1
  * começaria com as duas partes olhando números diferentes.
  *

@@ -20,7 +20,7 @@ export const metadata: Metadata = { title: "Cobertura semanal" };
 /**
  * Cobertura semanal: quem tem agenda em cada semana e quem está parado.
  *
- * Separada de `/planejamento/datas` porque as duas têm dinâmicas opostas — esta
+ * Separada de `/planning/dates` porque as duas têm dinâmicas opostas — esta
  * é leitura recorrente de planejamento (abre-se toda semana para agir), aquela é
  * cadastro esporádico de calendário (mexe-se poucas vezes por ano).
  */

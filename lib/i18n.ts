@@ -28,7 +28,7 @@ export async function getMessages(locale: Locale) {
     reportsCalendar: (await import(`@/locales/${locale}/reportsCalendar.json`)).default,
     reportsTeam: (await import(`@/locales/${locale}/reportsTeam.json`)).default,
     help: (await import(`@/locales/${locale}/help.json`)).default,
-    // Analítica de UMA pessoa — compartilhada por /minha-evolucao (a própria) e
+    // Analítica de UMA pessoa — compartilhada por /my-evolution (a própria) e
     // /reports/user/[id] (o gestor). Namespace único porque é a MESMA tela.
     people: (await import(`@/locales/${locale}/people.json`)).default,
     planning: (await import(`@/locales/${locale}/planning.json`)).default,

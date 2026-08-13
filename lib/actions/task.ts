@@ -178,8 +178,8 @@ export async function createTasksBatch(input: {
     }
   });
 
-  revalidatePath("/planejamento/calendario");
-  revalidatePath("/planejamento/datas");
+  revalidatePath("/planning/calendar");
+  revalidatePath("/planning/dates");
   revalidatePath("/admin/tasks");
   revalidatePath("/dashboard");
 

@@ -365,7 +365,7 @@ Cada superfície e a razão de existir **daquela forma**.
   a exceção virar `: keep-alive`, mascarando a negação numa conexão que nunca
   falhava visivelmente.
 
-### Calendário (/planejamento/calendario)
+### Calendário (/planning/calendar)
 
 - **Mora em "Planejamento", não em "Relatórios"** → a tela **escreve** (reagenda
   vencimento, cria demanda). Listada como relatório, parecia leitura
@@ -386,10 +386,10 @@ Cada superfície e a razão de existir **daquela forma**.
 - **Feriados e aniversários como marcador discreto** → **P6**: contexto de
   planejamento (não agendar entrega num feriado), nunca protagonista da grade.
 
-### Visão de UMA pessoa (/minha-evolucao e /reports/user/[id])
+### Visão de UMA pessoa (/my-evolution e /reports/user/[id])
 
 - **Uma implementação só (`PersonAnalytics`), duas portas** → **P2**: a pessoa
-  (`/minha-evolucao`) e o gestor (`/reports/user/[id]`) veem **a mesma tela**. Se
+  (`/my-evolution`) e o gestor (`/reports/user/[id]`) veem **a mesma tela**. Se
   divergissem, a 1:1 começaria com as duas partes olhando números diferentes.
 - **Acesso `requireSelfOrManager`, fail-closed** → salvaguarda (5) da exceção 3b.
   **Correção registrada:** o relatório usava `requireManagerOrAdmin`, que trancava

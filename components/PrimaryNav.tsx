@@ -235,7 +235,7 @@ export function PrimaryNav({ role, userName }: { role: AppRole; userName: string
                   <UserIcon className="h-4 w-4" aria-hidden="true" />
                   {t("myAccount")}
                 </Link>
-                <Link href="/minha-evolucao" role="menuitem" className="nav-menu-item">
+                <Link href="/my-evolution" role="menuitem" className="nav-menu-item">
                   <TrendingUp className="h-4 w-4" aria-hidden="true" />
                   {t("minhaEvolucao")}
                 </Link>

@@ -27,13 +27,16 @@ test.describe("smoke", () => {
     expect(decodeURIComponent(page.url())).toContain("/admin/tasks");
   });
 
-  test("a rota antiga do calendário sobrevive ao login", async ({ page }) => {
-    // O 308 vive na PÁGINA, e o middleware barra antes dela — anônimo nunca o
-    // alcança. O que dá para verificar sem autenticar é que o caminho antigo
-    // chega inteiro ao callbackUrl: depois do login o usuário cai nele e só
-    // então o 308 o leva a /planejamento/calendario.
+  test("a rota antiga do calendário leva ao endereço atual antes do login", async ({ page }) => {
+    // O 308 vive no MIDDLEWARE, antes da checagem de sessão. Então o anônimo é
+    // primeiro levado ao endereço atual e só depois ao login — o callbackUrl que
+    // ele traz de volta já é o novo. Feito na página seria o contrário: o
+    // callbackUrl guardaria o endereço defunto e o desvio custaria um render
+    // inteiro do layout autenticado antes de quicar.
     await page.goto("/reports/calendar?view=month");
     await expect(page).toHaveURL(/\/auth\/signin/);
-    expect(decodeURIComponent(page.url())).toContain("/reports/calendar");
+    const url = decodeURIComponent(page.url());
+    expect(url).toContain("/planning/calendar");
+    expect(url).not.toContain("/reports/calendar");
   });
 });

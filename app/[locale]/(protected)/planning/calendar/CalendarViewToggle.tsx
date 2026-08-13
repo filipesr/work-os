@@ -26,7 +26,7 @@ export function CalendarViewToggle({ view }: { view: View }) {
     if (target === "month") params.set("view", "month");
     else params.delete("view");
     const qs = params.toString();
-    return `/planejamento/calendario${qs ? `?${qs}` : ""}`;
+    return `/planning/calendar${qs ? `?${qs}` : ""}`;
   };
 
   const base =

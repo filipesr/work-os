@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { WeekBlock } from "@/app/[locale]/(protected)/planejamento/cobertura/WeekBlock";
+import { WeekBlock } from "@/app/[locale]/(protected)/planning/coverage/WeekBlock";
 import type { WeekCoverage } from "@/lib/actions/weekly-coverage";
 
 vi.mock("next-intl", () => ({
@@ -12,7 +12,7 @@ vi.mock("next-intl", () => ({
 // Captura as props com que o diálogo de criação é aberto — é aí que mora a
 // diferença entre os três gatilhos.
 const batchProps = vi.fn();
-vi.mock("@/components/planejamento/calendario/BatchCreateDialog", () => ({
+vi.mock("@/components/planning/calendar/BatchCreateDialog", () => ({
   BatchCreateDialog: (props: Record<string, unknown>) => {
     batchProps(props);
     return <div data-testid="batch-dialog" />;

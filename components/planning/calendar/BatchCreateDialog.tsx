@@ -29,7 +29,7 @@ interface BatchCreateDialogProps {
   date: string;
   eventTitle?: string;
   /** Data do calendário de origem. Quando presente, as demandas nascem
-   *  VINCULADAS a ela — é o que alimenta a cobertura em /planejamento/datas. */
+   *  VINCULADAS a ela — é o que alimenta a cobertura em /planning/dates. */
   occurrenceId?: string;
   /** Projetos já marcados ao abrir. Usado quando o gatilho é um CLIENTE
    *  específico ("este está sem demanda"): sem isso o diálogo abriria vazio e

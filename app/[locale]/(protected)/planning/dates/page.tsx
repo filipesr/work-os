@@ -27,7 +27,7 @@ const kindTone = (kind: string) =>
  * REGISTRO de datas: o catálogo de feriados/datas comerciais e as datas
  * próprias, com CRUD.
  *
- * Separada de `/planejamento/cobertura` porque a dinâmica é oposta: aqui se mexe
+ * Separada de `/planning/coverage` porque a dinâmica é oposta: aqui se mexe
  * poucas vezes por ano (gerar o ano, cadastrar uma feira); lá se olha toda
  * semana para agir. Misturar as duas fazia o cadastro competir com a leitura.
  */

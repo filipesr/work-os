@@ -1,7 +1,7 @@
 import createMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { locales, defaultLocale } from "./lib/i18n";
-import { isProtectedPath } from "./lib/routes";
+import { isProtectedPath, resolveLegacyPath } from "./lib/routes";
 import { WALLBOARD_COOKIE } from "./lib/tv-wallboard";
 
 const intlMiddleware = createMiddleware({
@@ -51,6 +51,18 @@ export default function middleware(request: NextRequest) {
     (path, locale) => path.replace(`/${locale}`, ""),
     pathname
   );
+
+  // Endereços que mudaram de nome. Antes da checagem de sessão de propósito: o
+  // anônimo com um link antigo é levado ao endereço ATUAL e só então ao login,
+  // então o callbackUrl que ele traz de volta já é o novo — não o defunto.
+  const destinoAtual = resolveLegacyPath(pathnameWithoutLocale);
+  if (destinoAtual) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace(pathnameWithoutLocale, destinoAtual);
+    // 308 preserva método e query, e autoriza navegador e buscador a trocarem o
+    // destino no histórico em vez de bater no endereço antigo para sempre.
+    return NextResponse.redirect(url, 308);
+  }
 
   if (isProtectedPath(pathnameWithoutLocale)) {
     // Check for the app-specific session cookie (database sessions). The name is

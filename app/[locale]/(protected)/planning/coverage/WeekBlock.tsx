@@ -4,12 +4,12 @@ import { useState } from "react";
 import { CalendarDays, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { BatchCreateDialog } from "@/components/planejamento/calendario/BatchCreateDialog";
+import { BatchCreateDialog } from "@/components/planning/calendar/BatchCreateDialog";
 import type {
   ClientOption,
   ProjectOption,
   TemplateOption,
-} from "@/components/planejamento/calendario/monthly-types";
+} from "@/components/planning/calendar/monthly-types";
 import type { WeekCoverage, OccurrenceTask, CoverageClient } from "@/lib/actions/weekly-coverage";
 import { ClientChips } from "./ClientChips";
 import { DemandChips } from "./DemandChips";

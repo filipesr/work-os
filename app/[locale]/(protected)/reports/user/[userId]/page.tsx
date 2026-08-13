@@ -142,7 +142,7 @@ export default async function UserReportPage({ params, searchParams }: PageProps
           )}
         </SectionCard>
 
-        {/* A mesma analítica que a pessoa vê em /minha-evolucao — throughput,
+        {/* A mesma analítica que a pessoa vê em /my-evolution — throughput,
             utilização em faixa, qualidade com os motivos, etapas ativas e horas.
             Vista pelo gestor, com o controle de reclassificar. */}
         <PersonAnalytics
