@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createTasksBatch } from "@/lib/actions/task";
 import { createProject } from "@/lib/actions/project";
-import { daysBetweenIso, subtractDays, suggestedStartIso } from "@/lib/calendar/planning-dates";
+import { daysBetweenIso, planningChain } from "@/lib/calendar/planning-dates";
 import {
   isoToDisplay,
   type ClientOption,
@@ -69,16 +69,21 @@ export function BatchCreateDialog({
   // demanda vencia no dia do Natal em vez de estar pronta antes dele. Editável,
   // mas ninguém corrige um padrão que parece certo.
   const [leadDays, setLeadDays] = useState("");
-  const dueDate = useMemo(() => subtractDays(date, leadDays), [date, leadDays]);
 
-  // Início SUGERIDO: o prazo menos a duração somada das etapas do template.
-  // Vazio quando o fluxo não tem previsão configurada — a sugestão some em vez
-  // de chutar, porque um "comece hoje" errado é pior que nenhuma sugestão.
   const totalHoras = templates.find((x) => x.id === templateId)?.totalDurationHours ?? null;
-  const suggestedStart = useMemo(
-    () => (dueDate ? suggestedStartIso(dueDate, totalHoras) : ""),
-    [dueDate, totalHoras]
+
+  // A cadeia inteira: evento → entrega → conclusão → início. Fica visível toda,
+  // porque julgar um início sem ver de onde ele saiu é confiar num número.
+  const chain = useMemo(
+    () => planningChain({ eventoIso: date, antecedenciaDias: leadDays, totalHoras }),
+    [date, leadDays, totalHoras]
   );
+
+  // O prazo GRAVADO é a conclusão — a data em que o trabalho precisa estar
+  // pronto, já descontada a gordura. Não a entrega: entregar e concluir no mesmo
+  // dia é não ter folga nenhuma, que é o que a gordura existe para evitar.
+  const dueDate = chain.conclusao;
+  const suggestedStart = chain.inicio;
 
   // Início EDITÁVEL. Segue a sugestão enquanto o gestor não a contraria; a partir
   // do momento em que ele digita, é a escolha dele que manda — mudar template ou
@@ -258,14 +263,36 @@ export function BatchCreateDialog({
           {/* A conta, à vista. O campo pede dias; o que o gestor precisa julgar é
               a DATA que sai deles — mostrá-la aqui é o que transforma um número
               abstrato numa decisão verificável. */}
-          <p id="batch-lead-hint" className="text-xs text-muted-foreground">
-            {dueDate
-              ? t("leadDaysResolved", {
-                  usage: isoToDisplay(date),
-                  due: isoToDisplay(dueDate),
-                })
-              : t("leadDaysHint", { usage: isoToDisplay(date) })}
-          </p>
+          {/* A cadeia à vista. Cada linha responde a uma pergunta diferente, e
+              mostrar os passos é o que permite ao gestor discordar de um deles em
+              vez de aceitar ou rejeitar o resultado inteiro. */}
+          {chain.entrega ? (
+            <dl
+              id="batch-lead-hint"
+              className="space-y-1 rounded-lg border border-border bg-muted/40 p-3 text-xs"
+            >
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted-foreground">{t("chainEvent")}</dt>
+                <dd className="font-medium text-foreground">{isoToDisplay(date)}</dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted-foreground">{t("chainDelivery")}</dt>
+                <dd className="font-medium text-foreground">{isoToDisplay(chain.entrega)}</dd>
+              </div>
+              {chain.conclusao && (
+                <div className="flex justify-between gap-2">
+                  <dt className="text-muted-foreground">
+                    {t("chainDone", { buffer: chain.gorduraDias })}
+                  </dt>
+                  <dd className="font-semibold text-foreground">{isoToDisplay(chain.conclusao)}</dd>
+                </div>
+              )}
+            </dl>
+          ) : (
+            <p id="batch-lead-hint" className="text-xs text-muted-foreground">
+              {t("leadDaysHint", { usage: isoToDisplay(date) })}
+            </p>
+          )}
 
           {/* Início planejado. Só aparece quando há prazo — antes disso não há o
               que recuar, e um campo vazio pediria uma data sem referência. */}

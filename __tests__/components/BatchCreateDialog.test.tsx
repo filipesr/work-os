@@ -27,7 +27,9 @@ import type { TemplateOption } from "@/components/planning/calendar/monthly-type
 const CLIENTS = [{ id: "c1", name: "Acme" }];
 const PROJECTS = [{ id: "p1", name: "Social", clientId: "c1", clientName: "Acme" }];
 
-// 120h = 15 dias ÚTEIS (8h/dia). Prazo sex 11/12 → início seg 23/11.
+// 120h = 15 dias úteis de execução + 3 de gordura (20%).
+// Evento sex 25/12 −14d corridos → entrega sex 11/12 −3 d.ú. → conclusão ter 08/12
+// −15 d.ú. (inclusivo) → início qua 18/11.
 const TEMPLATES: TemplateOption[] = [{ id: "tpl1", name: "Campanha", totalDurationHours: 120 }];
 
 function abrir(templates: TemplateOption[] = TEMPLATES) {
@@ -54,35 +56,43 @@ async function preencher(user: ReturnType<typeof userEvent.setup>) {
 describe("BatchCreateDialog — planejamento para trás", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("deriva o prazo da antecedência em vez de usar a data do evento", async () => {
+  it("mostra a cadeia inteira: evento, entrega e conclusão", async () => {
     // O bug de origem: a demanda de Natal vencia em 25/12, quando o material
-    // precisa estar pronto antes. 25/12 − 14 = 11/12.
+    // precisa estar pronto antes. E a conclusão não é a entrega — há gordura
+    // entre as duas, que é o que absorve imprevisto.
     const user = userEvent.setup();
     abrir();
     await preencher(user);
 
-    expect(screen.getByText(/leadDaysResolved.*11\/12\/2026/)).toBeInTheDocument();
+    expect(screen.getByText("chainEvent")).toBeInTheDocument();
+    expect(screen.getByText("25/12/2026")).toBeInTheDocument();
+    expect(screen.getByText("chainDelivery")).toBeInTheDocument();
+    expect(screen.getByText("11/12/2026")).toBeInTheDocument();
+    expect(screen.getByText(/chainDone.*"buffer":3/)).toBeInTheDocument();
+    expect(screen.getByText("08/12/2026")).toBeInTheDocument();
   });
 
   it("sugere o início recuando a duração do fluxo a partir do prazo", async () => {
-    // 11/12 recuado 15 dias úteis (120h a 8h/dia) = 23/11, pulando dois fins de semana.
+    // Conclusão ter 08/12 recuada 15 dias úteis (inclusivo) = qua 18/11.
     const user = userEvent.setup();
     abrir();
     await preencher(user);
 
-    expect(screen.getByLabelText("startLabel")).toHaveValue("2026-11-23");
-    expect(screen.getByText(/startSuggested.*23\/11\/2026/)).toBeInTheDocument();
+    expect(screen.getByLabelText("startLabel")).toHaveValue("2026-11-18");
+    expect(screen.getByText(/startSuggested.*18\/11\/2026/)).toBeInTheDocument();
   });
 
-  it("não sugere nada quando o fluxo não tem previsão configurada", async () => {
-    // As etapas do sistema começaram todas sem `expectedDurationHours`. Chutar
-    // aqui seria pior: uma sugestão errada é seguida, uma ausência é percebida.
+  it("sem previsão no fluxo: degrada, não bloqueia", async () => {
+    // As etapas do sistema começaram todas sem `expectedDurationHours`. Bloquear
+    // travaria a criação de demanda nesses fluxos; a saída é dizer o que falta e
+    // deixar seguir — sem gordura e sem início sugerido, mas com a demanda criável.
     const user = userEvent.setup();
     abrir([{ id: "tpl1", name: "Campanha", totalDurationHours: null }]);
     await preencher(user);
 
     expect(screen.getByText("startNoEstimate")).toBeInTheDocument();
     expect(screen.getByLabelText("startLabel")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "create" })).toBeEnabled();
   });
 
   it("alerta e BLOQUEIA o envio ao começar depois do sugerido", async () => {
@@ -95,7 +105,7 @@ describe("BatchCreateDialog — planejamento para trás", () => {
     await user.clear(screen.getByLabelText("startLabel"));
     await user.type(screen.getByLabelText("startLabel"), "2026-11-30");
 
-    expect(screen.getByText(/compressedTitle.*"days":7/)).toBeInTheDocument();
+    expect(screen.getByText(/compressedTitle.*"days":12/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "create" })).toBeDisabled();
 
     await user.click(screen.getByRole("checkbox", { name: "compressedAccept" }));
@@ -108,7 +118,7 @@ describe("BatchCreateDialog — planejamento para trás", () => {
     await preencher(user);
 
     await user.clear(screen.getByLabelText("startLabel"));
-    await user.type(screen.getByLabelText("startLabel"), "2026-11-16");
+    await user.type(screen.getByLabelText("startLabel"), "2026-11-10");
 
     expect(screen.queryByText(/compressedTitle/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "create" })).toBeEnabled();
@@ -123,7 +133,7 @@ describe("BatchCreateDialog — planejamento para trás", () => {
 
     const campo = screen.getByLabelText("startLabel");
     await user.clear(campo);
-    await user.type(campo, "2026-11-25");
+    await user.type(campo, "2026-11-20");
     await user.click(screen.getByRole("checkbox", { name: "compressedAccept" }));
     expect(screen.getByRole("button", { name: "create" })).toBeEnabled();
 
@@ -141,8 +151,8 @@ describe("BatchCreateDialog — planejamento para trás", () => {
 
     expect(createTasksBatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        dueDate: "2026-12-11",
-        plannedStartAt: "2026-11-23",
+        dueDate: "2026-12-08",
+        plannedStartAt: "2026-11-18",
         calendarOccurrenceId: "occ1",
       })
     );

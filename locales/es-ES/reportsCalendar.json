@@ -148,7 +148,10 @@
       "startNoEstimate": "Sin sugerencia: las etapas de este flujo no tienen previsión de horas configurada.",
       "compressedTitle": "Cronograma comprimido en {days} día(s)",
       "compressedBody": "Las etapas de este flujo piden inicio el {suggested}. Empezando el {chosen}, la ejecución tendrá menos tiempo del configurado — el riesgo de atraso es real.",
-      "compressedAccept": "Entiendo y asumo el cronograma comprimido."
+      "compressedAccept": "Entiendo y asumo el cronograma comprimido.",
+      "chainEvent": "Evento (trazabilidad)",
+      "chainDelivery": "Entrega / uso",
+      "chainDone": "Concluir hasta (colchón de {buffer} días hábiles)"
     }
   },
   "planning": {

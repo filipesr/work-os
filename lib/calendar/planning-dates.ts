@@ -75,6 +75,42 @@ export function horasParaDiasUteis(horas: number): number {
   return Math.ceil(horas / HORAS_POR_DIA_UTIL);
 }
 
+/** Recua `n` dias ÚTEIS a partir de `iso`, pousando sempre num dia útil. */
+export function subtractBusinessDays(iso: string, n: number): string {
+  const base = parseIso(iso);
+  if (!base || !Number.isFinite(n) || n < 0) return "";
+
+  const cursor = new Date(base.getTime());
+  // Ponto de partida em fim de semana não é dia de trabalho: recua até a sexta.
+  while (isFimDeSemana(cursor)) cursor.setUTCDate(cursor.getUTCDate() - 1);
+
+  let restantes = Math.floor(n);
+  while (restantes > 0) {
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+    if (!isFimDeSemana(cursor)) restantes--;
+  }
+  return toIso(cursor);
+}
+
+/** Percentual do tempo de execução reservado como folga. Padrão da casa. */
+export const GORDURA_PADRAO = 0.2;
+
+/**
+ * Folga, em dias úteis, para absorver imprevisto entre concluir e usar.
+ *
+ * Proporcional ao tamanho do trabalho — 20% de um fluxo de 40h são 8h, ou seja um
+ * dia — porque risco cresce com duração: quanto mais longo o caminho, mais chance
+ * de algo atravessar. Um número fixo daria folga demais ao curto e de menos ao
+ * longo, que é o que mais precisa.
+ *
+ * Mínimo de UM dia: uma demanda que termina no mesmo dia em que é usada não tem
+ * para onde escorregar, e é justamente a que menos aguenta surpresa.
+ */
+export function bufferDiasUteis(totalHoras: number | null): number {
+  if (!totalHoras || totalHoras <= 0) return 0;
+  return Math.max(1, Math.ceil((totalHoras * GORDURA_PADRAO) / HORAS_POR_DIA_UTIL));
+}
+
 /**
  * O dia útil em que o trabalho precisa COMEÇAR para terminar em `fimIso`,
  * dispondo de `diasUteis` dias de trabalho.
@@ -89,20 +125,50 @@ export function horasParaDiasUteis(horas: number): number {
  * mais tarde do que o real.
  */
 export function startForWorkingDays(fimIso: string, diasUteis: number): string {
-  const fim = parseIso(fimIso);
-  if (!fim || !Number.isFinite(diasUteis) || diasUteis < 1) return "";
+  if (!Number.isFinite(diasUteis) || diasUteis < 1) return "";
+  // O próprio dia final já conta como o primeiro dos dias úteis (inclusivo),
+  // então recuar `diasUteis - 1` deixa exatamente `diasUteis` dias disponíveis.
+  return subtractBusinessDays(fimIso, diasUteis - 1);
+}
 
-  // Recua até um dia útil: prazo no sábado significa pronto até sexta.
-  const cursor = new Date(fim.getTime());
-  while (isFimDeSemana(cursor)) cursor.setUTCDate(cursor.getUTCDate() - 1);
+/**
+ * A cadeia inteira do planejamento para trás, num lugar só.
+ *
+ * Cada data responde a uma pergunta diferente, e o formulário mostra todas —
+ * esconder os passos intermediários faria o gestor julgar um resultado sem ver
+ * de onde ele veio.
+ *
+ *   evento      a que data a demanda atende (rastreabilidade; não é prazo)
+ *   entrega     quando o material é usado — evento menos a antecedência informada
+ *   conclusão   quando o trabalho precisa estar pronto — entrega menos a gordura
+ *   início      quando começar — conclusão menos a duração do fluxo
+ *
+ * A antecedência é em dias CORRIDOS (campanha roda no sábado); gordura e duração
+ * são em dias ÚTEIS (trabalho não acontece no fim de semana).
+ *
+ * Campos vazios quando não há como calcular: sem antecedência não há entrega, e
+ * sem previsão nas etapas não há gordura nem início. Devolver vazio deixa o
+ * formulário dizer o que falta, em vez de exibir uma data inventada.
+ */
+export function planningChain(input: {
+  eventoIso: string;
+  antecedenciaDias: string | number;
+  totalHoras: number | null;
+}): { entrega: string; conclusao: string; inicio: string; gorduraDias: number; execDias: number } {
+  const entrega = subtractDays(input.eventoIso, input.antecedenciaDias);
+  const gorduraDias = bufferDiasUteis(input.totalHoras);
+  const execDias = input.totalHoras ? horasParaDiasUteis(input.totalHoras) : 0;
 
-  // O próprio dia final já conta como o primeiro dos dias úteis (inclusivo).
-  let restantes = diasUteis - 1;
-  while (restantes > 0) {
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
-    if (!isFimDeSemana(cursor)) restantes--;
-  }
-  return toIso(cursor);
+  if (!entrega) return { entrega: "", conclusao: "", inicio: "", gorduraDias, execDias };
+
+  // Sem previsão nas etapas não há gordura a descontar, e a conclusão cai na
+  // própria entrega. É degradação deliberada: BLOQUEAR a criação até o fluxo
+  // estar configurado deixaria o gestor travado no meio de uma tarefa por causa
+  // de um cadastro que não é dele. A ausência é dita na tela; o trabalho segue.
+  const conclusao = gorduraDias > 0 ? subtractBusinessDays(entrega, gorduraDias) : entrega;
+  const inicio = execDias > 0 ? startForWorkingDays(conclusao, execDias) : "";
+
+  return { entrega, conclusao, inicio, gorduraDias, execDias };
 }
 
 /**

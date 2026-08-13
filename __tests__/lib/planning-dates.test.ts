@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   daysBetweenIso,
   horasParaDiasUteis,
+  bufferDiasUteis,
+  planningChain,
   startForWorkingDays,
+  subtractBusinessDays,
   subtractDays,
   suggestedStartIso,
 } from "@/lib/calendar/planning-dates";
@@ -159,5 +162,92 @@ describe("suggestedStartIso", () => {
       const inicio = suggestedStartIso("2026-12-11", horas);
       expect(daysBetweenIso(inicio, "2026-12-11")!, `${horas}h`).toBeGreaterThanOrEqual(0);
     }
+  });
+});
+
+describe("bufferDiasUteis — a gordura", () => {
+  it("reserva 20% do tempo de execução", () => {
+    // O exemplo dado: 40h de trabalho trazem outras 8h de folga = 1 dia.
+    expect(bufferDiasUteis(40)).toBe(1);
+    expect(bufferDiasUteis(120)).toBe(3); // 24h = 3 dias
+    expect(bufferDiasUteis(200)).toBe(5); // 40h = 5 dias
+  });
+
+  it("nunca menos de um dia", () => {
+    // Demanda que termina no mesmo dia em que é usada não tem para onde
+    // escorregar — e é a que menos aguenta surpresa.
+    expect(bufferDiasUteis(8)).toBe(1); // 20% de 8h = 1,6h → 1 dia
+    expect(bufferDiasUteis(1)).toBe(1);
+  });
+
+  it("é proporcional: fluxo maior, folga maior", () => {
+    // Risco cresce com duração. Um número fixo daria folga demais ao curto e de
+    // menos ao longo, que é o que mais precisa.
+    let anterior = 0;
+    for (const h of [8, 40, 120, 200, 400]) {
+      const atual = bufferDiasUteis(h);
+      expect(atual).toBeGreaterThanOrEqual(anterior);
+      anterior = atual;
+    }
+  });
+
+  it("zero quando não há previsão", () => {
+    expect(bufferDiasUteis(null)).toBe(0);
+    expect(bufferDiasUteis(0)).toBe(0);
+  });
+});
+
+describe("planningChain — a cadeia completa", () => {
+  it("encadeia evento → entrega → conclusão → início", () => {
+    // Natal sex 25/12, 14 dias de veiculação, fluxo de 120h (15 d.ú., gordura 3 d.ú.)
+    const r = planningChain({
+      eventoIso: "2026-12-25",
+      antecedenciaDias: 14,
+      totalHoras: 120,
+    });
+    expect(r.entrega).toBe("2026-12-11"); // sex — evento − 14 dias corridos
+    expect(r.gorduraDias).toBe(3);
+    expect(r.conclusao).toBe("2026-12-08"); // ter — 3 dias úteis antes
+    expect(r.execDias).toBe(15);
+    expect(r.inicio).toBe("2026-11-18"); // qua — 15 dias úteis, inclusivo
+  });
+
+  it("a conclusão vem antes da entrega sempre que há previsão", () => {
+    // A razão de existir da gordura. Se as duas coincidirem, não há folga —
+    // e isso só é aceitável no caso sem previsão, coberto acima.
+    for (const horas of [1, 8, 40, 120, 500]) {
+      const r = planningChain({ eventoIso: "2026-12-25", antecedenciaDias: 14, totalHoras: horas });
+      expect(daysBetweenIso(r.conclusao, r.entrega)!, `${horas}h`).toBeGreaterThan(0);
+    }
+  });
+
+  it("o início vem sempre antes da conclusão", () => {
+    for (const horas of [8, 40, 120, 500]) {
+      const r = planningChain({ eventoIso: "2026-12-25", antecedenciaDias: 14, totalHoras: horas });
+      expect(daysBetweenIso(r.inicio, r.conclusao)!, `${horas}h`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("sem antecedência não há cadeia", () => {
+    const r = planningChain({ eventoIso: "2026-12-25", antecedenciaDias: "", totalHoras: 120 });
+    expect(r).toMatchObject({ entrega: "", conclusao: "", inicio: "" });
+  });
+
+  it("sem previsão nas etapas, degrada em vez de bloquear", () => {
+    // Bloquear a cadeia inteira travaria a criação de demanda em todo fluxo ainda
+    // não configurado — o gestor pararia no meio de uma tarefa por causa de um
+    // cadastro que não é dele. A conclusão cai na entrega (sem gordura, porque não
+    // há de quanto), e só o início sugerido some.
+    const r = planningChain({ eventoIso: "2026-12-25", antecedenciaDias: 14, totalHoras: null });
+    expect(r.entrega).toBe("2026-12-11");
+    expect(r.conclusao).toBe("2026-12-11");
+    expect(r.inicio).toBe("");
+    expect(r.gorduraDias).toBe(0);
+  });
+
+  it("antecedência zero: usa no próprio dia do evento", () => {
+    const r = planningChain({ eventoIso: "2026-12-25", antecedenciaDias: 0, totalHoras: 40 });
+    expect(r.entrega).toBe("2026-12-25");
+    expect(r.conclusao).toBe("2026-12-24"); // qui — 1 dia útil de gordura
   });
 });
