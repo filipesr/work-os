@@ -16,7 +16,7 @@
   "fields": {
     "name": "Nombre",
     "email": "Correo Electrónico",
-    "role": "Rol",
+    "role": "Rol de acceso",
     "team": "Equipo",
     "birthday": "Nacimiento",
     "admission": "Admisión",
@@ -33,6 +33,14 @@
   },
   "googleSyncNote": {
     "label": "Nota:",
-    "message": "Tu nombre y foto se sincronizan con tu Cuenta de Google. Tu rol y equipo son asignados por un administrador."
+    "message": "Tu nombre y foto se sincronizan con tu Cuenta de Google. Tu rol de acceso y tu equipo son asignados por un administrador."
+  },
+  "teamProfile": {
+    "title": "Tu equipo",
+    "subtitle": "Qué se espera de tu función: entregas, obligaciones por cadencia, herramientas e informes.",
+    "openProfile": "Ver descriptivo",
+    "notDocumented": "Descriptivo aún no documentado",
+    "browseAll": "Ver todas las funciones",
+    "noTeamHint": "Todavía no estás en ningún equipo. Un administrador hace esa asignación."
   }
 }

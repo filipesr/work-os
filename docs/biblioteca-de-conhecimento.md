@@ -465,6 +465,35 @@ Cada superfície e a razão de existir **daquela forma**.
   e as anti-features (§5) ainda **não** estão expostos in-app: são o próximo passo
   natural de expansão do grupo Fundamentos.
 
+### /help/equipes (descritivos de equipe)
+
+- **Índice por família + faixa "ainda não documentadas"** → **P6**: a função que
+  ainda não tem descritivo **aparece marcada**, não some. Omitir seria esconder a
+  exceção — que aqui é a própria ausência de expectativa escrita.
+- **Seções `entregaveis` e `interfaces`** → saem das `TemplateStage` reais
+  (`prisma/seed.ts`), não de texto genérico de internet: o descritivo descreve o
+  fluxo que existe, e por isso envelhece junto com ele.
+- **Seção `relatorios`** → **P5/política de sensibilidade**: cada artefato declara
+  `destino` (cliente/gestão/documentação) e a sensibilidade correspondente. O guard
+  impõe `destino: cliente` ⟺ `CLIENTE`, porque CLIENTE é o único nível
+  compartilhável para fora (`lib/nas/sensitivity.ts`).
+- **Seção `avaliacao`** → **P1/P2, e é o ponto de maior risco de todo o produto**.
+  Um descritivo de cargo com seção de avaliação é o artefato que mais tende a virar
+  nota, ranking e vínculo a remuneração. Três defesas: (1) um callout fixo antes dos
+  sinais, em toda função, dizendo que aquilo informa conversa e nunca pontua;
+  (2) `oQueNuncaFazemos` obrigatório, nunca vazio; (3) `__tests__/content/
+team-profiles.test.ts` reprova vocabulário de premiação/ordenação dentro de
+  `oQueOlhamos`. **Nenhum descritivo pode criar uma segunda exceção ao P2** — a de
+  3b (FTR por pessoa) é a única registrada.
+- **Atalho em `/account`** → o colaborador chega ao descritivo da própria equipe
+  sem passar pelo índice; a equipe sem descritivo aparece igual, marcada.
+- Conteúdo **espelha `docs/descritivos-de-equipe.md`**; renderizado por
+  `components/help/TeamProfileView.tsx` a partir de
+  `locales/{pt-BR,es-ES}/teamProfiles.json`. Vale o mesmo aviso do `help.json`: ao
+  alterar um descritivo no doc, **atualize o JSON nos dois locales** — com o
+  agravante de que o guard oficial de paridade **não entra em arrays**, e aqui quase
+  tudo é array. Quem cobre esse buraco é o guard de conteúdo.
+
 ---
 
 ## 4. Decisões de arquitetura registradas (ADRs)
@@ -530,3 +559,15 @@ Ao adicionar/alterar uma tela, métrica ou feature: (1) identifique o(s)
 princípio(s) que a justificam; (2) se nenhum justifica, ou se ela contradiz um
 anti-feature de §5, **pare e reavalie**; (3) registre a nova superfície em §3 e
 qualquer decisão nova em §4. Este doc é a memória de por que o workos é como é.
+
+**Documentos acoplados a este.** Ao mexer nos princípios, verifique se o texto
+in-app precisa acompanhar:
+
+| Doc                             | Espelho in-app                                      |
+| ------------------------------- | --------------------------------------------------- |
+| §1/§2/§6 deste doc              | `locales/{pt-BR,es-ES}/help.json` → `fundamentos.*` |
+| `docs/descritivos-de-equipe.md` | `locales/{pt-BR,es-ES}/teamProfiles.json`           |
+
+Em especial: a §2 de `descritivos-de-equipe.md` (salvaguardas de RH) deriva
+diretamente de P1 e P2. Se um desses princípios mudar, ela muda junto — é o
+documento que o RH lê antes de contratar e antes de avaliar.

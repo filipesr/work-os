@@ -9,6 +9,9 @@ export async function generateMetadata() {
 
 const GROUPS = [
   { id: "howto", keys: ["templates", "projetos", "colaborador"] },
+  // "O que se espera de mim nesta função?" — a pergunta que nenhuma tela
+  // respondia. Ver docs/descritivos-de-equipe.md.
+  { id: "equipes", keys: ["equipes"] },
   { id: "fundamentos", keys: ["principios", "glossario"] },
 ] as const;
 

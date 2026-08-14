@@ -8,6 +8,11 @@
         "subtitle": "Passo a passo para configurar e operar o Work OS, na ordem natural de uso.",
         "cta": "Abrir guia"
       },
+      "equipes": {
+        "title": "Funções",
+        "subtitle": "O que se espera de cada equipe: entregas, rituais, ferramentas e relatórios.",
+        "cta": "Abrir"
+      },
       "fundamentos": {
         "title": "Fundamentos",
         "subtitle": "Por que o Work OS é assim: os princípios e as métricas, cada um com a sua fonte.",
@@ -29,6 +34,11 @@
         "badge": "3",
         "title": "O dia a dia do colaborador",
         "description": "Pegar, executar e concluir etapas — e o paralelismo na prática."
+      },
+      "equipes": {
+        "badge": "F",
+        "title": "Descritivos de equipe",
+        "description": "Missão, obrigações por cadência, relatórios e critérios de contratação de cada função."
       },
       "principios": {
         "badge": "P",
