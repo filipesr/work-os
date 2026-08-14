@@ -156,9 +156,17 @@ function ReportCard({ report, ui }: { report: ReportEntry; ui: TeamProfileUi }) 
  * vocabulário, não enquadramento. E os códigos vieram de espelhos da tabela —
  * o site oficial não abre ficha por link —, o que também precisa estar dito.
  */
-function BrazilianRef({ ref, ui }: { ref: BrazilianReference; ui: TeamProfileUi }) {
+function BrazilianRef({
+  reference,
+  ui,
+}: {
+  // Nunca chamar esta prop de `ref`: é reservada e não atravessa a fronteira de
+  // Server Component. Ver __tests__/components/reserved-ref-prop.test.ts.
+  reference: BrazilianReference;
+  ui: TeamProfileUi;
+}) {
   const copy = ui.brazilianRef;
-  const missing = ref.cbo.aderencia === "inexistente";
+  const missing = reference.cbo.aderencia === "inexistente";
 
   return (
     <SectionCard title={copy.title} icon={Landmark} bodyClassName="space-y-4 p-6">
@@ -173,9 +181,9 @@ function BrazilianRef({ ref, ui }: { ref: BrazilianReference; ui: TeamProfileUi 
         <span
           className={`font-mono text-base font-bold ${missing ? "text-muted-foreground" : "text-foreground"}`}
         >
-          {ref.cbo.codigo}
+          {reference.cbo.codigo}
         </span>
-        <span className="text-sm text-foreground">{ref.cbo.titulo}</span>
+        <span className="text-sm text-foreground">{reference.cbo.titulo}</span>
       </div>
 
       <dl className="grid gap-3 sm:grid-cols-2">
@@ -183,7 +191,7 @@ function BrazilianRef({ ref, ui }: { ref: BrazilianReference; ui: TeamProfileUi 
           <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {copy.familyLabel}
           </dt>
-          <dd className="mt-0.5 text-sm text-foreground">{ref.cbo.familia}</dd>
+          <dd className="mt-0.5 text-sm text-foreground">{reference.cbo.familia}</dd>
         </div>
         <div>
           <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -192,12 +200,12 @@ function BrazilianRef({ ref, ui }: { ref: BrazilianReference; ui: TeamProfileUi 
           <dd
             className={`mt-0.5 text-sm ${missing ? "font-semibold text-warning" : "text-foreground"}`}
           >
-            {copy.adherence[ref.cbo.aderencia]}
+            {copy.adherence[reference.cbo.aderencia]}
           </dd>
         </div>
       </dl>
 
-      <p className="text-sm leading-relaxed text-muted-foreground">{ref.observacao}</p>
+      <p className="text-sm leading-relaxed text-muted-foreground">{reference.observacao}</p>
 
       <div>
         <a
@@ -216,9 +224,9 @@ function BrazilianRef({ ref, ui }: { ref: BrazilianReference; ui: TeamProfileUi 
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {copy.sectorTitle}
         </p>
-        {ref.setorial.length > 0 ? (
+        {reference.setorial.length > 0 ? (
           <ul className="space-y-3">
-            {ref.setorial.map((entry, i) => (
+            {reference.setorial.map((entry, i) => (
               <li key={i} className="border-l-2 border-border pl-3">
                 <p className="text-sm font-semibold text-foreground">{entry.entidade}</p>
                 {entry.url ? (
@@ -417,7 +425,7 @@ export function TeamProfileView({
           </div>
         </SectionCard>
 
-        <BrazilianRef ref={content.referenciaBrasileira} ui={ui} />
+        <BrazilianRef reference={content.referenciaBrasileira} ui={ui} />
       </div>
 
       <div className="mt-10 rounded-xl border-2 border-primary/30 bg-primary/5 px-6 py-5">
