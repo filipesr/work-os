@@ -97,6 +97,36 @@ describe("TeamProfileView", () => {
     }
   });
 
+  // A CBO é vocabulário, não enquadramento — a ressalva não pode depender de
+  // quem escreveu o conteúdo daquela função.
+  it("sempre mostra a referência brasileira com a ressalva de jurisdição", () => {
+    render(<TeamProfileView profile={profile} content={content} ui={ui} />);
+    const ref = content.referenciaBrasileira;
+
+    expect(screen.getByText(ui.brazilianRef.title)).toBeInTheDocument();
+    expect(screen.getByText(ui.brazilianRef.note)).toBeInTheDocument();
+    expect(screen.getByText(ref.cbo.codigo)).toBeInTheDocument();
+    expect(screen.getByText(ref.cbo.titulo)).toBeInTheDocument();
+    expect(screen.getByText(ref.cbo.familia)).toBeInTheDocument();
+    expect(screen.getByText(ui.brazilianRef.adherence[ref.cbo.aderencia])).toBeInTheDocument();
+    expect(screen.getByText(ref.observacao)).toBeInTheDocument();
+
+    const search = screen.getByRole("link", {
+      name: new RegExp(escapeRegExp(ui.brazilianRef.officialSearch), "i"),
+    });
+    expect(search).toHaveAttribute("href", "https://cbo.mte.gov.br/cbosite/pages/home.jsf");
+    expect(search).toHaveAttribute("target", "_blank");
+  });
+
+  it("registra a ausência de fonte setorial em vez de omiti-la", () => {
+    // `design` é uma das funções sem entidade brasileira verificada.
+    const semSetorial = ptBR.profiles.design as unknown as typeof content;
+    expect(semSetorial.referenciaBrasileira.setorial).toHaveLength(0);
+
+    render(<TeamProfileView profile={getProfileBySlug("design")!} content={semSetorial} ui={ui} />);
+    expect(screen.getByText(ui.brazilianRef.sectorEmpty)).toBeInTheDocument();
+  });
+
   it("torna as fontes conferíveis: externa em nova aba, interna na mesma", () => {
     render(<TeamProfileView profile={profile} content={content} ui={ui} />);
 

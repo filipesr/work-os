@@ -35,6 +35,31 @@ export interface ToolEntry {
   url?: string;
 }
 
+/**
+ * Quanto a ocupação da CBO corresponde à função como ela existe na agência.
+ * `inexistente` não é erro de preenchimento: é a classificação não ter a
+ * ocupação, e isso precisa aparecer em vez de ser mascarado por um código
+ * vizinho.
+ */
+export const CBO_ADHERENCE = ["direta", "aproximada", "inexistente"] as const;
+export type CboAdherence = (typeof CBO_ADHERENCE)[number];
+
+export interface SectorReference {
+  entidade: string;
+  documento: string;
+  url?: string;
+  /** Ex.: documento distribuído só a filiados. */
+  ressalva?: string;
+}
+
+export interface BrazilianReference {
+  cbo: { codigo: string; titulo: string; familia: string; aderencia: CboAdherence };
+  /** Por que a aderência é essa, e o que o código não cobre. Sempre preenchido. */
+  observacao: string;
+  /** Vazio quando não há documento setorial brasileiro verificado para a função. */
+  setorial: SectorReference[];
+}
+
 export interface SourceEntry {
   texto: string;
   /**
@@ -60,6 +85,7 @@ export interface TeamProfileContent {
   title: string;
   summary: string;
   occupationRef: string;
+  referenciaBrasileira: BrazilianReference;
   missao: string;
   entregaveis: string[];
   interfaces: { recebeDe: string[]; entregaPara: string[] };
@@ -108,6 +134,19 @@ export interface TeamProfileUi {
   contratacaoFields: Record<"requisitos" | "diferenciais" | "perguntas", string>;
   avaliacaoFields: Record<"oQueOlhamos" | "comoLemos" | "oQueNuncaFazemos", string>;
   avaliacaoCallout: { label: string; text: string };
+  brazilianRef: {
+    title: string;
+    /** Ressalva de jurisdição e de verificação — aparece em toda função. */
+    note: string;
+    cboLabel: string;
+    familyLabel: string;
+    adherenceLabel: string;
+    adherence: Record<CboAdherence, string>;
+    officialSearch: string;
+    officialSearchHint: string;
+    sectorTitle: string;
+    sectorEmpty: string;
+  };
 }
 
 export interface TeamProfileIndexContent {

@@ -81,7 +81,7 @@ A seção `contratacao` lista **requisitos** (o que a pessoa precisa saber para 
 
 ## 3. O formato
 
-Todo descritivo tem as mesmas dez seções, na mesma ordem. A ordem é o roteiro de leitura de quem chega novo: _por que existo → o que entrego → com quem → com o quê → quando → o que mostro → o que preciso saber → como se entra → como se conversa sobre isso → de onde veio_.
+Todo descritivo tem as mesmas dez seções de conteúdo, na mesma ordem, mais o bloco de referência brasileira da §3.1. A ordem é o roteiro de leitura de quem chega novo: _por que existo → o que entrego → com quem → com o quê → quando → o que mostro → o que preciso saber → como se entra → como se conversa sobre isso → de onde veio_.
 
 | #   | Seção          | Regra de preenchimento                                                                                                                                                                                  |
 | --- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -124,7 +124,63 @@ Nada que contenha dado pessoal, contrato ou credencial vai como `CLIENTE` — is
 
 Quem escreve um descritivo novo confere esta tabela antes — e a atualiza se um template mudar.
 
-### 3.1 Os modelos de relatório
+### 3.1 A referência brasileira
+
+O `occupationRef` do cabeçalho cita O\*NET e CBO em uma linha. Isso serve para dar vocabulário, mas não serve ao RH: não diz **quanto** o código corresponde à função, nem o que ele deixa de fora. A seção `referenciaBrasileira` resolve isso — e é a única com bloco próprio, porque tem substância suficiente para não caber numa linha.
+
+Ela traz o código da CBO, o título e a família oficiais, a **aderência**, uma observação obrigatória e a entidade setorial quando existe.
+
+**A aderência é o campo que importa.** Três valores:
+
+| Valor         | Significa                     | Ocorrências |
+| ------------- | ----------------------------- | ----------- |
+| `direta`      | O código descreve esta função | 9           |
+| `aproximada`  | O código descreve parte dela  | 4           |
+| `inexistente` | A CBO não tem esta ocupação   | 1 (SEO)     |
+
+Marcar SEO como `inexistente` em vez de encaixá-lo num código vizinho é a mesma decisão das equipes não documentadas: **a lacuna é informação**. A CBO não tem ocupação de SEO, e fingir que tem faria o RH usar um enquadramento errado.
+
+**Duas ressalvas aparecem em toda função**, não só nas duvidosas:
+
+1. **A CBO aqui é vocabulário, não enquadramento.** A operação não está sob registro trabalhista brasileiro. O código serve para nomear a função com um termo reconhecido e comparável — não tem efeito de classificação legal.
+2. **Os códigos vieram de espelhos da tabela.** O site oficial do MTE (`cbo.mte.gov.br`) busca por palavra-chave e **não abre ficha por link direto** — testei. Então cada código precisa ser conferido na busca oficial antes de qualquer uso formal, e a tela diz isso.
+
+#### O mapeamento
+
+| Função                 | CBO                                               | Aderência       |
+| ---------------------- | ------------------------------------------------- | --------------- |
+| Design                 | 2624-10 · desenhista industrial gráfico           | direta          |
+| Vídeo                  | 3744-05 · editor de mídia audiovisual             | direta          |
+| Revisão                | 2611-40 · revisor de texto                        | direta          |
+| Social Media           | 2534-05 · analista de mídias sociais              | direta          |
+| Community              | 2534-05 · analista de mídias sociais              | aproximada      |
+| Comunicação e Copy     | 2531-10 · redator de publicidade                  | direta          |
+| Assessoria de Imprensa | 2611-10 · assessor de imprensa                    | direta          |
+| Tráfego Pago           | 2531-20 · diretor de mídia (publicidade)          | aproximada      |
+| SEO                    | 2534 (família)                                    | **inexistente** |
+| Atendimento            | 2531-35 · diretor de contas                       | direta          |
+| Estratégia             | 1423 (família)                                    | aproximada      |
+| Coordenação            | 1423 (família)                                    | aproximada      |
+| Engenharia de Software | 2124-05 · analista de desenvolvimento de sistemas | direta          |
+| TI e Infraestrutura    | 2124-15 · analista de suporte computacional       | direta          |
+
+Duas famílias merecem nota. A **2534 — Profissionais de mídias digitais e afins** é recente e foi criada justamente para as ocupações digitais; é por isso que Social Media tem código próprio e Tráfego não. A **1423** trata estratégia e coordenação como atribuição gerencial, sem ocupação própria de planejamento — daí a aderência aproximada nas duas.
+
+#### As entidades setoriais
+
+Só entram no descritivo as que **abri e conferi**. Três passaram:
+
+| Entidade       | Documento                                                                                                                     | Funções                                       |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| **FENAJ**      | Manual de Assessoria de Comunicação, 4ª ed. (2007) — tem "Perfil do profissional", "Áreas de atuação" e "Produtos e serviços" | Imprensa, Comunicação, Revisão                |
+| **Sinapro-SP** | Valores Referenciais de Serviços Internos — define as funções de agência                                                      | Atendimento, Tráfego, Estratégia, Coordenação |
+| **SBC**        | Referenciais de Formação para os Cursos de Graduação em Computação                                                            | Eng. de Software, TI                          |
+
+O documento do Sinapro-SP é distribuído a agências filiadas mediante pedido: a página é pública, o conteúdo não. Isso está registrado como ressalva na tela.
+
+**Cinco funções ficam sem entidade setorial** — Design, Vídeo, Social Media, Community e SEO. Não é desleixo: ADG Brasil e ABEDESIGN existem mas não achei documento público de atribuições; IAB Brasil e o Catálogo Nacional do MEC seriam candidatos naturais mas bloquearam o acesso automatizado, e não vou citar o que não consegui abrir. A ausência aparece na tela com essa explicação, em vez de ser preenchida com uma fonte fraca.
+
+### 3.2 Os modelos de relatório
 
 O descritivo **declara** que o artefato existe. O modelo diz **como ele deve parecer**. São coisas separadas de propósito: um descritivo com a anatomia completa de três relatórios dentro viraria ilegível.
 
@@ -1035,7 +1091,7 @@ Duas observações sobre essa lista:
 1. **Confirme que é função, não nível.** Se o nome descreve hierarquia, pare — a discussão é outra.
 2. **Levante a referência ocupacional, com link.** Um código CBO e uma ocupação O\*NET. É o que dá vocabulário formal e evita descritivo inventado — e o link é o que permite conferir. O guard reprova referência ocupacional citada sem endereço; fonte interna sem endereço próprio (um template do fluxo, uma política) pode ficar sem link.
 3. **Leia o fluxo real.** Se a função é dona de alguma `TemplateStage`, os entregáveis e as interfaces saem dali. Se não é dona de nenhuma, diga isso no descritivo em vez de forçar.
-4. **Escreva as dez seções da §3**, nesta ordem, respeitando as três regras de conteúdo.
+4. **Escreva as dez seções da §3**, nesta ordem, respeitando as três regras de conteúdo. Some a elas o bloco `referenciaBrasileira` da §3.1 — com aderência declarada e observação, mesmo (e principalmente) quando a CBO não tiver a ocupação.
 5. **Passe a seção `avaliacao` pelo crivo da §2.** `oQueNuncaFazemos` nunca fica vazio. Se você não consegue preencher essa lista, você ainda não entendeu o risco daquela função.
 6. **Registre no catálogo:** adicione a entrada em `lib/team-profiles/catalog.ts` (slug, `teamNames`, família, ícone) e **remova o nome de `UNDOCUMENTED_TEAM_NAMES`**.
 7. **Escreva os textos nos dois locales**, em `locales/pt-BR/teamProfiles.json` e `locales/es-ES/teamProfiles.json`. O es-ES é espanhol real — o guard de paridade reprova ortografia portuguesa.
@@ -1043,7 +1099,7 @@ Duas observações sobre essa lista:
 
 ### Manutenção
 
-Para escrever o **modelo** de um relatório (a §3.1): registre a entrada em `lib/team-profiles/reports.ts` com destino e sensibilidade, escreva as oito partes nos dois locales em `reportModels.json`, e aponte o campo `modelo` da entrada correspondente em `teamProfiles.json`. O guard reprova modelo órfão, `modelo` apontando para slug inexistente, divergência de destino ou sensibilidade entre modelo e descritivo, e esqueleto que não cobre a anatomia.
+Para escrever o **modelo** de um relatório (a §3.2): registre a entrada em `lib/team-profiles/reports.ts` com destino e sensibilidade, escreva as oito partes nos dois locales em `reportModels.json`, e aponte o campo `modelo` da entrada correspondente em `teamProfiles.json`. O guard reprova modelo órfão, `modelo` apontando para slug inexistente, divergência de destino ou sensibilidade entre modelo e descritivo, e esqueleto que não cobre a anatomia.
 
 Este documento e `locales/{pt-BR,es-ES}/teamProfiles.json` são **acoplados**: o JSON é a versão in-app deste conteúdo. O guard de paridade cobre chaves, não texto — ao alterar um descritivo aqui, atualize o JSON nos dois locales, e vice-versa. É a mesma regra que já vale entre `docs/biblioteca-de-conhecimento.md` e `locales/*/help.json`.
 

@@ -6,6 +6,7 @@ import {
   TEAM_PROFILE_FAMILIES,
   UNDOCUMENTED_TEAM_NAMES,
 } from "@/lib/team-profiles/catalog";
+import { CBO_ADHERENCE } from "@/lib/team-profiles/content";
 
 /**
  * Guard de CONTEÚDO dos descritivos de equipe.
@@ -141,7 +142,7 @@ describe.each(LOCALES)("teamProfiles.json [%s]", (locale) => {
   });
 
   describe.each(TEAM_PROFILES.map((p) => p.slug))("perfil %s", (slug) => {
-    it("tem as dez seções preenchidas", () => {
+    it("tem as seções de conteúdo preenchidas", () => {
       const profile = profileAt(locale, slug);
       expect(profile, `perfil ${slug} ausente em ${locale}`).toBeDefined();
 
@@ -235,6 +236,55 @@ describe.each(LOCALES)("teamProfiles.json [%s]", (locale) => {
       ).toEqual([]);
     });
 
+    // A CBO entra como vocabulário ocupacional, não como enquadramento — a
+    // operação não está sob registro trabalhista brasileiro. O que o guard
+    // protege aqui é a honestidade da citação: aderência declarada, observação
+    // sempre presente, e ausência de fonte setorial registrada em vez de
+    // preenchida com uma fonte fraca.
+    it("cita a referência brasileira com aderência declarada", () => {
+      const ref = profileAt(locale, slug)!.referenciaBrasileira as Json;
+      expect(ref, `${slug}.referenciaBrasileira ausente`).toBeDefined();
+
+      const cbo = ref.cbo as Json;
+      for (const key of ["codigo", "titulo", "familia"] as const) {
+        expect(typeof cbo[key], `${slug}.referenciaBrasileira.cbo.${key}`).toBe("string");
+        expect((cbo[key] as string).trim().length).toBeGreaterThan(0);
+      }
+      expect(
+        /^\d{4}(-\d{2})?$/.test(cbo.codigo as string),
+        `${slug}: código CBO fora do formato NNNN ou NNNN-NN — ${String(cbo.codigo)}`
+      ).toBe(true);
+      expect(CBO_ADHERENCE, `${slug}: aderência inválida`).toContain(cbo.aderencia);
+
+      // Sem observação não dá para saber o que o código deixa de fora.
+      expect(typeof ref.observacao, `${slug}.referenciaBrasileira.observacao`).toBe("string");
+      expect((ref.observacao as string).trim().length).toBeGreaterThan(0);
+
+      // Aderência que não é direta precisa dizer por quê, no próprio texto.
+      if (cbo.aderencia !== "direta") {
+        expect(
+          (ref.observacao as string).length,
+          `${slug}: aderência "${String(cbo.aderencia)}" exige observação que explique o desencaixe`
+        ).toBeGreaterThan(80);
+      }
+
+      const setorial = ref.setorial as Json[];
+      expect(Array.isArray(setorial), `${slug}.referenciaBrasileira.setorial`).toBe(true);
+      for (const entry of setorial) {
+        for (const key of ["entidade", "documento"] as const) {
+          expect(typeof entry[key], `${slug}.setorial[].${key}`).toBe("string");
+          expect((entry[key] as string).trim().length).toBeGreaterThan(0);
+        }
+        if (entry.url !== undefined) {
+          expect(
+            () => new URL(entry.url as string),
+            `${slug}: URL setorial inválida`
+          ).not.toThrow();
+          expect((entry.url as string).startsWith("https://")).toBe(true);
+        }
+      }
+    });
+
     it("declara relatórios com destino e sensibilidade coerentes", () => {
       const reports = profileAt(locale, slug)!.relatorios as Json[];
       expect(Array.isArray(reports) && reports.length > 0, `${slug}.relatorios vazio`).toBe(true);
@@ -318,13 +368,23 @@ describe("paridade profunda pt-BR ↔ es-ES", () => {
 
   // O guard oficial só varre folhas string do objeto achatado — e aqui quase
   // tudo é array, então ele não enxerga o conteúdo. Este teste enxerga.
+  //
+  // Exceção nomeada: nome de entidade brasileira e título de documento
+  // brasileiro NÃO se traduzem. "Manual de Assessoria de Comunicação" e
+  // "São Paulo" são nomes próprios — traduzi-los faria a fonte deixar de ser
+  // localizável por quem lê em espanhol, que é o oposto do objetivo. A exceção
+  // vale só para esses dois campos, que são nomes curtos, nunca para prosa.
+  const PROPER_NOUN_FIELDS = /\.setorial\[\d+\]\.(entidade|documento)$/;
+
   it("não deixa ortografia portuguesa vazar para o es-ES, nem dentro de listas", () => {
     const PT_ONLY = /[ãõçâêô]|ções?|ção/;
     const leaks: string[] = [];
 
     function scan(value: unknown, path: string) {
       if (typeof value === "string") {
-        if (PT_ONLY.test(value)) leaks.push(`${path} = "${value}"`);
+        if (PT_ONLY.test(value) && !PROPER_NOUN_FIELDS.test(path)) {
+          leaks.push(`${path} = "${value}"`);
+        }
         return;
       }
       if (Array.isArray(value)) return value.forEach((v, i) => scan(v, `${path}[${i}]`));

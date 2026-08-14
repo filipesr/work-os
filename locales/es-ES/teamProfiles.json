@@ -70,7 +70,23 @@
       "text": "Estas señales existen para informar conversaciones de acompañamiento, asignación de trabajo y ajuste de proceso — nunca para puntuar, ordenar ni remunerar. No se convierten en puntaje compuesto, ranking ni meta individual. La variación de desempeño proviene mayoritariamente del sistema, no de la persona: la primera pregunta siempre es sobre el proceso."
     },
     "openReportModel": "Ver el modelo de este informe",
-    "noReportModel": "El modelo de este informe todavía no fue escrito."
+    "noReportModel": "El modelo de este informe todavía no fue escrito.",
+    "brazilianRef": {
+      "title": "Referencia brasileña",
+      "note": "La CBO es la Clasificación Brasileña de Ocupaciones, del Ministerio de Trabajo. Acá entra como referencia de vocabulario ocupacional — para nombrar la función con un término reconocido y comparable —, no como encuadre laboral: la operación no está bajo registro laboral brasileño. Los códigos se levantaron en espejos de la tabla y deben verificarse en la búsqueda oficial antes de cualquier uso formal.",
+      "cboLabel": "CBO",
+      "familyLabel": "Familia",
+      "adherenceLabel": "Adherencia",
+      "adherence": {
+        "direta": "Directa — el código describe esta función",
+        "aproximada": "Aproximada — el código describe parte de la función",
+        "inexistente": "Inexistente — la CBO no tiene esta ocupación"
+      },
+      "officialSearch": "Consultar en la búsqueda oficial del MTE",
+      "officialSearchHint": "La búsqueda oficial es por palabra clave: el sitio no abre la ficha por enlace directo.",
+      "sectorTitle": "Referencia sectorial",
+      "sectorEmpty": "No localicé una entidad brasileña con documento público de referencia para esta función. La ausencia queda registrada en vez de completarse con una fuente débil."
+    }
   },
   "index": {
     "title": "Funciones y equipos",
@@ -111,6 +127,16 @@
       "title": "Diseño",
       "summary": "Traduce el mensaje del cliente en una pieza visual dentro de la identidad de la marca.",
       "occupationRef": "CBO 2624-10 (diseñador gráfico) · O*NET 27-1024.00",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "2624-10",
+          "titulo": "Dibujante industrial gráfico (diseñador gráfico)",
+          "familia": "2624 — Artistas visuales, dibujantes industriales y conservadores-restauradores",
+          "aderencia": "direta"
+        },
+        "observacao": "La CBO también trae 2531-25, director de arte (publicidad), para quien trabaja dentro de una agencia: 2624-10 describe el oficio del diseño, 2531-25 el papel en la estructura publicitaria. No localicé un documento público de atribuciones de ADG Brasil ni de ABEDESIGN — las entidades existen, el descriptivo de referencia no fue encontrado.",
+        "setorial": []
+      },
       "missao": "Traducir el mensaje del cliente en una pieza visual que comunique de entrada, dentro de la identidad de la marca.",
       "entregaveis": [
         "Pieza final aprobada en los formatos y proporciones pedidos, con archivo editable y de exportación.",
@@ -284,6 +310,16 @@
       "title": "Video",
       "summary": "Convierte guion y material bruto en video listo para cada canal.",
       "occupationRef": "O*NET 27-4032.00 (Film and Video Editors)",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "3744-05",
+          "titulo": "Editor de medios audiovisuales",
+          "familia": "3744 — Técnicos en montaje, edición y finalización de medios audiovisuales",
+          "aderencia": "direta"
+        },
+        "observacao": "La misma familia trae 3744-15 (finalizador de video) y 3744-20 (montador de películas), recortes más estrechos de la función. Sin documento sectorial brasileño verificado para audiovisual publicitario.",
+        "setorial": []
+      },
       "missao": "Convertir guion y material bruto en un video que atrape en los primeros segundos y entregue el mensaje en el formato de cada canal.",
       "entregaveis": [
         "Etapa Edición (Video Corto): corte final exportado en los formatos y proporciones pedidos.",
@@ -441,6 +477,22 @@
       "title": "Revisión y Control de Calidad",
       "summary": "Último control antes de que la pieza salga — y devuelve con motivo lo que debe volver.",
       "occupationRef": "O*NET 43-9081.00 (Proofreaders and Copy Markers)",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "2611-40",
+          "titulo": "Revisor de texto",
+          "familia": "2611 — Profesionales del periodismo",
+          "aderencia": "direta"
+        },
+        "observacao": "La CBO clasifica al revisor dentro del periodismo, no del control de calidad. Eso explica por qué el código describe la revisión de texto y no el control de salida de la pieza — que es la mitad de esta función acá.",
+        "setorial": [
+          {
+            "entidade": "FENAJ — Federación Nacional de los Periodistas (Brasil)",
+            "documento": "Manual de Assessoria de Comunicação, 4ª edición (2007)",
+            "url": "https://fenaj.org.br/wp-content/uploads/2014/03/manual_de_assessoria_de_imprensa.pdf"
+          }
+        ]
+      },
       "missao": "Impedir que un error evitable llegue al cliente — y devolver con motivo claro lo que debe volver.",
       "entregaveis": [
         "Etapas Revisión QC (Video Corto, Landing Page) y Revisión Final (Post Carrusel).",
@@ -600,6 +652,16 @@
       "title": "Social Media",
       "summary": "Planifica qué se publica, escribe lo que sostiene la pieza y lee lo que el contenido devolvió.",
       "occupationRef": "O*NET 13-1161.00 (Market Research Analysts and Marketing Specialists)",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "2534-05",
+          "titulo": "Analista de medios sociales",
+          "familia": "2534 — Profesionales de medios digitales y afines",
+          "aderencia": "direta"
+        },
+        "observacao": "Familia reciente de la CBO, creada para las ocupaciones digitales — es una de las pocas funciones de marketing digital con código propio y descripción actual. IAB Brasil sería el candidato a referencia sectorial, pero no logré abrir el sitio para confirmar el contenido.",
+        "setorial": []
+      },
       "missao": "Mantener los perfiles del cliente vivos y coherentes: planificar qué se publica, escribir lo que sostiene la pieza y seguir lo que el contenido devolvió.",
       "entregaveis": [
         "Calendario de publicación del mes, aprobado por el cliente antes de convertirse en demanda.",
@@ -780,6 +842,16 @@
       "title": "Community",
       "summary": "La voz de la marca en la conversación: responde a quien llega y lleva hacia adentro lo que dice la audiencia.",
       "occupationRef": "O*NET 43-4051.00 · O*NET 27-3031.00 (parcial)",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "2534-05",
+          "titulo": "Analista de medios sociales",
+          "familia": "2534 — Profesionales de medios digitales y afines",
+          "aderencia": "aproximada"
+        },
+        "observacao": "La CBO no separa a quien publica de quien conversa con la audiencia: las dos actividades caen en 2534-05. La separación entre Social Media y Community es decisión de la agencia, no de la clasificación.",
+        "setorial": []
+      },
       "missao": "Ser la voz de la marca en la conversación: responder a quien llega por los perfiles, en el tono correcto y en el tiempo correcto, y llevar hacia adentro lo que la audiencia está diciendo.",
       "entregaveis": [
         "Respuestas a comentarios y mensajes directos dentro del tiempo acordado con la cuenta.",
@@ -934,6 +1006,28 @@
       "title": "Comunicación y Copy",
       "summary": "Escribe lo que dice la marca — del texto que vende al texto que explica.",
       "occupationRef": "CBO 2611 (profesionales del periodismo) · O*NET 27-3031.00",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "2531-10",
+          "titulo": "Redactor de publicidad",
+          "familia": "2531 — Profesionales de publicidad",
+          "aderencia": "direta"
+        },
+        "observacao": "Cuando el trabajo es de comunicación institucional y no publicitaria, la referencia migra a la familia 2611 (profesionales del periodismo). Las dos conviven en esta función.",
+        "setorial": [
+          {
+            "entidade": "FENAJ — Federación Nacional de los Periodistas (Brasil)",
+            "documento": "Manual de Assessoria de Comunicação, 4ª edición (2007)",
+            "url": "https://fenaj.org.br/wp-content/uploads/2014/03/manual_de_assessoria_de_imprensa.pdf"
+          },
+          {
+            "entidade": "Sinapro-SP — Sindicato de las Agencias de Publicidad del Estado de São Paulo",
+            "documento": "Valores Referenciais de Serviços Internos",
+            "url": "https://www.sinaprosp.org.br/utilidades/valores-referenciais-de-servicos-internos/",
+            "ressalva": "La página es pública; el documento completo se distribuye a las agencias afiliadas a pedido."
+          }
+        ]
+      },
       "missao": "Escribir lo que dice la marca — del texto que vende al texto que explica — de forma que la persona correcta entienda y actúe.",
       "entregaveis": [
         "Etapa Brief y Copy (Landing Page): texto completo de la página, con jerarquía y llamados.",
@@ -1093,6 +1187,22 @@
       "title": "Prensa",
       "summary": "Construye y protege la reputación del cliente en los medios.",
       "occupationRef": "CBO 2611-10 (asesor de prensa) · CBO 2611-25 (periodista) · O*NET 27-3031.00",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "2611-10",
+          "titulo": "Asesor de prensa",
+          "familia": "2611 — Profesionales del periodismo",
+          "aderencia": "direta"
+        },
+        "observacao": "Junto con 2611-25 (periodista), es la referencia mejor descrita de la CBO para esta función — y la única de las catorce con documento sectorial brasileño que describe perfil, áreas de actuación y productos.",
+        "setorial": [
+          {
+            "entidade": "FENAJ — Federación Nacional de los Periodistas (Brasil)",
+            "documento": "Manual de Assessoria de Comunicação, 4ª edición (2007)",
+            "url": "https://fenaj.org.br/wp-content/uploads/2014/03/manual_de_assessoria_de_imprensa.pdf"
+          }
+        ]
+      },
       "missao": "Construir y proteger la reputación del cliente en los medios — conseguir el tema correcto en el medio correcto, y responder bien cuando la prensa busca.",
       "entregaveis": [
         "Comunicado y propuesta de tema enviados a la lista segmentada de contactos.",
@@ -1258,6 +1368,23 @@
       "title": "Medios Pagos",
       "summary": "Hace que el presupuesto del cliente compre el resultado acordado — y lo prueba con datos.",
       "occupationRef": "O*NET 11-2011.00 · O*NET 13-1161.01",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "2531-20",
+          "titulo": "Director de medios (publicidad)",
+          "familia": "2531 — Profesionales de publicidad",
+          "aderencia": "aproximada"
+        },
+        "observacao": "No existe la ocupación “gestor de tráfico” en la CBO. 2531-20 describe la planificación y la compra de medios, que es el núcleo de la función, pero fue escrito antes de los medios programáticos: no cubre la configuración de la medición ni la optimización diaria de campañas.",
+        "setorial": [
+          {
+            "entidade": "Sinapro-SP — Sindicato de las Agencias de Publicidad del Estado de São Paulo",
+            "documento": "Valores Referenciais de Serviços Internos",
+            "url": "https://www.sinaprosp.org.br/utilidades/valores-referenciais-de-servicos-internos/",
+            "ressalva": "La página es pública; el documento completo se distribuye a las agencias afiliadas a pedido."
+          }
+        ]
+      },
       "missao": "Hacer que el presupuesto del cliente compre el resultado acordado — y probar, con datos, qué compró.",
       "entregaveis": [
         "Etapa Configuración de Campaña: estructura, públicos, creatividades y medición configurados.",
@@ -1447,6 +1574,16 @@
       "title": "SEO",
       "summary": "Hace que encuentren al cliente quien busca lo que vende, sin pagar por clic.",
       "occupationRef": "O*NET 13-1161.01 (Search Marketing Strategists)",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "2534",
+          "titulo": "Profesionales de medios digitales y afines (familia)",
+          "familia": "2534 — Profesionales de medios digitales y afines",
+          "aderencia": "inexistente"
+        },
+        "observacao": "No hay ocupación de SEO en la CBO: ni código específico, ni descripción que corresponda al trabajo. La familia 2534 es la vecindad más próxima, y está citada como vecindad — no como encuadre. El vacío es de la clasificación, no de la función.",
+        "setorial": []
+      },
       "missao": "Hacer que encuentren al cliente quien busca lo que vende, sin pagar por cada clic.",
       "entregaveis": [
         "Etapa SEO (Landing Page): título, descripción, encabezados, URLs, imágenes y datos estructurados verificados antes de la publicación.",
@@ -1608,6 +1745,23 @@
       "title": "Atención al Cliente",
       "summary": "El puente entre el cliente y la agencia, en los dos sentidos.",
       "occupationRef": "O*NET 43-4051.00 · O*NET 11-2011.00 (parcial)",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "2531-35",
+          "titulo": "Director de cuentas",
+          "familia": "2531 — Profesionales de publicidad",
+          "aderencia": "direta"
+        },
+        "observacao": "El título de la CBO dice “director”, pero la descripción corresponde a la atención de agencia en cualquier nivel de antigüedad — el código nombra el cargo de arriba, no la actividad.",
+        "setorial": [
+          {
+            "entidade": "Sinapro-SP — Sindicato de las Agencias de Publicidad del Estado de São Paulo",
+            "documento": "Valores Referenciais de Serviços Internos",
+            "url": "https://www.sinaprosp.org.br/utilidades/valores-referenciais-de-servicos-internos/",
+            "ressalva": "La página es pública; el documento completo se distribuye a las agencias afiliadas a pedido."
+          }
+        ]
+      },
       "missao": "Ser el puente entre el cliente y la agencia: traducir lo que el cliente quiere en un brief ejecutable, y traducir lo que el equipo entregó en algo que el cliente entiende.",
       "entregaveis": [
         "Brief completo y aprobado, que da origen a la demanda.",
@@ -1788,6 +1942,23 @@
       "title": "Estrategia",
       "summary": "Decide qué debe hacer la agencia para que la cuenta alcance su objetivo.",
       "occupationRef": "O*NET 13-1161.00 · CBO 1423",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "1423",
+          "titulo": "Gerentes de comercialización, marketing y comunicación (familia)",
+          "familia": "1423 — Gerentes de comercialización, marketing y comunicación",
+          "aderencia": "aproximada"
+        },
+        "observacao": "La CBO trata la estrategia como atribución gerencial, sin ocupación propia de planificación. La familia 1423 describe la gestión del área, no el oficio de planificar — por eso la adherencia es aproximada.",
+        "setorial": [
+          {
+            "entidade": "Sinapro-SP — Sindicato de las Agencias de Publicidad del Estado de São Paulo",
+            "documento": "Valores Referenciais de Serviços Internos",
+            "url": "https://www.sinaprosp.org.br/utilidades/valores-referenciais-de-servicos-internos/",
+            "ressalva": "La página es pública; el documento completo se distribuye a las agencias afiliadas a pedido."
+          }
+        ]
+      },
       "missao": "Decidir qué debe hacer la agencia para que la cuenta alcance su objetivo — y garantizar que todas las disciplinas remen hacia el mismo lugar.",
       "entregaveis": [
         "Plan estratégico de la cuenta: objetivo, público, posicionamiento, canales y cómo se mide.",
@@ -1967,6 +2138,23 @@
       "title": "Coordinación",
       "summary": "Hace fluir el trabajo: insumo, responsable y plazo viable en cada demanda.",
       "occupationRef": "CBO 1423 · O*NET 11-2021.00 (Marketing Managers)",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "1423",
+          "titulo": "Gerentes de comercialización, marketing y comunicación (familia)",
+          "familia": "1423 — Gerentes de comercialización, marketing y comunicación",
+          "aderencia": "aproximada"
+        },
+        "observacao": "Misma familia que Estrategia: la CBO no separa a quien decide la dirección de quien opera el flujo. La separación entre las dos funciones es de la agencia.",
+        "setorial": [
+          {
+            "entidade": "Sinapro-SP — Sindicato de las Agencias de Publicidad del Estado de São Paulo",
+            "documento": "Valores Referenciais de Serviços Internos",
+            "url": "https://www.sinaprosp.org.br/utilidades/valores-referenciais-de-servicos-internos/",
+            "ressalva": "La página es pública; el documento completo se distribuye a las agencias afiliadas a pedido."
+          }
+        ]
+      },
       "missao": "Hacer fluir el trabajo: garantizar que cada demanda tenga insumo, responsable y plazo viable, y actuar donde el flujo se traba.",
       "entregaveis": [
         "Demandas abiertas con plantilla, plazo y responsable correctos.",
@@ -2130,6 +2318,22 @@
       "title": "Ingeniería de Software",
       "summary": "Construye y mantiene lo que la agencia entrega en código y las herramientas internas.",
       "occupationRef": "CBO 2124 · O*NET 15-1252.00 · O*NET 15-1254.00",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "2124-05",
+          "titulo": "Analista de desarrollo de sistemas",
+          "familia": "2124 — Analistas de sistemas computacionales",
+          "aderencia": "direta"
+        },
+        "observacao": "La misma familia trae 2124-10 (redes) y 2124-15 (soporte), que son la referencia de TI. La CBO describe el análisis y el desarrollo; publicación, entornos y mantenimiento de sitios quedan fuera de la descripción.",
+        "setorial": [
+          {
+            "entidade": "SBC — Sociedad Brasileña de Computación",
+            "documento": "Referenciais de Formação para os Cursos de Graduação em Computação",
+            "url": "https://books-sol.sbc.org.br/index.php/sbc/catalog/series/referenciais"
+          }
+        ]
+      },
       "missao": "Construir y mantener lo que la agencia entrega en código — sitios, páginas y las herramientas internas de las que depende la operación.",
       "entregaveis": [
         "Etapa Desarrollo (Landing Page): página construida, adaptable, con medición instalada y publicada.",
@@ -2319,6 +2523,22 @@
       "title": "TI e Infraestructura",
       "summary": "Mantiene la agencia funcionando: red, equipos, cuentas, almacenamiento y copias de seguridad.",
       "occupationRef": "CBO 2124 · O*NET 15-1244.00",
+      "referenciaBrasileira": {
+        "cbo": {
+          "codigo": "2124-15",
+          "titulo": "Analista de soporte computacional",
+          "familia": "2124 — Analistas de sistemas computacionales",
+          "aderencia": "direta"
+        },
+        "observacao": "Cuando el trabajo es predominantemente de red, la referencia es 2124-10 (analista de redes y de comunicación de datos). Las dos ocupaciones conviven en esta función, que en la agencia es una sola persona.",
+        "setorial": [
+          {
+            "entidade": "SBC — Sociedad Brasileña de Computación",
+            "documento": "Referenciais de Formação para os Cursos de Graduação em Computação",
+            "url": "https://books-sol.sbc.org.br/index.php/sbc/catalog/series/referenciais"
+          }
+        ]
+      },
       "missao": "Mantener la agencia funcionando: red, equipos, cuentas, almacenamiento y copias de seguridad — y garantizar que un archivo de cliente no se pierda ni se filtre.",
       "entregaveis": [
         "Red, almacenamiento en red y estaciones operando, con copia de seguridad verificada.",

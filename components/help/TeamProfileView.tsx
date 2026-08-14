@@ -1,9 +1,18 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, BookOpen, ExternalLink, Info, Paperclip } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  ExternalLink,
+  Info,
+  Landmark,
+  Paperclip,
+} from "lucide-react";
 import { SectionCard } from "@/components/ui/SectionCard";
 import {
   CADENCES,
   TOOL_GROUPS,
+  type BrazilianReference,
   type ReportEntry,
   type SourceEntry,
   type TeamProfileContent,
@@ -135,6 +144,107 @@ function ReportCard({ report, ui }: { report: ReportEntry; ui: TeamProfileUi }) 
         <p className="mt-3 text-xs text-muted-foreground">{ui.noReportModel}</p>
       )}
     </div>
+  );
+}
+
+/**
+ * Referência ocupacional brasileira: o código da CBO, o quanto ele de fato
+ * corresponde à função, e a entidade setorial quando existe.
+ *
+ * A ressalva de jurisdição aparece em toda função, não só nas duvidosas: a
+ * operação não está sob registro trabalhista brasileiro, então a CBO é
+ * vocabulário, não enquadramento. E os códigos vieram de espelhos da tabela —
+ * o site oficial não abre ficha por link —, o que também precisa estar dito.
+ */
+function BrazilianRef({ ref, ui }: { ref: BrazilianReference; ui: TeamProfileUi }) {
+  const copy = ui.brazilianRef;
+  const missing = ref.cbo.aderencia === "inexistente";
+
+  return (
+    <SectionCard title={copy.title} icon={Landmark} bodyClassName="space-y-4 p-6">
+      <div className="rounded-lg border border-border bg-muted/40 p-3">
+        <p className="text-xs leading-relaxed text-muted-foreground">{copy.note}</p>
+      </div>
+
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {copy.cboLabel}
+        </span>
+        <span
+          className={`font-mono text-base font-bold ${missing ? "text-muted-foreground" : "text-foreground"}`}
+        >
+          {ref.cbo.codigo}
+        </span>
+        <span className="text-sm text-foreground">{ref.cbo.titulo}</span>
+      </div>
+
+      <dl className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {copy.familyLabel}
+          </dt>
+          <dd className="mt-0.5 text-sm text-foreground">{ref.cbo.familia}</dd>
+        </div>
+        <div>
+          <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {copy.adherenceLabel}
+          </dt>
+          <dd
+            className={`mt-0.5 text-sm ${missing ? "font-semibold text-warning" : "text-foreground"}`}
+          >
+            {copy.adherence[ref.cbo.aderencia]}
+          </dd>
+        </div>
+      </dl>
+
+      <p className="text-sm leading-relaxed text-muted-foreground">{ref.observacao}</p>
+
+      <div>
+        <a
+          href="https://cbo.mte.gov.br/cbosite/pages/home.jsf"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+        >
+          {copy.officialSearch}
+          <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+        </a>
+        <p className="mt-1 text-xs text-muted-foreground">{copy.officialSearchHint}</p>
+      </div>
+
+      <div className="border-t border-border pt-4">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {copy.sectorTitle}
+        </p>
+        {ref.setorial.length > 0 ? (
+          <ul className="space-y-3">
+            {ref.setorial.map((entry, i) => (
+              <li key={i} className="border-l-2 border-border pl-3">
+                <p className="text-sm font-semibold text-foreground">{entry.entidade}</p>
+                {entry.url ? (
+                  <a
+                    href={entry.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-baseline gap-1.5 text-sm text-primary hover:underline"
+                  >
+                    {entry.documento}
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0 self-center" aria-hidden="true" />
+                  </a>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{entry.documento}</p>
+                )}
+                {entry.ressalva ? (
+                  <p className="mt-0.5 text-xs text-muted-foreground">{entry.ressalva}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm leading-relaxed text-muted-foreground">{copy.sectorEmpty}</p>
+        )}
+      </div>
+    </SectionCard>
   );
 }
 
@@ -306,6 +416,8 @@ export function TeamProfileView({
             </ul>
           </div>
         </SectionCard>
+
+        <BrazilianRef ref={content.referenciaBrasileira} ui={ui} />
       </div>
 
       <div className="mt-10 rounded-xl border-2 border-primary/30 bg-primary/5 px-6 py-5">

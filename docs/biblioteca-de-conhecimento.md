@@ -487,6 +487,16 @@ team-profiles.test.ts` reprova vocabulário de premiação/ordenação dentro de
   3b (FTR por pessoa) é a única registrada.
 - **Atalho em `/account`** → o colaborador chega ao descritivo da própria equipe
   sem passar pelo índice; a equipe sem descritivo aparece igual, marcada.
+- **Bloco de referência brasileira (CBO)** → **P1/honestidade de fonte**: cita o
+  código da CBO com um campo de **aderência** (`direta` · `aproximada` ·
+  `inexistente`), porque um código citado sem qualificação vira enquadramento
+  falso. SEO está marcado como `inexistente` — a CBO não tem a ocupação, e a
+  lacuna é informação, não erro de preenchimento. Duas ressalvas aparecem em
+  TODA função: a CBO é vocabulário e não enquadramento (a operação não está sob
+  registro trabalhista brasileiro), e os códigos vieram de espelhos da tabela
+  porque o site oficial não abre ficha por link. Cinco funções ficam sem entidade
+  setorial: só entram as três que foram abertas e conferidas (FENAJ, Sinapro-SP,
+  SBC), e a ausência é exibida em vez de preenchida com fonte fraca.
 - **`/help/relatorios` (modelos por artefato)** → o descritivo declara o artefato;
   o modelo diz como ele deve parecer. Padrão **por artefato, não da casa**: um
   clipping e um relatório de incidente têm leitores e perguntas diferentes, e a
@@ -582,7 +592,7 @@ in-app precisa acompanhar:
 | ------------------------------------ | --------------------------------------------------- |
 | §1/§2/§6 deste doc                   | `locales/{pt-BR,es-ES}/help.json` → `fundamentos.*` |
 | `docs/descritivos-de-equipe.md`      | `locales/{pt-BR,es-ES}/teamProfiles.json`           |
-| `docs/descritivos-de-equipe.md` §3.1 | `locales/{pt-BR,es-ES}/reportModels.json`           |
+| `docs/descritivos-de-equipe.md` §3.2 | `locales/{pt-BR,es-ES}/reportModels.json`           |
 
 Em especial: a §2 de `descritivos-de-equipe.md` (salvaguardas de RH) deriva
 diretamente de P1 e P2. Se um desses princípios mudar, ela muda junto — é o
