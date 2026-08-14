@@ -12,6 +12,11 @@ import ptBR from "@/locales/pt-BR/teamProfiles.json";
  * porque `t.raw()`/import dinâmico não são verificados.
  */
 
+/** Nome de fonte tem `*`, `(` e `.` — literais numa RegExp de accessible name. */
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 const ui = ptBR.ui as unknown as TeamProfileUi;
 const content = ptBR.profiles["social-media"] as unknown as TeamProfileContent;
 const profile = getProfileBySlug("social-media")!;
@@ -89,6 +94,27 @@ describe("TeamProfileView", () => {
 
     for (const tool of content.ferramentas.internas) {
       expect(screen.queryByRole("link", { name: new RegExp(tool.nome, "i") })).toBeNull();
+    }
+  });
+
+  it("torna as fontes conferíveis: externa em nova aba, interna na mesma", () => {
+    render(<TeamProfileView profile={profile} content={content} ui={ui} />);
+
+    for (const source of content.fontes) {
+      if (!source.url) {
+        expect(screen.getByText(source.texto)).toBeInTheDocument();
+        continue;
+      }
+
+      const link = screen.getByRole("link", { name: new RegExp(escapeRegExp(source.texto), "i") });
+      expect(link).toHaveAttribute("href", source.url);
+
+      if (source.url.startsWith("/")) {
+        expect(link).not.toHaveAttribute("target");
+      } else {
+        expect(link).toHaveAttribute("target", "_blank");
+        expect(link).toHaveAttribute("rel", "noreferrer");
+      }
     }
   });
 

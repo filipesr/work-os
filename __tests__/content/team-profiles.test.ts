@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   TEAM_PROFILES,
@@ -44,7 +44,7 @@ const MESSAGES = Object.fromEntries(LOCALES.map((l) => [l, loadProfiles(l)])) as
   Json
 >;
 
-const STRING_LIST_SECTIONS = ["entregaveis", "fontes"] as const;
+const STRING_LIST_SECTIONS = ["entregaveis"] as const;
 
 const GROUPED_LIST_SECTIONS: Record<string, readonly string[]> = {
   interfaces: ["recebeDe", "entregaPara"],
@@ -197,6 +197,42 @@ describe.each(LOCALES)("teamProfiles.json [%s]", (locale) => {
           ).toEqual([]);
         }
       }
+    });
+
+    // Fonte sem endereço conferível é afirmação sem lastro. Nem toda fonte tem
+    // URL (um template do fluxo não tem), mas a que tem precisa resolver: URL
+    // externa em https, e rota interna que exista de verdade no app router.
+    it("cita fontes verificáveis", () => {
+      const sources = profileAt(locale, slug)!.fontes as Json[];
+      expect(Array.isArray(sources) && sources.length > 0, `${slug}.fontes vazio`).toBe(true);
+
+      for (const source of sources) {
+        expect(typeof source.texto, `${slug}.fontes[].texto`).toBe("string");
+        expect((source.texto as string).trim().length).toBeGreaterThan(0);
+        if (source.url === undefined) continue;
+
+        const url = source.url as string;
+        if (url.startsWith("/")) {
+          const segments = url.replace(/^\/|\/$/g, "");
+          const page = join(ROOT, "app", "[locale]", "(protected)", segments, "page.tsx");
+          expect(existsSync(page), `${slug}: fonte aponta para rota inexistente — ${url}`).toBe(
+            true
+          );
+        } else {
+          expect(() => new URL(url), `${slug}: URL inválida — ${url}`).not.toThrow();
+          expect(url.startsWith("https://"), `${slug}: fonte externa sem https — ${url}`).toBe(
+            true
+          );
+        }
+      }
+
+      // Toda referência ocupacional citada no texto precisa levar a algum lugar:
+      // é o que o RH usa para conferir o enquadramento.
+      const occupational = sources.filter((s) => /O\*NET|\bCBO\b/.test(s.texto as string));
+      expect(
+        occupational.filter((s) => s.url === undefined).map((s) => s.texto),
+        `${slug}: referência ocupacional sem link`
+      ).toEqual([]);
     });
 
     it("declara relatórios com destino e sensibilidade coerentes", () => {

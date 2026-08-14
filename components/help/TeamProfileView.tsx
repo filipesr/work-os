@@ -5,6 +5,7 @@ import {
   CADENCES,
   TOOL_GROUPS,
   type ReportEntry,
+  type SourceEntry,
   type TeamProfileContent,
   type TeamProfileUi,
   type ToolEntry,
@@ -61,6 +62,40 @@ function ToolItem({ tool }: { tool: ToolEntry }) {
         <span className="text-sm font-semibold text-foreground">{tool.nome}</span>
       )}
       <span className="text-sm leading-relaxed text-muted-foreground">{tool.para}</span>
+    </li>
+  );
+}
+
+/**
+ * Fonte com endereço vira link; sem endereço, fica texto. Rota interna
+ * (começa com "/") navega na mesma aba — é conteúdo do próprio produto.
+ */
+function Source({ source }: { source: SourceEntry }) {
+  if (!source.url) {
+    return <li className="text-sm leading-relaxed text-muted-foreground">{source.texto}</li>;
+  }
+
+  if (source.url.startsWith("/")) {
+    return (
+      <li className="text-sm leading-relaxed">
+        <Link href={source.url} className="text-primary hover:underline">
+          {source.texto}
+        </Link>
+      </li>
+    );
+  }
+
+  return (
+    <li className="text-sm leading-relaxed">
+      <a
+        href={source.url}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-baseline gap-1.5 text-primary hover:underline"
+      >
+        {source.texto}
+        <ExternalLink className="h-3.5 w-3.5 shrink-0 self-center" aria-hidden="true" />
+      </a>
     </li>
   );
 }
@@ -269,9 +304,7 @@ export function TeamProfileView({
         </div>
         <ul className="space-y-1.5">
           {content.fontes.map((source, i) => (
-            <li key={i} className="text-sm leading-relaxed text-muted-foreground">
-              {source}
-            </li>
+            <Source key={i} source={source} />
           ))}
         </ul>
       </div>

@@ -70,7 +70,6 @@
       "text": "Estas señales existen para informar conversaciones de acompañamiento, asignación de trabajo y ajuste de proceso — nunca para puntuar, ordenar ni remunerar. No se convierten en puntaje compuesto, ranking ni meta individual. La variación de desempeño proviene mayoritariamente del sistema, no de la persona: la primera pregunta siempre es sobre el proceso."
     }
   },
-
   "index": {
     "title": "Funciones y equipos",
     "intro": "Qué se espera de cada función: qué entrega, con quién trabaja, con qué herramientas, en qué cadencia y qué artefactos produce. Sirve para quien recién llega, para quien coordina y para quien contrata.",
@@ -105,7 +104,6 @@
       "subtitle": "Estos equipos existen en la empresa y todavía no tienen descriptivo escrito. La ausencia queda visible a propósito."
     }
   },
-
   "profiles": {
     "design": {
       "title": "Diseño",
@@ -135,9 +133,18 @@
             "para": "Layout, prototipo y entrega de especificaciones al desarrollo.",
             "url": "https://figma.com"
           },
-          { "nome": "Adobe Illustrator", "para": "Vector, logotipo e identidad visual." },
-          { "nome": "Adobe Photoshop", "para": "Tratamiento y composición de imagen." },
-          { "nome": "Adobe InDesign", "para": "Pieza editorial y material impreso." }
+          {
+            "nome": "Adobe Illustrator",
+            "para": "Vector, logotipo e identidad visual."
+          },
+          {
+            "nome": "Adobe Photoshop",
+            "para": "Tratamiento y composición de imagen."
+          },
+          {
+            "nome": "Adobe InDesign",
+            "para": "Pieza editorial y material impreso."
+          }
         ],
         "apoio": [
           {
@@ -156,12 +163,18 @@
           }
         ],
         "internas": [
-          { "nome": "Manual de marca por cliente", "para": "Carpeta de la cuenta en la red." },
+          {
+            "nome": "Manual de marca por cliente",
+            "para": "Carpeta de la cuenta en la red."
+          },
           {
             "nome": "Carpeta de aprobados",
             "para": "Lo que ya pasó por el cliente y sirve de referencia."
           },
-          { "nome": "Plantillas de formato", "para": "Proporciones y medidas por canal." }
+          {
+            "nome": "Plantillas de formato",
+            "para": "Proporciones y medidas por canal."
+          }
         ]
       },
       "obrigacoes": {
@@ -250,12 +263,19 @@
         ]
       },
       "fontes": [
-        "O*NET 27-1024.00 — Graphic Designers (tareas y technology skills).",
-        "CBO 2624-10 — dibujante industrial gráfico (diseñador gráfico).",
-        "Plantillas Post Carrusel Estático y Landing Page del flujo de la agencia."
+        {
+          "texto": "O*NET 27-1024.00 — Graphic Designers (tareas y technology skills).",
+          "url": "https://www.onetonline.org/link/summary/27-1024.00"
+        },
+        {
+          "texto": "CBO 2624-10 — dibujante industrial gráfico (diseñador gráfico).",
+          "url": "https://cbo.mte.gov.br/cbosite/pages/home.jsf"
+        },
+        {
+          "texto": "Plantillas Post Carrusel Estático y Landing Page del flujo de la agencia."
+        }
       ]
     },
-
     "video": {
       "title": "Video",
       "summary": "Convierte guion y material bruto en video listo para cada canal.",
@@ -273,8 +293,14 @@
       },
       "ferramentas": {
         "obrigatorias": [
-          { "nome": "Adobe Premiere Pro", "para": "Edición y finalización." },
-          { "nome": "Adobe After Effects", "para": "Motion y subtitulado animado." },
+          {
+            "nome": "Adobe Premiere Pro",
+            "para": "Edición y finalización."
+          },
+          {
+            "nome": "Adobe After Effects",
+            "para": "Motion y subtitulado animado."
+          },
           {
             "nome": "CapCut",
             "para": "Corte rápido para formato vertical.",
@@ -291,15 +317,24 @@
             "nome": "Biblioteca de música licenciada",
             "para": "Música y efectos de uso comercial."
           },
-          { "nome": "Adobe Media Encoder", "para": "Exportación en lote por formato." }
+          {
+            "nome": "Adobe Media Encoder",
+            "para": "Exportación en lote por formato."
+          }
         ],
         "internas": [
           {
             "nome": "Carpeta de brutos de la cuenta",
             "para": "Material captado, en la red local."
           },
-          { "nome": "Estándar de apertura y cierre", "para": "Firma de video por cliente." },
-          { "nome": "Tabla de proporciones y duraciones", "para": "Qué acepta cada canal." }
+          {
+            "nome": "Estándar de apertura y cierre",
+            "para": "Firma de video por cliente."
+          },
+          {
+            "nome": "Tabla de proporciones y duraciones",
+            "para": "Qué acepta cada canal."
+          }
         ]
       },
       "obrigacoes": {
@@ -387,11 +422,15 @@
         ]
       },
       "fontes": [
-        "O*NET 27-4032.00 — Film and Video Editors.",
-        "Plantilla Video Corto del flujo de la agencia."
+        {
+          "texto": "O*NET 27-4032.00 — Film and Video Editors.",
+          "url": "https://www.onetonline.org/link/summary/27-4032.00"
+        },
+        {
+          "texto": "Plantilla Video Corto del flujo de la agencia."
+        }
       ]
     },
-
     "revisao": {
       "title": "Revisión y Control de Calidad",
       "summary": "Último control antes de que la pieza salga — y devuelve con motivo lo que debe volver.",
@@ -416,7 +455,10 @@
             "para": "Ortografía y gramática en portugués y español.",
             "url": "https://languagetool.org"
           },
-          { "nome": "Adobe Acrobat", "para": "Marcado de correcciones en PDF." },
+          {
+            "nome": "Adobe Acrobat",
+            "para": "Marcado de correcciones en PDF."
+          },
           {
             "nome": "VOLP — Academia Brasileña de Letras",
             "para": "Norma del portugués.",
@@ -429,19 +471,28 @@
           }
         ],
         "apoio": [
-          { "nome": "Google Docs — modo sugerencias", "para": "Devolución comentada de texto." },
+          {
+            "nome": "Google Docs — modo sugerencias",
+            "para": "Devolución comentada de texto."
+          },
           {
             "nome": "Verificador de enlaces",
             "para": "Comprobar destino y validez de los enlaces de la pieza."
           }
         ],
         "internas": [
-          { "nome": "Manual de marca del cliente", "para": "Qué acepta y qué no acepta la marca." },
+          {
+            "nome": "Manual de marca del cliente",
+            "para": "Qué acepta y qué no acepta la marca."
+          },
           {
             "nome": "Glosario de la cuenta",
             "para": "Términos y nombres propios escritos como los usa el cliente."
           },
-          { "nome": "Checklist de salida", "para": "Uno por tipo de pieza." }
+          {
+            "nome": "Checklist de salida",
+            "para": "Uno por tipo de pieza."
+          }
         ]
       },
       "obrigacoes": {
@@ -524,12 +575,19 @@
         ]
       },
       "fontes": [
-        "O*NET 43-9081.00 — Proofreaders and Copy Markers.",
-        "Principio P5 de la biblioteca de conocimiento: calidad en la fuente, interno distinto de externo.",
-        "Plantillas Video Corto, Post Carrusel Estático y Landing Page."
+        {
+          "texto": "O*NET 43-9081.00 — Proofreaders and Copy Markers.",
+          "url": "https://www.onetonline.org/link/summary/43-9081.00"
+        },
+        {
+          "texto": "Principio P5 de la biblioteca de conocimiento: calidad en la fuente, interno distinto de externo.",
+          "url": "/help/principios"
+        },
+        {
+          "texto": "Plantillas Video Corto, Post Carrusel Estático y Landing Page."
+        }
       ]
     },
-
     "social-media": {
       "title": "Social Media",
       "summary": "Planifica qué se publica, escribe lo que sostiene la pieza y lee lo que el contenido devolvió.",
@@ -575,16 +633,29 @@
             "para": "Temas y estacionalidad.",
             "url": "https://trends.google.com"
           },
-          { "nome": "Canva", "para": "Ajuste rápido de pieza.", "url": "https://canva.com" },
-          { "nome": "Google Sheets", "para": "Calendario y ciclo de aprobación." }
+          {
+            "nome": "Canva",
+            "para": "Ajuste rápido de pieza.",
+            "url": "https://canva.com"
+          },
+          {
+            "nome": "Google Sheets",
+            "para": "Calendario y ciclo de aprobación."
+          }
         ],
         "internas": [
-          { "nome": "Manual de marca y tono de voz", "para": "Cómo habla la cuenta." },
+          {
+            "nome": "Manual de marca y tono de voz",
+            "para": "Cómo habla la cuenta."
+          },
           {
             "nome": "Carpeta de aprobados",
             "para": "Referencia de lo que ya pasó por el cliente."
           },
-          { "nome": "Historial de publicaciones", "para": "Qué ya salió y cómo rindió." }
+          {
+            "nome": "Historial de publicaciones",
+            "para": "Qué ya salió y cómo rindió."
+          }
         ]
       },
       "obrigacoes": {
@@ -681,12 +752,19 @@
         ]
       },
       "fontes": [
-        "O*NET 13-1161.00 — Market Research Analysts and Marketing Specialists.",
-        "Plantillas Video Corto y Post Carrusel Estático.",
-        "Principio P7 de la biblioteca de conocimiento: la capacidad creativa no es hora intercambiable."
+        {
+          "texto": "O*NET 13-1161.00 — Market Research Analysts and Marketing Specialists.",
+          "url": "https://www.onetonline.org/link/summary/13-1161.00"
+        },
+        {
+          "texto": "Plantillas Video Corto y Post Carrusel Estático."
+        },
+        {
+          "texto": "Principio P7 de la biblioteca de conocimiento: la capacidad creativa no es hora intercambiable.",
+          "url": "/help/principios"
+        }
       ]
     },
-
     "community": {
       "title": "Community",
       "summary": "La voz de la marca en la conversación: responde a quien llega y lleva hacia adentro lo que dice la audiencia.",
@@ -725,7 +803,10 @@
           }
         ],
         "apoio": [
-          { "nome": "Google Sheets", "para": "Registro de dudas recurrentes." },
+          {
+            "nome": "Google Sheets",
+            "para": "Registro de dudas recurrentes."
+          },
           {
             "nome": "Google Alerts",
             "para": "Menciones fuera de las redes.",
@@ -733,8 +814,14 @@
           }
         ],
         "internas": [
-          { "nome": "Manual de tono de voz y respuestas tipo", "para": "Uno por cliente." },
-          { "nome": "Protocolo de crisis", "para": "Qué hacer y a quién escalar." },
+          {
+            "nome": "Manual de tono de voz y respuestas tipo",
+            "para": "Uno por cliente."
+          },
+          {
+            "nome": "Protocolo de crisis",
+            "para": "Qué hacer y a quién escalar."
+          },
           {
             "nome": "Lista de temas bloqueados",
             "para": "Lo que no se responde sin autorización: precio, plazo y asuntos legales."
@@ -820,11 +907,16 @@
         ]
       },
       "fontes": [
-        "O*NET 43-4051.00 — Customer Service Representatives.",
-        "O*NET 27-3031.00 — Public Relations Specialists."
+        {
+          "texto": "O*NET 43-4051.00 — Customer Service Representatives.",
+          "url": "https://www.onetonline.org/link/summary/43-4051.00"
+        },
+        {
+          "texto": "O*NET 27-3031.00 — Public Relations Specialists.",
+          "url": "https://www.onetonline.org/link/summary/27-3031.00"
+        }
       ]
     },
-
     "comunicacao": {
       "title": "Comunicación y Copy",
       "summary": "Escribe lo que dice la marca — del texto que vende al texto que explica.",
@@ -845,7 +937,10 @@
       },
       "ferramentas": {
         "obrigatorias": [
-          { "nome": "Google Docs", "para": "Escritura y ciclos de aprobación con sugerencias." },
+          {
+            "nome": "Google Docs",
+            "para": "Escritura y ciclos de aprobación con sugerencias."
+          },
           {
             "nome": "LanguageTool",
             "para": "Verificación en los dos idiomas.",
@@ -863,11 +958,20 @@
             "para": "Términos por los que ya encuentran al cliente.",
             "url": "https://search.google.com/search-console"
           },
-          { "nome": "Diccionarios y bancos de sinónimos", "para": "Precisión de vocabulario." }
+          {
+            "nome": "Diccionarios y bancos de sinónimos",
+            "para": "Precisión de vocabulario."
+          }
         ],
         "internas": [
-          { "nome": "Manual de tono de voz", "para": "Uno por cliente." },
-          { "nome": "Biblioteca de textos aprobados", "para": "Lo que ya pasó por el cliente." },
+          {
+            "nome": "Manual de tono de voz",
+            "para": "Uno por cliente."
+          },
+          {
+            "nome": "Biblioteca de textos aprobados",
+            "para": "Lo que ya pasó por el cliente."
+          },
           {
             "nome": "Glosario técnico de la cuenta",
             "para": "Cómo el sector del cliente nombra las cosas."
@@ -957,12 +1061,19 @@
         ]
       },
       "fontes": [
-        "CBO 2611 — profesionales del periodismo.",
-        "O*NET 27-3031.00 — Public Relations Specialists.",
-        "Plantilla Landing Page del flujo de la agencia."
+        {
+          "texto": "CBO 2611 — profesionales del periodismo.",
+          "url": "https://cbo.mte.gov.br/cbosite/pages/home.jsf"
+        },
+        {
+          "texto": "O*NET 27-3031.00 — Public Relations Specialists.",
+          "url": "https://www.onetonline.org/link/summary/27-3031.00"
+        },
+        {
+          "texto": "Plantilla Landing Page del flujo de la agencia."
+        }
       ]
     },
-
     "imprensa": {
       "title": "Prensa",
       "summary": "Construye y protege la reputación del cliente en los medios.",
@@ -988,8 +1099,14 @@
             "para": "Monitoreo de menciones del cliente y de la competencia.",
             "url": "https://www.google.com/alerts"
           },
-          { "nome": "Gmail", "para": "Envío segmentado a la lista de contactos." },
-          { "nome": "Google Sheets", "para": "Lista de contactos y control de envíos." }
+          {
+            "nome": "Gmail",
+            "para": "Envío segmentado a la lista de contactos."
+          },
+          {
+            "nome": "Google Sheets",
+            "para": "Lista de contactos y control de envíos."
+          }
         ],
         "apoio": [
           {
@@ -997,12 +1114,24 @@
             "para": "Búsqueda de periodistas por sección.",
             "url": "https://muckrack.com"
           },
-          { "nome": "Redes de los medios", "para": "Seguir la agenda de las redacciones." }
+          {
+            "nome": "Redes de los medios",
+            "para": "Seguir la agenda de las redacciones."
+          }
         ],
         "internas": [
-          { "nome": "Lista de contactos por cuenta y sección", "para": "Quién cubre qué." },
-          { "nome": "Historial de menciones", "para": "Qué ya rindió y en qué medio." },
-          { "nome": "Protocolo de crisis", "para": "Incluye la lista de voceros autorizados." }
+          {
+            "nome": "Lista de contactos por cuenta y sección",
+            "para": "Quién cubre qué."
+          },
+          {
+            "nome": "Historial de menciones",
+            "para": "Qué ya rindió y en qué medio."
+          },
+          {
+            "nome": "Protocolo de crisis",
+            "para": "Incluye la lista de voceros autorizados."
+          }
         ]
       },
       "obrigacoes": {
@@ -1093,12 +1222,20 @@
         ]
       },
       "fontes": [
-        "CBO 2611-10 — asesor de prensa.",
-        "CBO 2611-25 — periodista.",
-        "O*NET 27-3031.00 — Public Relations Specialists."
+        {
+          "texto": "CBO 2611-10 — asesor de prensa.",
+          "url": "https://cbo.mte.gov.br/cbosite/pages/home.jsf"
+        },
+        {
+          "texto": "CBO 2611-25 — periodista.",
+          "url": "https://cbo.mte.gov.br/cbosite/pages/home.jsf"
+        },
+        {
+          "texto": "O*NET 27-3031.00 — Public Relations Specialists.",
+          "url": "https://www.onetonline.org/link/summary/27-3031.00"
+        }
       ]
     },
-
     "trafego": {
       "title": "Medios Pagos",
       "summary": "Hace que el presupuesto del cliente compre el resultado acordado — y lo prueba con datos.",
@@ -1151,10 +1288,16 @@
             "para": "Campañas en TikTok.",
             "url": "https://ads.tiktok.com"
           },
-          { "nome": "Google Sheets", "para": "Plan de medios y conciliación de presupuesto." }
+          {
+            "nome": "Google Sheets",
+            "para": "Plan de medios y conciliación de presupuesto."
+          }
         ],
         "internas": [
-          { "nome": "Historial de campañas y costos", "para": "Referencia de costo por cuenta." },
+          {
+            "nome": "Historial de campañas y costos",
+            "para": "Referencia de costo por cuenta."
+          },
           {
             "nome": "Estándar de nomenclatura de campaña",
             "para": "Para que el informe salga legible."
@@ -1262,13 +1405,23 @@
         ]
       },
       "fontes": [
-        "O*NET 11-2011.00 — Advertising and Promotions Managers.",
-        "O*NET 13-1161.01 — Search Marketing Strategists.",
-        "Plantilla Campaña de Medios Pagos del flujo de la agencia.",
-        "Principios P1 y P2 de la biblioteca de conocimiento."
+        {
+          "texto": "O*NET 11-2011.00 — Advertising and Promotions Managers.",
+          "url": "https://www.onetonline.org/link/summary/11-2011.00"
+        },
+        {
+          "texto": "O*NET 13-1161.01 — Search Marketing Strategists.",
+          "url": "https://www.onetonline.org/link/summary/13-1161.01"
+        },
+        {
+          "texto": "Plantilla Campaña de Medios Pagos del flujo de la agencia."
+        },
+        {
+          "texto": "Principios P1 y P2 de la biblioteca de conocimiento.",
+          "url": "/help/principios"
+        }
       ]
     },
-
     "seo": {
       "title": "SEO",
       "summary": "Hace que encuentren al cliente quien busca lo que vende, sin pagar por clic.",
@@ -1311,7 +1464,10 @@
             "para": "Auditoría técnica de rastreo.",
             "url": "https://www.screamingfrog.co.uk/seo-spider/"
           },
-          { "nome": "Semrush o Ahrefs", "para": "Palabras clave y análisis de competencia." },
+          {
+            "nome": "Semrush o Ahrefs",
+            "para": "Palabras clave y análisis de competencia."
+          },
           {
             "nome": "Rich Results Test",
             "para": "Validación de datos estructurados.",
@@ -1323,8 +1479,14 @@
             "nome": "Mapa de palabras clave por cuenta",
             "para": "Intención de búsqueda por página."
           },
-          { "nome": "Historial de auditorías", "para": "Qué ya se señaló y se corrigió." },
-          { "nome": "Estándar de título y descripción", "para": "Uno por tipo de página." }
+          {
+            "nome": "Historial de auditorías",
+            "para": "Qué ya se señaló y se corrigió."
+          },
+          {
+            "nome": "Estándar de título y descripción",
+            "para": "Uno por tipo de página."
+          }
         ]
       },
       "obrigacoes": {
@@ -1410,11 +1572,15 @@
         ]
       },
       "fontes": [
-        "O*NET 13-1161.01 — Search Marketing Strategists.",
-        "Plantilla Landing Page del flujo de la agencia."
+        {
+          "texto": "O*NET 13-1161.01 — Search Marketing Strategists.",
+          "url": "https://www.onetonline.org/link/summary/13-1161.01"
+        },
+        {
+          "texto": "Plantilla Landing Page del flujo de la agencia."
+        }
       ]
     },
-
     "atendimento": {
       "title": "Atención al Cliente",
       "summary": "El puente entre el cliente y la agencia, en los dos sentidos.",
@@ -1443,23 +1609,47 @@
             "para": "Canal principal con el cliente.",
             "url": "https://business.whatsapp.com"
           },
-          { "nome": "Gmail", "para": "Registro formal y trazabilidad de aprobaciones." },
+          {
+            "nome": "Gmail",
+            "para": "Registro formal y trazabilidad de aprobaciones."
+          },
           {
             "nome": "Google Meet",
             "para": "Reuniones con el cliente.",
             "url": "https://meet.google.com"
           },
-          { "nome": "Google Drive", "para": "Intercambio de archivos con el cliente." }
+          {
+            "nome": "Google Drive",
+            "para": "Intercambio de archivos con el cliente."
+          }
         ],
         "apoio": [
-          { "nome": "Google Calendar", "para": "Reuniones y plazos del cliente." },
-          { "nome": "Google Docs", "para": "Actas y briefs." }
+          {
+            "nome": "Google Calendar",
+            "para": "Reuniones y plazos del cliente."
+          },
+          {
+            "nome": "Google Docs",
+            "para": "Actas y briefs."
+          }
         ],
         "internas": [
-          { "nome": "Contrato y alcance por cliente", "para": "Qué está y qué no está incluido." },
-          { "nome": "Historial de la cuenta", "para": "Qué ya se entregó y se discutió." },
-          { "nome": "Plantilla de brief", "para": "Una por tipo de demanda." },
-          { "nome": "Lista de aprobadores", "para": "Quién, de cada cliente, puede aprobar qué." }
+          {
+            "nome": "Contrato y alcance por cliente",
+            "para": "Qué está y qué no está incluido."
+          },
+          {
+            "nome": "Historial de la cuenta",
+            "para": "Qué ya se entregó y se discutió."
+          },
+          {
+            "nome": "Plantilla de brief",
+            "para": "Una por tipo de demanda."
+          },
+          {
+            "nome": "Lista de aprobadores",
+            "para": "Quién, de cada cliente, puede aprobar qué."
+          }
         ]
       },
       "obrigacoes": {
@@ -1558,11 +1748,16 @@
         ]
       },
       "fontes": [
-        "O*NET 43-4051.00 — Customer Service Representatives.",
-        "O*NET 11-2011.00 — Advertising and Promotions Managers."
+        {
+          "texto": "O*NET 43-4051.00 — Customer Service Representatives.",
+          "url": "https://www.onetonline.org/link/summary/43-4051.00"
+        },
+        {
+          "texto": "O*NET 11-2011.00 — Advertising and Promotions Managers.",
+          "url": "https://www.onetonline.org/link/summary/11-2011.00"
+        }
       ]
     },
-
     "estrategia": {
       "title": "Estrategia",
       "summary": "Decide qué debe hacer la agencia para que la cuenta alcance su objetivo.",
@@ -1598,7 +1793,10 @@
             "para": "Rendimiento orgánico y pago en Meta.",
             "url": "https://business.facebook.com"
           },
-          { "nome": "Google Sheets", "para": "Modelo de plan y de distribución de presupuesto." }
+          {
+            "nome": "Google Sheets",
+            "para": "Modelo de plan y de distribución de presupuesto."
+          }
         ],
         "apoio": [
           {
@@ -1611,14 +1809,20 @@
             "para": "Qué busca el público.",
             "url": "https://search.google.com/search-console"
           },
-          { "nome": "Estudios sectoriales", "para": "Referencia de mercado y de competencia." }
+          {
+            "nome": "Estudios sectoriales",
+            "para": "Referencia de mercado y de competencia."
+          }
         ],
         "internas": [
           {
             "nome": "Historial de campañas y resultados",
             "para": "Qué ya se intentó en la cuenta."
           },
-          { "nome": "Plan del año vigente", "para": "El compromiso en curso." },
+          {
+            "nome": "Plan del año vigente",
+            "para": "El compromiso en curso."
+          },
           {
             "nome": "Biblioteca de casos de la agencia",
             "para": "Qué funcionó en cuentas parecidas."
@@ -1716,12 +1920,20 @@
         ]
       },
       "fontes": [
-        "O*NET 13-1161.00 — Market Research Analysts and Marketing Specialists.",
-        "CBO 1423 — gerentes de comercialización, marketing y comunicación.",
-        "Principio P4 de la biblioteca de conocimiento: prever por la clase, no por la tarea."
+        {
+          "texto": "O*NET 13-1161.00 — Market Research Analysts and Marketing Specialists.",
+          "url": "https://www.onetonline.org/link/summary/13-1161.00"
+        },
+        {
+          "texto": "CBO 1423 — gerentes de comercialización, marketing y comunicación.",
+          "url": "https://cbo.mte.gov.br/cbosite/pages/home.jsf"
+        },
+        {
+          "texto": "Principio P4 de la biblioteca de conocimiento: prever por la clase, no por la tarea.",
+          "url": "/help/principios"
+        }
       ]
     },
-
     "coordenacao": {
       "title": "Coordinación",
       "summary": "Hace fluir el trabajo: insumo, responsable y plazo viable en cada demanda.",
@@ -1745,16 +1957,35 @@
       },
       "ferramentas": {
         "obrigatorias": [
-          { "nome": "Google Calendar", "para": "Reuniones, plazos y rituales fijos." },
-          { "nome": "Google Sheets", "para": "Capacidad y planificación general." },
-          { "nome": "Google Meet", "para": "Rituales de equipo.", "url": "https://meet.google.com" }
+          {
+            "nome": "Google Calendar",
+            "para": "Reuniones, plazos y rituales fijos."
+          },
+          {
+            "nome": "Google Sheets",
+            "para": "Capacidad y planificación general."
+          },
+          {
+            "nome": "Google Meet",
+            "para": "Rituales de equipo.",
+            "url": "https://meet.google.com"
+          }
         ],
         "apoio": [
-          { "nome": "Google Docs", "para": "Actas, retrospectivas y registro de decisiones." }
+          {
+            "nome": "Google Docs",
+            "para": "Actas, retrospectivas y registro de decisiones."
+          }
         ],
         "internas": [
-          { "nome": "Calendario de vacaciones y ausencias", "para": "Capacidad real del período." },
-          { "nome": "Capacidad semanal acordada", "para": "Por persona, acordada y revisada." },
+          {
+            "nome": "Calendario de vacaciones y ausencias",
+            "para": "Capacidad real del período."
+          },
+          {
+            "nome": "Capacidad semanal acordada",
+            "para": "Por persona, acordada y revisada."
+          },
           {
             "nome": "Rituales y horarios fijos",
             "para": "Fila, reuniones individuales y retrospectiva."
@@ -1850,12 +2081,20 @@
         ]
       },
       "fontes": [
-        "CBO 1423 — gerentes de comercialización, marketing y comunicación.",
-        "O*NET 11-2021.00 — Marketing Managers.",
-        "Principios P2, P3, P6 y P7 de la biblioteca de conocimiento."
+        {
+          "texto": "CBO 1423 — gerentes de comercialización, marketing y comunicación.",
+          "url": "https://cbo.mte.gov.br/cbosite/pages/home.jsf"
+        },
+        {
+          "texto": "O*NET 11-2021.00 — Marketing Managers.",
+          "url": "https://www.onetonline.org/link/summary/11-2021.00"
+        },
+        {
+          "texto": "Principios P2, P3, P6 y P7 de la biblioteca de conocimiento.",
+          "url": "/help/principios"
+        }
       ]
     },
-
     "engenharia-de-software": {
       "title": "Ingeniería de Software",
       "summary": "Construye y mantiene lo que la agencia entrega en código y las herramientas internas.",
@@ -1885,7 +2124,11 @@
             "para": "Versionado y revisión de código.",
             "url": "https://github.com"
           },
-          { "nome": "VS Code", "para": "Desarrollo.", "url": "https://code.visualstudio.com" },
+          {
+            "nome": "VS Code",
+            "para": "Desarrollo.",
+            "url": "https://code.visualstudio.com"
+          },
           {
             "nome": "Vercel",
             "para": "Publicación y entornos de vista previa.",
@@ -1919,8 +2162,14 @@
             "nome": "Repositorios y sus README",
             "para": "Cómo ejecutar y publicar cada proyecto."
           },
-          { "nome": "Convenciones de código", "para": "Estándar del proyecto." },
-          { "nome": "Inventario de dominios y accesos", "para": "Mantenido junto con TI." }
+          {
+            "nome": "Convenciones de código",
+            "para": "Estándar del proyecto."
+          },
+          {
+            "nome": "Inventario de dominios y accesos",
+            "para": "Mantenido junto con TI."
+          }
         ]
       },
       "obrigacoes": {
@@ -2012,13 +2261,27 @@
         ]
       },
       "fontes": [
-        "CBO 2124 — analistas de sistemas computacionales.",
-        "O*NET 15-1252.00 — Software Developers y O*NET 15-1254.00 — Web Developers.",
-        "Plantilla Landing Page del flujo de la agencia.",
-        "Principio P3 de la biblioteca de conocimiento: la previsibilidad es probabilística."
+        {
+          "texto": "CBO 2124 — analistas de sistemas computacionales.",
+          "url": "https://cbo.mte.gov.br/cbosite/pages/home.jsf"
+        },
+        {
+          "texto": "O*NET 15-1252.00 — Software Developers.",
+          "url": "https://www.onetonline.org/link/summary/15-1252.00"
+        },
+        {
+          "texto": "O*NET 15-1254.00 — Web Developers.",
+          "url": "https://www.onetonline.org/link/summary/15-1254.00"
+        },
+        {
+          "texto": "Plantilla Landing Page del flujo de la agencia."
+        },
+        {
+          "texto": "Principio P3 de la biblioteca de conocimiento: la previsibilidad es probabilística.",
+          "url": "/help/principios"
+        }
       ]
     },
-
     "ti": {
       "title": "TI e Infraestructura",
       "summary": "Mantiene la agencia funcionando: red, equipos, cuentas, almacenamiento y copias de seguridad.",
@@ -2058,11 +2321,20 @@
             "para": "DNS, certificados y protección.",
             "url": "https://dash.cloudflare.com"
           },
-          { "nome": "Consola de antivirus y endpoint", "para": "Protección de las estaciones." }
+          {
+            "nome": "Consola de antivirus y endpoint",
+            "para": "Protección de las estaciones."
+          }
         ],
         "apoio": [
-          { "nome": "Google Sheets", "para": "Inventario y control de licencias." },
-          { "nome": "Herramienta de acceso remoto", "para": "Soporte a las estaciones." }
+          {
+            "nome": "Google Sheets",
+            "para": "Inventario y control de licencias."
+          },
+          {
+            "nome": "Herramienta de acceso remoto",
+            "para": "Soporte a las estaciones."
+          }
         ],
         "internas": [
           {
@@ -2073,7 +2345,10 @@
             "nome": "Política de sensibilidad de archivos",
             "para": "Interno, Cliente y Confidencial — qué puede salir y qué nunca sale."
           },
-          { "nome": "Procedimiento de ingreso y salida", "para": "Checklist por colaborador." }
+          {
+            "nome": "Procedimiento de ingreso y salida",
+            "para": "Checklist por colaborador."
+          }
         ]
       },
       "obrigacoes": {
@@ -2176,9 +2451,17 @@
         ]
       },
       "fontes": [
-        "CBO 2124 — analistas de sistemas computacionales, soporte y redes.",
-        "O*NET 15-1244.00 — Network and Computer Systems Administrators.",
-        "Política de sensibilidad de artefactos del Work OS."
+        {
+          "texto": "CBO 2124 — analistas de sistemas computacionales, soporte y redes.",
+          "url": "https://cbo.mte.gov.br/cbosite/pages/home.jsf"
+        },
+        {
+          "texto": "O*NET 15-1244.00 — Network and Computer Systems Administrators.",
+          "url": "https://www.onetonline.org/link/summary/15-1244.00"
+        },
+        {
+          "texto": "Política de sensibilidad de artefactos del Work OS."
+        }
       ]
     }
   }

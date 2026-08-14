@@ -139,7 +139,7 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 #### `design` — Design
 
 **Equipes cobertas:** `Designers`
-**Referência ocupacional:** CBO 2624-10 (desenhista industrial gráfico / designer gráfico) · O\*NET 27-1024.00 (Graphic Designers)
+**Referência ocupacional:** [CBO 2624-10](https://cbo.mte.gov.br/cbosite/pages/home.jsf) (desenhista industrial gráfico / designer gráfico) · [O\*NET 27-1024.00](https://www.onetonline.org/link/summary/27-1024.00) (Graphic Designers)
 
 **Missão.** Traduzir a mensagem do cliente em peça visual que comunica de primeira, dentro da identidade da marca.
 
@@ -189,14 +189,14 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ retorno repetido pelo mesmo motivo é sinal de briefing ruim antes de ser sinal de execução ruim — a primeira pergunta é sobre o insumo, não sobre a pessoa
 - _O que nunca fazemos:_ comparar designers por número de peças; usar contagem de retorno como nota; tratar tempo de conceito como desperdício
 
-**Fontes.** O\*NET 27-1024.00 (tarefas e _technology skills_) · CBO 2624-10 · templates Post Carrossel e Landing Page (`prisma/seed.ts`).
+**Fontes.** [O\*NET 27-1024.00](https://www.onetonline.org/link/summary/27-1024.00) (tarefas e _technology skills_) · [CBO 2624-10](https://cbo.mte.gov.br/cbosite/pages/home.jsf) · templates Post Carrossel e Landing Page (`prisma/seed.ts`).
 
 ---
 
 #### `video` — Vídeo
 
 **Equipes cobertas:** `Video-makers`
-**Referência ocupacional:** O\*NET 27-4032.00 (Film and Video Editors)
+**Referência ocupacional:** [O\*NET 27-4032.00](https://www.onetonline.org/link/summary/27-4032.00) (Film and Video Editors)
 
 **Missão.** Transformar roteiro e material bruto em vídeo que prende nos primeiros segundos e entrega a mensagem no formato de cada canal.
 
@@ -212,7 +212,7 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 **Ferramentas.**
 
 - _Obrigatórias:_ Adobe Premiere Pro — edição · Adobe After Effects — motion e legendagem animada · [CapCut](https://www.capcut.com) — corte rápido para formato vertical · [DaVinci Resolve](https://www.blackmagicdesign.com/products/davinciresolve) — cor
-- _Apoio:_ biblioteca de trilha licenciada · [Adobe Media Encoder] — exportação em lote
+- _Apoio:_ biblioteca de trilha licenciada · Adobe Media Encoder — exportação em lote
 - _Referências internas:_ pasta de brutos da conta no NAS · padrão de abertura/encerramento por cliente · tabela de proporções e durações por canal
 
 **Obrigações.**
@@ -246,14 +246,14 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ edição longa costuma ser sinal de roteiro ou bruto insuficiente — investiga-se a etapa anterior antes da pessoa
 - _O que nunca fazemos:_ ranquear por quantidade de vídeos; usar duração de edição como medida de esforço
 
-**Fontes.** O\*NET 27-4032.00 · template Vídeo Curto (`prisma/seed.ts`).
+**Fontes.** [O\*NET 27-4032.00](https://www.onetonline.org/link/summary/27-4032.00) · template Vídeo Curto (`prisma/seed.ts`).
 
 ---
 
 #### `revisao` — Revisão e Controle de Qualidade
 
 **Equipes cobertas:** `Proofreading`, `Quality Control`
-**Referência ocupacional:** O\*NET 43-9081.00 (Proofreaders and Copy Markers)
+**Referência ocupacional:** [O\*NET 43-9081.00](https://www.onetonline.org/link/summary/43-9081.00) (Proofreaders and Copy Markers)
 
 > As duas equipes existem por herança — `Proofreading` veio do roster real (_corrección_) e `Quality Control` do seed. Na prática exercem a mesma função: **ser o último gate antes de a peça sair**. Um descritivo cobre as duas.
 
@@ -304,7 +304,7 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ volume alto de devolução interna é o gate **fazendo o trabalho**, não um problema. O que se investiga é a falha externa, e a investigação começa na etapa que injetou o defeito
 - _O que nunca fazemos:_ medir a Revisão por quantidade de aprovações; tratar devolução interna como custo a reduzir; nomear pessoa no consolidado de motivos
 
-**Fontes.** O\*NET 43-9081.00 · biblioteca de conhecimento §1/P5 (qualidade na fonte, interno ≠ externo) · templates Vídeo Curto, Post Carrossel e Landing Page.
+**Fontes.** [O\*NET 43-9081.00](https://www.onetonline.org/link/summary/43-9081.00) · [biblioteca de conhecimento §1/P5](./biblioteca-de-conhecimento.md) (qualidade na fonte, interno ≠ externo) · templates Vídeo Curto, Post Carrossel e Landing Page.
 
 ---
 
@@ -315,7 +315,7 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 #### `social-media` — Social Media
 
 **Equipes cobertas:** `Social Media`
-**Referência ocupacional:** O\*NET 13-1161.00 (Market Research Analysts and Marketing Specialists) · O\*NET 27-3031.00 (parcial)
+**Referência ocupacional:** [O\*NET 13-1161.00](https://www.onetonline.org/link/summary/13-1161.00) (Market Research Analysts and Marketing Specialists) · [O\*NET 27-3031.00](https://www.onetonline.org/link/summary/27-3031.00) (parcial)
 
 **Missão.** Manter os perfis do cliente vivos e coerentes: planejar o que se publica, escrever o que sustenta a peça e acompanhar o que o conteúdo devolveu.
 
@@ -366,14 +366,14 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ alcance e engajamento são do **conteúdo e do algoritmo**, não da pessoa — entram na conversa como leitura de contexto, jamais como nota. Atraso repetido de calendário é sinal de sobrecarga ou de insumo que não chega do cliente
 - _O que nunca fazemos:_ meta individual de seguidores ou de engajamento; comparar social medias entre contas com verbas e históricos diferentes
 
-**Fontes.** O\*NET 13-1161.00 · templates Vídeo Curto e Post Carrossel (`prisma/seed.ts`) · biblioteca §1/P7.
+**Fontes.** [O\*NET 13-1161.00](https://www.onetonline.org/link/summary/13-1161.00) · templates Vídeo Curto e Post Carrossel (`prisma/seed.ts`) · biblioteca §1/P7.
 
 ---
 
 #### `community` — Community
 
 **Equipes cobertas:** `Community`
-**Referência ocupacional:** O\*NET 43-4051.00 (Customer Service Representatives) · O\*NET 27-3031.00 (parcial)
+**Referência ocupacional:** [O\*NET 43-4051.00](https://www.onetonline.org/link/summary/43-4051.00) (Customer Service Representatives) · [O\*NET 27-3031.00](https://www.onetonline.org/link/summary/27-3031.00) (parcial)
 
 **Missão.** Ser a voz da marca na conversa: responder quem chega pelos perfis, no tom certo e no tempo certo, e levar para dentro o que a audiência está dizendo.
 
@@ -422,14 +422,14 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ tempo de resposta ruim costuma ser cobertura insuficiente ou volume acima do dimensionado — a conversa é sobre escala do time antes de ser sobre a pessoa
 - _O que nunca fazemos:_ meta de número de respostas por hora; medir por sentimento do público, que não está sob controle de quem responde
 
-**Fontes.** O\*NET 43-4051.00 · O\*NET 27-3031.00.
+**Fontes.** [O\*NET 43-4051.00](https://www.onetonline.org/link/summary/43-4051.00) · [O\*NET 27-3031.00](https://www.onetonline.org/link/summary/27-3031.00).
 
 ---
 
 #### `comunicacao` — Comunicação e Copy
 
 **Equipes cobertas:** `Communicators`, `Copywriting`
-**Referência ocupacional:** CBO 2611 (profissionais do jornalismo) · O\*NET 27-3031.00 (Public Relations Specialists)
+**Referência ocupacional:** [CBO 2611](https://cbo.mte.gov.br/cbosite/pages/home.jsf) (profissionais do jornalismo) · [O\*NET 27-3031.00](https://www.onetonline.org/link/summary/27-3031.00) (Public Relations Specialists)
 
 **Missão.** Escrever o que a marca diz — do texto que vende ao texto que explica — de forma que a pessoa certa entenda e aja.
 
@@ -479,14 +479,14 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ reescrita repetida costuma indicar briefing ou posicionamento indefinido — a conversa começa em Estratégia e Atendimento
 - _O que nunca fazemos:_ medir por volume de palavras ou de textos; ranquear redatores por número de aprovações de primeira
 
-**Fontes.** CBO 2611 · O\*NET 27-3031.00 · template Landing Page (`prisma/seed.ts`).
+**Fontes.** [CBO 2611](https://cbo.mte.gov.br/cbosite/pages/home.jsf) · [O\*NET 27-3031.00](https://www.onetonline.org/link/summary/27-3031.00) · template Landing Page (`prisma/seed.ts`).
 
 ---
 
 #### `imprensa` — Assessoria de Imprensa
 
 **Equipes cobertas:** `Press Office`
-**Referência ocupacional:** CBO 2611-10 (assessor de imprensa) · CBO 2611-25 (jornalista) · O\*NET 27-3031.00 (Public Relations Specialists)
+**Referência ocupacional:** [CBO 2611-10](https://cbo.mte.gov.br/cbosite/pages/home.jsf) (assessor de imprensa) · [CBO 2611-25](https://cbo.mte.gov.br/cbosite/pages/home.jsf) (jornalista) · [O\*NET 27-3031.00](https://www.onetonline.org/link/summary/27-3031.00) (Public Relations Specialists)
 
 **Missão.** Construir e proteger a reputação do cliente na mídia — conseguir a pauta certa no veículo certo, e responder bem quando a mídia procura.
 
@@ -537,7 +537,7 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ **cobertura conquistada não é métrica de desempenho individual** — depende de agenda de mídia, notícia concorrente e do fato que o cliente forneceu. Entra como contexto, nunca como meta
 - _O que nunca fazemos:_ meta de número de matérias publicadas; medir por centimetragem ou por "valor equivalente de mídia"
 
-**Fontes.** CBO 2611-10 e 2611-25 · O\*NET 27-3031.00.
+**Fontes.** [CBO 2611-10](https://cbo.mte.gov.br/cbosite/pages/home.jsf) e 2611-25 · [O\*NET 27-3031.00](https://www.onetonline.org/link/summary/27-3031.00).
 
 ---
 
@@ -548,7 +548,7 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 #### `trafego` — Tráfego Pago
 
 **Equipes cobertas:** `Traffic Manager`
-**Referência ocupacional:** O\*NET 11-2011.00 (Advertising and Promotions Managers) · O\*NET 13-1161.01 (Search Marketing Strategists)
+**Referência ocupacional:** [O\*NET 11-2011.00](https://www.onetonline.org/link/summary/11-2011.00) (Advertising and Promotions Managers) · [O\*NET 13-1161.01](https://www.onetonline.org/link/summary/13-1161.01) (Search Marketing Strategists)
 
 **Missão.** Fazer a verba do cliente comprar o resultado combinado — e provar, com dado, o que ela comprou.
 
@@ -599,14 +599,14 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ **resultado de campanha é do sistema** — verba, criativo, oferta, concorrência e sazonalidade. Não vira nota individual. O que se avalia é o _ofício_: leitura correta do dado, decisão documentada, aviso a tempo
 - _O que nunca fazemos:_ meta individual de custo por resultado; comparar gestores de tráfego entre contas com verbas e mercados diferentes; comissão sobre desempenho de campanha
 
-**Fontes.** O\*NET 11-2011.00 · O\*NET 13-1161.01 · template Campanha de Tráfego (`prisma/seed.ts`) · biblioteca §1/P1 e P2.
+**Fontes.** [O\*NET 11-2011.00](https://www.onetonline.org/link/summary/11-2011.00) · [O\*NET 13-1161.01](https://www.onetonline.org/link/summary/13-1161.01) · template Campanha de Tráfego (`prisma/seed.ts`) · biblioteca §1/P1 e P2.
 
 ---
 
 #### `seo` — SEO
 
 **Equipes cobertas:** `SEO`
-**Referência ocupacional:** O\*NET 13-1161.01 (Search Marketing Strategists)
+**Referência ocupacional:** [O\*NET 13-1161.01](https://www.onetonline.org/link/summary/13-1161.01) (Search Marketing Strategists)
 
 **Missão.** Fazer o cliente ser encontrado por quem procura o que ele vende, sem pagar por cada clique.
 
@@ -656,7 +656,7 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ **posição e tráfego orgânico dependem do algoritmo e da concorrência** — são contexto, não nota. O ofício avaliável é o diagnóstico e a priorização
 - _O que nunca fazemos:_ meta individual de posição ou de tráfego; comparar profissionais entre sites com autoridade e histórico diferentes
 
-**Fontes.** O\*NET 13-1161.01 · template Landing Page (`prisma/seed.ts`).
+**Fontes.** [O\*NET 13-1161.01](https://www.onetonline.org/link/summary/13-1161.01) · template Landing Page (`prisma/seed.ts`).
 
 ---
 
@@ -667,7 +667,7 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 #### `atendimento` — Atendimento
 
 **Equipes cobertas:** `Customer Service`
-**Referência ocupacional:** O\*NET 43-4051.00 (Customer Service Representatives) · O\*NET 11-2011.00 (parcial)
+**Referência ocupacional:** [O\*NET 43-4051.00](https://www.onetonline.org/link/summary/43-4051.00) (Customer Service Representatives) · [O\*NET 11-2011.00](https://www.onetonline.org/link/summary/11-2011.00) (parcial)
 
 **Missão.** Ser a ponte entre o cliente e a agência: traduzir o que o cliente quer em briefing que a equipe consegue executar, e traduzir o que a equipe entregou em algo que o cliente entende.
 
@@ -718,14 +718,14 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ briefing incompleto é o defeito mais caro da agência — ele para Design, Vídeo e Copy ao mesmo tempo. A conversa é sobre o padrão de briefing, com o motivo à vista
 - _O que nunca fazemos:_ meta individual de faturamento por conta; medir por satisfação declarada do cliente, que depende de fatores fora do controle de quem atende
 
-**Fontes.** O\*NET 43-4051.00 · O\*NET 11-2011.00.
+**Fontes.** [O\*NET 43-4051.00](https://www.onetonline.org/link/summary/43-4051.00) · [O\*NET 11-2011.00](https://www.onetonline.org/link/summary/11-2011.00).
 
 ---
 
 #### `estrategia` — Estratégia
 
 **Equipes cobertas:** `Strategy`
-**Referência ocupacional:** O\*NET 13-1161.00 (Market Research Analysts and Marketing Specialists) · CBO 1423 (gerentes de comercialização, marketing e comunicação)
+**Referência ocupacional:** [O\*NET 13-1161.00](https://www.onetonline.org/link/summary/13-1161.00) (Market Research Analysts and Marketing Specialists) · [CBO 1423](https://cbo.mte.gov.br/cbosite/pages/home.jsf) (gerentes de comercialização, marketing e comunicação)
 
 **Missão.** Decidir **o que** a agência deve fazer para a conta atingir o objetivo — e garantir que todas as disciplinas estejam remando para o mesmo lugar.
 
@@ -776,14 +776,14 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ resultado de negócio do cliente tem dezenas de causas fora da agência — é contexto. O ofício avaliável é a qualidade do diagnóstico e a honestidade da leitura
 - _O que nunca fazemos:_ vincular avaliação ao faturamento do cliente; medir por número de planos produzidos
 
-**Fontes.** O\*NET 13-1161.00 · CBO 1423 · biblioteca §1/P4 (previsão pela classe, não pela tarefa).
+**Fontes.** [O\*NET 13-1161.00](https://www.onetonline.org/link/summary/13-1161.00) · [CBO 1423](https://cbo.mte.gov.br/cbosite/pages/home.jsf) · biblioteca §1/P4 (previsão pela classe, não pela tarefa).
 
 ---
 
 #### `coordenacao` — Coordenação
 
 **Equipes cobertas:** `Coordination`
-**Referência ocupacional:** CBO 1423 (gerentes de comercialização, marketing e comunicação) · O\*NET 11-2021.00 (Marketing Managers)
+**Referência ocupacional:** [CBO 1423](https://cbo.mte.gov.br/cbosite/pages/home.jsf) (gerentes de comercialização, marketing e comunicação) · [O\*NET 11-2021.00](https://www.onetonline.org/link/summary/11-2021.00) (Marketing Managers)
 
 > Coordenação é a função que **opera o fluxo**. É a única deste documento cujas obrigações se apoiam diretamente nas telas de gestão do Work OS — e por isso é também a que mais precisa das salvaguardas da §2.
 
@@ -835,7 +835,7 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ atraso e sobrecarga são propriedades do **sistema** — entram como diagnóstico do fluxo, não como falha de quem coordena. O ofício avaliável é ter visto a exceção e agido
 - _O que nunca fazemos:_ usar as métricas de carga da equipe como ranking de pessoas; cobrar utilização como meta (a faixa 60–90% é indicativa, nunca alarme); premiar por volume entregue
 
-**Fontes.** CBO 1423 · O\*NET 11-2021.00 · biblioteca §1/P2, P3, P6 e P7 · `docs/admin-team-health-cockpit.md`.
+**Fontes.** [CBO 1423](https://cbo.mte.gov.br/cbosite/pages/home.jsf) · [O\*NET 11-2021.00](https://www.onetonline.org/link/summary/11-2021.00) · biblioteca §1/P2, P3, P6 e P7 · `docs/admin-team-health-cockpit.md`.
 
 ---
 
@@ -846,7 +846,7 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 #### `engenharia-de-software` — Engenharia de Software
 
 **Equipes cobertas:** `Software Engineer`
-**Referência ocupacional:** CBO 2124 (analistas de sistemas computacionais) · O\*NET 15-1252.00 (Software Developers) · O\*NET 15-1254.00 (Web Developers)
+**Referência ocupacional:** [CBO 2124](https://cbo.mte.gov.br/cbosite/pages/home.jsf) (analistas de sistemas computacionais) · [O\*NET 15-1252.00](https://www.onetonline.org/link/summary/15-1252.00) (Software Developers) · [O\*NET 15-1254.00](https://www.onetonline.org/link/summary/15-1254.00) (Web Developers)
 
 **Missão.** Construir e manter o que a agência entrega em código — sites, páginas e as ferramentas internas de que a operação depende.
 
@@ -896,14 +896,14 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ estouro de prazo em trabalho técnico é frequentemente escopo mal definido a montante — investiga-se o briefing e o layout antes da pessoa. **Prazo é faixa (p85), nunca promessa determinística**
 - _O que nunca fazemos:_ medir por linhas de código, commits ou demandas fechadas; usar estimativa em horas como compromisso de prazo
 
-**Fontes.** CBO 2124 · O\*NET 15-1252.00 e 15-1254.00 · template Landing Page (`prisma/seed.ts`) · biblioteca §1/P3.
+**Fontes.** [CBO 2124](https://cbo.mte.gov.br/cbosite/pages/home.jsf) · [O\*NET 15-1252.00](https://www.onetonline.org/link/summary/15-1252.00) e 15-1254.00 · template Landing Page (`prisma/seed.ts`) · biblioteca §1/P3.
 
 ---
 
 #### `ti` — TI e Infraestrutura
 
 **Equipes cobertas:** `IT`
-**Referência ocupacional:** CBO 2124 (analistas de sistemas computacionais — suporte e redes) · O\*NET 15-1244.00 (Network and Computer Systems Administrators)
+**Referência ocupacional:** [CBO 2124](https://cbo.mte.gov.br/cbosite/pages/home.jsf) (analistas de sistemas computacionais — suporte e redes) · [O\*NET 15-1244.00](https://www.onetonline.org/link/summary/15-1244.00) (Network and Computer Systems Administrators)
 
 **Missão.** Manter a agência funcionando: rede, equipamentos, contas, armazenamento e backup — e garantir que arquivo de cliente não se perca nem vaze.
 
@@ -954,7 +954,7 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 - _Como lemos:_ incidente é evento de sistema — a leitura é sobre a causa e a prevenção, não sobre culpa. Volume alto de chamados aponta para problema de equipamento ou processo antes de apontar para a pessoa
 - _O que nunca fazemos:_ medir por número de chamados fechados; ranquear por tempo médio de atendimento, que depende do que chega
 
-**Fontes.** CBO 2124 · O\*NET 15-1244.00 · `docs/nas-rollout-checklist.md` · política de sensibilidade em `lib/nas/sensitivity.ts`.
+**Fontes.** [CBO 2124](https://cbo.mte.gov.br/cbosite/pages/home.jsf) · [O\*NET 15-1244.00](https://www.onetonline.org/link/summary/15-1244.00) · `docs/nas-rollout-checklist.md` · política de sensibilidade em `lib/nas/sensitivity.ts`.
 
 ---
 
@@ -963,13 +963,13 @@ Quatorze funções, em cinco famílias. As demais equipes conhecidas aparecem em
 **Ocupacionais**
 
 - **O\*NET OnLine** (U.S. Department of Labor) — tarefas, _technology skills_ e competências por ocupação. Códigos usados: 27-1024.00, 27-4032.00, 43-9081.00, 27-3031.00, 13-1161.00, 13-1161.01, 11-2011.00, 11-2021.00, 43-4051.00, 15-1252.00, 15-1254.00, 15-1244.00. https://www.onetonline.org
-- **CBO — Classificação Brasileira de Ocupações** (Ministério do Trabalho e Emprego). Códigos verificados: **2624-10** desenhista industrial gráfico (designer gráfico) · **2611-10** assessor de imprensa · **2611-25** jornalista · **1423** gerentes de comercialização, marketing e comunicação · **2124** analistas de sistemas computacionais. Os demais descritivos citam a **família** da CBO, não um código específico — quando o RH precisar do código exato para registro, consultar a tabela oficial do MTE. http://www.mtecbo.gov.br
+- **CBO — Classificação Brasileira de Ocupações** (Ministério do Trabalho e Emprego). Códigos verificados: **2624-10** desenhista industrial gráfico (designer gráfico) · **2611-10** assessor de imprensa · **2611-25** jornalista · **1423** gerentes de comercialização, marketing e comunicação · **2124** analistas de sistemas computacionais. Os demais descritivos citam a **família** da CBO, não um código específico — quando o RH precisar do código exato para registro, consultar a tabela oficial do MTE: https://cbo.mte.gov.br/cbosite/pages/home.jsf (o site oficial busca por palavra-chave; não aceita link direto por código, então todas as citações de CBO neste documento apontam para a busca).
 
 **Prática de RH**
 
 - **SHRM — Body of Applied Skills and Knowledge (BASK), 2025** — estrutura de descritivo de cargo e modelo de competências, construído segundo as boas práticas da SIOP para modelagem de competências e análise de cargo. https://www.shrm.org
 - **SHRM / Microsoft (2013)** — abandono do _stack ranking_; evidência contra ranking forçado.
-- **Google re:Work — Project Aristotle** — notas individuais não predizem efetividade de time.
+- **Google re:Work — Project Aristotle** — notas individuais não predizem efetividade de time; o que separa times efetivos é a dinâmica (segurança psicológica à frente), não a composição. https://rework.withgoogle.com/intl/en/guides/understand-team-effectiveness
 
 **Fundamentos que restringem este documento**
 
@@ -1000,7 +1000,7 @@ Duas observações sobre essa lista:
 ### O procedimento
 
 1. **Confirme que é função, não nível.** Se o nome descreve hierarquia, pare — a discussão é outra.
-2. **Levante a referência ocupacional.** Um código CBO e uma ocupação O\*NET. É o que dá vocabulário formal e evita descritivo inventado.
+2. **Levante a referência ocupacional, com link.** Um código CBO e uma ocupação O\*NET. É o que dá vocabulário formal e evita descritivo inventado — e o link é o que permite conferir. O guard reprova referência ocupacional citada sem endereço; fonte interna sem endereço próprio (um template do fluxo, uma política) pode ficar sem link.
 3. **Leia o fluxo real.** Se a função é dona de alguma `TemplateStage`, os entregáveis e as interfaces saem dali. Se não é dona de nenhuma, diga isso no descritivo em vez de forçar.
 4. **Escreva as dez seções da §3**, nesta ordem, respeitando as três regras de conteúdo.
 5. **Passe a seção `avaliacao` pelo crivo da §2.** `oQueNuncaFazemos` nunca fica vazio. Se você não consegue preencher essa lista, você ainda não entendeu o risco daquela função.

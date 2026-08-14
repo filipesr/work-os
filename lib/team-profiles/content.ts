@@ -35,6 +35,16 @@ export interface ToolEntry {
   url?: string;
 }
 
+export interface SourceEntry {
+  texto: string;
+  /**
+   * Ausente quando a fonte é interna e não tem endereço próprio (um template do
+   * fluxo, uma política). Começando com "/", é uma rota do próprio app — o
+   * renderer abre na mesma aba; qualquer outra coisa é externa e abre em nova.
+   */
+  url?: string;
+}
+
 export interface ReportEntry {
   nome: string;
   conteudo: string;
@@ -57,7 +67,7 @@ export interface TeamProfileContent {
   competencias: { tecnicas: string[]; comportamentais: string[] };
   contratacao: { requisitos: string[]; diferenciais: string[]; perguntas: string[] };
   avaliacao: { oQueOlhamos: string[]; comoLemos: string[]; oQueNuncaFazemos: string[] };
-  fontes: string[];
+  fontes: SourceEntry[];
 }
 
 export interface TeamProfileUi {
