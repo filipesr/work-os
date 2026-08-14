@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getCalendarTasks } from "@/lib/actions/reporting";
-import { parseWeekParam, weekRangeFromMonday, formatISODate } from "@/lib/dates";
+import { parseWeekParam, weekRangeFromMonday, formatISODate, mondayOfWeek } from "@/lib/dates";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CalendarToolbar } from "../CalendarToolbar";
 import { PlanningModeBanner } from "../PlanningModeBanner";
@@ -81,6 +81,7 @@ export default async function WeekCalendarPage({
 
   const weekStart = parseWeekParam(params.week);
   const { end: weekEnd } = weekRangeFromMonday(weekStart);
+  const isCurrentPeriod = formatISODate(weekStart) === formatISODate(mondayOfWeek());
 
   // O casco espera só o barato: traduções, locale e as opções de filtro — três
   // consultas simples que NÃO dependem da semana. A grade, que é a parte cara,
@@ -102,6 +103,7 @@ export default async function WeekCalendarPage({
           view="week"
           anchor={weekStart}
           periodLabel={periodLabel}
+          isCurrentPeriod={isCurrentPeriod}
           planning={planning}
           teams={options.teams}
           projects={options.projects}

@@ -5,7 +5,14 @@ import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getMonthlyCalendarDemands, getTeamAnniversaries } from "@/lib/actions/reporting";
 import { getOccurrencesInRange } from "@/lib/actions/calendar-occurrence";
-import { parseMonthParam, monthRangeFromFirst, formatISODate, todayInSaoPaulo } from "@/lib/dates";
+import {
+  parseMonthParam,
+  monthRangeFromFirst,
+  formatISODate,
+  todayInSaoPaulo,
+  firstOfMonth,
+  formatYearMonth,
+} from "@/lib/dates";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CalendarToolbar } from "../CalendarToolbar";
 import { PlanningModeBanner } from "../PlanningModeBanner";
@@ -158,6 +165,7 @@ export default async function MonthCalendarPage({
   const showCompleted = params.showCompleted === "1";
 
   const first = parseMonthParam(params.month);
+  const isCurrentPeriod = formatYearMonth(first) === formatYearMonth(firstOfMonth());
 
   // O casco espera só o barato: traduções, locale e as opções de filtro — três
   // consultas simples que NÃO dependem do mês. A grade, que é a parte cara, fica
@@ -187,6 +195,7 @@ export default async function MonthCalendarPage({
           view="month"
           anchor={first}
           periodLabel={monthLabel}
+          isCurrentPeriod={isCurrentPeriod}
           planning={planning}
           teams={options.teams}
           projects={options.projects}

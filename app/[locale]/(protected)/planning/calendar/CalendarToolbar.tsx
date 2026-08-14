@@ -45,6 +45,7 @@ export function CalendarToolbar({
   view,
   anchor,
   periodLabel,
+  isCurrentPeriod,
   planning,
   teams,
   projects,
@@ -54,6 +55,7 @@ export function CalendarToolbar({
   view: "week" | "month";
   anchor: Date;
   periodLabel: string;
+  isCurrentPeriod: boolean;
   planning: boolean;
   teams: Option[];
   projects: Option[];
@@ -116,7 +118,12 @@ export function CalendarToolbar({
         </div>
 
         <div className="flex items-center justify-center gap-3">
-          <PeriodNavigator view={view} anchor={anchor} label={periodLabel} />
+          <PeriodNavigator
+            view={view}
+            anchor={anchor}
+            label={periodLabel}
+            isCurrent={isCurrentPeriod}
+          />
         </div>
 
         <div className="flex items-center justify-end gap-2">

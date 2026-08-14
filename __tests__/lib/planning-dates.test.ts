@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   daysBetweenIso,
   horasParaDiasUteis,
+  mondaysTouchingMonth,
   bufferDiasUteis,
   planningChain,
   startForWorkingDays,
@@ -249,5 +250,42 @@ describe("planningChain — a cadeia completa", () => {
     const r = planningChain({ eventoIso: "2026-12-25", antecedenciaDias: 0, totalHoras: 40 });
     expect(r.entrega).toBe("2026-12-25");
     expect(r.conclusao).toBe("2026-12-24"); // qui — 1 dia útil de gordura
+  });
+});
+
+describe("mondaysTouchingMonth", () => {
+  it("lista as segundas das semanas que tocam o mês", () => {
+    // Agosto/2026: 01/08 é sábado, então a primeira semana começa em 27/07.
+    const m = mondaysTouchingMonth(2026, 7);
+    expect(m[0]).toBe("2026-07-27");
+    expect(m).toContain("2026-08-31"); // semana que vaza para setembro
+  });
+
+  it("inclui a semana que atravessa a virada, nos DOIS meses", () => {
+    // Sem isso a semana de 31/08–06/09 sumiria de um dos seletores e ficaria
+    // inalcançável para quem a procurasse pelo mês "errado".
+    expect(mondaysTouchingMonth(2026, 7)).toContain("2026-08-31");
+    expect(mondaysTouchingMonth(2026, 8)).toContain("2026-08-31");
+  });
+
+  it("devolve só segundas-feiras", () => {
+    for (const mes of [0, 1, 5, 11]) {
+      for (const iso of mondaysTouchingMonth(2026, mes)) {
+        expect(new Date(`${iso}T00:00:00.000Z`).getUTCDay(), iso).toBe(1);
+      }
+    }
+  });
+
+  it("as segundas são consecutivas, de 7 em 7 dias", () => {
+    const m = mondaysTouchingMonth(2026, 7);
+    for (let i = 1; i < m.length; i++) {
+      expect(daysBetweenIso(m[i - 1], m[i])).toBe(7);
+    }
+  });
+
+  it("cobre fevereiro bissexto sem furo", () => {
+    const m = mondaysTouchingMonth(2028, 1);
+    expect(m.length).toBeGreaterThanOrEqual(4);
+    expect(m[0] <= "2028-02-01").toBe(true);
   });
 });

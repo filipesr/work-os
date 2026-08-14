@@ -31,6 +31,7 @@ function abrir(selected: Parameters<typeof CalendarToolbar>[0]["selected"]) {
       view="week"
       anchor={new Date("2026-08-10T00:00:00Z")}
       periodLabel="10 de ago. – 16 de ago."
+      isCurrentPeriod={false}
       planning={false}
       teams={TEAMS}
       projects={PROJECTS}

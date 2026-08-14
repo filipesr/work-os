@@ -190,3 +190,30 @@ export function suggestedStartIso(dueIso: string, totalHoras: number | null): st
   if (!totalHoras || totalHoras <= 0) return "";
   return startForWorkingDays(dueIso, horasParaDiasUteis(totalHoras));
 }
+
+/**
+ * As segundas-feiras que INICIAM semanas pertencentes a um mês.
+ *
+ * "Pertencer" aqui é: a semana toca o mês. Uma semana que começa em 31/08 e
+ * termina em 06/09 aparece nos dois — quem procura pela semana do dia 2 de
+ * setembro precisa achá-la em setembro, e quem procura pela do dia 31 precisa
+ * achá-la em agosto. Listar só as que começam dentro do mês deixaria semanas
+ * inalcançáveis pelo seletor.
+ */
+export function mondaysTouchingMonth(ano: number, mes: number): string[] {
+  const primeiro = new Date(Date.UTC(ano, mes, 1));
+  const ultimo = new Date(Date.UTC(ano, mes + 1, 0));
+
+  // Recua até a segunda da semana do dia 1. getUTCDay: 0=dom … 1=seg.
+  const cursor = new Date(primeiro.getTime());
+  const diaSemana = cursor.getUTCDay();
+  const recuo = diaSemana === 0 ? 6 : diaSemana - 1;
+  cursor.setUTCDate(cursor.getUTCDate() - recuo);
+
+  const saida: string[] = [];
+  while (cursor.getTime() <= ultimo.getTime()) {
+    saida.push(toIso(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() + 7);
+  }
+  return saida;
+}

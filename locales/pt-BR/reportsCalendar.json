@@ -27,7 +27,12 @@
     },
     "today": "Hoje",
     "weekOf": "Semana de {start} a {end}",
-    "range": "{start} – {end}"
+    "range": "{start} – {end}",
+    "pick": "Escolher período",
+    "pickHint": {
+      "week": "Selecione a semana.",
+      "month": "Selecione o mês."
+    }
   },
   "days": {
     "mon": "Seg",
