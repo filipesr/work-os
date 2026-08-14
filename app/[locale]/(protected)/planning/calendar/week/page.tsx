@@ -6,17 +6,11 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { getCalendarTasks } from "@/lib/actions/reporting";
 import { parseWeekParam, weekRangeFromMonday, formatISODate } from "@/lib/dates";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { CalendarFiltersBar } from "../CalendarFiltersBar";
+import { CalendarToolbar } from "../CalendarToolbar";
 import { PlanningModeBanner } from "../PlanningModeBanner";
 import { CalendarGrid } from "@/components/planning/calendar/CalendarGrid";
 import { WeekGridSkeleton } from "../skeletons";
-import {
-  FiltersCard,
-  PeriodActions,
-  loadCreateOptions,
-  loadFilterOptions,
-  type CalendarSearchParams,
-} from "../shared";
+import { loadCreateOptions, loadFilterOptions, type CalendarSearchParams } from "../shared";
 
 export const metadata: Metadata = { title: "Semanal" };
 
@@ -102,33 +96,23 @@ export default async function WeekCalendarPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <PageHeader
-        kicker={t("kicker")}
-        title={t("title")}
-        subtitle={t("subtitle")}
-        actions={
-          <PeriodActions
-            view="week"
-            anchor={weekStart}
-            periodLabel={periodLabel}
-            planning={planning}
-          />
-        }
-      />
+      <PageHeader kicker={t("kicker")} title={t("title")} subtitle={t("subtitle")} />
       <div className="space-y-4">
-        <FiltersCard>
-          <CalendarFiltersBar
-            teams={options.teams}
-            projects={options.projects}
-            users={options.userOptions}
-            selected={{
-              teamId: params.team,
-              projectId: params.project,
-              userId: options.validUserId,
-              showCompleted,
-            }}
-          />
-        </FiltersCard>
+        <CalendarToolbar
+          view="week"
+          anchor={weekStart}
+          periodLabel={periodLabel}
+          planning={planning}
+          teams={options.teams}
+          projects={options.projects}
+          users={options.userOptions}
+          selected={{
+            teamId: params.team,
+            projectId: params.project,
+            userId: options.validUserId,
+            showCompleted,
+          }}
+        />
         <PlanningModeBanner enabled={planning} />
 
         {/* A CHAVE é o que faz o esqueleto reaparecer ao trocar de semana. Sem

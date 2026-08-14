@@ -10,7 +10,11 @@
     "allProjects": "Todos los proyectos",
     "allUsers": "Todos los colaboradores",
     "showCompleted": "Mostrar completadas",
-    "clear": "Limpiar filtros"
+    "clear": "Limpiar filtros",
+    "title": "Filtros",
+    "subtitle": "Recorta lo que muestra la grilla. Quedan visibles como etiquetas en la barra.",
+    "clearAll": "Limpiar todos los filtros",
+    "clearOne": "Quitar filtro {filter}"
   },
   "navigation": {
     "previous": {

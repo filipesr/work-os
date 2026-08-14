@@ -1,17 +1,15 @@
 import prisma from "@/lib/prisma";
 import { getProjectsForSelect, getTemplatesForSelect } from "@/lib/actions/task";
 import { getClients } from "@/lib/actions/client";
-import { PeriodNavigator } from "./PeriodNavigator";
-import { PlanningModeToggle } from "./PlanningModeToggle";
 
 /**
  * Peças comuns às duas telas de calendário (semana e mês).
  *
- * As visões são rotas separadas, mas a barra de controle é UMA só de propósito.
- * Quando o mês tinha a sua própria, ela montava as URLs do zero e descartava
- * time/projeto/pessoa/concluídas a cada clique de período — o gestor filtrava e
- * perdia o filtro ao navegar. Este arquivo existe para que a separação de telas
- * não recrie aquela duplicação.
+ * As visões são rotas separadas, mas o carregamento de dados é UM só de
+ * propósito. Quando o mês tinha o seu próprio, montava as URLs do zero e
+ * descartava time/projeto/pessoa/concluídas a cada clique de período — o gestor
+ * filtrava e perdia o filtro ao navegar. Este arquivo existe para que a separação
+ * de telas não recrie aquela duplicação. A barra em si vive em CalendarToolbar.
  */
 
 /** Parâmetros de URL aceitos pelas duas visões. */
@@ -91,42 +89,3 @@ export type CreateOptions = Awaited<ReturnType<typeof loadCreateOptions>>;
  *  diálogo de criação não pode abrir: evita três consultas por render sem mudar
  *  o contrato dos componentes, que esperam as listas sempre presentes. */
 export const NO_CREATE_OPTIONS: CreateOptions = { clients: [], projects: [], templates: [] };
-
-/**
- * Ações do cabeçalho: navegação de período + trava de planejamento.
- *
- * Saíram do card de filtro. Navegar entre semanas e filtrar por time são gestos
- * de natureza diferente — um muda O QUE se olha, o outro RECORTA o que já está
- * na tela — e amontoá-los numa barra só fazia a navegação parecer mais um filtro.
- *
- * O alternador semana/mês foi removido: as duas visões viraram entradas próprias
- * no menu de Planejamento, e manter o botão duplicava a mesma escolha em dois
- * lugares, com o risco de divergirem no que preservam.
- */
-export function PeriodActions({
-  view,
-  anchor,
-  periodLabel,
-  planning,
-}: {
-  view: "week" | "month";
-  anchor: Date;
-  periodLabel: string;
-  planning: boolean;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <PeriodNavigator view={view} anchor={anchor} label={periodLabel} />
-      <PlanningModeToggle enabled={planning} />
-    </div>
-  );
-}
-
-/** Card de filtros — agora só filtros. */
-export function FiltersCard({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-center gap-3 overflow-x-auto rounded-xl border border-border bg-card p-3 shadow-sm">
-      {children}
-    </div>
-  );
-}

@@ -7,7 +7,7 @@ import { getMonthlyCalendarDemands, getTeamAnniversaries } from "@/lib/actions/r
 import { getOccurrencesInRange } from "@/lib/actions/calendar-occurrence";
 import { parseMonthParam, monthRangeFromFirst, formatISODate, todayInSaoPaulo } from "@/lib/dates";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { CalendarFiltersBar } from "../CalendarFiltersBar";
+import { CalendarToolbar } from "../CalendarToolbar";
 import { PlanningModeBanner } from "../PlanningModeBanner";
 import { MonthlyCalendar } from "@/components/planning/calendar/MonthlyCalendar";
 import type {
@@ -17,9 +17,7 @@ import type {
 } from "@/components/planning/calendar/monthly-types";
 import { MonthGridSkeleton } from "../skeletons";
 import {
-  FiltersCard,
   NO_CREATE_OPTIONS,
-  PeriodActions,
   loadCreateOptions,
   loadFilterOptions,
   type CalendarSearchParams,
@@ -183,24 +181,23 @@ export default async function MonthCalendarPage({
         kicker={t("kicker")}
         title={t("monthly.title")}
         subtitle={t("monthly.subtitle")}
-        actions={
-          <PeriodActions view="month" anchor={first} periodLabel={monthLabel} planning={planning} />
-        }
       />
       <div className="space-y-4">
-        <FiltersCard>
-          <CalendarFiltersBar
-            teams={options.teams}
-            projects={options.projects}
-            users={options.userOptions}
-            selected={{
-              teamId: params.team,
-              projectId: params.project,
-              userId: options.validUserId,
-              showCompleted,
-            }}
-          />
-        </FiltersCard>
+        <CalendarToolbar
+          view="month"
+          anchor={first}
+          periodLabel={monthLabel}
+          planning={planning}
+          teams={options.teams}
+          projects={options.projects}
+          users={options.userOptions}
+          selected={{
+            teamId: params.team,
+            projectId: params.project,
+            userId: options.validUserId,
+            showCompleted,
+          }}
+        />
         <PlanningModeBanner enabled={planning} />
 
         {/* A CHAVE é o que faz o esqueleto reaparecer ao trocar de mês. Sem ela o

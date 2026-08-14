@@ -10,7 +10,11 @@
     "allProjects": "Todos os projetos",
     "allUsers": "Todos os colaboradores",
     "showCompleted": "Mostrar concluídas",
-    "clear": "Limpar filtros"
+    "clear": "Limpar filtros",
+    "title": "Filtros",
+    "subtitle": "Recorte o que a grade mostra. Ficam visíveis como tags na barra.",
+    "clearAll": "Limpar todos os filtros",
+    "clearOne": "Remover filtro {filter}"
   },
   "navigation": {
     "previous": {
