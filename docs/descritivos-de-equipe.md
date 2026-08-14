@@ -124,6 +124,35 @@ Nada que contenha dado pessoal, contrato ou credencial vai como `CLIENTE` — is
 
 Quem escreve um descritivo novo confere esta tabela antes — e a atualiza se um template mudar.
 
+### 3.1 Os modelos de relatório
+
+O descritivo **declara** que o artefato existe. O modelo diz **como ele deve parecer**. São coisas separadas de propósito: um descritivo com a anatomia completa de três relatórios dentro viraria ilegível.
+
+Cada modelo vive em `locales/{pt-BR,es-ES}/reportModels.json`, é registrado em `lib/team-profiles/reports.ts` e aparece em `/help/relatorios`. A entrada de `relatorios` do descritivo aponta para ele pelo campo `modelo`; sem esse campo, a tela diz que o modelo ainda não foi escrito.
+
+**O padrão é por artefato, não da casa.** Um clipping e um relatório de incidente respondem a perguntas diferentes, para leitores diferentes. Forçá-los na mesma anatomia produziria seções vazias nos dois — e seção vazia ensina que a estrutura é decorativa.
+
+Um modelo tem oito partes:
+
+| Parte       | O que é                                                                                      |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| `paraQue`   | A pergunta que o relatório responde. Se não há pergunta, não há relatório                    |
+| `leitor`    | Quem lê e em que condições — o decisor lê no celular em cinco minutos, e isso muda o formato |
+| `quando`    | O momento de saída, e a sua relação com outros ritos (antes da reunião, não depois)          |
+| `estrutura` | As seções, na ordem, cada uma com o que vai dentro                                           |
+| `regras`    | O que faz o relatório funcionar                                                              |
+| `erros`     | O que o estraga — mais útil que as regras, porque é o que as pessoas fazem por hábito        |
+| `exemplo`   | Preenchido, com dados **fictícios** e marcado como tal na tela                               |
+| `esqueleto` | Texto pronto para copiar, com o que preencher entre colchetes                                |
+
+**As três regras que valem para todo modelo:**
+
+1. **Seção sem conteúdo no período não some** — sai com uma linha dizendo que não houve. Sumir muda a estrutura de um mês para o outro e mata a comparação.
+2. **O relatório ao cliente é uma peça comercial, e isso não autoriza escolher o número que ficou bonito.** Todo número entra com a leitura do porquê, o que não funcionou aparece, e previsão sai como faixa — nunca como promessa (P3). Relatório que só mostra vitória para de ser lido no terceiro mês.
+3. **Destino e sensibilidade não podem divergir** entre o modelo e o descritivo. `destino: cliente` ⟺ `CLIENTE`, porque CLIENTE é o único nível compartilhável para fora. O guard reprova a divergência.
+
+Modelos escritos até aqui: relatório de conta, demonstrativo de perfis, relatório mensal de campanhas, clipping, relatório de crise, relatório de incidente, registro de ocorrência, consolidado de motivos de retorno, relatório de fluxo e checklist de saída. Os demais artefatos declarados nos descritivos aparecem em `/help/relatorios` como pendentes — a ausência fica visível, como a das equipes não documentadas.
+
 ---
 
 ## 4. Os descritivos
@@ -1009,6 +1038,8 @@ Duas observações sobre essa lista:
 8. **Rode `npm test`.** `__tests__/content/team-profiles.test.ts` reprova seção faltando, equipe não coberta, `destino` inválido e vocabulário proibido em `avaliacao`.
 
 ### Manutenção
+
+Para escrever o **modelo** de um relatório (a §3.1): registre a entrada em `lib/team-profiles/reports.ts` com destino e sensibilidade, escreva as oito partes nos dois locales em `reportModels.json`, e aponte o campo `modelo` da entrada correspondente em `teamProfiles.json`. O guard reprova modelo órfão, `modelo` apontando para slug inexistente, divergência de destino ou sensibilidade entre modelo e descritivo, e esqueleto que não cobre a anatomia.
 
 Este documento e `locales/{pt-BR,es-ES}/teamProfiles.json` são **acoplados**: o JSON é a versão in-app deste conteúdo. O guard de paridade cobre chaves, não texto — ao alterar um descritivo aqui, atualize o JSON nos dois locales, e vice-versa. É a mesma regra que já vale entre `docs/biblioteca-de-conhecimento.md` e `locales/*/help.json`.
 

@@ -52,6 +52,8 @@ export interface ReportEntry {
   destino: ReportDestination;
   sensibilidade: SensitivityLabel;
   ondeEntregar: string;
+  /** Slug em `REPORT_MODELS`. Ausente = artefato ainda sem anatomia escrita. */
+  modelo?: string;
 }
 
 export interface TeamProfileContent {
@@ -78,6 +80,8 @@ export interface TeamProfileUi {
   coveredTeams: string;
   occupationRef: string;
   openProfile: string;
+  openReportModel: string;
+  noReportModel: string;
   sectionLabels: Record<
     | "missao"
     | "entregaveis"
@@ -120,9 +124,77 @@ export interface TeamProfileMessages {
   profiles: Record<string, TeamProfileContent>;
 }
 
+// — Modelos de relatório —
+
+export interface ReportModelSection {
+  titulo: string;
+  oQueVai: string;
+}
+
+export interface ReportExampleBlock {
+  titulo: string;
+  corpo: string[];
+}
+
+export interface ReportModelContent {
+  titulo: string;
+  resumo: string;
+  paraQue: string;
+  leitor: string;
+  quando: string;
+  estrutura: ReportModelSection[];
+  regras: string[];
+  erros: string[];
+  exemplo: { legenda: string; blocos: ReportExampleBlock[] };
+  /** Texto pronto para colar, com o que preencher entre colchetes. */
+  esqueleto: string;
+}
+
+export interface ReportModelUi {
+  backToHelp: string;
+  backToIndex: string;
+  openModel: string;
+  noModel: string;
+  producedBy: string;
+  seeProfile: string;
+  sectionLabels: Record<
+    "paraQue" | "leitor" | "quando" | "estrutura" | "regras" | "erros" | "exemplo" | "esqueleto",
+    string
+  >;
+  structureHint: string;
+  exampleWarning: string;
+  skeletonHint: string;
+  copy: string;
+  copied: string;
+  copyFailed: string;
+}
+
+export interface ReportModelIndexContent {
+  title: string;
+  intro: string;
+  clientNote: { label: string; text: string };
+  groups: Record<ReportDestination, { title: string; subtitle: string }>;
+  pending: { title: string; subtitle: string };
+}
+
+export interface ReportModelMessages {
+  ui: ReportModelUi;
+  index: ReportModelIndexContent;
+  models: Record<string, ReportModelContent>;
+}
+
+async function safeLocale(): Promise<LocaleType> {
+  const locale = await getLocale();
+  return locales.includes(locale as LocaleType) ? (locale as LocaleType) : defaultLocale;
+}
+
 /** Carrega o conteúdo no idioma da requisição, com fallback para o locale padrão. */
 export async function loadTeamProfileMessages(): Promise<TeamProfileMessages> {
-  const locale = await getLocale();
-  const safe = locales.includes(locale as LocaleType) ? (locale as LocaleType) : defaultLocale;
+  const safe = await safeLocale();
   return (await import(`@/locales/${safe}/teamProfiles.json`)).default as TeamProfileMessages;
+}
+
+export async function loadReportModelMessages(): Promise<ReportModelMessages> {
+  const safe = await safeLocale();
+  return (await import(`@/locales/${safe}/reportModels.json`)).default as ReportModelMessages;
 }

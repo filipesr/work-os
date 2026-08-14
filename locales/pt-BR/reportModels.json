@@ -1,0 +1,976 @@
+{
+  "ui": {
+    "backToHelp": "Voltar para a Central de Ajuda",
+    "backToIndex": "Voltar para os modelos",
+    "openModel": "Abrir modelo",
+    "noModel": "Sem modelo ainda",
+    "producedBy": "Produzido por",
+    "seeProfile": "Ver o descritivo da função",
+    "sectionLabels": {
+      "paraQue": "A que pergunta ele responde",
+      "leitor": "Quem lê",
+      "quando": "Quando sai",
+      "estrutura": "Anatomia",
+      "regras": "Regras",
+      "erros": "O que estraga o relatório",
+      "exemplo": "Exemplo preenchido",
+      "esqueleto": "Esqueleto para copiar"
+    },
+    "structureHint": "Nesta ordem. Seção que não tem conteúdo no período sai com uma linha dizendo isso — não some.",
+    "exampleWarning": "Exemplo fictício, com dados inventados para mostrar o formato. Não é um cliente real.",
+    "skeletonHint": "Copie e cole no documento onde o relatório será montado, e substitua o que está entre colchetes.",
+    "copy": "Copiar esqueleto",
+    "copied": "Copiado",
+    "copyFailed": "Não consegui copiar — selecione o texto e copie manualmente."
+  },
+
+  "index": {
+    "title": "Modelos de relatório",
+    "intro": "Cada artefato que uma função entrega tem uma anatomia própria, um exemplo preenchido e um esqueleto para copiar. O padrão é por artefato, não da casa: um clipping e um relatório de incidente respondem a perguntas diferentes, para leitores diferentes.",
+    "clientNote": {
+      "label": "Sobre o que vai para o cliente",
+      "text": "O relatório ao cliente é uma peça comercial: ele precisa demonstrar valor e sustentar a próxima decisão. Isso não autoriza escolher o número que ficou bonito. A regra é a mesma dos princípios do produto: todo número entra com a leitura do porquê, o que não funcionou aparece, e previsão sai como faixa, nunca como promessa. Relatório que só mostra vitória para de ser lido no terceiro mês."
+    },
+    "groups": {
+      "cliente": {
+        "title": "Vão para o cliente",
+        "subtitle": "Peças comerciais. Sensibilidade CLIENTE — o único nível que pode ser compartilhado para fora."
+      },
+      "gestao": {
+        "title": "Vão para a gestão",
+        "subtitle": "Leitura interna para decidir: alocar, corrigir processo, tratar causa. Nunca saem da rede."
+      },
+      "documentacao": {
+        "title": "Ficam como documentação",
+        "subtitle": "Registro que dá rastreabilidade à conta. Vale pelo que prova depois."
+      }
+    },
+    "pending": {
+      "title": "Artefatos ainda sem modelo",
+      "subtitle": "Estes relatórios estão declarados nos descritivos e ainda não têm anatomia escrita. A ausência fica visível de propósito."
+    }
+  },
+
+  "models": {
+    "relatorio-de-conta": {
+      "titulo": "Relatório de conta",
+      "resumo": "O consolidado mensal que o cliente recebe: o que a agência fez, o que aconteceu e o que se recomenda.",
+      "paraQue": "Responde à pergunta que todo cliente faz no fim do mês: \"o que eu recebi pelo que paguei, e o que vem agora?\". É o documento que sustenta a renovação do contrato.",
+      "leitor": "O decisor do cliente — quem assina, não quem opera. Costuma ler no celular, em cinco minutos, entre outras coisas. Se ele parar no resumo executivo, precisa sair sabendo o essencial.",
+      "quando": "Todo mês, junto da reunião de resultado. Nunca depois dela: o cliente precisa ter lido antes para a reunião valer alguma coisa.",
+      "estrutura": [
+        {
+          "titulo": "Capa",
+          "oQueVai": "Nome do cliente, período coberto, quem assina pela agência e a data. Sem enfeite."
+        },
+        {
+          "titulo": "Resumo executivo",
+          "oQueVai": "Uma página, no máximo. Três parágrafos: o que foi feito, o que os números mostraram, o que recomendamos. Escrito por último, mas lido primeiro — e precisa se sustentar sozinho se ninguém virar a página."
+        },
+        {
+          "titulo": "O objetivo combinado",
+          "oQueVai": "Retomar em duas linhas o que ficou acordado para o período. Sem essa âncora, todo número vira opinião: ninguém sabe se 12% de crescimento é bom ou ruim."
+        },
+        {
+          "titulo": "Os números que importam",
+          "oQueVai": "De três a cinco, não mais. Cada um com: valor, comparação com o período anterior e a leitura do porquê. Número sem leitura é enfeite."
+        },
+        {
+          "titulo": "O que foi entregue",
+          "oQueVai": "A prova de trabalho: peças, campanhas, publicações, páginas. Quantidade e evidência. É aqui que o cliente vê o volume pelo qual pagou."
+        },
+        {
+          "titulo": "O que não funcionou",
+          "oQueVai": "O que ficou abaixo do esperado, e a hipótese do porquê. Esta seção é a que constrói confiança — e a primeira que todo mundo quer cortar."
+        },
+        {
+          "titulo": "Recomendação para o próximo período",
+          "oQueVai": "O que fazer, por que, e o que se espera disso. É a parte comercial do documento: a recomendação de hoje é o escopo do mês que vem."
+        },
+        {
+          "titulo": "Anexos",
+          "oQueVai": "Detalhamento por canal, prints, relatórios das outras funções. Quem quiser mergulhar, mergulha aqui."
+        }
+      ],
+      "regras": [
+        "O resumo executivo se lê em dois minutos e não depende do resto do documento.",
+        "Todo número vem com comparação e com a leitura do porquê.",
+        "A mesma estrutura todo mês — é o que torna a comparação possível.",
+        "Jargão da área ou é traduzido, ou não entra.",
+        "Previsão sai como faixa (\"entre X e Y\"), nunca como promessa fechada."
+      ],
+      "erros": [
+        "Abrir com a lista de tarefas executadas em vez do resultado.",
+        "Despejar todo dado disponível para parecer completo — o cliente lê menos, não mais.",
+        "Esconder o que não funcionou: o cliente descobre sozinho e a conta seguinte fica mais difícil.",
+        "Comparar com concorrente sem dado que sustente.",
+        "Mudar a estrutura ou as métricas de um mês para o outro."
+      ],
+      "exemplo": {
+        "legenda": "Cliente Exemplo · Março de 2026",
+        "blocos": [
+          {
+            "titulo": "Resumo executivo",
+            "corpo": [
+              "Março foi o primeiro mês com a campanha de captação no ar. Entregamos 18 peças, mantivemos a frequência de publicação combinada e colocamos a campanha em veiculação no dia 6.",
+              "O custo por lead fechou em R$ 38, abaixo dos R$ 52 de fevereiro — a troca do criativo na segunda semana explica a maior parte da queda. O alcance orgânico caiu 7%, efeito da redução de publicações em vídeo enquanto a equipe estava alocada na campanha.",
+              "Para abril, recomendamos reforçar o vídeo curto, que é o formato que sustenta o alcance, e manter a verba da campanha no patamar atual mais uma rodada antes de decidir aumentar."
+            ]
+          },
+          {
+            "titulo": "O objetivo combinado",
+            "corpo": [
+              "Gerar leads qualificados para o serviço de consultoria, mantendo a presença nos perfis. Verba de mídia acordada: R$ 8.400 no mês."
+            ]
+          },
+          {
+            "titulo": "Os números que importam",
+            "corpo": [
+              "Leads gerados: 221 (fev: 154). A campanha respondeu por 186 deles.",
+              "Custo por lead: R$ 38 (fev: R$ 52). Caiu após a troca do criativo em 12/03.",
+              "Alcance orgânico: 184.200 (fev: 198.100, −7%). Menos vídeo publicado no período.",
+              "Seguidores: 12.480 (+4,1%). Crescimento estável, sem pico — coerente com o volume publicado."
+            ]
+          },
+          {
+            "titulo": "O que foi entregue",
+            "corpo": [
+              "18 peças aprovadas: 9 carrosséis, 5 vídeos curtos, 4 peças de campanha.",
+              "1 campanha de captação estruturada, com 3 conjuntos de anúncio e 6 criativos testados.",
+              "12 publicações no feed e 26 stories, dentro do calendário aprovado em 25/02."
+            ]
+          },
+          {
+            "titulo": "O que não funcionou",
+            "corpo": [
+              "O primeiro criativo da campanha (peça estática com depoimento) teve custo por lead de R$ 71 nas duas primeiras semanas. Trocamos por vídeo em 12/03 e o custo caiu para R$ 29.",
+              "A queda de 7% no alcance orgânico era esperada, mas foi maior do que estimamos. A hipótese é a redução de vídeos de 8 para 5 no mês."
+            ]
+          },
+          {
+            "titulo": "Recomendação para abril",
+            "corpo": [
+              "Voltar a 8 vídeos curtos no mês para recuperar o alcance — é o formato com melhor entrega histórica nesta conta.",
+              "Manter os R$ 8.400 de verba por mais um ciclo. Com um mês de dado, aumentar agora seria apostar num custo por lead que ainda não se estabilizou.",
+              "Produzir três criativos novos até 10/04, antes que os atuais comecem a desgastar."
+            ]
+          }
+        ]
+      },
+      "esqueleto": "RELATÓRIO DE CONTA\n[Cliente] · [Mês/Ano]\nResponsável: [nome] · Emitido em [data]\n\n---\n\nRESUMO EXECUTIVO\n[O que foi feito no período, em um parágrafo.]\n[O que os números mostraram, em um parágrafo.]\n[O que recomendamos para o próximo período, em um parágrafo.]\n\nO OBJETIVO COMBINADO\n[O que ficou acordado para este período, em duas linhas.]\n[Verba acordada, se houver.]\n\nOS NÚMEROS QUE IMPORTAM\n- [Métrica]: [valor] (período anterior: [valor]). [Por que mudou.]\n- [Métrica]: [valor] (período anterior: [valor]). [Por que mudou.]\n- [Métrica]: [valor] (período anterior: [valor]). [Por que mudou.]\n\nO QUE FOI ENTREGUE\n- [Quantidade e tipo de peça.]\n- [Campanhas, páginas, publicações.]\n- [Aderência ao que estava planejado.]\n\nO QUE NÃO FUNCIONOU\n- [O que ficou abaixo do esperado.] [Hipótese do porquê.] [O que já foi feito a respeito.]\n\nRECOMENDAÇÃO PARA [PRÓXIMO PERÍODO]\n- [Ação.] [Por quê.] [O que se espera disso.]\n- [Ação.] [Por quê.] [O que se espera disso.]\n\nANEXOS\n- [Detalhamento por canal, prints, relatórios das demais funções.]"
+    },
+
+    "demonstrativo-de-perfis": {
+      "titulo": "Demonstrativo de perfis",
+      "resumo": "O desempenho mensal das redes do cliente, com a leitura do que explica cada movimento.",
+      "paraQue": "Responde a \"o conteúdo do mês funcionou?\" — e, mais importante, \"o que aprendemos para o mês que vem?\". Não é um extrato de métricas: é a leitura do que o conteúdo devolveu.",
+      "leitor": "O cliente que acompanha as redes, e o Atendimento, que vai anexá-lo ao relatório de conta. Precisa fazer sentido para quem não sabe o que é taxa de engajamento.",
+      "quando": "Todo mês, junto do fechamento. Sai antes do relatório de conta, porque alimenta ele.",
+      "estrutura": [
+        {
+          "titulo": "Período e perfis cobertos",
+          "oQueVai": "Quais contas, qual intervalo exato de datas. Parece óbvio; é a fonte mais comum de discussão sobre número divergente."
+        },
+        {
+          "titulo": "O panorama em quatro números",
+          "oQueVai": "Seguidores, alcance, impressões e engajamento — cada um com o valor, a variação sobre o mês anterior e uma linha de leitura."
+        },
+        {
+          "titulo": "O que o público mais consumiu",
+          "oQueVai": "As três publicações de melhor desempenho, com o número e a hipótese do porquê. O padrão que aparece aqui é a pauta do mês seguinte."
+        },
+        {
+          "titulo": "O que não engajou",
+          "oQueVai": "A publicação de pior desempenho e a leitura. Serve para parar de repetir formato que não anda — vale mais que os três melhores."
+        },
+        {
+          "titulo": "Volume publicado",
+          "oQueVai": "Quantas peças por formato e por canal, contra o que estava no calendário. Explica variação de alcance melhor do que qualquer outra coisa."
+        },
+        {
+          "titulo": "O que isso muda no próximo mês",
+          "oQueVai": "De duas a três decisões concretas de conteúdo. Sem esta seção o demonstrativo é só um extrato."
+        }
+      ],
+      "regras": [
+        "Quatro números no panorama, não catorze.",
+        "Toda variação vem com hipótese — inclusive \"não sabemos ainda\", que é uma resposta honesta.",
+        "Alcance e engajamento são do conteúdo e do algoritmo: descreva o resultado, não prometa o próximo.",
+        "Mesmo intervalo de datas todo mês, para a comparação valer.",
+        "Print de cada publicação citada, no anexo."
+      ],
+      "erros": [
+        "Listar toda métrica que a plataforma oferece.",
+        "Mostrar só os três melhores posts e omitir o pior.",
+        "Explicar queda com \"o algoritmo mudou\" sem nada que sustente.",
+        "Comparar mês de 31 dias com mês de 28 sem dizer isso.",
+        "Celebrar crescimento de seguidores sem olhar se veio de campanha paga."
+      ],
+      "exemplo": {
+        "legenda": "Cliente Exemplo · Instagram e Facebook · 01 a 31 de março de 2026",
+        "blocos": [
+          {
+            "titulo": "O panorama em quatro números",
+            "corpo": [
+              "Seguidores: 12.480 (+4,1% · +492). Crescimento estável, sem pico. Nenhuma campanha de seguidores no ar — é crescimento orgânico.",
+              "Alcance: 184.200 (−7,0%). Publicamos 5 vídeos contra 8 em fevereiro; vídeo é o formato de maior alcance nesta conta.",
+              "Impressões: 402.900 (−3,2%). Caiu menos que o alcance: quem já segue viu mais vezes.",
+              "Engajamento: 3,8% (fev: 3,4%). Menos gente alcançada, porém mais reativa — coerente com público mais próximo."
+            ]
+          },
+          {
+            "titulo": "O que o público mais consumiu",
+            "corpo": [
+              "1. Vídeo \"3 erros que travam a operação\" (18/03) — 41.200 de alcance, 1.840 interações. Formato de lista com resposta rápida.",
+              "2. Carrossel \"Antes e depois\" (07/03) — 28.600 de alcance, 1.210 interações. Prova visual de resultado.",
+              "3. Vídeo \"Bastidor da consultoria\" (25/03) — 24.900 de alcance, 980 interações.",
+              "Padrão: vídeo curto com promessa no primeiro segundo puxa o alcance nesta conta."
+            ]
+          },
+          {
+            "titulo": "O que não engajou",
+            "corpo": [
+              "Carrossel institucional \"Nossos valores\" (12/03) — 6.100 de alcance, 84 interações. Conteúdo sobre a marca, sem utilidade para quem lê. É o terceiro institucional seguido com desempenho baixo."
+            ]
+          },
+          {
+            "titulo": "Volume publicado",
+            "corpo": [
+              "12 publicações no feed: 5 vídeos, 5 carrosséis, 2 estáticos. Calendário previa 15 (8 vídeos).",
+              "26 stories. A equipe de vídeo esteve alocada na campanha entre 09 e 20/03."
+            ]
+          },
+          {
+            "titulo": "O que isso muda em abril",
+            "corpo": [
+              "Voltar a 8 vídeos curtos no mês: é o que sustenta o alcance.",
+              "Suspender o carrossel institucional mensal e testar o mesmo conteúdo em formato de utilidade.",
+              "Repetir a estrutura de lista com promessa inicial em pelo menos dois vídeos."
+            ]
+          }
+        ]
+      },
+      "esqueleto": "DEMONSTRATIVO DE PERFIS\n[Cliente] · [Perfis] · [data inicial] a [data final]\n\n---\n\nO PANORAMA EM QUATRO NÚMEROS\n- Seguidores: [valor] ([variação]). [Leitura em uma linha.]\n- Alcance: [valor] ([variação]). [Leitura em uma linha.]\n- Impressões: [valor] ([variação]). [Leitura em uma linha.]\n- Engajamento: [valor] ([variação]). [Leitura em uma linha.]\n\nO QUE O PÚBLICO MAIS CONSUMIU\n1. [Peça] ([data]) — [alcance], [interações]. [Hipótese do porquê.]\n2. [Peça] ([data]) — [alcance], [interações]. [Hipótese do porquê.]\n3. [Peça] ([data]) — [alcance], [interações]. [Hipótese do porquê.]\nPadrão observado: [o que se repete entre as três.]\n\nO QUE NÃO ENGAJOU\n- [Peça] ([data]) — [alcance], [interações]. [Leitura.]\n\nVOLUME PUBLICADO\n- [n] publicações no feed: [quebra por formato]. Calendário previa [n].\n- [n] stories. [Justificativa de qualquer desvio.]\n\nO QUE ISSO MUDA EM [PRÓXIMO MÊS]\n- [Decisão de conteúdo.]\n- [Decisão de conteúdo.]\n\nANEXO\n- [Prints das publicações citadas.]"
+    },
+
+    "relatorio-mensal-de-campanhas": {
+      "titulo": "Relatório mensal de campanhas",
+      "resumo": "Onde a verba foi, o que ela comprou, o que foi otimizado e o que se recomenda.",
+      "paraQue": "Responde a \"o dinheiro que investi valeu?\". É o relatório mais cobrado da agência, porque o cliente sente o gasto todo dia e o resultado só no fim.",
+      "leitor": "Quem aprova a verba. Muitas vezes olha só duas coisas: quanto saiu e quanto entrou. As demais seções existem para sustentar a recomendação de verba do mês seguinte.",
+      "quando": "Todo mês, na etapa Relatório Mensal do fluxo de tráfego. Conciliado com o financeiro antes de sair.",
+      "estrutura": [
+        {
+          "titulo": "Período, verba e canais",
+          "oQueVai": "Intervalo exato, verba prevista contra investida, e em quais plataformas. Divergência de centavos gera desconfiança — concilie antes."
+        },
+        {
+          "titulo": "O resultado em uma linha",
+          "oQueVai": "Investido, resultados obtidos e custo por resultado, contra o período anterior. Se o cliente ler só isso, já sabe se o mês foi bom."
+        },
+        {
+          "titulo": "Desempenho por campanha",
+          "oQueVai": "Uma linha por campanha: objetivo, investido, resultado, custo por resultado. Ordenado pela que mais consumiu verba."
+        },
+        {
+          "titulo": "O que foi otimizado",
+          "oQueVai": "As alterações relevantes do mês, com data e motivo. É o que separa gestão de campanha de \"deixar rodando\" — e o que justifica o honorário."
+        },
+        {
+          "titulo": "O que não funcionou",
+          "oQueVai": "Público, criativo ou canal que ficou caro, e o que foi feito. Teste que falhou é informação comprada, desde que a leitura apareça."
+        },
+        {
+          "titulo": "Recomendação de verba e foco",
+          "oQueVai": "Quanto investir no próximo período, onde, e o que se espera. Como faixa, nunca como número prometido."
+        }
+      ],
+      "regras": [
+        "A verba investida bate com o extrato da plataforma e com o financeiro. Sempre.",
+        "Custo por resultado sempre comparado ao período anterior e à média histórica da conta.",
+        "Toda otimização citada tem data e motivo.",
+        "Projeção sai como faixa: \"entre X e Y leads, se o custo se mantiver\".",
+        "Se a medição quebrou em algum momento, isso é dito — dado incompleto declarado vale mais que dado completo falso."
+      ],
+      "erros": [
+        "Apresentar cliques ou impressões como resultado quando o objetivo era conversão.",
+        "Prometer custo por resultado para o mês seguinte.",
+        "Somar canais com objetivos diferentes num custo médio único.",
+        "Omitir o teste que deu errado e mostrar só o conjunto vencedor.",
+        "Comparar com \"média do mercado\" sem fonte."
+      ],
+      "exemplo": {
+        "legenda": "Cliente Exemplo · Março de 2026 · Meta Ads e Google Ads",
+        "blocos": [
+          {
+            "titulo": "Período, verba e canais",
+            "corpo": [
+              "01 a 31/03/2026. Verba prevista: R$ 8.400. Investido: R$ 8.387,42 (conciliado com o financeiro em 02/04).",
+              "Meta Ads: R$ 6.120,10 · Google Ads: R$ 2.267,32."
+            ]
+          },
+          {
+            "titulo": "O resultado em uma linha",
+            "corpo": [
+              "R$ 8.387 investidos, 221 leads, custo por lead de R$ 38. Em fevereiro: R$ 8.010 investidos, 154 leads, R$ 52 por lead."
+            ]
+          },
+          {
+            "titulo": "Desempenho por campanha",
+            "corpo": [
+              "Captação — Vídeo (Meta): R$ 4.980 · 172 leads · R$ 29 por lead.",
+              "Captação — Estático (Meta): R$ 1.140 · 16 leads · R$ 71 por lead. Pausada em 12/03.",
+              "Busca — Marca (Google): R$ 890 · 21 leads · R$ 42 por lead.",
+              "Busca — Serviço (Google): R$ 1.377 · 12 leads · R$ 115 por lead."
+            ]
+          },
+          {
+            "titulo": "O que foi otimizado",
+            "corpo": [
+              "12/03 — Pausamos o conjunto estático (R$ 71 por lead) e realocamos a verba para o vídeo, que rodava a R$ 31.",
+              "17/03 — Excluímos do público quem já havia convertido; o custo do vídeo caiu para R$ 29.",
+              "24/03 — Reduzimos o lance da campanha Busca — Serviço, que não sustentava o custo por lead."
+            ]
+          },
+          {
+            "titulo": "O que não funcionou",
+            "corpo": [
+              "O criativo estático com depoimento não performou em nenhum público testado. Consumiu R$ 1.140 em 12 dias antes de pausarmos. A leitura é que o formato não segura atenção suficiente para o tempo desta oferta.",
+              "A campanha Busca — Serviço segue cara (R$ 115). São termos genéricos e disputados. Recomendação abaixo."
+            ]
+          },
+          {
+            "titulo": "Recomendação para abril",
+            "corpo": [
+              "Manter R$ 8.400. Com um mês de dado, aumentar agora seria apostar num custo que ainda não se estabilizou.",
+              "Realocar os R$ 1.377 de Busca — Serviço para o vídeo no Meta, onde o custo por lead é 4x menor.",
+              "Com a estrutura atual, a faixa esperada para abril é de 210 a 250 leads, se o custo se mantiver entre R$ 33 e R$ 40.",
+              "Precisamos de três criativos novos até 10/04: os atuais rodam há 25 dias e a frequência começa a subir."
+            ]
+          }
+        ]
+      },
+      "esqueleto": "RELATÓRIO MENSAL DE CAMPANHAS\n[Cliente] · [Mês/Ano] · [Plataformas]\n\n---\n\nPERÍODO, VERBA E CANAIS\n- Período: [data inicial] a [data final].\n- Verba prevista: [valor]. Investido: [valor] (conciliado em [data]).\n- [Plataforma]: [valor] · [Plataforma]: [valor].\n\nO RESULTADO EM UMA LINHA\n[valor] investidos, [n] [resultados], custo por [resultado] de [valor]. Período anterior: [valor], [n], [valor].\n\nDESEMPENHO POR CAMPANHA\n- [Campanha]: [investido] · [n resultados] · [custo por resultado].\n- [Campanha]: [investido] · [n resultados] · [custo por resultado].\n\nO QUE FOI OTIMIZADO\n- [data] — [o que mudou]. [Por quê.] [Efeito observado.]\n- [data] — [o que mudou]. [Por quê.] [Efeito observado.]\n\nO QUE NÃO FUNCIONOU\n- [Público/criativo/canal]. [Quanto consumiu.] [Leitura.] [O que foi feito.]\n\nRECOMENDAÇÃO PARA [PRÓXIMO MÊS]\n- Verba: [valor]. [Por quê.]\n- Realocação: [de onde para onde]. [Por quê.]\n- Faixa esperada: entre [n] e [n] [resultados], se o custo se mantiver entre [valor] e [valor].\n- [Necessidade de criativo novo, com prazo.]"
+    },
+
+    "clipping": {
+      "titulo": "Clipping",
+      "resumo": "As menções do cliente na mídia no período, com alcance, teor e a leitura do que rendeu.",
+      "paraQue": "Responde a \"a agência colocou meu nome onde?\" e \"como estão falando de mim?\". É prova de trabalho e termômetro de reputação no mesmo documento.",
+      "leitor": "A direção do cliente. Costuma folhear procurando o próprio nome e o logo do veículo — por isso o clipping é visual antes de ser textual.",
+      "quando": "Todo mês. Menção negativa relevante não espera o clipping: vai por escalonamento imediato.",
+      "estrutura": [
+        {
+          "titulo": "Período e resumo",
+          "oQueVai": "Quantas menções, em quantos veículos, e o teor geral em uma frase."
+        },
+        {
+          "titulo": "As menções, uma a uma",
+          "oQueVai": "Veículo, data, título, link, alcance estimado e teor (positivo, neutro, negativo). Ordenadas pelo alcance."
+        },
+        {
+          "titulo": "Destaques do período",
+          "oQueVai": "As duas ou três que mais importam, com uma linha dizendo por que importam — nem sempre é a de maior alcance."
+        },
+        {
+          "titulo": "O que foi proposto e não saiu",
+          "oQueVai": "As pautas enviadas que não viraram matéria. Mostra o trabalho que existiu mesmo sem resultado publicado, e alimenta a próxima rodada."
+        },
+        {
+          "titulo": "Leitura do período",
+          "oQueVai": "O que a cobertura do mês diz: tema que pegou, veículo que abriu porta, assunto que ninguém quis."
+        },
+        {
+          "titulo": "Anexo",
+          "oQueVai": "Recorte ou print de cada matéria. É o que o cliente encaminha internamente."
+        }
+      ],
+      "regras": [
+        "Toda menção com link ou recorte anexado. Sem prova não entra.",
+        "Alcance é estimativa e vem declarado como estimativa, com a origem do número.",
+        "Menção negativa aparece com o mesmo destaque das positivas.",
+        "As pautas que não saíram entram sempre — omiti-las faz o mês fraco parecer mês parado."
+      ],
+      "erros": [
+        "Contar republicação automática como veículo distinto para inflar o número.",
+        "Converter alcance em \"valor equivalente de mídia\" e apresentar como retorno.",
+        "Prometer cobertura futura.",
+        "Listar menções em redes sociais junto com imprensa, sem separar."
+      ],
+      "exemplo": {
+        "legenda": "Cliente Exemplo · Março de 2026",
+        "blocos": [
+          {
+            "titulo": "Período e resumo",
+            "corpo": [
+              "01 a 31/03/2026. 7 menções em 6 veículos. Teor predominantemente neutro-positivo, concentrado no tema de gestão de pequenas operações."
+            ]
+          },
+          {
+            "titulo": "As menções",
+            "corpo": [
+              "Portal Setorial · 19/03 · \"O que trava a operação das pequenas empresas\" · alcance estimado 45.000 (fonte: mídia kit do veículo) · positivo · entrevista com a diretora.",
+              "Jornal Regional · 11/03 · \"Consultorias crescem no interior\" · alcance estimado 22.000 · neutro · citação com nome e cargo.",
+              "Rádio Local · 26/03 · bloco de economia · alcance estimado 15.000 · positivo · participação de 8 minutos.",
+              "Blog do Setor · 04/03 · \"Cinco erros de gestão\" · alcance estimado 3.500 · neutro · reprodução do release."
+            ]
+          },
+          {
+            "titulo": "Destaques",
+            "corpo": [
+              "A entrevista no Portal Setorial é a mais relevante do mês: foi a primeira vez que o veículo procurou o cliente em vez do contrário. Abre caminho para pauta recorrente.",
+              "A participação na Rádio Local teve alcance menor, mas é a que gerou contato direto — dois pedidos de orçamento citaram o programa."
+            ]
+          },
+          {
+            "titulo": "O que foi proposto e não saiu",
+            "corpo": [
+              "Pauta sobre o novo serviço, enviada a 12 veículos em 05/03. Sem retorno até o fechamento. Hipótese: mês concorrido com a cobertura de eleições no setor.",
+              "Sugestão de artigo assinado, enviada ao Jornal Regional em 20/03. O editor pediu para reapresentar em abril."
+            ]
+          },
+          {
+            "titulo": "Leitura do período",
+            "corpo": [
+              "O tema \"gestão de pequenas operações\" abriu três portas em dois meses e é o ângulo que está funcionando. O tema de produto não entrou em nenhum veículo — sugerimos reposicioná-lo como conteúdo de utilidade em abril."
+            ]
+          }
+        ]
+      },
+      "esqueleto": "CLIPPING\n[Cliente] · [Mês/Ano]\n\n---\n\nPERÍODO E RESUMO\n[data inicial] a [data final]. [n] menções em [n] veículos. [Teor geral em uma frase.]\n\nAS MENÇÕES\n- [Veículo] · [data] · \"[título]\" · alcance estimado [n] (fonte: [origem]) · [positivo/neutro/negativo] · [formato: entrevista, citação, release].\n  [link]\n- [Veículo] · [data] · \"[título]\" · alcance estimado [n] (fonte: [origem]) · [teor] · [formato].\n  [link]\n\nDESTAQUES\n- [Menção]. [Por que importa — e não é só o alcance.]\n- [Menção]. [Por que importa.]\n\nO QUE FOI PROPOSTO E NÃO SAIU\n- [Pauta], enviada a [n] veículos em [data]. [Situação.] [Hipótese.]\n\nLEITURA DO PERÍODO\n[Tema que abriu porta, veículo que respondeu, assunto que não andou — e o que se recomenda.]\n\nANEXO\n- [Recorte ou print de cada matéria.]"
+    },
+
+    "relatorio-de-crise": {
+      "titulo": "Relatório de crise",
+      "resumo": "A cronologia do que aconteceu, o que foi dito, por quem, e o que impede a repetição.",
+      "paraQue": "Responde a \"o que exatamente aconteceu e como respondemos?\". Serve para a gestão decidir, e para existir um registro fiel quando a memória de todo mundo já divergiu.",
+      "leitor": "A gestão da agência e, quando couber, a direção do cliente. Escrito para quem não estava presente e vai ler meses depois.",
+      "quando": "Ao encerrar a crise, no máximo em 48 horas. Depois disso a cronologia já não é confiável.",
+      "estrutura": [
+        {
+          "titulo": "Identificação",
+          "oQueVai": "Cliente, período da crise, quem conduziu, quem foi acionado. Sensibilidade CONFIDENCIAL — nunca sai da rede."
+        },
+        {
+          "titulo": "O que aconteceu, em uma frase",
+          "oQueVai": "Sem adjetivo e sem defesa. A frase que alguém leria em voz alta numa reunião."
+        },
+        {
+          "titulo": "Cronologia",
+          "oQueVai": "Data, hora, o que ocorreu e quem agiu. Uma linha por evento, em ordem. É o coração do documento."
+        },
+        {
+          "titulo": "O que foi dito publicamente",
+          "oQueVai": "Texto exato de cada manifestação, com canal, horário e quem aprovou. Transcrever, não resumir."
+        },
+        {
+          "titulo": "Desfecho",
+          "oQueVai": "Como terminou, com que repercussão medida, e o que ficou pendente."
+        },
+        {
+          "titulo": "Causa e prevenção",
+          "oQueVai": "O que originou, e a mudança concreta de processo que impede a repetição — com responsável e prazo. Sem esta seção o relatório é só um diário."
+        }
+      ],
+      "regras": [
+        "Cronologia com hora, não só data.",
+        "Manifestação pública transcrita literalmente, nunca parafraseada.",
+        "A causa é do processo. Se um erro humano aparece, a pergunta seguinte é qual processo o permitiu.",
+        "Prevenção com responsável e prazo, senão não é prevenção.",
+        "Sensibilidade CONFIDENCIAL: não vira link externo, em nenhuma hipótese."
+      ],
+      "erros": [
+        "Escrever para se defender em vez de registrar.",
+        "Resumir o que foi publicado — a palavra exata é o que importa depois.",
+        "Nomear culpado sem descrever o processo que falhou.",
+        "Encerrar sem ação de prevenção.",
+        "Deixar para escrever na semana seguinte."
+      ],
+      "exemplo": {
+        "legenda": "Cliente Exemplo · Crise de 14 a 16 de março de 2026",
+        "blocos": [
+          {
+            "titulo": "O que aconteceu",
+            "corpo": [
+              "Uma publicação com dado de preço desatualizado foi ao ar e gerou 40 comentários de reclamação em quatro horas, além de uma cobrança de um veículo setorial."
+            ]
+          },
+          {
+            "titulo": "Cronologia",
+            "corpo": [
+              "14/03, 09:12 — Publicação vai ao ar com a tabela de preços da campanha anterior.",
+              "14/03, 11:40 — Community identifica o padrão de reclamação e escala para o Atendimento.",
+              "14/03, 12:05 — Publicação despublicada. Cliente comunicado por telefone.",
+              "14/03, 14:30 — Texto de correção aprovado pela diretora do cliente.",
+              "14/03, 15:00 — Correção publicada no mesmo canal, com resposta individual aos 40 comentários.",
+              "15/03, 10:20 — Veículo setorial pede posicionamento. Assessoria responde em 90 minutos com o texto aprovado.",
+              "16/03, 18:00 — Sem novas menções em 24 horas. Crise encerrada."
+            ]
+          },
+          {
+            "titulo": "O que foi dito publicamente",
+            "corpo": [
+              "Instagram, 14/03 15:00, aprovado por [diretora do cliente]: \"A tabela publicada mais cedo estava desatualizada e foi retirada. Os valores corretos são os do site, atualizados em 1º de março. Pedimos desculpas pela confusão e respondemos individualmente quem já perguntou.\"",
+              "Resposta ao veículo, 15/03 11:50, mesmo texto acrescido da informação de que a correção foi publicada em três horas."
+            ]
+          },
+          {
+            "titulo": "Desfecho",
+            "corpo": [
+              "Nenhuma matéria publicada sobre o caso. 40 comentários respondidos individualmente, 6 seguiram insatisfeitos e foram encaminhados ao comercial do cliente. Sem impacto medido em seguidores ou alcance."
+            ]
+          },
+          {
+            "titulo": "Causa e prevenção",
+            "corpo": [
+              "Causa: a peça foi montada a partir de um arquivo da pasta de aprovados do ciclo anterior, e a etapa de Revisão não tinha \"conferir preço contra o site\" no checklist de saída — dado de preço não estava previsto como item de conferência.",
+              "Prevenção: incluir \"dado numérico do cliente conferido contra a fonte oficial\" no checklist de saída de toda peça com preço, prazo ou telefone. Responsável: Revisão. Prazo: 20/03. Concluído em 18/03.",
+              "Prevenção: separar a pasta de aprovados por ciclo, para que material vencido não seja reutilizado por engano. Responsável: Design. Prazo: 31/03."
+            ]
+          }
+        ]
+      },
+      "esqueleto": "RELATÓRIO DE CRISE — CONFIDENCIAL\n[Cliente] · Crise de [data] a [data]\nConduzido por: [nome] · Acionados: [nomes] · Emitido em [data]\n\n---\n\nO QUE ACONTECEU\n[Uma frase, sem adjetivo e sem defesa.]\n\nCRONOLOGIA\n- [data], [hora] — [o que ocorreu]. [Quem agiu.]\n- [data], [hora] — [o que ocorreu]. [Quem agiu.]\n- [data], [hora] — [o que ocorreu]. [Quem agiu.]\n\nO QUE FOI DITO PUBLICAMENTE\n- [Canal], [data] [hora], aprovado por [quem]: \"[texto exato, transcrito]\"\n- [Canal], [data] [hora], aprovado por [quem]: \"[texto exato, transcrito]\"\n\nDESFECHO\n[Como terminou.] [Repercussão medida.] [O que ficou pendente e com quem.]\n\nCAUSA E PREVENÇÃO\n- Causa: [o processo que permitiu.]\n- Prevenção: [mudança concreta]. Responsável: [nome]. Prazo: [data]. Situação: [pendente/concluído em data].\n- Prevenção: [mudança concreta]. Responsável: [nome]. Prazo: [data]. Situação: [...]."
+    },
+
+    "relatorio-de-incidente": {
+      "titulo": "Relatório de incidente",
+      "resumo": "O que caiu, por quanto tempo, qual foi a causa e o que impede que aconteça de novo.",
+      "paraQue": "Responde a \"por que ficou fora do ar e vai acontecer de novo?\". Existe para tratar a causa, não para achar culpado.",
+      "leitor": "A gestão, e a própria equipe técnica daqui a seis meses, quando o mesmo sintoma reaparecer.",
+      "quando": "A cada incidente, dentro de 24 horas do restabelecimento — enquanto os detalhes ainda existem.",
+      "estrutura": [
+        {
+          "titulo": "Identificação",
+          "oQueVai": "Sistema ou site afetado, cliente, início e fim da indisponibilidade, duração total, quem atuou."
+        },
+        {
+          "titulo": "Impacto",
+          "oQueVai": "O que parou de funcionar, para quem, e o que isso significou na prática. \"Site fora\" é diferente de \"formulário de contato fora\"."
+        },
+        {
+          "titulo": "Cronologia",
+          "oQueVai": "Detecção, diagnóstico, ação e restabelecimento, com hora. Inclua quanto tempo levou até alguém perceber — costuma ser a maior parte."
+        },
+        {
+          "titulo": "Causa",
+          "oQueVai": "A causa técnica, e depois a causa de processo: o que permitiu que ela chegasse à produção."
+        },
+        {
+          "titulo": "Correção aplicada",
+          "oQueVai": "O que foi feito para restabelecer, e se foi paliativo ou definitivo. Paliativo declarado como paliativo, com o prazo do definitivo."
+        },
+        {
+          "titulo": "Prevenção",
+          "oQueVai": "As ações que reduzem a chance de repetição ou o tempo de detecção, com responsável e prazo."
+        }
+      ],
+      "regras": [
+        "Sem nome de culpado. A pergunta é sempre qual processo permitiu.",
+        "Tempo de detecção medido e declarado, separado do tempo de correção.",
+        "Correção paliativa é dita como paliativa, com a data do definitivo.",
+        "Toda prevenção com responsável e prazo.",
+        "Incidente que se repete pela terceira vez vira pauta de arquitetura, não outro relatório igual."
+      ],
+      "erros": [
+        "Escrever \"erro humano\" e parar aí.",
+        "Contar a duração só a partir do momento em que a equipe soube.",
+        "Prometer que \"não vai acontecer de novo\" sem mudar nada verificável.",
+        "Usar jargão técnico sem uma linha em português para quem vai ler na gestão."
+      ],
+      "exemplo": {
+        "legenda": "Cliente Exemplo · Site institucional · 22 de março de 2026",
+        "blocos": [
+          {
+            "titulo": "Identificação",
+            "corpo": [
+              "Site institucional do Cliente Exemplo. Indisponível das 14:07 às 15:12 de 22/03/2026 — 1h05 de indisponibilidade total, 47 minutos de detecção.",
+              "Atuaram: [dev responsável] e [TI]."
+            ]
+          },
+          {
+            "titulo": "Impacto",
+            "corpo": [
+              "O site inteiro retornou erro 500. O formulário de contato, que é a origem de aproximadamente 4 leads por dia, ficou inacessível durante o horário comercial.",
+              "Estimativa de perda: 1 a 2 contatos. Nenhuma campanha paga apontava para o site no período."
+            ]
+          },
+          {
+            "titulo": "Cronologia",
+            "corpo": [
+              "14:07 — Publicação de uma alteração de conteúdo. O site passa a retornar erro 500.",
+              "14:54 — O cliente avisa por WhatsApp. É a primeira detecção: não havia monitoramento ativo.",
+              "14:58 — Diagnóstico: a alteração referenciava uma variável de ambiente que não existia no ambiente de produção.",
+              "15:05 — Revertida a publicação anterior.",
+              "15:12 — Site restabelecido e conferido."
+            ]
+          },
+          {
+            "titulo": "Causa",
+            "corpo": [
+              "Causa técnica: uma variável de ambiente adicionada em desenvolvimento não foi criada em produção, e o código não tratava a ausência dela.",
+              "Causa de processo: a publicação foi direto para produção sem passar por ambiente de pré-visualização, e não existe verificação automática após publicar."
+            ]
+          },
+          {
+            "titulo": "Correção aplicada",
+            "corpo": [
+              "Reversão para a publicação anterior — paliativo. A alteração de conteúdo original foi republicada em 23/03, já com a variável criada em produção."
+            ]
+          },
+          {
+            "titulo": "Prevenção",
+            "corpo": [
+              "Verificação automática de disponibilidade a cada 5 minutos, com alerta. Reduz a detecção de 47 minutos para menos de 10. Responsável: TI. Prazo: 29/03.",
+              "Toda publicação passa por ambiente de pré-visualização antes de produção. Responsável: Engenharia de Software. Prazo: 27/03.",
+              "Tratar ausência de variável de ambiente com falha explícita na inicialização, e não com erro 500 em tempo de execução. Responsável: Engenharia de Software. Prazo: 05/04."
+            ]
+          }
+        ]
+      },
+      "esqueleto": "RELATÓRIO DE INCIDENTE\n[Sistema/site] · [Cliente] · [data]\n\n---\n\nIDENTIFICAÇÃO\n- Afetado: [sistema ou site].\n- Indisponível das [hora] às [hora] — [duração total], [tempo até a detecção].\n- Atuaram: [nomes].\n\nIMPACTO\n- [O que parou de funcionar, para quem.]\n- [O que isso significou na prática. Estimativa, se houver.]\n\nCRONOLOGIA\n- [hora] — [evento].\n- [hora] — [detecção: como e por quem].\n- [hora] — [diagnóstico].\n- [hora] — [ação].\n- [hora] — [restabelecimento e conferência].\n\nCAUSA\n- Causa técnica: [o que quebrou].\n- Causa de processo: [o que permitiu que chegasse à produção].\n\nCORREÇÃO APLICADA\n[O que foi feito.] [Paliativo ou definitivo — se paliativo, prazo do definitivo.]\n\nPREVENÇÃO\n- [Ação]. [Efeito esperado.] Responsável: [nome]. Prazo: [data].\n- [Ação]. [Efeito esperado.] Responsável: [nome]. Prazo: [data]."
+    },
+
+    "registro-de-ocorrencia": {
+      "titulo": "Registro de ocorrência",
+      "resumo": "O que a audiência disse, o que foi respondido e como terminou — quando a conversa saiu do rotineiro.",
+      "paraQue": "Responde a \"o que aconteceu naquele comentário?\" semanas depois, quando alguém pergunta. E alimenta o padrão: três ocorrências parecidas viram problema de produto ou de comunicação, não de atendimento.",
+      "leitor": "A gestão e o Atendimento. Curto por natureza — quem escreve está no meio do turno.",
+      "quando": "A cada crise ou reclamação grave, no mesmo dia. Interação rotineira não vira ocorrência: vira linha no resumo mensal.",
+      "estrutura": [
+        {
+          "titulo": "Identificação",
+          "oQueVai": "Cliente, canal, data e hora, e quem atendeu."
+        },
+        {
+          "titulo": "O que chegou",
+          "oQueVai": "O texto do que a pessoa escreveu, transcrito. Se for público, o link."
+        },
+        {
+          "titulo": "O que foi respondido",
+          "oQueVai": "O texto exato da resposta, o canal em que saiu (público ou privado) e o horário."
+        },
+        {
+          "titulo": "Escalonamento",
+          "oQueVai": "Se foi escalado, para quem e quando. Se não foi, por quê."
+        },
+        {
+          "titulo": "Desfecho",
+          "oQueVai": "Como terminou. Inclui \"sem resposta da pessoa\", que também é desfecho."
+        },
+        {
+          "titulo": "Padrão",
+          "oQueVai": "Se já aconteceu algo parecido, apontar. É o campo que transforma registro isolado em informação útil."
+        }
+      ],
+      "regras": [
+        "Escrito no mesmo dia, mesmo que curto.",
+        "Texto transcrito, não resumido — nos dois sentidos.",
+        "Sem opinião sobre a pessoa que reclamou.",
+        "Se não foi escalado, o motivo fica registrado."
+      ],
+      "erros": [
+        "Registrar só o que virou crise — o padrão se enxerga nas ocorrências médias.",
+        "Parafrasear a reclamação e perder a palavra que o cliente usou.",
+        "Deixar o desfecho em aberto sem dizer que está em aberto."
+      ],
+      "exemplo": {
+        "legenda": "Cliente Exemplo · Instagram · 14 de março de 2026",
+        "blocos": [
+          {
+            "titulo": "Identificação",
+            "corpo": [
+              "Cliente Exemplo · comentário público no Instagram · 14/03/2026, 10:20 · atendido por [nome]."
+            ]
+          },
+          {
+            "titulo": "O que chegou",
+            "corpo": [
+              "\"esse preço aí tá errado né? no site tá outro. já é a segunda vez que vejo isso\" — comentário no post de 14/03, com 12 curtidas de outras pessoas."
+            ]
+          },
+          {
+            "titulo": "O que foi respondido",
+            "corpo": [
+              "Público, 14/03 12:10: \"Você tem razão, a tabela estava desatualizada e já foi retirada. Os valores corretos são os do site. Obrigado por avisar.\"",
+              "Privado, 14/03 12:14: mensagem individual com os valores corretos e oferta de contato direto com o comercial."
+            ]
+          },
+          {
+            "titulo": "Escalonamento",
+            "corpo": [
+              "Escalado ao Atendimento às 11:40, quando o mesmo ponto apareceu no quinto comentário. Atendimento acionou o cliente às 12:05."
+            ]
+          },
+          {
+            "titulo": "Desfecho",
+            "corpo": [
+              "A pessoa respondeu \"blz, obrigado\" às 12:31. O comentário permaneceu no post, agora com a resposta abaixo. Outros 39 comentários no mesmo sentido foram respondidos individualmente até as 16:00."
+            ]
+          },
+          {
+            "titulo": "Padrão",
+            "corpo": [
+              "A própria pessoa diz que é a segunda vez. Registro anterior semelhante em 06/02, também sobre divergência de preço entre a peça e o site. Levado à Coordenação como problema de processo, não de atendimento."
+            ]
+          }
+        ]
+      },
+      "esqueleto": "REGISTRO DE OCORRÊNCIA\n[Cliente] · [Canal] · [data]\n\n---\n\nIDENTIFICAÇÃO\n[Cliente] · [canal, público ou privado] · [data], [hora] · atendido por [nome].\n\nO QUE CHEGOU\n\"[texto transcrito]\"\n[Link, se público.] [Repercussão: curtidas, respostas de terceiros.]\n\nO QUE FOI RESPONDIDO\n- [Público/privado], [data] [hora]: \"[texto exato]\"\n- [Público/privado], [data] [hora]: \"[texto exato]\"\n\nESCALONAMENTO\n[Para quem e quando.] [Ou: não escalado, porque ...]\n\nDESFECHO\n[Como terminou. Inclui \"sem resposta\" e \"em aberto\".]\n\nPADRÃO\n[Já aconteceu algo parecido? Quando? O que isso sugere?]"
+    },
+
+    "consolidado-de-motivos-de-retorno": {
+      "titulo": "Consolidado de motivos de retorno",
+      "resumo": "Por que as peças voltaram no mês, agrupado por etapa de origem — e sem nome de pessoa.",
+      "paraQue": "Responde a \"onde o processo está injetando defeito?\". É o insumo mais direto que a Coordenação tem para corrigir causa em vez de cobrar cuidado.",
+      "leitor": "Coordenação e gestão. Vira pauta de retrospectiva.",
+      "quando": "Todo mês, no fechamento.",
+      "estrutura": [
+        {
+          "titulo": "Período e volume",
+          "oQueVai": "Quantas peças passaram por revisão, quantas voltaram, e a proporção. O volume total importa: 10 retornos em 40 peças é diferente de 10 em 300."
+        },
+        {
+          "titulo": "Motivos por etapa de origem",
+          "oQueVai": "Agrupado pela etapa que injetou o defeito, não por quem executou. Motivo, contagem, e um exemplo concreto de cada."
+        },
+        {
+          "titulo": "O que se repetiu",
+          "oQueVai": "Os motivos que apareceram três vezes ou mais. Esta é a seção acionável: repetição é sinal de processo."
+        },
+        {
+          "titulo": "O que escapou para o cliente",
+          "oQueVai": "Separado do resto, sempre. Falha externa e falha interna são coisas diferentes, e misturá-las apaga a distinção que mais importa."
+        },
+        {
+          "titulo": "Proposta",
+          "oQueVai": "O que mudar no checklist, no briefing ou no fluxo. Uma ou duas mudanças, não dez."
+        }
+      ],
+      "regras": [
+        "Nenhum nome de pessoa, em nenhuma seção.",
+        "Agrupado por etapa de origem, nunca por executor.",
+        "Retorno interno é o gate funcionando: alto volume interno não é problema a reduzir.",
+        "O que escapou para o cliente vem sempre separado.",
+        "Cada motivo com um exemplo concreto, senão vira categoria vazia."
+      ],
+      "erros": [
+        "Ranquear pessoas ou equipes por número de retornos.",
+        "Somar retorno interno e rejeição do cliente num número só.",
+        "Tratar queda no volume de retornos como melhoria sem olhar se o volume de produção caiu junto.",
+        "Listar 15 motivos sem dizer quais se repetiram."
+      ],
+      "exemplo": {
+        "legenda": "Março de 2026 · todas as contas",
+        "blocos": [
+          {
+            "titulo": "Período e volume",
+            "corpo": [
+              "142 peças passaram por revisão. 31 voltaram ao menos uma vez (21,8%). Em fevereiro: 118 peças, 29 retornos (24,6%)."
+            ]
+          },
+          {
+            "titulo": "Motivos por etapa de origem",
+            "corpo": [
+              "Briefing (13 retornos) — informação faltando na abertura da demanda. Ex.: peça de campanha aberta sem a oferta definida; o Design escolheu uma e voltou.",
+              "Copy (8) — texto fora do tom de voz da conta. Ex.: linguagem informal em conta que pede registro formal.",
+              "Design (6) — dado numérico divergente da fonte. Ex.: preço da tabela do ciclo anterior.",
+              "Vídeo (3) — legenda dessincronizada após exportação.",
+              "Development (1) — quebra de layout em telas menores."
+            ]
+          },
+          {
+            "titulo": "O que se repetiu",
+            "corpo": [
+              "\"Oferta não definida no briefing\" apareceu 7 vezes, em 4 contas diferentes. É o motivo mais frequente do mês e o mais caro: para Design e Copy ao mesmo tempo.",
+              "\"Dado numérico divergente\" apareceu 4 vezes, sempre em peças com preço."
+            ]
+          },
+          {
+            "titulo": "O que escapou para o cliente",
+            "corpo": [
+              "2 ocorrências. Uma peça com preço desatualizado publicada em 14/03 (ver relatório de crise) e uma legenda com erro de grafia no nome de um parceiro, corrigida em 2 horas.",
+              "Em fevereiro foram 3."
+            ]
+          },
+          {
+            "titulo": "Proposta",
+            "corpo": [
+              "Tornar \"oferta e preço definidos\" campo obrigatório na abertura de demanda de campanha. Resolveria 7 dos 31 retornos do mês.",
+              "Incluir \"dado numérico conferido contra a fonte oficial\" no checklist de saída de peça com preço, prazo ou telefone."
+            ]
+          }
+        ]
+      },
+      "esqueleto": "CONSOLIDADO DE MOTIVOS DE RETORNO\n[Mês/Ano] · [contas cobertas]\n\n---\n\nPERÍODO E VOLUME\n[n] peças passaram por revisão. [n] voltaram ao menos uma vez ([%]). Período anterior: [n] peças, [n] retornos ([%]).\n\nMOTIVOS POR ETAPA DE ORIGEM\n- [Etapa] ([n] retornos) — [motivo]. Ex.: [caso concreto, sem nome].\n- [Etapa] ([n]) — [motivo]. Ex.: [caso concreto].\n- [Etapa] ([n]) — [motivo]. Ex.: [caso concreto].\n\nO QUE SE REPETIU (3 vezes ou mais)\n- \"[motivo]\" apareceu [n] vezes, em [n] contas. [Por que é caro.]\n- \"[motivo]\" apareceu [n] vezes. [Onde se concentra.]\n\nO QUE ESCAPOU PARA O CLIENTE\n[n] ocorrências. [Descrição de cada uma, e o que foi feito.]\nPeríodo anterior: [n].\n\nPROPOSTA\n- [Mudança de processo.] [Quantos retornos do mês ela teria evitado.]\n- [Mudança de processo.]"
+    },
+
+    "relatorio-de-fluxo": {
+      "titulo": "Relatório de fluxo",
+      "resumo": "O que saiu no período, o que atrasou e por quê, onde está a restrição e o que foi feito a respeito.",
+      "paraQue": "Responde a \"o trabalho está fluindo, e se não está, onde trava?\". É o documento que sustenta decisão de alocação e de contratação.",
+      "leitor": "A gestão. Lê por exceção: quer saber o que está travando, não o inventário do que aconteceu.",
+      "quando": "Todo mês, no fechamento, antes da retrospectiva.",
+      "estrutura": [
+        {
+          "titulo": "Período e volume",
+          "oQueVai": "Demandas concluídas, abertas e em curso. O saldo entre entrada e saída diz mais que qualquer um dos dois sozinho."
+        },
+        {
+          "titulo": "A restrição do período",
+          "oQueVai": "A etapa que mais represou trabalho, com o dado que sustenta. Uma, não três — se houver três, o diagnóstico ainda não foi feito."
+        },
+        {
+          "titulo": "O que atrasou e por quê",
+          "oQueVai": "As demandas que passaram do prazo, agrupadas pela causa: insumo do cliente, dependência interna, sobrecarga, escopo que cresceu."
+        },
+        {
+          "titulo": "Distribuição de carga",
+          "oQueVai": "Como o trabalho se distribuiu entre as equipes, e onde houve ociosidade ou sobrecarga sustentada. Sobre equipes, não sobre pessoas."
+        },
+        {
+          "titulo": "Ações tomadas",
+          "oQueVai": "O que a Coordenação fez sobre a restrição durante o mês, não depois. Ver o gargalo e não agir é o que este relatório expõe."
+        },
+        {
+          "titulo": "O que precisa de decisão",
+          "oQueVai": "O que não se resolve dentro da Coordenação: contratar, renegociar prazo com cliente, recusar escopo."
+        }
+      ],
+      "regras": [
+        "Uma restrição por período, com o dado que a sustenta.",
+        "Carga por equipe e por etapa, nunca ranking de pessoas.",
+        "Atraso é agrupado por causa, não listado demanda a demanda.",
+        "Utilização entra como faixa indicativa de 60% a 90%, nunca como meta.",
+        "Prazo citado como percentil (p85), não como média."
+      ],
+      "erros": [
+        "Listar as 40 demandas do mês sem priorizar.",
+        "Transformar carga de trabalho em ranking de produtividade individual.",
+        "Apresentar média de tempo de entrega como se fosse o prazo esperado.",
+        "Apontar restrição sem dizer o que foi feito a respeito.",
+        "Cobrar utilização como se fosse meta a bater."
+      ],
+      "exemplo": {
+        "legenda": "Março de 2026 · todas as equipes",
+        "blocos": [
+          {
+            "titulo": "Período e volume",
+            "corpo": [
+              "Concluídas: 128. Abertas: 141. Em curso no fechamento: 47 (fev: 34).",
+              "Entrou mais do que saiu pelo segundo mês seguido. O acúmulo está concentrado em Design."
+            ]
+          },
+          {
+            "titulo": "A restrição do período",
+            "corpo": [
+              "Design. 19 demandas aguardando a etapa de Design no fechamento, contra 4 a 7 nas demais etapas. Tempo médio de espera antes de alguém assumir: 3,2 dias (demais etapas: menos de 1 dia)."
+            ]
+          },
+          {
+            "titulo": "O que atrasou e por quê",
+            "corpo": [
+              "22 demandas passaram do prazo planejado.",
+              "9 — insumo do cliente que não chegou (concentrado em 2 contas).",
+              "8 — espera pela etapa de Design (a restrição).",
+              "3 — escopo que cresceu depois da abertura, sem replanejamento de prazo.",
+              "2 — retorno de Revisão que exigiu refação."
+            ]
+          },
+          {
+            "titulo": "Distribuição de carga",
+            "corpo": [
+              "Design operou acima da faixa indicativa durante 3 das 4 semanas.",
+              "Vídeo ficou abaixo na segunda quinzena, quando a campanha terminou.",
+              "As demais equipes ficaram dentro da faixa."
+            ]
+          },
+          {
+            "titulo": "Ações tomadas",
+            "corpo": [
+              "11/03 — Duas demandas de carrossel realocadas para o formato que Vídeo consegue absorver.",
+              "18/03 — Prazo de três peças renegociado com o Atendimento antes de estourar.",
+              "25/03 — Suspensa a abertura de demanda não urgente de uma conta até o acúmulo baixar."
+            ]
+          },
+          {
+            "titulo": "O que precisa de decisão",
+            "corpo": [
+              "Design é a restrição há dois meses e as ações de realocação já se esgotaram. As opções são ampliar a equipe, reduzir o volume contratado ou aceitar prazos maiores. É decisão de gestão, não de coordenação.",
+              "Duas contas concentram 9 dos 22 atrasos por insumo que não chega. Sugerimos tratar isso na renovação do contrato."
+            ]
+          }
+        ]
+      },
+      "esqueleto": "RELATÓRIO DE FLUXO\n[Mês/Ano] · [equipes cobertas]\n\n---\n\nPERÍODO E VOLUME\n- Concluídas: [n]. Abertas: [n]. Em curso no fechamento: [n] (período anterior: [n]).\n- [Leitura do saldo entre entrada e saída.]\n\nA RESTRIÇÃO DO PERÍODO\n[Etapa]. [Dado que sustenta: quantidade represada, tempo de espera, comparação com as demais etapas.]\n\nO QUE ATRASOU E POR QUÊ\n[n] demandas passaram do prazo planejado.\n- [n] — [causa].\n- [n] — [causa].\n- [n] — [causa].\n\nDISTRIBUIÇÃO DE CARGA\n- [Equipe]: [acima/dentro/abaixo da faixa indicativa], [por quanto tempo].\n- [Equipe]: [...].\n\nAÇÕES TOMADAS\n- [data] — [o que a Coordenação fez sobre a restrição].\n- [data] — [ação].\n\nO QUE PRECISA DE DECISÃO\n- [O que não se resolve dentro da Coordenação.] [Opções.] [Quem decide.]"
+    },
+
+    "checklist-de-saida": {
+      "titulo": "Checklist de saída assinado",
+      "resumo": "Os itens conferidos antes de a peça ser liberada, com quem conferiu e quando.",
+      "paraQue": "Responde a \"isso foi conferido?\" — e, quando algo escapa, a \"o que a conferência não cobria?\". Não serve para achar quem errou: serve para descobrir o item que faltava no checklist.",
+      "leitor": "Ninguém, na maior parte das vezes. Vale pelo que prova quando um erro chega ao cliente e é preciso saber se o item estava previsto.",
+      "quando": "Por demanda, no momento da liberação, quando o tipo de peça exigir.",
+      "estrutura": [
+        {
+          "titulo": "Identificação",
+          "oQueVai": "Demanda, cliente, tipo de peça, quem conferiu e quando."
+        },
+        {
+          "titulo": "Itens conferidos",
+          "oQueVai": "A lista do tipo de peça, cada item marcado. Item que não se aplica é marcado como não aplicável, não deixado em branco."
+        },
+        {
+          "titulo": "Ressalvas",
+          "oQueVai": "O que foi liberado apesar de alguma pendência, e com autorização de quem. Liberação com ressalva é legítima; liberação com ressalva não registrada é o problema."
+        },
+        {
+          "titulo": "Assinatura",
+          "oQueVai": "Quem libera. Um nome, não a equipe."
+        }
+      ],
+      "regras": [
+        "A lista é a do tipo de peça, e é a mesma para todo mundo.",
+        "Nada em branco: conferido, não conferido ou não aplicável.",
+        "Ressalva sempre com quem autorizou.",
+        "Peça com dado numérico do cliente — preço, prazo, telefone — sempre confere contra a fonte oficial."
+      ],
+      "erros": [
+        "Marcar tudo de uma vez ao fim, sem conferir.",
+        "Deixar item em branco em vez de marcar como não aplicável.",
+        "Liberar com ressalva sem registrar quem autorizou.",
+        "Usar o checklist para apurar responsabilidade individual — o uso correto é revisar o próprio checklist."
+      ],
+      "exemplo": {
+        "legenda": "Demanda #4821 · Cliente Exemplo · Carrossel de campanha · 13/03/2026",
+        "blocos": [
+          {
+            "titulo": "Itens conferidos",
+            "corpo": [
+              "Ortografia e gramática (pt) — conferido.",
+              "Ortografia e gramática (es) — não aplicável, peça só em português.",
+              "Tom de voz conforme o manual da conta — conferido.",
+              "Nomes próprios e marcas conforme o glossário — conferido.",
+              "Dado numérico (preço, prazo, telefone) contra a fonte oficial — conferido, preço batido com o site em 13/03.",
+              "Formato e proporção conforme o canal — conferido.",
+              "Links de destino testados — não aplicável.",
+              "Elementos obrigatórios de marca (logo, assinatura) — conferido.",
+              "Exigência legal do segmento — conferido, sem obrigação aplicável."
+            ]
+          },
+          {
+            "titulo": "Ressalvas",
+            "corpo": [
+              "A terceira lâmina usa uma imagem de banco cuja licença vence em 30/06/2026. Liberado com ressalva, autorizado por [coordenação], com registro para substituição antes do vencimento."
+            ]
+          },
+          {
+            "titulo": "Assinatura",
+            "corpo": ["Conferido e liberado por [nome], Revisão, 13/03/2026 às 16:40."]
+          }
+        ]
+      },
+      "esqueleto": "CHECKLIST DE SAÍDA\nDemanda [#] · [Cliente] · [Tipo de peça] · [data]\n\n---\n\nITENS CONFERIDOS\n[ ] Ortografia e gramática (pt) — [conferido / não aplicável]\n[ ] Ortografia e gramática (es) — [conferido / não aplicável]\n[ ] Tom de voz conforme o manual da conta — [...]\n[ ] Nomes próprios e marcas conforme o glossário — [...]\n[ ] Dado numérico (preço, prazo, telefone) contra a fonte oficial — [...]\n[ ] Formato e proporção conforme o canal — [...]\n[ ] Links de destino testados — [...]\n[ ] Elementos obrigatórios de marca — [...]\n[ ] Exigência legal do segmento — [...]\n\nRESSALVAS\n[O que foi liberado apesar de pendência.] Autorizado por [nome].\n[Ou: nenhuma.]\n\nASSINATURA\nConferido e liberado por [nome], Revisão, [data] às [hora]."
+    }
+  }
+}

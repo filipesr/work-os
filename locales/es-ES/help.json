@@ -40,6 +40,11 @@
         "title": "Descriptivos de equipo",
         "description": "Misión, obligaciones por cadencia, informes y criterios de contratación de cada función."
       },
+      "relatorios": {
+        "badge": "R",
+        "title": "Modelos de informe",
+        "description": "La anatomía, un ejemplo completo y el esqueleto de cada artefacto que entrega una función."
+      },
       "principios": {
         "badge": "P",
         "title": "Principios innegociables",

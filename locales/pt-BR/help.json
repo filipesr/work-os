@@ -40,6 +40,11 @@
         "title": "Descritivos de equipe",
         "description": "Missão, obrigações por cadência, relatórios e critérios de contratação de cada função."
       },
+      "relatorios": {
+        "badge": "R",
+        "title": "Modelos de relatório",
+        "description": "A anatomia, um exemplo preenchido e o esqueleto de cada artefato que uma função entrega."
+      },
       "principios": {
         "badge": "P",
         "title": "Princípios inegociáveis",

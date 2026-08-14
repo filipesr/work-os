@@ -123,6 +123,17 @@ function ReportCard({ report, ui }: { report: ReportEntry; ui: TeamProfileUi }) 
         <Paperclip className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         {report.ondeEntregar}
       </p>
+      {report.modelo ? (
+        <Link
+          href={`/help/relatorios/${report.modelo}`}
+          className="group mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary"
+        >
+          {ui.openReportModel}
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      ) : (
+        <p className="mt-3 text-xs text-muted-foreground">{ui.noReportModel}</p>
+      )}
     </div>
   );
 }

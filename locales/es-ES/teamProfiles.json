@@ -68,7 +68,9 @@
     "avaliacaoCallout": {
       "label": "Cómo debe usarse esta sección",
       "text": "Estas señales existen para informar conversaciones de acompañamiento, asignación de trabajo y ajuste de proceso — nunca para puntuar, ordenar ni remunerar. No se convierten en puntaje compuesto, ranking ni meta individual. La variación de desempeño proviene mayoritariamente del sistema, no de la persona: la primera pregunta siempre es sobre el proceso."
-    }
+    },
+    "openReportModel": "Ver el modelo de este informe",
+    "noReportModel": "El modelo de este informe todavía no fue escrito."
   },
   "index": {
     "title": "Funciones y equipos",
@@ -520,7 +522,8 @@
           "quando": "Mensual.",
           "destino": "gestao",
           "sensibilidade": "INTERNO",
-          "ondeEntregar": "Adjunto a la demanda de cierre del mes."
+          "ondeEntregar": "Adjunto a la demanda de cierre del mes.",
+          "modelo": "consolidado-de-motivos-de-retorno"
         },
         {
           "nome": "Checklist de salida firmado",
@@ -528,7 +531,8 @@
           "quando": "Por demanda, cuando el tipo de pieza lo exija.",
           "destino": "documentacao",
           "sensibilidade": "INTERNO",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "checklist-de-saida"
         }
       ],
       "competencias": {
@@ -693,7 +697,8 @@
           "quando": "Mensual.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda de cierre del mes."
+          "ondeEntregar": "Adjunto a la demanda de cierre del mes.",
+          "modelo": "demonstrativo-de-perfis"
         },
         {
           "nome": "Retrospectiva de campaña",
@@ -859,7 +864,8 @@
           "quando": "En cada crisis o reclamo grave.",
           "destino": "gestao",
           "sensibilidade": "INTERNO",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "registro-de-ocorrencia"
         }
       ],
       "competencias": {
@@ -1157,7 +1163,8 @@
           "quando": "Mensual.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda de cierre del mes."
+          "ondeEntregar": "Adjunto a la demanda de cierre del mes.",
+          "modelo": "clipping"
         },
         {
           "nome": "Informe de crisis",
@@ -1165,7 +1172,8 @@
           "quando": "Al cerrar cada crisis.",
           "destino": "gestao",
           "sensibilidade": "CONFIDENCIAL",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "relatorio-de-crise"
         },
         {
           "nome": "Posicionamiento oficial",
@@ -1337,7 +1345,8 @@
           "quando": "Mensual — es la etapa Informe Mensual del flujo.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda concluida."
+          "ondeEntregar": "Adjunto a la demanda concluida.",
+          "modelo": "relatorio-mensal-de-campanhas"
         },
         {
           "nome": "Plan de medios",
@@ -1681,7 +1690,8 @@
           "quando": "Mensual.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda de cierre del mes."
+          "ondeEntregar": "Adjunto a la demanda de cierre del mes.",
+          "modelo": "relatorio-de-conta"
         },
         {
           "nome": "Acta de reunión",
@@ -2022,7 +2032,8 @@
           "quando": "Mensual.",
           "destino": "gestao",
           "sensibilidade": "INTERNO",
-          "ondeEntregar": "Adjunto a la demanda de cierre del mes."
+          "ondeEntregar": "Adjunto a la demanda de cierre del mes.",
+          "modelo": "relatorio-de-fluxo"
         },
         {
           "nome": "Acta de retrospectiva",
@@ -2207,7 +2218,8 @@
           "quando": "En cada incidente.",
           "destino": "gestao",
           "sensibilidade": "INTERNO",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "relatorio-de-incidente"
         }
       ],
       "competencias": {

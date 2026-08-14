@@ -487,6 +487,16 @@ team-profiles.test.ts` reprova vocabulário de premiação/ordenação dentro de
   3b (FTR por pessoa) é a única registrada.
 - **Atalho em `/account`** → o colaborador chega ao descritivo da própria equipe
   sem passar pelo índice; a equipe sem descritivo aparece igual, marcada.
+- **`/help/relatorios` (modelos por artefato)** → o descritivo declara o artefato;
+  o modelo diz como ele deve parecer. Padrão **por artefato, não da casa**: um
+  clipping e um relatório de incidente têm leitores e perguntas diferentes, e a
+  mesma anatomia produziria seções vazias nos dois. Cada modelo traz anatomia,
+  regras, o que estraga, um exemplo **fictício** (marcado como tal na tela, para
+  não ser confundido com dado de cliente) e um esqueleto copiável — que também
+  fica visível na página, para quem não tem área de transferência disponível.
+  O relatório ao cliente é peça comercial e continua sob **P3**: previsão sai como
+  faixa, nunca como promessa. `destino: cliente` ⟺ `CLIENTE` vale aqui também, e
+  o guard reprova divergência entre o modelo e o descritivo do mesmo artefato.
 - Conteúdo **espelha `docs/descritivos-de-equipe.md`**; renderizado por
   `components/help/TeamProfileView.tsx` a partir de
   `locales/{pt-BR,es-ES}/teamProfiles.json`. Vale o mesmo aviso do `help.json`: ao
@@ -563,10 +573,11 @@ qualquer decisão nova em §4. Este doc é a memória de por que o workos é com
 **Documentos acoplados a este.** Ao mexer nos princípios, verifique se o texto
 in-app precisa acompanhar:
 
-| Doc                             | Espelho in-app                                      |
-| ------------------------------- | --------------------------------------------------- |
-| §1/§2/§6 deste doc              | `locales/{pt-BR,es-ES}/help.json` → `fundamentos.*` |
-| `docs/descritivos-de-equipe.md` | `locales/{pt-BR,es-ES}/teamProfiles.json`           |
+| Doc                                  | Espelho in-app                                      |
+| ------------------------------------ | --------------------------------------------------- |
+| §1/§2/§6 deste doc                   | `locales/{pt-BR,es-ES}/help.json` → `fundamentos.*` |
+| `docs/descritivos-de-equipe.md`      | `locales/{pt-BR,es-ES}/teamProfiles.json`           |
+| `docs/descritivos-de-equipe.md` §3.1 | `locales/{pt-BR,es-ES}/reportModels.json`           |
 
 Em especial: a §2 de `descritivos-de-equipe.md` (salvaguardas de RH) deriva
 diretamente de P1 e P2. Se um desses princípios mudar, ela muda junto — é o
