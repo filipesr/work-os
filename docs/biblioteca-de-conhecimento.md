@@ -497,6 +497,11 @@ team-profiles.test.ts` reprova vocabulário de premiação/ordenação dentro de
   O relatório ao cliente é peça comercial e continua sob **P3**: previsão sai como
   faixa, nunca como promessa. `destino: cliente` ⟺ `CLIENTE` vale aqui também, e
   o guard reprova divergência entre o modelo e o descritivo do mesmo artefato.
+  Cobertura: os **34** artefatos declarados nos descritivos têm modelo. O índice
+  agrupa por **função**, não por destino → **P6**: com trinta e quatro modelos,
+  agrupar por destino colocava vinte cartões sob um único título. Quem procura
+  sabe a própria função antes de saber para quem o artefato vai; o destino virou
+  etiqueta com legenda.
 - Conteúdo **espelha `docs/descritivos-de-equipe.md`**; renderizado por
   `components/help/TeamProfileView.tsx` a partir de
   `locales/{pt-BR,es-ES}/teamProfiles.json`. Vale o mesmo aviso do `help.json`: ao

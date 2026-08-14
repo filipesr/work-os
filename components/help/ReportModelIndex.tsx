@@ -4,17 +4,20 @@ import { TEAM_PROFILES } from "@/lib/team-profiles/catalog";
 import {
   REPORT_MODELS,
   REPORT_MODEL_DESTINATIONS,
-  getReportModelsByDestination,
+  getReportModelsForProfile,
 } from "@/lib/team-profiles/reports";
 import type { ReportModelMessages, TeamProfileMessages } from "@/lib/team-profiles/content";
 
 /**
- * Índice dos modelos, agrupado por destino — o que vai para o cliente primeiro,
- * porque é o que mais custa quando sai errado.
+ * Índice dos modelos, agrupado por FUNÇÃO.
  *
- * A faixa final lista os artefatos que os descritivos declaram e que ainda não
- * têm anatomia escrita. Ela é derivada do conteúdo, não mantida à mão: um
- * relatório novo num descritivo aparece aqui como pendente sozinho.
+ * O agrupamento era por destino enquanto havia dez modelos; com trinta e quatro,
+ * "vão para o cliente" virava uma parede de vinte cartões. Quem procura um
+ * modelo sabe a própria função antes de saber para quem o artefato vai — então
+ * a função é o eixo, e o destino vira etiqueta no cartão, explicada na legenda.
+ *
+ * A faixa de pendentes é derivada do conteúdo: um relatório novo num descritivo,
+ * sem `modelo`, aparece aqui sozinho.
  */
 export function ReportModelIndex({
   messages,
@@ -49,7 +52,7 @@ export function ReportModelIndex({
         <p className="text-lg leading-relaxed text-muted-foreground">{index.intro}</p>
       </header>
 
-      <div className="mb-10 flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-5 py-4">
+      <div className="mb-8 flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-5 py-4">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
         <p className="text-sm leading-relaxed text-muted-foreground">
           <span className="font-semibold text-foreground">{index.clientNote.label}.</span>{" "}
@@ -57,28 +60,49 @@ export function ReportModelIndex({
         </p>
       </div>
 
+      {/* Legenda dos destinos: a etiqueta de cada cartão diz para quem o artefato
+          vai, e é aqui que ela ganha significado. */}
+      <dl className="mb-10 space-y-3 rounded-xl border border-border bg-card px-5 py-4">
+        {REPORT_MODEL_DESTINATIONS.map((destino) => (
+          <div key={destino} className="flex flex-col gap-1 sm:flex-row sm:gap-3">
+            <dt className="flex-none sm:w-44">
+              <span className="inline-flex rounded-md bg-muted px-2 py-1 text-xs font-semibold uppercase tracking-wide text-foreground">
+                {profileMessages.ui.destino[destino]}
+              </span>
+            </dt>
+            <dd className="min-w-0 text-sm leading-relaxed text-muted-foreground">
+              {index.groups[destino].subtitle}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
       <div className="space-y-10">
-        {REPORT_MODEL_DESTINATIONS.map((destino) => {
-          const group = getReportModelsByDestination(destino);
+        {TEAM_PROFILES.map((profile) => {
+          const group = getReportModelsForProfile(profile.slug);
           if (!group.length) return null;
-          const groupCopy = index.groups[destino];
+          const profileTitle = profileMessages.profiles[profile.slug]?.title ?? profile.slug;
+          const ProfileIcon = profile.icon;
 
           return (
-            <section key={destino}>
-              <div className="mb-4">
+            <section key={profile.slug}>
+              <div className="mb-4 flex items-center gap-2">
+                <ProfileIcon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {groupCopy.title}
+                  {profileTitle}
                 </h2>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  {groupCopy.subtitle}
-                </p>
+                <Link
+                  href={`/help/equipes/${profile.slug}`}
+                  className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  {ui.seeProfile}
+                </Link>
               </div>
 
               <div className="space-y-3">
                 {group.map((model) => {
                   const content = models[model.slug];
                   if (!content) return null;
-                  const profileTitle = profileMessages.profiles[model.profileSlug]?.title;
                   const Icon = model.icon;
 
                   return (
@@ -91,15 +115,15 @@ export function ReportModelIndex({
                         <Icon className="h-5 w-5" aria-hidden="true" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-lg font-bold text-foreground">{content.titulo}</h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-lg font-bold text-foreground">{content.titulo}</h3>
+                          <span className="inline-flex rounded-md bg-muted px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            {profileMessages.ui.destino[model.destino]}
+                          </span>
+                        </div>
                         <p className="text-sm leading-relaxed text-muted-foreground">
                           {content.resumo}
                         </p>
-                        {profileTitle ? (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {ui.producedBy} {profileTitle}
-                          </p>
-                        ) : null}
                       </div>
                       <span className="hidden flex-none items-center gap-1.5 text-sm font-semibold text-primary transition-all group-hover:gap-2.5 sm:inline-flex">
                         {ui.openModel}

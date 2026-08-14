@@ -206,7 +206,8 @@
           "quando": "Al inicio de una campaña o de una identidad nueva.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "apresentacao-de-conceito"
         },
         {
           "nome": "Paquete de entrega",
@@ -214,7 +215,8 @@
           "quando": "Al concluir la demanda.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda concluida."
+          "ondeEntregar": "Adjunto a la demanda concluida.",
+          "modelo": "pacote-de-entrega-design"
         }
       ],
       "competencias": {
@@ -366,7 +368,8 @@
           "quando": "Al concluir la demanda.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda concluida."
+          "ondeEntregar": "Adjunto a la demanda concluida.",
+          "modelo": "pacote-de-entrega-video"
         },
         {
           "nome": "Registro de rodaje",
@@ -374,7 +377,8 @@
           "quando": "Después de cada jornada de grabación.",
           "destino": "documentacao",
           "sensibilidade": "INTERNO",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "registro-de-captacao"
         }
       ],
       "competencias": {
@@ -689,7 +693,8 @@
           "quando": "Mensual, hasta el día 25 del mes anterior.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda de planificación."
+          "ondeEntregar": "Adjunto a la demanda de planificación.",
+          "modelo": "calendario-de-publicacao"
         },
         {
           "nome": "Informe de perfiles",
@@ -706,7 +711,8 @@
           "quando": "Al final de cada campaña.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "retrospectiva-de-campanha"
         }
       ],
       "competencias": {
@@ -856,7 +862,8 @@
           "quando": "Mensual.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda de cierre del mes."
+          "ondeEntregar": "Adjunto a la demanda de cierre del mes.",
+          "modelo": "resumo-da-audiencia"
         },
         {
           "nome": "Registro de incidencia",
@@ -1009,7 +1016,8 @@
           "quando": "Al ingresar la cuenta y en la revisión anual.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "manual-de-tom-de-voz"
         },
         {
           "nome": "Documento de mensaje de campaña",
@@ -1017,7 +1025,8 @@
           "quando": "Al inicio de cada campaña.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "mensagem-de-campanha"
         }
       ],
       "competencias": {
@@ -1181,7 +1190,8 @@
           "quando": "Cuando la situación lo exija.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "posicionamento-oficial"
         }
       ],
       "competencias": {
@@ -1354,7 +1364,8 @@
           "quando": "Al inicio de cada campaña o ciclo.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "plano-de-midia"
         },
         {
           "nome": "Conciliación de inversión",
@@ -1362,7 +1373,8 @@
           "quando": "Mensual.",
           "destino": "gestao",
           "sensibilidade": "CONFIDENCIAL",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "conciliacao-de-investimento"
         }
       ],
       "competencias": {
@@ -1523,7 +1535,8 @@
           "quando": "Mensual.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda de cierre del mes."
+          "ondeEntregar": "Adjunto a la demanda de cierre del mes.",
+          "modelo": "desempenho-organico"
         },
         {
           "nome": "Auditoría técnica",
@@ -1531,7 +1544,8 @@
           "quando": "Anual, o al ingresar la cuenta.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "auditoria-tecnica"
         }
       ],
       "competencias": {
@@ -1699,7 +1713,8 @@
           "quando": "En cada reunión con el cliente.",
           "destino": "documentacao",
           "sensibilidade": "INTERNO",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "ata-de-reuniao"
         },
         {
           "nome": "Control de alcance",
@@ -1707,7 +1722,8 @@
           "quando": "Mensual.",
           "destino": "gestao",
           "sensibilidade": "CONFIDENCIAL",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "controle-de-escopo"
         }
       ],
       "competencias": {
@@ -1864,7 +1880,8 @@
           "quando": "Anual, revisado en cada ciclo.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "plano-estrategico-da-conta"
         },
         {
           "nome": "Lectura consolidada del resultado",
@@ -1872,7 +1889,8 @@
           "quando": "Mensual.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda de cierre del mes."
+          "ondeEntregar": "Adjunto a la demanda de cierre del mes.",
+          "modelo": "leitura-consolidada-de-resultado"
         },
         {
           "nome": "Concepto de campaña",
@@ -1880,7 +1898,8 @@
           "quando": "Al inicio de cada campaña.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "conceito-de-campanha"
         }
       ],
       "competencias": {
@@ -2041,7 +2060,8 @@
           "quando": "Mensual.",
           "destino": "documentacao",
           "sensibilidade": "INTERNO",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "ata-de-retrospectiva"
         }
       ],
       "competencias": {
@@ -2210,7 +2230,8 @@
           "quando": "Al concluir un sitio o sistema.",
           "destino": "cliente",
           "sensibilidade": "CLIENTE",
-          "ondeEntregar": "Adjunto a la demanda concluida."
+          "ondeEntregar": "Adjunto a la demanda concluida.",
+          "modelo": "documentacao-de-entrega"
         },
         {
           "nome": "Informe de incidente",
@@ -2393,7 +2414,8 @@
           "quando": "Mensual.",
           "destino": "gestao",
           "sensibilidade": "INTERNO",
-          "ondeEntregar": "Adjunto a la demanda de cierre del mes."
+          "ondeEntregar": "Adjunto a la demanda de cierre del mes.",
+          "modelo": "relatorio-de-infraestrutura"
         },
         {
           "nome": "Registro de incidente",
@@ -2401,7 +2423,8 @@
           "quando": "En cada incidente.",
           "destino": "gestao",
           "sensibilidade": "CONFIDENCIAL",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "registro-de-incidente-ti"
         },
         {
           "nome": "Inventario y accesos",
@@ -2409,7 +2432,8 @@
           "quando": "Anual.",
           "destino": "gestao",
           "sensibilidade": "CONFIDENCIAL",
-          "ondeEntregar": "Adjunto a la demanda."
+          "ondeEntregar": "Adjunto a la demanda.",
+          "modelo": "inventario-e-acessos"
         }
       ],
       "competencias": {

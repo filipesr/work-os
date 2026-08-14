@@ -151,7 +151,11 @@ Um modelo tem oito partes:
 2. **O relatório ao cliente é uma peça comercial, e isso não autoriza escolher o número que ficou bonito.** Todo número entra com a leitura do porquê, o que não funcionou aparece, e previsão sai como faixa — nunca como promessa (P3). Relatório que só mostra vitória para de ser lido no terceiro mês.
 3. **Destino e sensibilidade não podem divergir** entre o modelo e o descritivo. `destino: cliente` ⟺ `CLIENTE`, porque CLIENTE é o único nível compartilhável para fora. O guard reprova a divergência.
 
-Modelos escritos até aqui: relatório de conta, demonstrativo de perfis, relatório mensal de campanhas, clipping, relatório de crise, relatório de incidente, registro de ocorrência, consolidado de motivos de retorno, relatório de fluxo e checklist de saída. Os demais artefatos declarados nos descritivos aparecem em `/help/relatorios` como pendentes — a ausência fica visível, como a das equipes não documentadas.
+**Cobertura.** Os **34** artefatos declarados nos 14 descritivos têm modelo escrito. Não há pendentes — mas a faixa "ainda sem modelo" em `/help/relatorios` continua existindo no código, derivada do conteúdo: um relatório novo num descritivo, sem o campo `modelo`, aparece lá sozinho.
+
+**Como o índice se organiza.** Por **função**, não por destino. Com dez modelos o agrupamento por destino funcionava; com trinta e quatro, "vão para o cliente" seria uma parede de vinte cartões. Quem procura um modelo sabe a própria função antes de saber para quem o artefato vai — então o destino virou etiqueta no cartão, explicada numa legenda no topo.
+
+Por destino: **20 vão para o cliente**, **10 para a gestão**, **4 ficam como documentação**.
 
 ---
 
