@@ -1,0 +1,2157 @@
+{
+  "ui": {
+    "backToIndex": "Voltar para as funções",
+    "backToHelp": "Voltar para a Central de Ajuda",
+    "notDocumented": "Descritivo ainda não documentado",
+    "notDocumentedHint": "Esta equipe existe na empresa, mas o descritivo dela ainda não foi escrito.",
+    "coveredTeams": "Equipes cobertas",
+    "occupationRef": "Referência ocupacional",
+    "openProfile": "Abrir descritivo",
+    "sectionLabels": {
+      "missao": "Missão",
+      "entregaveis": "Entregáveis",
+      "interfaces": "Interfaces",
+      "ferramentas": "Ferramentas",
+      "obrigacoes": "Obrigações",
+      "relatorios": "Relatórios",
+      "competencias": "Competências",
+      "contratacao": "Contratação",
+      "avaliacao": "Avaliação",
+      "fontes": "Fontes"
+    },
+    "cadence": {
+      "diarias": "Todo dia",
+      "semanais": "Toda semana",
+      "mensais": "Todo mês",
+      "anuais": "Todo ano"
+    },
+    "toolGroups": {
+      "obrigatorias": "Obrigatórias",
+      "apoio": "Apoio",
+      "internas": "Referências internas"
+    },
+    "destino": {
+      "cliente": "Cliente",
+      "gestao": "Gestão",
+      "documentacao": "Documentação"
+    },
+    "sensitivity": {
+      "CLIENTE": "Cliente",
+      "INTERNO": "Interno",
+      "CONFIDENCIAL": "Confidencial"
+    },
+    "reportFields": {
+      "conteudo": "O que contém",
+      "quando": "Quando",
+      "destino": "Destino",
+      "ondeEntregar": "Onde entregar",
+      "sensibilidade": "Sensibilidade"
+    },
+    "interfaceFields": {
+      "recebeDe": "Recebe de",
+      "entregaPara": "Entrega para"
+    },
+    "competenciaFields": {
+      "tecnicas": "Técnicas",
+      "comportamentais": "Comportamentais"
+    },
+    "contratacaoFields": {
+      "requisitos": "Requisitos",
+      "diferenciais": "Diferenciais",
+      "perguntas": "Perguntas de entrevista"
+    },
+    "avaliacaoFields": {
+      "oQueOlhamos": "O que olhamos",
+      "comoLemos": "Como lemos",
+      "oQueNuncaFazemos": "O que nunca fazemos"
+    },
+    "avaliacaoCallout": {
+      "label": "Como esta seção deve ser usada",
+      "text": "Estes sinais existem para informar conversa de coaching, alocação e ajuste de processo — nunca para pontuar, ordenar ou remunerar. Não viram score composto, ranking nem meta individual. A variação de desempenho é majoritariamente do sistema, não da pessoa: a primeira pergunta é sempre sobre o processo."
+    }
+  },
+
+  "index": {
+    "title": "Funções e equipes",
+    "intro": "O que se espera de cada função: o que ela entrega, com quem trabalha, com quais ferramentas, em qual cadência e quais artefatos produz. Serve para quem está chegando, para quem coordena e para quem contrata.",
+    "hrNote": {
+      "label": "Para o RH",
+      "text": "Os descritivos servem a contratação, onboarding e conversa de 1:1. A seção de avaliação de cada função é informacional por construção — ela não pode virar nota, ranking, score composto nem vínculo a remuneração."
+    },
+    "families": {
+      "criacao": {
+        "title": "Criação",
+        "subtitle": "Quem produz a peça e quem impede que erro evitável chegue ao cliente."
+      },
+      "conteudo": {
+        "title": "Conteúdo",
+        "subtitle": "Quem define o que a marca diz, escreve e conversa com a audiência."
+      },
+      "midia": {
+        "title": "Mídia e performance",
+        "subtitle": "Quem faz o cliente ser encontrado — comprando mídia ou conquistando busca."
+      },
+      "cliente": {
+        "title": "Cliente",
+        "subtitle": "Quem traduz o cliente para dentro, decide a direção e faz o trabalho fluir."
+      },
+      "tech": {
+        "title": "Tecnologia",
+        "subtitle": "Quem constrói o que a agência entrega em código e mantém a operação de pé."
+      }
+    },
+    "undocumented": {
+      "title": "Ainda não documentadas",
+      "subtitle": "Estas equipes existem na empresa e ainda não têm descritivo escrito. A ausência fica visível de propósito."
+    }
+  },
+
+  "profiles": {
+    "design": {
+      "title": "Design",
+      "summary": "Traduz a mensagem do cliente em peça visual dentro da identidade da marca.",
+      "occupationRef": "CBO 2624-10 (designer gráfico) · O*NET 27-1024.00",
+      "missao": "Traduzir a mensagem do cliente em peça visual que comunica de primeira, dentro da identidade da marca.",
+      "entregaveis": [
+        "Peça final aprovada nos formatos e proporções pedidos, com arquivo aberto e de exportação.",
+        "Etapa Design Carrossel (Post Carrossel Estático) e etapa Design (Landing Page).",
+        "Variações de adaptação — feed, story, impresso — quando a demanda pedir.",
+        "Arquivo-fonte arquivado na pasta da conta, nomeado no padrão."
+      ],
+      "interfaces": {
+        "recebeDe": [
+          "Comunicação e Copy — texto aprovado.",
+          "Social Media — briefing de carrossel aprovado."
+        ],
+        "entregaPara": [
+          "Revisão — peça pronta para o gate de saída.",
+          "Engenharia de Software — layout e specs, na Landing Page."
+        ]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          {
+            "nome": "Figma",
+            "para": "Layout, protótipo e entrega de specs para o desenvolvimento.",
+            "url": "https://figma.com"
+          },
+          { "nome": "Adobe Illustrator", "para": "Vetor, logotipo e identidade visual." },
+          { "nome": "Adobe Photoshop", "para": "Tratamento e composição de imagem." },
+          { "nome": "Adobe InDesign", "para": "Peça editorial e material impresso." }
+        ],
+        "apoio": [
+          {
+            "nome": "Canva",
+            "para": "Adaptação rápida e peças de baixa complexidade.",
+            "url": "https://canva.com"
+          },
+          {
+            "nome": "Adobe Color",
+            "para": "Paleta e verificação de contraste.",
+            "url": "https://color.adobe.com"
+          },
+          { "nome": "Banco de imagens contratado", "para": "Imagem licenciada para uso comercial." }
+        ],
+        "internas": [
+          { "nome": "Manual de marca por cliente", "para": "Pasta da conta na rede." },
+          {
+            "nome": "Pasta de aprovados",
+            "para": "O que já passou pelo cliente e serve de referência."
+          },
+          { "nome": "Modelos de formato", "para": "Proporções e medidas por canal." }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Assumir a próxima etapa de Design da fila.",
+          "Conferir se briefing e texto estão aprovados antes de começar.",
+          "Registrar o tempo na etapa.",
+          "Devolver com motivo escrito quando o insumo não permitir executar."
+        ],
+        "semanais": [
+          "Arquivar os arquivos-fonte das peças concluídas na pasta da conta.",
+          "Conferir com Revisão os retornos da semana e o que os causou."
+        ],
+        "mensais": [
+          "Revisar o manual de marca de cada conta ativa contra o que foi produzido.",
+          "Propor à Coordenação os ajustes de padrão que se repetiram."
+        ],
+        "anuais": [
+          "Revisar o kit de identidade das contas recorrentes.",
+          "Atualizar portfólio e biblioteca de modelos."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Apresentação de conceito",
+          "conteudo": "Rota criativa, referências e a justificativa da escolha.",
+          "quando": "No início de campanha ou de identidade nova.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda."
+        },
+        {
+          "nome": "Pacote de entrega",
+          "conteudo": "Peças finais, arquivos-fonte e guia de aplicação.",
+          "quando": "Ao concluir a demanda.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda concluída."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Tipografia, grid e hierarquia visual.",
+          "Teoria da cor e contraste.",
+          "Preparação de arquivo para impressão e para tela.",
+          "Adaptação entre formatos sem perder a leitura.",
+          "Noção de acessibilidade visual."
+        ],
+        "comportamentais": [
+          "Recebe crítica sobre a peça sem levar para o pessoal.",
+          "Explica a decisão de design em palavras que o cliente entende.",
+          "Pede o briefing que falta em vez de adivinhar."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Portfólio com peças reais e o problema que cada uma resolvia.",
+          "Domínio de Figma ou da suíte Adobe.",
+          "Capacidade de trabalhar dentro de um manual de marca alheio."
+        ],
+        "diferenciais": [
+          "Motion básico em After Effects.",
+          "Ilustração própria.",
+          "Experiência em agência com várias contas simultâneas."
+        ],
+        "perguntas": [
+          "Mostre uma peça sua e conte o briefing que a originou.",
+          "Conte de uma vez em que o cliente rejeitou seu conceito — o que você fez?",
+          "Como você adapta uma peça de feed para impresso sem refazer tudo?"
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Quantos retornos de Revisão a peça acumulou e por qual motivo — o motivo é o material da conversa.",
+          "Idade das etapas de Design paradas.",
+          "Se os arquivos-fonte estão arquivados na pasta da conta."
+        ],
+        "comoLemos": [
+          "Retorno repetido pelo mesmo motivo é sinal de briefing insuficiente antes de ser sinal de execução: a primeira pergunta é sobre o insumo.",
+          "Tempo de conceito não é desperdício — é parte do trabalho criativo."
+        ],
+        "oQueNuncaFazemos": [
+          "Comparar designers por número de peças produzidas.",
+          "Usar contagem de retorno como nota ou como ranking.",
+          "Vincular qualquer destes sinais a remuneração ou promoção."
+        ]
+      },
+      "fontes": [
+        "O*NET 27-1024.00 — Graphic Designers (tarefas e technology skills).",
+        "CBO 2624-10 — desenhista industrial gráfico (designer gráfico).",
+        "Templates Post Carrossel Estático e Landing Page do fluxo da agência."
+      ]
+    },
+
+    "video": {
+      "title": "Vídeo",
+      "summary": "Transforma roteiro e material bruto em vídeo pronto para cada canal.",
+      "occupationRef": "O*NET 27-4032.00 (Film and Video Editors)",
+      "missao": "Transformar roteiro e material bruto em vídeo que prende nos primeiros segundos e entrega a mensagem no formato de cada canal.",
+      "entregaveis": [
+        "Etapa Edição (Vídeo Curto): corte final exportado nos formatos e proporções pedidos.",
+        "Legenda embutida ou arquivo de legenda, conforme o canal.",
+        "Trilha e efeitos licenciados, com a licença registrada.",
+        "Projeto e material bruto arquivados na pasta da conta."
+      ],
+      "interfaces": {
+        "recebeDe": ["Social Media — roteiro aprovado e material bruto."],
+        "entregaPara": ["Revisão — corte pronto para o gate de saída."]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          { "nome": "Adobe Premiere Pro", "para": "Edição e finalização." },
+          { "nome": "Adobe After Effects", "para": "Motion e legendagem animada." },
+          {
+            "nome": "CapCut",
+            "para": "Corte rápido para formato vertical.",
+            "url": "https://www.capcut.com"
+          },
+          {
+            "nome": "DaVinci Resolve",
+            "para": "Correção de cor.",
+            "url": "https://www.blackmagicdesign.com/products/davinciresolve"
+          }
+        ],
+        "apoio": [
+          {
+            "nome": "Biblioteca de trilha licenciada",
+            "para": "Música e efeito com uso comercial."
+          },
+          { "nome": "Adobe Media Encoder", "para": "Exportação em lote por formato." }
+        ],
+        "internas": [
+          { "nome": "Pasta de brutos da conta", "para": "Material captado, na rede local." },
+          {
+            "nome": "Padrão de abertura e encerramento",
+            "para": "Assinatura de vídeo por cliente."
+          },
+          { "nome": "Tabela de proporções e durações", "para": "O que cada canal aceita." }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Assumir a próxima etapa de Edição da fila.",
+          "Conferir se o roteiro está aprovado e o bruto completo antes de abrir a timeline.",
+          "Registrar o tempo na etapa.",
+          "Devolver com motivo escrito quando faltar material."
+        ],
+        "semanais": [
+          "Arquivar projetos e brutos das entregas concluídas.",
+          "Limpar o armazenamento de trabalho."
+        ],
+        "mensais": [
+          "Revisar o padrão de abertura e encerramento das contas recorrentes.",
+          "Conferir a vigência das licenças de trilha usadas."
+        ],
+        "anuais": [
+          "Revisar o inventário de equipamento e o fluxo de captação.",
+          "Atualizar o reel."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Pacote de entrega",
+          "conteudo": "Corte final nos formatos pedidos, legenda e licenças usadas.",
+          "quando": "Ao concluir a demanda.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda concluída."
+        },
+        {
+          "nome": "Registro de captação",
+          "conteudo": "O que foi filmado, onde, com quem, e o bruto aproveitável que sobrou.",
+          "quando": "Após cada diária de gravação.",
+          "destino": "documentacao",
+          "sensibilidade": "INTERNO",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Ritmo e corte narrativo.",
+          "Sincronia de áudio e correção de nível.",
+          "Correção de cor.",
+          "Legendagem e exportação correta por canal.",
+          "Organização de mídia em projeto grande."
+        ],
+        "comportamentais": [
+          "Trabalha com o roteiro de outra pessoa sem reescrevê-lo por conta própria.",
+          "Avisa cedo quando o bruto não sustenta o roteiro."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Reel com trabalhos reais.",
+          "Domínio de Premiere ou DaVinci Resolve.",
+          "Entendimento de formato vertical e das durações de cada rede."
+        ],
+        "diferenciais": [
+          "Captação: câmera, luz e áudio.",
+          "Motion em After Effects.",
+          "Correção de cor avançada."
+        ],
+        "perguntas": [
+          "Mostre um corte seu e explique por que ele começa assim.",
+          "O bruto chegou incompleto e o prazo é hoje — o que você faz?",
+          "Como você organiza a mídia de um projeto com três dias de captação?"
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Retornos de Revisão e os motivos registrados.",
+          "Idade das etapas de Edição.",
+          "Se projeto e brutos foram arquivados na pasta da conta."
+        ],
+        "comoLemos": [
+          "Edição longa costuma indicar roteiro ou bruto insuficiente — investiga-se a etapa anterior antes da pessoa.",
+          "Duração de edição é contexto do trabalho, não medida de esforço."
+        ],
+        "oQueNuncaFazemos": [
+          "Ranquear por quantidade de vídeos entregues.",
+          "Usar tempo de edição como nota.",
+          "Vincular estes sinais a remuneração ou promoção."
+        ]
+      },
+      "fontes": [
+        "O*NET 27-4032.00 — Film and Video Editors.",
+        "Template Vídeo Curto do fluxo da agência."
+      ]
+    },
+
+    "revisao": {
+      "title": "Revisão e Controle de Qualidade",
+      "summary": "Último gate antes de a peça sair — e devolve com motivo o que precisa voltar.",
+      "occupationRef": "O*NET 43-9081.00 (Proofreaders and Copy Markers)",
+      "missao": "Impedir que erro evitável chegue ao cliente — e devolver com motivo claro o que precisa voltar.",
+      "entregaveis": [
+        "Etapas Revisão QC (Vídeo Curto, Landing Page) e Revisão Final (Post Carrossel).",
+        "Aprovação registrada, ou devolução com motivo escrito e o ponto exato a corrigir.",
+        "Checklist de saída preenchido: texto, marca, formato, dados do cliente e links."
+      ],
+      "interfaces": {
+        "recebeDe": [
+          "Design, Vídeo e Engenharia de Software — peça pronta.",
+          "Comunicação e Social Media — texto pronto."
+        ],
+        "entregaPara": ["Atendimento e Coordenação — peça liberada para o cliente."]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          {
+            "nome": "LanguageTool",
+            "para": "Ortografia e gramática em português e espanhol.",
+            "url": "https://languagetool.org"
+          },
+          { "nome": "Adobe Acrobat", "para": "Marcação de correção em PDF." },
+          {
+            "nome": "VOLP — Academia Brasileira de Letras",
+            "para": "Norma do português.",
+            "url": "https://www.academia.org.br/nossa-lingua/busca-no-vocabulario"
+          },
+          {
+            "nome": "RAE — Diccionario panhispánico",
+            "para": "Norma do espanhol.",
+            "url": "https://www.rae.es"
+          }
+        ],
+        "apoio": [
+          { "nome": "Google Docs — modo sugestão", "para": "Devolução comentada de texto." },
+          {
+            "nome": "Verificador de links",
+            "para": "Conferir destino e validade dos links da peça."
+          }
+        ],
+        "internas": [
+          {
+            "nome": "Manual de marca do cliente",
+            "para": "O que a marca aceita e o que não aceita."
+          },
+          {
+            "nome": "Glossário da conta",
+            "para": "Termos e nomes próprios grafados como o cliente usa."
+          },
+          { "nome": "Checklist de saída", "para": "Um por tipo de peça." }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Assumir as etapas de revisão na ordem da fila.",
+          "Devolver sempre com motivo escrito — nunca só \"reprovado\".",
+          "Registrar o tempo na etapa."
+        ],
+        "semanais": [
+          "Consolidar os motivos de devolução da semana e levá-los à Coordenação.",
+          "Tratar o padrão que se repete como problema de processo, não de pessoa."
+        ],
+        "mensais": [
+          "Atualizar glossário e checklist com o que apareceu no mês.",
+          "Revisar termos e nomes próprios das contas ativas."
+        ],
+        "anuais": [
+          "Revisar os checklists de saída contra os erros que efetivamente escaparam no ano."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Consolidado de motivos de retorno",
+          "conteudo": "Motivos agrupados por etapa de origem, sem nome de pessoa.",
+          "quando": "Mensal.",
+          "destino": "gestao",
+          "sensibilidade": "INTERNO",
+          "ondeEntregar": "Anexado à demanda de fechamento do mês."
+        },
+        {
+          "nome": "Checklist de saída assinado",
+          "conteudo": "Itens conferidos na liberação da peça.",
+          "quando": "Por demanda, quando o tipo de peça exigir.",
+          "destino": "documentacao",
+          "sensibilidade": "INTERNO",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Norma culta em português e em espanhol.",
+          "Leitura de prova e marcação de correção.",
+          "Atenção a dado sensível: nome, preço, data, telefone e link.",
+          "Conhecimento das exigências legais de peça publicitária."
+        ],
+        "comportamentais": [
+          "Devolve com clareza e sem julgamento da pessoa.",
+          "Distingue erro de preferência pessoal e não devolve por gosto."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Domínio comprovado das duas línguas.",
+          "Experiência com leitura de prova.",
+          "Capacidade de justificar cada devolução por escrito."
+        ],
+        "diferenciais": [
+          "Formação em Letras, Comunicação ou Jornalismo.",
+          "Experiência com peça publicitária regulada."
+        ],
+        "perguntas": [
+          "Devolva este texto e escreva o motivo. (teste prático)",
+          "Como você separa \"está errado\" de \"eu faria diferente\"?",
+          "Um erro escapou e chegou ao cliente — o que você faz depois?"
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "O que escapou para o cliente, separado do que foi pego internamente.",
+          "Idade das etapas de revisão — gate que vira fila é gargalo."
+        ],
+        "comoLemos": [
+          "Volume alto de devolução interna é o gate funcionando, e é desejável.",
+          "O que se investiga é a falha externa, e a investigação começa na etapa que injetou o defeito."
+        ],
+        "oQueNuncaFazemos": [
+          "Medir a Revisão por quantidade de aprovações.",
+          "Tratar devolução interna como custo a reduzir.",
+          "Nomear pessoa no consolidado de motivos."
+        ]
+      },
+      "fontes": [
+        "O*NET 43-9081.00 — Proofreaders and Copy Markers.",
+        "Princípio P5 da biblioteca de conhecimento: qualidade na fonte, interno diferente de externo.",
+        "Templates Vídeo Curto, Post Carrossel Estático e Landing Page."
+      ]
+    },
+
+    "social-media": {
+      "title": "Social Media",
+      "summary": "Planeja o que se publica, escreve o que sustenta a peça e lê o que o conteúdo devolveu.",
+      "occupationRef": "O*NET 13-1161.00 (Market Research Analysts and Marketing Specialists)",
+      "missao": "Manter os perfis do cliente vivos e coerentes: planejar o que se publica, escrever o que sustenta a peça e acompanhar o que o conteúdo devolveu.",
+      "entregaveis": [
+        "Calendário de publicação do mês, aprovado pelo cliente antes de virar demanda.",
+        "Etapa Roteiro (Vídeo Curto) e etapa Copy & Briefing (Post Carrossel).",
+        "Publicação agendada ou publicada nos canais, no horário planejado.",
+        "Demonstrativo mensal de desempenho dos perfis."
+      ],
+      "interfaces": {
+        "recebeDe": [
+          "Estratégia — direção da conta e conceito de campanha.",
+          "Atendimento — insumo e aprovação do cliente."
+        ],
+        "entregaPara": [
+          "Design — briefing de carrossel aprovado.",
+          "Vídeo — roteiro aprovado e material bruto.",
+          "Community — o que foi publicado e o tom da conta."
+        ]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          {
+            "nome": "Meta Business Suite",
+            "para": "Publicação e métricas de Instagram e Facebook.",
+            "url": "https://business.facebook.com"
+          },
+          {
+            "nome": "Metricool",
+            "para": "Agendamento e relatório multicanal.",
+            "url": "https://metricool.com"
+          },
+          {
+            "nome": "Apps nativos das redes",
+            "para": "Publicação e recursos que só existem no aplicativo."
+          }
+        ],
+        "apoio": [
+          {
+            "nome": "Google Trends",
+            "para": "Pauta e sazonalidade.",
+            "url": "https://trends.google.com"
+          },
+          { "nome": "Canva", "para": "Ajuste rápido de peça.", "url": "https://canva.com" },
+          { "nome": "Google Sheets", "para": "Calendário e ciclo de aprovação." }
+        ],
+        "internas": [
+          { "nome": "Manual de marca e tom de voz", "para": "Como a conta fala." },
+          { "nome": "Pasta de aprovados", "para": "Referência do que já passou pelo cliente." },
+          { "nome": "Histórico de publicações", "para": "O que já foi ao ar e como rendeu." }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Publicar ou conferir o agendado do dia.",
+          "Monitorar o desempenho das últimas 48 horas.",
+          "Encaminhar à Community o que chegou de comentário e mensagem.",
+          "Registrar o tempo nas etapas."
+        ],
+        "semanais": [
+          "Escrever os roteiros e briefings da semana seguinte e enviá-los para aprovação antes de abrir demanda de Design ou Vídeo.",
+          "Revisar o que rendeu e o que não rendeu."
+        ],
+        "mensais": [
+          "Entregar o calendário de publicação do mês seguinte até o dia 25, aprovado pelo cliente.",
+          "Produzir o demonstrativo mensal dos perfis."
+        ],
+        "anuais": [
+          "Montar o calendário de datas comemorativas e sazonalidades da conta.",
+          "Revisar o posicionamento dos perfis junto com Estratégia."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Calendário de publicação",
+          "conteudo": "Peças previstas, canal, data, formato e responsável.",
+          "quando": "Mensal, até o dia 25 do mês anterior.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda de planejamento."
+        },
+        {
+          "nome": "Demonstrativo de perfis",
+          "conteudo": "Crescimento de seguidores, alcance, impressões e engajamento; as publicações de maior e menor desempenho, com a leitura do porquê.",
+          "quando": "Mensal.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda de fechamento do mês."
+        },
+        {
+          "nome": "Retrospectiva de campanha",
+          "conteudo": "Alcance e engajamento da campanha contra o planejado, e o que se leva para a próxima.",
+          "quando": "Ao fim de cada campanha.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Redação para cada rede e cada formato.",
+          "Roteiro de vídeo curto.",
+          "Leitura de métrica de alcance e engajamento.",
+          "Planejamento de calendário editorial.",
+          "Noção de direção de arte suficiente para briefar bem."
+        ],
+        "comportamentais": [
+          "Escreve no tom de voz do cliente, não no próprio.",
+          "Entrega briefing completo em vez de \"faz um post bonito\".",
+          "Assume quando uma publicação não funcionou e diz o que aprendeu."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Portfólio de perfis geridos, com o resultado descrito.",
+          "Domínio do Meta Business Suite.",
+          "Redação limpa em português e em espanhol."
+        ],
+        "diferenciais": [
+          "Roteiro e edição básica de vídeo vertical.",
+          "Experiência com várias contas simultâneas.",
+          "Tráfego pago básico."
+        ],
+        "perguntas": [
+          "Mostre um calendário mensal que você montou e explique a lógica.",
+          "Uma publicação teve alcance muito abaixo do normal — como você investiga?",
+          "Escreva o briefing de um carrossel para esta marca. (teste prático)"
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Se o calendário saiu no prazo.",
+          "Se roteiros e briefings chegaram aprovados às equipes seguintes — briefing incompleto trava Design e Vídeo.",
+          "Retornos de Revisão nas etapas de texto."
+        ],
+        "comoLemos": [
+          "Alcance e engajamento são do conteúdo e do algoritmo: entram como leitura de contexto, jamais como nota da pessoa.",
+          "Atraso repetido de calendário costuma indicar sobrecarga ou insumo que não chega do cliente."
+        ],
+        "oQueNuncaFazemos": [
+          "Meta individual de seguidores ou de engajamento.",
+          "Comparar profissionais entre contas com verbas e históricos diferentes.",
+          "Vincular desempenho de publicação a remuneração."
+        ]
+      },
+      "fontes": [
+        "O*NET 13-1161.00 — Market Research Analysts and Marketing Specialists.",
+        "Templates Vídeo Curto e Post Carrossel Estático.",
+        "Princípio P7 da biblioteca de conhecimento: capacidade criativa não é hora fungível."
+      ]
+    },
+
+    "community": {
+      "title": "Community",
+      "summary": "A voz da marca na conversa: responde quem chega e leva para dentro o que a audiência diz.",
+      "occupationRef": "O*NET 43-4051.00 · O*NET 27-3031.00 (parcial)",
+      "missao": "Ser a voz da marca na conversa: responder quem chega pelos perfis, no tom certo e no tempo certo, e levar para dentro o que a audiência está dizendo.",
+      "entregaveis": [
+        "Respostas a comentários e mensagens diretas dentro do tempo acordado com a conta.",
+        "Triagem: o que é dúvida responde, o que é venda encaminha, o que é crise escala.",
+        "Registro do que a audiência perguntou e reclamou, consolidado para Social Media e Estratégia."
+      ],
+      "interfaces": {
+        "recebeDe": [
+          "Social Media — o que foi publicado e o tom da conta.",
+          "O público — comentários, mensagens e menções."
+        ],
+        "entregaPara": [
+          "Atendimento e Comercial — o que é oportunidade de venda.",
+          "Estratégia e Social Media — o que a audiência devolveu."
+        ]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          {
+            "nome": "Meta Business Suite — Caixa de Entrada",
+            "para": "Comentários e mensagens diretas.",
+            "url": "https://business.facebook.com/latest/inbox"
+          },
+          {
+            "nome": "WhatsApp Business",
+            "para": "Atendimento por mensagem.",
+            "url": "https://business.whatsapp.com"
+          },
+          { "nome": "Apps nativos das redes", "para": "Interação que só existe no aplicativo." }
+        ],
+        "apoio": [
+          { "nome": "Google Sheets", "para": "Registro de dúvidas recorrentes." },
+          {
+            "nome": "Google Alerts",
+            "para": "Menções fora das redes.",
+            "url": "https://www.google.com/alerts"
+          }
+        ],
+        "internas": [
+          { "nome": "Manual de tom de voz e respostas-padrão", "para": "Um por cliente." },
+          { "nome": "Protocolo de crise", "para": "O que fazer e a quem escalar." },
+          {
+            "nome": "Lista de temas travados",
+            "para": "O que não se responde sem autorização: preço, prazo e jurídico."
+          }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Varrer comentários e mensagens de todos os perfis sob responsabilidade, ao menos duas vezes.",
+          "Responder dentro do tempo acordado com a conta.",
+          "Escalar imediatamente o que for crise ou assunto jurídico.",
+          "Registrar o tempo na etapa."
+        ],
+        "semanais": [
+          "Consolidar dúvidas e reclamações recorrentes e passá-las a Social Media e Atendimento.",
+          "Atualizar as respostas-padrão."
+        ],
+        "mensais": [
+          "Produzir o resumo do que a audiência disse — pauta para o conteúdo do mês seguinte."
+        ],
+        "anuais": ["Revisar o protocolo de crise e o manual de respostas de cada conta."]
+      },
+      "relatorios": [
+        {
+          "nome": "Resumo da audiência",
+          "conteudo": "Dúvidas e reclamações recorrentes, temas em alta e sentimento geral.",
+          "quando": "Mensal.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda de fechamento do mês."
+        },
+        {
+          "nome": "Registro de ocorrência",
+          "conteudo": "O que aconteceu, quando, o que foi respondido e o desfecho.",
+          "quando": "A cada crise ou reclamação grave.",
+          "destino": "gestao",
+          "sensibilidade": "INTERNO",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Escrita rápida e correta nas duas línguas.",
+          "Triagem por urgência.",
+          "Noção de quando não responder publicamente.",
+          "Leitura de sentimento da audiência."
+        ],
+        "comportamentais": [
+          "Mantém a compostura sob provocação.",
+          "Sabe a fronteira do que pode prometer em nome do cliente.",
+          "Escala cedo em vez de improvisar."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Português e espanhol fluentes na escrita.",
+          "Experiência com atendimento em canal público.",
+          "Disponibilidade para o horário de cobertura acordado."
+        ],
+        "diferenciais": ["Experiência com gestão de crise.", "Conhecimento do setor dos clientes."],
+        "perguntas": [
+          "Um cliente reclama publicamente e tem razão — escreva a resposta.",
+          "Como você decide entre responder no público e chamar no privado?",
+          "Conte de uma conversa que você escalou — por que escalou?"
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Tempo até a primeira resposta, contra o acordado com a conta.",
+          "O que foi escalado e se foi escalado a tempo.",
+          "Ocorrências registradas."
+        ],
+        "comoLemos": [
+          "Tempo de resposta ruim costuma ser cobertura insuficiente ou volume acima do dimensionado — a conversa é sobre a escala do time antes de ser sobre a pessoa."
+        ],
+        "oQueNuncaFazemos": [
+          "Meta de número de respostas por hora.",
+          "Medir por sentimento do público, que não está sob controle de quem responde.",
+          "Vincular estes sinais a remuneração."
+        ]
+      },
+      "fontes": [
+        "O*NET 43-4051.00 — Customer Service Representatives.",
+        "O*NET 27-3031.00 — Public Relations Specialists."
+      ]
+    },
+
+    "comunicacao": {
+      "title": "Comunicação e Copy",
+      "summary": "Escreve o que a marca diz — do texto que vende ao texto que explica.",
+      "occupationRef": "CBO 2611 (profissionais do jornalismo) · O*NET 27-3031.00",
+      "missao": "Escrever o que a marca diz — do texto que vende ao texto que explica — de forma que a pessoa certa entenda e aja.",
+      "entregaveis": [
+        "Etapa Briefing & Copy (Landing Page): texto completo da página, com hierarquia e chamadas.",
+        "Textos longos: e-mail, artigo, roteiro institucional e apresentação comercial.",
+        "Manual de tom de voz por cliente.",
+        "Revisão de coerência de mensagem entre as peças da mesma campanha."
+      ],
+      "interfaces": {
+        "recebeDe": [
+          "Estratégia — posicionamento e conceito.",
+          "Atendimento — briefing do cliente."
+        ],
+        "entregaPara": [
+          "Design — texto aprovado que vira layout.",
+          "Revisão — texto pronto para o gate de saída."
+        ]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          { "nome": "Google Docs", "para": "Escrita e ciclos de aprovação com sugestões." },
+          {
+            "nome": "LanguageTool",
+            "para": "Checagem nas duas línguas.",
+            "url": "https://languagetool.org"
+          }
+        ],
+        "apoio": [
+          {
+            "nome": "Google Trends",
+            "para": "Vocabulário que o público realmente usa.",
+            "url": "https://trends.google.com"
+          },
+          {
+            "nome": "Google Search Console",
+            "para": "Termos pelos quais o cliente já é encontrado.",
+            "url": "https://search.google.com/search-console"
+          },
+          { "nome": "Dicionários e bancos de sinônimos", "para": "Precisão de vocabulário." }
+        ],
+        "internas": [
+          { "nome": "Manual de tom de voz", "para": "Um por cliente." },
+          { "nome": "Biblioteca de textos aprovados", "para": "O que já passou pelo cliente." },
+          {
+            "nome": "Glossário técnico da conta",
+            "para": "Como o setor do cliente nomeia as coisas."
+          }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Assumir as etapas de copy na fila.",
+          "Conferir se o briefing está completo antes de escrever e devolver com motivo quando não estiver.",
+          "Registrar o tempo na etapa."
+        ],
+        "semanais": [
+          "Entregar os textos da semana com folga para a Revisão.",
+          "Conferir a coerência entre as peças da mesma campanha."
+        ],
+        "mensais": [
+          "Revisar o manual de tom de voz das contas ativas contra o que foi produzido.",
+          "Atualizar a biblioteca de textos aprovados."
+        ],
+        "anuais": [
+          "Revisar posicionamento e mensagem-mãe de cada conta recorrente junto com Estratégia."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Manual de tom de voz",
+          "conteudo": "Como a marca fala, o que evita, exemplos certos e errados.",
+          "quando": "Na entrada da conta e na revisão anual.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda."
+        },
+        {
+          "nome": "Documento de mensagem de campanha",
+          "conteudo": "Mensagem-mãe, promessa, provas e desdobramento por canal.",
+          "quando": "No início de cada campanha.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Redação persuasiva e informativa.",
+          "Estrutura de página de conversão.",
+          "Adequação de registro por público e canal.",
+          "Escrita natural nas duas línguas.",
+          "Apuração e checagem de fato."
+        ],
+        "comportamentais": [
+          "Escreve para o objetivo, não para o próprio gosto.",
+          "Aceita corte.",
+          "Entrega no formato que o Design consegue usar."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Portfólio de textos com o objetivo de cada um descrito.",
+          "Português e espanhol de escrita profissional.",
+          "Capacidade de trabalhar a partir de briefing alheio."
+        ],
+        "diferenciais": [
+          "Formação em Jornalismo, Publicidade ou Letras.",
+          "Experiência com página de conversão.",
+          "Noção de SEO."
+        ],
+        "perguntas": [
+          "Reescreva este parágrafo para outro público. (teste prático)",
+          "Como você decide o tamanho de um texto?",
+          "O cliente quer um texto que você acha que não vai funcionar — o que você faz?"
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Retornos de Revisão e os motivos registrados.",
+          "Se o texto chegou ao Design em formato utilizável.",
+          "Idade das etapas de copy."
+        ],
+        "comoLemos": [
+          "Reescrita repetida costuma indicar briefing ou posicionamento indefinido — a conversa começa em Estratégia e Atendimento."
+        ],
+        "oQueNuncaFazemos": [
+          "Medir por volume de palavras ou de textos.",
+          "Ranquear redatores por aprovações de primeira.",
+          "Vincular estes sinais a remuneração."
+        ]
+      },
+      "fontes": [
+        "CBO 2611 — profissionais do jornalismo.",
+        "O*NET 27-3031.00 — Public Relations Specialists.",
+        "Template Landing Page do fluxo da agência."
+      ]
+    },
+
+    "imprensa": {
+      "title": "Assessoria de Imprensa",
+      "summary": "Constrói e protege a reputação do cliente na mídia.",
+      "occupationRef": "CBO 2611-10 (assessor de imprensa) · CBO 2611-25 (jornalista) · O*NET 27-3031.00",
+      "missao": "Construir e proteger a reputação do cliente na mídia — conseguir a pauta certa no veículo certo, e responder bem quando a mídia procura.",
+      "entregaveis": [
+        "Release e sugestão de pauta enviados ao mailing segmentado.",
+        "Mailing de veículos e jornalistas por conta, atualizado.",
+        "Clipping das menções do período.",
+        "Preparação de porta-voz e posicionamento oficial em crise."
+      ],
+      "interfaces": {
+        "recebeDe": ["Estratégia e Atendimento — fatos, marcos e posicionamento da conta."],
+        "entregaPara": [
+          "Cliente e mídia — release, pauta e posicionamento.",
+          "Community — alinhamento do que é dito em público."
+        ]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          {
+            "nome": "Google Alerts",
+            "para": "Monitoramento de menções do cliente e dos concorrentes.",
+            "url": "https://www.google.com/alerts"
+          },
+          { "nome": "Gmail", "para": "Envio segmentado ao mailing." },
+          { "nome": "Google Sheets", "para": "Mailing e controle de envios." }
+        ],
+        "apoio": [
+          {
+            "nome": "Muck Rack",
+            "para": "Busca de jornalistas por editoria.",
+            "url": "https://muckrack.com"
+          },
+          { "nome": "Redes dos veículos", "para": "Acompanhar pauta e agenda de redação." }
+        ],
+        "internas": [
+          { "nome": "Mailing por conta e editoria", "para": "Quem cobre o quê." },
+          { "nome": "Histórico de clipping", "para": "O que já rendeu e em qual veículo." },
+          { "nome": "Protocolo de crise", "para": "Inclui a lista de porta-vozes autorizados." }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Monitorar menções do cliente e dos concorrentes.",
+          "Responder demanda de jornalista dentro do dia, ou dizer quando responderá.",
+          "Escalar imediatamente menção negativa relevante."
+        ],
+        "semanais": [
+          "Propor pauta a partir do que a conta produziu.",
+          "Atualizar o mailing com retornos e devoluções."
+        ],
+        "mensais": ["Entregar o clipping do mês com a leitura do que rendeu e por quê."],
+        "anuais": [
+          "Revisar o plano de relacionamento com a imprensa da conta.",
+          "Revisar e testar o protocolo de crise com o cliente."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Clipping",
+          "conteudo": "Menções do período, veículo, alcance estimado, teor e a leitura do resultado.",
+          "quando": "Mensal.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda de fechamento do mês."
+        },
+        {
+          "nome": "Relatório de crise",
+          "conteudo": "Cronologia, o que foi dito, por quem, e o desfecho.",
+          "quando": "Ao encerrar cada crise.",
+          "destino": "gestao",
+          "sensibilidade": "CONFIDENCIAL",
+          "ondeEntregar": "Anexado à demanda."
+        },
+        {
+          "nome": "Posicionamento oficial",
+          "conteudo": "Texto aprovado para uso público.",
+          "quando": "Quando a situação exigir.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Redação jornalística e de release.",
+          "Relacionamento com redação.",
+          "Leitura de agenda de mídia.",
+          "Gestão de crise e preparação de porta-voz."
+        ],
+        "comportamentais": [
+          "Discrição com informação sensível.",
+          "Não promete cobertura que não controla.",
+          "Distingue o que é fato do que é desejo do cliente."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Formação em Jornalismo ou Comunicação.",
+          "Rede de contatos em veículos relevantes.",
+          "Redação de release comprovada."
+        ],
+        "diferenciais": [
+          "Experiência prévia em redação.",
+          "Especialização no setor dos clientes.",
+          "Experiência real com gestão de crise."
+        ],
+        "perguntas": [
+          "Escreva a sugestão de pauta para este fato. (teste prático)",
+          "Um jornalista publicou algo errado sobre o cliente — o que você faz nas primeiras duas horas?",
+          "Como você monta um mailing do zero para um setor que não conhece?"
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Pautas propostas e enviadas.",
+          "Tempo de resposta a demanda de jornalista.",
+          "Se a crise foi escalada a tempo e conduzida pelo protocolo."
+        ],
+        "comoLemos": [
+          "Cobertura conquistada depende da agenda de mídia, da notícia concorrente e do fato que o cliente forneceu — entra como contexto, nunca como meta individual."
+        ],
+        "oQueNuncaFazemos": [
+          "Meta de número de matérias publicadas.",
+          "Medir por centimetragem ou por valor equivalente de mídia.",
+          "Vincular cobertura a remuneração."
+        ]
+      },
+      "fontes": [
+        "CBO 2611-10 — assessor de imprensa.",
+        "CBO 2611-25 — jornalista.",
+        "O*NET 27-3031.00 — Public Relations Specialists."
+      ]
+    },
+
+    "trafego": {
+      "title": "Tráfego Pago",
+      "summary": "Faz a verba do cliente comprar o resultado combinado — e prova, com dado, o que ela comprou.",
+      "occupationRef": "O*NET 11-2011.00 · O*NET 13-1161.01",
+      "missao": "Fazer a verba do cliente comprar o resultado combinado — e provar, com dado, o que ela comprou.",
+      "entregaveis": [
+        "Etapa Setup de Campanha: estrutura, públicos, criativos e rastreamento configurados.",
+        "Etapa Acompanhamento: otimização durante a veiculação, com registro do que foi alterado e por quê.",
+        "Etapa Relatório Mensal: demonstrativo de investimento e resultado.",
+        "Plano de mídia com verba distribuída por canal e objetivo."
+      ],
+      "interfaces": {
+        "recebeDe": [
+          "Estratégia — objetivo, público e verba.",
+          "Design e Vídeo — criativos aprovados."
+        ],
+        "entregaPara": ["Atendimento e cliente — resultado e recomendação."]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          {
+            "nome": "Meta Ads Manager",
+            "para": "Campanhas em Instagram e Facebook.",
+            "url": "https://adsmanager.facebook.com"
+          },
+          {
+            "nome": "Google Ads",
+            "para": "Busca, display, YouTube e performance máxima.",
+            "url": "https://ads.google.com"
+          },
+          {
+            "nome": "Google Analytics 4",
+            "para": "Comportamento e conversão no site.",
+            "url": "https://analytics.google.com"
+          },
+          {
+            "nome": "Google Tag Manager",
+            "para": "Rastreamento e eventos de conversão.",
+            "url": "https://tagmanager.google.com"
+          }
+        ],
+        "apoio": [
+          {
+            "nome": "Looker Studio",
+            "para": "Painel de relatório para o cliente.",
+            "url": "https://lookerstudio.google.com"
+          },
+          {
+            "nome": "TikTok Ads Manager",
+            "para": "Campanhas em TikTok.",
+            "url": "https://ads.tiktok.com"
+          },
+          { "nome": "Google Sheets", "para": "Plano de mídia e conciliação de verba." }
+        ],
+        "internas": [
+          { "nome": "Histórico de campanhas e custos", "para": "Referência de custo por conta." },
+          {
+            "nome": "Padrão de nomenclatura de campanha",
+            "para": "Para o relatório sair legível."
+          },
+          {
+            "nome": "Acessos e permissões por cliente",
+            "para": "Quem tem acesso a qual conta de anúncio."
+          }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Conferir veiculação, entrega e ritmo de gasto de todas as campanhas ativas.",
+          "Agir sobre anúncio reprovado ou campanha parada.",
+          "Registrar cada alteração relevante com o motivo.",
+          "Registrar o tempo na etapa."
+        ],
+        "semanais": [
+          "Otimizar públicos e criativos com base no dado da semana.",
+          "Alertar Atendimento quando o resultado divergir do combinado.",
+          "Pedir criativo novo com antecedência quando houver desgaste."
+        ],
+        "mensais": [
+          "Entregar o relatório mensal de campanhas.",
+          "Conciliar o investimento com o financeiro.",
+          "Revisar o plano de mídia do mês seguinte com Estratégia."
+        ],
+        "anuais": [
+          "Revisar sazonalidade e custos históricos da conta.",
+          "Revisar a estrutura de rastreamento e conversão de ponta a ponta."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Relatório mensal de campanhas",
+          "conteudo": "Investido por canal, alcance, cliques, conversões, custo por resultado, o que foi otimizado e o que se recomenda.",
+          "quando": "Mensal — é a etapa Relatório Mensal do fluxo.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda concluída."
+        },
+        {
+          "nome": "Plano de mídia",
+          "conteudo": "Verba por canal e objetivo, públicos, período e resultado esperado.",
+          "quando": "No início de cada campanha ou ciclo.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda."
+        },
+        {
+          "nome": "Conciliação de investimento",
+          "conteudo": "Gasto real por conta de anúncio contra o previsto.",
+          "quando": "Mensal.",
+          "destino": "gestao",
+          "sensibilidade": "CONFIDENCIAL",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Estruturação de campanha e segmentação.",
+          "Leitura de custo por resultado e de funil.",
+          "Configuração de rastreamento e eventos de conversão.",
+          "Teste de criativo.",
+          "Gestão de verba."
+        ],
+        "comportamentais": [
+          "Comunica resultado ruim cedo, sem maquiar.",
+          "Explica número para quem não é da área.",
+          "Documenta a alteração que fez."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Gestão comprovada de verba real em Meta Ads e Google Ads.",
+          "Entendimento de rastreamento e conversão.",
+          "Leitura crítica de métrica."
+        ],
+        "diferenciais": [
+          "Google Tag Manager e GA4 avançados.",
+          "Experiência com e-commerce.",
+          "Certificações Meta e Google."
+        ],
+        "perguntas": [
+          "O custo por resultado dobrou de uma semana para outra — como você investiga?",
+          "Como você divide uma verba mensal entre prospecção e remarketing, e por quê?",
+          "Explique um resultado ruim para um cliente que só olha o total gasto."
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Se o relatório mensal saiu no prazo.",
+          "Alterações relevantes documentadas com motivo.",
+          "Integridade do rastreamento.",
+          "Se os avisos foram dados a tempo quando o resultado divergiu."
+        ],
+        "comoLemos": [
+          "Resultado de campanha é do sistema: verba, criativo, oferta, concorrência e sazonalidade.",
+          "O que se avalia é o ofício — leitura correta do dado, decisão documentada e aviso a tempo."
+        ],
+        "oQueNuncaFazemos": [
+          "Meta individual de custo por resultado.",
+          "Comparar profissionais entre contas com verbas e mercados diferentes.",
+          "Comissão sobre desempenho de campanha."
+        ]
+      },
+      "fontes": [
+        "O*NET 11-2011.00 — Advertising and Promotions Managers.",
+        "O*NET 13-1161.01 — Search Marketing Strategists.",
+        "Template Campanha de Tráfego do fluxo da agência.",
+        "Princípios P1 e P2 da biblioteca de conhecimento."
+      ]
+    },
+
+    "seo": {
+      "title": "SEO",
+      "summary": "Faz o cliente ser encontrado por quem procura o que ele vende, sem pagar por clique.",
+      "occupationRef": "O*NET 13-1161.01 (Search Marketing Strategists)",
+      "missao": "Fazer o cliente ser encontrado por quem procura o que ele vende, sem pagar por cada clique.",
+      "entregaveis": [
+        "Etapa SEO (Landing Page): título, descrição, cabeçalhos, URLs, imagens e dados estruturados conferidos antes da publicação.",
+        "Pesquisa de palavras-chave e mapa de intenção por página.",
+        "Auditoria técnica: rastreabilidade, indexação, velocidade e links quebrados.",
+        "Acompanhamento de posição e de tráfego orgânico."
+      ],
+      "interfaces": {
+        "recebeDe": [
+          "Engenharia de Software — página construída.",
+          "Comunicação — texto da página."
+        ],
+        "entregaPara": ["Cliente — recomendação e relatório orgânico."]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          {
+            "nome": "Google Search Console",
+            "para": "Indexação, cobertura e desempenho na busca.",
+            "url": "https://search.google.com/search-console"
+          },
+          {
+            "nome": "Google Analytics 4",
+            "para": "Comportamento e conversão do tráfego orgânico.",
+            "url": "https://analytics.google.com"
+          },
+          {
+            "nome": "PageSpeed Insights",
+            "para": "Desempenho e métricas de experiência.",
+            "url": "https://pagespeed.web.dev"
+          }
+        ],
+        "apoio": [
+          {
+            "nome": "Screaming Frog",
+            "para": "Auditoria técnica de rastreio.",
+            "url": "https://www.screamingfrog.co.uk/seo-spider/"
+          },
+          { "nome": "Semrush ou Ahrefs", "para": "Palavras-chave e análise de concorrência." },
+          {
+            "nome": "Rich Results Test",
+            "para": "Validação de dados estruturados.",
+            "url": "https://search.google.com/test/rich-results"
+          }
+        ],
+        "internas": [
+          { "nome": "Mapa de palavras-chave por conta", "para": "Intenção de busca por página." },
+          { "nome": "Histórico de auditorias", "para": "O que já foi apontado e corrigido." },
+          { "nome": "Padrão de título e descrição", "para": "Um por tipo de página." }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Conferir erros novos de indexação e cobertura nas contas ativas.",
+          "Registrar o tempo na etapa."
+        ],
+        "semanais": [
+          "Acompanhar a posição das palavras-chave prioritárias.",
+          "Revisar as páginas publicadas na semana antes de irem ao ar."
+        ],
+        "mensais": [
+          "Entregar o relatório de desempenho orgânico.",
+          "Revisar a lista de palavras-chave contra o que efetivamente traz tráfego."
+        ],
+        "anuais": [
+          "Auditoria técnica completa do site de cada conta recorrente.",
+          "Revisar arquitetura de informação e estratégia de conteúdo."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Relatório de desempenho orgânico",
+          "conteudo": "Tráfego, impressões, cliques, posição média, páginas que subiram e caíram, e a leitura do porquê.",
+          "quando": "Mensal.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda de fechamento do mês."
+        },
+        {
+          "nome": "Auditoria técnica",
+          "conteudo": "Erros encontrados, gravidade, correção recomendada e responsável.",
+          "quando": "Anual, ou na entrada da conta.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Pesquisa de palavra-chave e de intenção de busca.",
+          "SEO técnico: rastreio, indexação, dados estruturados e velocidade.",
+          "SEO de conteúdo.",
+          "Leitura de Search Console e GA4.",
+          "Noção de HTML e de como o site é construído."
+        ],
+        "comportamentais": [
+          "Traduz recomendação técnica em tarefa executável pelo desenvolvimento.",
+          "É honesto sobre o prazo do orgânico, que não é o do pago."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Casos com evolução de tráfego orgânico descrita e explicada.",
+          "Domínio do Search Console.",
+          "Entendimento de HTML e de estrutura de página."
+        ],
+        "diferenciais": ["SEO técnico avançado.", "SEO local.", "Experiência com e-commerce."],
+        "perguntas": [
+          "O tráfego orgânico caiu 30% num mês — quais são suas três primeiras hipóteses e como você as testa?",
+          "Como você prioriza entre cem recomendações de auditoria?",
+          "Explique dados estruturados para um cliente."
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Etapas de SEO concluídas antes da publicação — SEO depois do ar é retrabalho.",
+          "Recomendações entregues em formato executável.",
+          "Se o relatório saiu no prazo."
+        ],
+        "comoLemos": [
+          "Posição e tráfego orgânico dependem do algoritmo e da concorrência: são contexto, não nota.",
+          "O ofício avaliável é o diagnóstico e a priorização."
+        ],
+        "oQueNuncaFazemos": [
+          "Meta individual de posição ou de tráfego.",
+          "Comparar profissionais entre sites com autoridade e histórico diferentes.",
+          "Vincular posição na busca a remuneração."
+        ]
+      },
+      "fontes": [
+        "O*NET 13-1161.01 — Search Marketing Strategists.",
+        "Template Landing Page do fluxo da agência."
+      ]
+    },
+
+    "atendimento": {
+      "title": "Atendimento",
+      "summary": "A ponte entre o cliente e a agência, nos dois sentidos.",
+      "occupationRef": "O*NET 43-4051.00 · O*NET 11-2011.00 (parcial)",
+      "missao": "Ser a ponte entre o cliente e a agência: traduzir o que o cliente quer em briefing executável, e traduzir o que a equipe entregou em algo que o cliente entende.",
+      "entregaveis": [
+        "Briefing completo e aprovado, que dá origem à demanda.",
+        "Aprovação do cliente registrada, com o que foi pedido de alteração.",
+        "Ata de reunião com decisões e responsáveis.",
+        "Relatório de conta consolidado para o cliente."
+      ],
+      "interfaces": {
+        "recebeDe": [
+          "Cliente — pedido, insumo e aprovação.",
+          "Revisão — peça liberada para levar ao cliente."
+        ],
+        "entregaPara": [
+          "Coordenação — demanda com briefing completo.",
+          "Social Media, Comunicação e Tráfego — insumos e direção do cliente."
+        ]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          {
+            "nome": "WhatsApp Business",
+            "para": "Canal principal com o cliente.",
+            "url": "https://business.whatsapp.com"
+          },
+          { "nome": "Gmail", "para": "Registro formal e trilha de aprovação." },
+          {
+            "nome": "Google Meet",
+            "para": "Reunião com o cliente.",
+            "url": "https://meet.google.com"
+          },
+          { "nome": "Google Drive", "para": "Troca de arquivo com o cliente." }
+        ],
+        "apoio": [
+          { "nome": "Google Calendar", "para": "Reuniões e prazos do cliente." },
+          { "nome": "Google Docs", "para": "Ata e briefing." }
+        ],
+        "internas": [
+          {
+            "nome": "Contrato e escopo por cliente",
+            "para": "O que está e o que não está incluído."
+          },
+          { "nome": "Histórico da conta", "para": "O que já foi entregue e discutido." },
+          { "nome": "Modelo de briefing", "para": "Um por tipo de demanda." },
+          { "nome": "Lista de aprovadores", "para": "Quem, de cada cliente, pode aprovar o quê." }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Responder o cliente dentro do prazo acordado.",
+          "Abrir demanda só com briefing completo.",
+          "Levar aprovação e alteração para dentro no mesmo dia.",
+          "Registrar o tempo na etapa."
+        ],
+        "semanais": [
+          "Revisar com a Coordenação o que está em curso em cada conta.",
+          "Antecipar ao cliente o que vai atrasar, antes de atrasar.",
+          "Conferir o que está esperando insumo do cliente."
+        ],
+        "mensais": [
+          "Reunião de resultado com cada conta.",
+          "Consolidar o relatório de conta.",
+          "Revisar escopo consumido contra contratado."
+        ],
+        "anuais": [
+          "Revisão de contrato e escopo com o cliente.",
+          "Plano da conta para o ano seguinte, com Estratégia."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Relatório de conta",
+          "conteudo": "O que foi entregue, o que está em curso, resultados do período e o que vem a seguir.",
+          "quando": "Mensal.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda de fechamento do mês."
+        },
+        {
+          "nome": "Ata de reunião",
+          "conteudo": "Decisões, responsáveis e prazos.",
+          "quando": "A cada reunião com o cliente.",
+          "destino": "documentacao",
+          "sensibilidade": "INTERNO",
+          "ondeEntregar": "Anexado à demanda."
+        },
+        {
+          "nome": "Controle de escopo",
+          "conteudo": "Consumido contra contratado, e o que passou do escopo.",
+          "quando": "Mensal.",
+          "destino": "gestao",
+          "sensibilidade": "CONFIDENCIAL",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Levantamento e escrita de briefing.",
+          "Leitura de contrato e de escopo.",
+          "Noção suficiente de cada disciplina para saber o que é viável.",
+          "Apresentação de resultado."
+        ],
+        "comportamentais": [
+          "Diz não ao cliente quando o pedido está fora do escopo ou do prazo.",
+          "Não promete o que a equipe não confirmou.",
+          "Leva o problema para dentro cedo."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Experiência com carteira de clientes.",
+          "Escrita e fala profissionais em português e espanhol.",
+          "Capacidade de escrever briefing que a equipe consegue executar."
+        ],
+        "diferenciais": [
+          "Vivência em agência.",
+          "Conhecimento do setor dos clientes.",
+          "Negociação."
+        ],
+        "perguntas": [
+          "O cliente pede algo fora do escopo, para ontem — o que você faz?",
+          "Transforme este pedido vago em briefing. (teste prático)",
+          "Como você comunica um atraso que é culpa da agência?"
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Briefings que voltaram por estarem incompletos.",
+          "Atrasos que o cliente descobriu antes de ser avisado.",
+          "Escopo consumido contra contratado.",
+          "Demandas paradas esperando insumo do cliente."
+        ],
+        "comoLemos": [
+          "Briefing incompleto é o defeito mais caro da agência: para Design, Vídeo e Copy ao mesmo tempo.",
+          "A conversa é sobre o padrão de briefing, com o motivo à vista."
+        ],
+        "oQueNuncaFazemos": [
+          "Meta individual de faturamento por conta.",
+          "Medir por satisfação declarada do cliente, que depende de fatores fora do controle de quem atende.",
+          "Comissão sobre a conta."
+        ]
+      },
+      "fontes": [
+        "O*NET 43-4051.00 — Customer Service Representatives.",
+        "O*NET 11-2011.00 — Advertising and Promotions Managers."
+      ]
+    },
+
+    "estrategia": {
+      "title": "Estratégia",
+      "summary": "Decide o que a agência deve fazer para a conta atingir o objetivo.",
+      "occupationRef": "O*NET 13-1161.00 · CBO 1423",
+      "missao": "Decidir o que a agência deve fazer para a conta atingir o objetivo — e garantir que todas as disciplinas estejam remando para o mesmo lugar.",
+      "entregaveis": [
+        "Plano estratégico da conta: objetivo, público, posicionamento, canais e como se mede.",
+        "Conceito de campanha, que orienta Comunicação, Design, Vídeo e Tráfego.",
+        "Análise de concorrência e de mercado.",
+        "Leitura consolidada de resultado: o que funcionou, o que não funcionou e o que muda."
+      ],
+      "interfaces": {
+        "recebeDe": [
+          "Atendimento — objetivo e contexto do cliente.",
+          "Tráfego, Social Media e SEO — resultado de cada canal."
+        ],
+        "entregaPara": ["Todas as disciplinas de execução — direção e critérios de sucesso."]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          {
+            "nome": "Google Analytics 4",
+            "para": "Comportamento e conversão.",
+            "url": "https://analytics.google.com"
+          },
+          {
+            "nome": "Looker Studio",
+            "para": "Consolidação multicanal.",
+            "url": "https://lookerstudio.google.com"
+          },
+          {
+            "nome": "Meta Business Suite",
+            "para": "Desempenho orgânico e pago em Meta.",
+            "url": "https://business.facebook.com"
+          },
+          { "nome": "Google Sheets", "para": "Modelo de plano e de distribuição de verba." }
+        ],
+        "apoio": [
+          {
+            "nome": "Google Trends",
+            "para": "Sazonalidade e interesse.",
+            "url": "https://trends.google.com"
+          },
+          {
+            "nome": "Google Search Console",
+            "para": "O que o público procura.",
+            "url": "https://search.google.com/search-console"
+          },
+          { "nome": "Pesquisas setoriais", "para": "Referência de mercado e de concorrência." }
+        ],
+        "internas": [
+          {
+            "nome": "Histórico de campanhas e resultados",
+            "para": "O que já foi tentado na conta."
+          },
+          { "nome": "Plano do ano vigente", "para": "O compromisso em curso." },
+          {
+            "nome": "Biblioteca de casos da agência",
+            "para": "O que funcionou em contas parecidas."
+          }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Acompanhar os sinais das contas em campanha ativa.",
+          "Responder dúvida de direção que esteja travando execução."
+        ],
+        "semanais": [
+          "Revisar com Tráfego e Social Media o que o dado da semana está dizendo.",
+          "Ajustar a direção quando o sinal for claro."
+        ],
+        "mensais": [
+          "Consolidar o resultado do mês por conta e recomendar o próximo ciclo.",
+          "Revisar o plano de mídia com Tráfego."
+        ],
+        "anuais": [
+          "Construir o plano estratégico do ano de cada conta recorrente.",
+          "Revisar posicionamento e concorrência."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Plano estratégico da conta",
+          "conteudo": "Objetivo, público, posicionamento, canais, calendário macro e como se mede.",
+          "quando": "Anual, revisado a cada ciclo.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda."
+        },
+        {
+          "nome": "Leitura consolidada de resultado",
+          "conteudo": "Resultado por canal, o que o explica, e a recomendação para o próximo ciclo.",
+          "quando": "Mensal.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda de fechamento do mês."
+        },
+        {
+          "nome": "Conceito de campanha",
+          "conteudo": "Ideia central, promessa, provas, desdobramento por canal e critérios de sucesso.",
+          "quando": "No início de cada campanha.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Diagnóstico de negócio e de mercado.",
+          "Definição de público e posicionamento.",
+          "Leitura integrada de dado multicanal.",
+          "Desenho de funil.",
+          "Construção de plano com métrica declarada."
+        ],
+        "comportamentais": [
+          "Sustenta a recomendação com evidência e muda de ideia quando o dado contraria.",
+          "Escreve de forma que a execução consiga seguir."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Casos com objetivo, decisão e resultado descritos.",
+          "Leitura de dado multicanal.",
+          "Capacidade de escrever plano executável."
+        ],
+        "diferenciais": [
+          "Pesquisa de mercado.",
+          "Experiência com vários setores.",
+          "Formação em Publicidade, Marketing ou Administração."
+        ],
+        "perguntas": [
+          "Este cliente quer dobrar as vendas em seis meses — o que você pergunta antes de responder?",
+          "Conte de uma estratégia sua que não funcionou. O que o dado mostrou e o que você mudou?",
+          "Como você decide entre investir em orgânico e em pago?"
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Planos entregues no prazo do ciclo.",
+          "Recomendação acompanhada de critério de sucesso declarado antes do resultado.",
+          "Execução alinhada ao conceito."
+        ],
+        "comoLemos": [
+          "Resultado de negócio do cliente tem dezenas de causas fora da agência — é contexto.",
+          "O ofício avaliável é a qualidade do diagnóstico e a honestidade da leitura."
+        ],
+        "oQueNuncaFazemos": [
+          "Vincular a avaliação ao faturamento do cliente.",
+          "Medir por número de planos produzidos.",
+          "Transformar o resultado da conta em nota individual."
+        ]
+      },
+      "fontes": [
+        "O*NET 13-1161.00 — Market Research Analysts and Marketing Specialists.",
+        "CBO 1423 — gerentes de comercialização, marketing e comunicação.",
+        "Princípio P4 da biblioteca de conhecimento: prever pela classe, não pela tarefa."
+      ]
+    },
+
+    "coordenacao": {
+      "title": "Coordenação",
+      "summary": "Faz o trabalho fluir: insumo, responsável e prazo viável em cada demanda.",
+      "occupationRef": "CBO 1423 · O*NET 11-2021.00 (Marketing Managers)",
+      "missao": "Fazer o trabalho fluir: garantir que cada demanda tenha insumo, responsável e prazo viável, e agir onde o fluxo trava.",
+      "entregaveis": [
+        "Demandas abertas com template, prazo e responsável corretos.",
+        "Fila distribuída de forma que ninguém esteja travado nem ocioso.",
+        "Escalonamento do que travou, com a decisão registrada.",
+        "Ritual de equipe acontecendo: reunião de fila, 1:1 e retrospectiva."
+      ],
+      "interfaces": {
+        "recebeDe": [
+          "Atendimento — o que precisa ser feito e quando.",
+          "Estratégia — a direção do ciclo."
+        ],
+        "entregaPara": [
+          "Todas as equipes de execução — demanda pronta para ser assumida.",
+          "Gestão — leitura do fluxo e das exceções."
+        ]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          { "nome": "Google Calendar", "para": "Reuniões, prazos e rituais fixos." },
+          { "nome": "Google Sheets", "para": "Capacidade e planejamento macro." },
+          { "nome": "Google Meet", "para": "Rituais de equipe.", "url": "https://meet.google.com" }
+        ],
+        "apoio": [{ "nome": "Google Docs", "para": "Atas, retrospectivas e registro de decisão." }],
+        "internas": [
+          { "nome": "Calendário de férias e ausências", "para": "Capacidade real do período." },
+          { "nome": "Capacidade semanal acordada", "para": "Por pessoa, combinada e revisada." },
+          { "nome": "Rituais e horários fixos", "para": "Fila, 1:1 e retrospectiva." }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Percorrer a rotina de gestão do fluxo: restrição do sistema, demandas envelhecidas, quem está sobrecarregado e o que está bloqueado.",
+          "Agir na exceção, não cobrar todo mundo.",
+          "Abrir as demandas do dia com briefing completo."
+        ],
+        "semanais": [
+          "Conduzir a reunião de fila com as equipes.",
+          "Redistribuir o que ficou parado.",
+          "Conferir prazos da semana seguinte contra a capacidade real.",
+          "Conduzir os 1:1 devidos."
+        ],
+        "mensais": [
+          "Revisar cobertura e datas do mês seguinte.",
+          "Conduzir a retrospectiva sobre o que travou e por quê.",
+          "Consolidar o relatório de fluxo para a Gestão."
+        ],
+        "anuais": [
+          "Revisar os templates de fluxo contra como o trabalho é realmente feito.",
+          "Planejar férias e picos de sazonalidade.",
+          "Revisar a capacidade acordada de cada pessoa."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Relatório de fluxo",
+          "conteudo": "Entregue no período, o que atrasou e por quê, restrição do sistema e a ação tomada.",
+          "quando": "Mensal.",
+          "destino": "gestao",
+          "sensibilidade": "INTERNO",
+          "ondeEntregar": "Anexado à demanda de fechamento do mês."
+        },
+        {
+          "nome": "Ata de retrospectiva",
+          "conteudo": "O que travou, a causa e a mudança de processo acordada.",
+          "quando": "Mensal.",
+          "destino": "documentacao",
+          "sensibilidade": "INTERNO",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Leitura de fila e de gargalo.",
+          "Distribuição de carga.",
+          "Negociação de prazo com base em histórico, não em otimismo.",
+          "Condução de ritual.",
+          "Leitura das métricas de fluxo."
+        ],
+        "comportamentais": [
+          "Age na exceção em vez de cobrar todo mundo.",
+          "Protege a equipe de mudança constante de prioridade.",
+          "Conduz 1:1 sobre o trabalho, não sobre a pessoa."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Experiência coordenando equipe multidisciplinar.",
+          "Conforto com dado de fluxo.",
+          "Capacidade de dizer \"não cabe\" com argumento."
+        ],
+        "diferenciais": [
+          "Formação ou prática em gestão de fluxo, como Kanban ou Teoria das Restrições.",
+          "Vivência prévia em execução numa das disciplinas."
+        ],
+        "perguntas": [
+          "Três contas pedem urgência no mesmo dia e a equipe está cheia — como você decide?",
+          "Como você descobre qual etapa está segurando a agência?",
+          "Conte de um 1:1 difícil que você conduziu."
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Demandas abertas com briefing completo.",
+          "Cadência de 1:1 em dia.",
+          "Prazos negociados com base no histórico do tipo de trabalho.",
+          "Se a restrição identificada virou ação."
+        ],
+        "comoLemos": [
+          "Atraso e sobrecarga são propriedades do sistema: entram como diagnóstico do fluxo, não como falha de quem coordena.",
+          "O ofício avaliável é ter visto a exceção e agido."
+        ],
+        "oQueNuncaFazemos": [
+          "Usar as métricas de carga da equipe como ranking de pessoas.",
+          "Cobrar utilização como meta — a faixa de 60% a 90% é indicativa, nunca alarme.",
+          "Premiar por volume entregue."
+        ]
+      },
+      "fontes": [
+        "CBO 1423 — gerentes de comercialização, marketing e comunicação.",
+        "O*NET 11-2021.00 — Marketing Managers.",
+        "Princípios P2, P3, P6 e P7 da biblioteca de conhecimento."
+      ]
+    },
+
+    "engenharia-de-software": {
+      "title": "Engenharia de Software",
+      "summary": "Constrói e mantém o que a agência entrega em código e as ferramentas internas.",
+      "occupationRef": "CBO 2124 · O*NET 15-1252.00 · O*NET 15-1254.00",
+      "missao": "Construir e manter o que a agência entrega em código — sites, páginas e as ferramentas internas de que a operação depende.",
+      "entregaveis": [
+        "Etapa Development (Landing Page): página construída, responsiva, com rastreamento instalado e publicada.",
+        "Correções e melhorias em sites sob manutenção.",
+        "Ferramentas internas, incluindo o próprio Work OS.",
+        "Documentação técnica: acessos, dependências e como publicar."
+      ],
+      "interfaces": {
+        "recebeDe": ["Design — layout aprovado e specs.", "Comunicação — texto da página."],
+        "entregaPara": [
+          "Revisão — página pronta para o gate de saída.",
+          "SEO — página para conferência antes de ir ao ar.",
+          "TI — o que envolver infraestrutura."
+        ]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          {
+            "nome": "GitHub",
+            "para": "Versionamento e revisão de código.",
+            "url": "https://github.com"
+          },
+          { "nome": "VS Code", "para": "Desenvolvimento.", "url": "https://code.visualstudio.com" },
+          {
+            "nome": "Vercel",
+            "para": "Publicação e ambientes de pré-visualização.",
+            "url": "https://vercel.com"
+          },
+          {
+            "nome": "Google Tag Manager",
+            "para": "Instalação de rastreamento.",
+            "url": "https://tagmanager.google.com"
+          }
+        ],
+        "apoio": [
+          {
+            "nome": "PageSpeed Insights",
+            "para": "Verificação de desempenho.",
+            "url": "https://pagespeed.web.dev"
+          },
+          { "nome": "Figma", "para": "Leitura de specs do layout.", "url": "https://figma.com" },
+          {
+            "nome": "WordPress",
+            "para": "Sites legados sob manutenção.",
+            "url": "https://wordpress.org"
+          }
+        ],
+        "internas": [
+          { "nome": "Repositórios e seus README", "para": "Como rodar e publicar cada projeto." },
+          { "nome": "Convenções de código", "para": "Padrão do projeto." },
+          { "nome": "Inventário de domínios e acessos", "para": "Mantido junto com TI." }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Assumir as etapas de desenvolvimento na fila.",
+          "Conferir que o layout está aprovado e completo antes de começar.",
+          "Registrar o tempo na etapa.",
+          "Responder a incidente em site publicado."
+        ],
+        "semanais": [
+          "Revisar o que foi publicado.",
+          "Conferir dependências e alertas de segurança dos projetos ativos."
+        ],
+        "mensais": [
+          "Atualizar dependências e revisar o desempenho dos sites sob manutenção.",
+          "Revisar backup e recuperação junto com TI."
+        ],
+        "anuais": [
+          "Revisar arquitetura e custos das ferramentas internas.",
+          "Revisar a documentação técnica das contas."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Documentação de entrega",
+          "conteudo": "Onde está publicado, como se altera, acessos, dependências e o que fazer se cair.",
+          "quando": "Ao concluir um site ou sistema.",
+          "destino": "cliente",
+          "sensibilidade": "CLIENTE",
+          "ondeEntregar": "Anexado à demanda concluída."
+        },
+        {
+          "nome": "Relatório de incidente",
+          "conteudo": "O que caiu, por quanto tempo, a causa e o que impede a repetição.",
+          "quando": "A cada incidente.",
+          "destino": "gestao",
+          "sensibilidade": "INTERNO",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "HTML, CSS e JavaScript ou TypeScript.",
+          "Um framework de aplicação web.",
+          "Versionamento com Git.",
+          "Publicação e gestão de ambientes.",
+          "Banco de dados relacional.",
+          "Noção de desempenho e de acessibilidade."
+        ],
+        "comportamentais": [
+          "Estima com faixa, não com número único.",
+          "Avisa cedo quando o escopo cresceu.",
+          "Escreve código que outra pessoa consegue manter."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Repositório público ou código demonstrável.",
+          "Domínio de Git.",
+          "Capacidade de implementar um layout com fidelidade."
+        ],
+        "diferenciais": [
+          "Next.js e React.",
+          "Banco de dados e modelagem.",
+          "Integrações e automação.",
+          "Noção de SEO técnico."
+        ],
+        "perguntas": [
+          "Implemente esta seção do layout. (teste prático curto)",
+          "Um site do cliente caiu — quais são seus primeiros passos?",
+          "Como você estima uma página que nunca fez antes?"
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Retornos de Revisão e de SEO, e os motivos registrados.",
+          "Idade das etapas de desenvolvimento.",
+          "Incidentes em produção e se a causa foi tratada.",
+          "Documentação entregue."
+        ],
+        "comoLemos": [
+          "Estouro de prazo em trabalho técnico é frequentemente escopo mal definido a montante — investiga-se o briefing e o layout antes da pessoa.",
+          "Prazo é faixa probabilística, nunca promessa determinística."
+        ],
+        "oQueNuncaFazemos": [
+          "Medir por linhas de código, commits ou demandas fechadas.",
+          "Usar estimativa em horas como compromisso de prazo.",
+          "Vincular estes sinais a remuneração."
+        ]
+      },
+      "fontes": [
+        "CBO 2124 — analistas de sistemas computacionais.",
+        "O*NET 15-1252.00 — Software Developers e O*NET 15-1254.00 — Web Developers.",
+        "Template Landing Page do fluxo da agência.",
+        "Princípio P3 da biblioteca de conhecimento: previsibilidade é probabilística."
+      ]
+    },
+
+    "ti": {
+      "title": "TI e Infraestrutura",
+      "summary": "Mantém a agência funcionando: rede, equipamentos, contas, armazenamento e backup.",
+      "occupationRef": "CBO 2124 · O*NET 15-1244.00",
+      "missao": "Manter a agência funcionando: rede, equipamentos, contas, armazenamento e backup — e garantir que arquivo de cliente não se perca nem vaze.",
+      "entregaveis": [
+        "Rede, armazenamento em rede e estações operando, com backup verificado.",
+        "Contas e acessos provisionados na entrada e revogados na saída de cada pessoa.",
+        "Chamados de suporte resolvidos e registrados.",
+        "Inventário de equipamentos, licenças e domínios atualizado."
+      ],
+      "interfaces": {
+        "recebeDe": [
+          "Todas as equipes — chamados de suporte.",
+          "RH — entradas e saídas de pessoas."
+        ],
+        "entregaPara": [
+          "Todas as equipes — ambiente de trabalho operando.",
+          "Engenharia de Software — infraestrutura e publicação.",
+          "Gestão — leitura de disponibilidade e risco."
+        ]
+      },
+      "ferramentas": {
+        "obrigatorias": [
+          {
+            "nome": "Synology DSM",
+            "para": "Armazenamento em rede, compartilhamentos e backup.",
+            "url": "https://www.synology.com/dsm"
+          },
+          {
+            "nome": "Google Workspace Admin",
+            "para": "Contas, grupos e segurança.",
+            "url": "https://admin.google.com"
+          },
+          {
+            "nome": "Cloudflare",
+            "para": "DNS, certificados e proteção.",
+            "url": "https://dash.cloudflare.com"
+          },
+          { "nome": "Console de antivírus e endpoint", "para": "Proteção das estações." }
+        ],
+        "apoio": [
+          { "nome": "Google Sheets", "para": "Inventário e controle de licenças." },
+          { "nome": "Ferramenta de acesso remoto", "para": "Suporte às estações." }
+        ],
+        "internas": [
+          { "nome": "Mapa de rede e de compartilhamentos", "para": "O que existe e quem acessa." },
+          {
+            "nome": "Política de sensibilidade de arquivos",
+            "para": "Interno, Cliente e Confidencial — o que pode sair e o que nunca sai."
+          },
+          { "nome": "Procedimento de entrada e saída", "para": "Checklist por colaborador." }
+        ]
+      },
+      "obrigacoes": {
+        "diarias": [
+          "Verificar se o backup da noite rodou.",
+          "Atender os chamados abertos por prioridade.",
+          "Monitorar espaço e saúde do armazenamento.",
+          "Registrar o que foi feito."
+        ],
+        "semanais": [
+          "Aplicar atualizações de segurança.",
+          "Revisar os acessos concedidos na semana.",
+          "Conferir alertas de rede e de endpoint."
+        ],
+        "mensais": [
+          "Testar a restauração de um backup — backup não testado não é backup.",
+          "Revisar inventário e licenças.",
+          "Revisar contas ativas contra o quadro real de pessoas."
+        ],
+        "anuais": [
+          "Revisar a política de acessos e de sensibilidade com a Gestão.",
+          "Planejar a renovação de equipamentos.",
+          "Revisar e testar o plano de continuidade."
+        ]
+      },
+      "relatorios": [
+        {
+          "nome": "Relatório de infraestrutura",
+          "conteudo": "Disponibilidade, chamados por tipo, espaço e saúde do armazenamento, backups verificados e restauração testada.",
+          "quando": "Mensal.",
+          "destino": "gestao",
+          "sensibilidade": "INTERNO",
+          "ondeEntregar": "Anexado à demanda de fechamento do mês."
+        },
+        {
+          "nome": "Registro de incidente",
+          "conteudo": "O que ocorreu, impacto, causa e a medida que impede a repetição.",
+          "quando": "A cada incidente.",
+          "destino": "gestao",
+          "sensibilidade": "CONFIDENCIAL",
+          "ondeEntregar": "Anexado à demanda."
+        },
+        {
+          "nome": "Inventário e acessos",
+          "conteudo": "Equipamentos, licenças, domínios e quem tem acesso a quê.",
+          "quando": "Anual.",
+          "destino": "gestao",
+          "sensibilidade": "CONFIDENCIAL",
+          "ondeEntregar": "Anexado à demanda."
+        }
+      ],
+      "competencias": {
+        "tecnicas": [
+          "Redes: DNS, roteamento, VPN e Wi-Fi.",
+          "Administração de armazenamento em rede.",
+          "Backup e restauração.",
+          "Administração do Google Workspace.",
+          "Segurança básica: endpoint, senhas e verificação em duas etapas.",
+          "Suporte a estações Windows e macOS."
+        ],
+        "comportamentais": [
+          "Documenta o que fez.",
+          "Comunica indisponibilidade antes que perguntem.",
+          "Trata dado de cliente como confidencial por padrão."
+        ]
+      },
+      "contratacao": {
+        "requisitos": [
+          "Experiência com rede e suporte em ambiente com dezenas de estações.",
+          "Administração de armazenamento em rede ou de servidor de arquivos.",
+          "Rotina real de backup e restauração."
+        ],
+        "diferenciais": [
+          "Synology.",
+          "Cloudflare e DNS.",
+          "Automação e scripts.",
+          "Segurança da informação."
+        ],
+        "perguntas": [
+          "O armazenamento em rede parou às 9h e a agência inteira depende dele — o que você faz, na ordem?",
+          "Como você comprova que o backup funciona?",
+          "Uma pessoa saiu ontem — o que precisa acontecer hoje?"
+        ]
+      },
+      "avaliacao": {
+        "oQueOlhamos": [
+          "Backup verificado e restauração testada no mês.",
+          "Tempo até a primeira resposta nos chamados.",
+          "Acessos revogados no prazo após desligamento.",
+          "Incidentes com a causa tratada."
+        ],
+        "comoLemos": [
+          "Incidente é evento de sistema: a leitura é sobre a causa e a prevenção, não sobre culpa.",
+          "Volume alto de chamados aponta para problema de equipamento ou de processo antes de apontar para a pessoa."
+        ],
+        "oQueNuncaFazemos": [
+          "Medir por número de chamados fechados.",
+          "Ranquear por tempo médio de atendimento, que depende do que chega.",
+          "Vincular estes sinais a remuneração."
+        ]
+      },
+      "fontes": [
+        "CBO 2124 — analistas de sistemas computacionais, suporte e redes.",
+        "O*NET 15-1244.00 — Network and Computer Systems Administrators.",
+        "Política de sensibilidade de artefatos do Work OS."
+      ]
+    }
+  }
+}
