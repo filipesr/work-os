@@ -133,6 +133,30 @@
               },
               "image": "templates-05-campos-etapa.png",
               "caption": "Campos de una etapa."
+            },
+            {
+              "n": "3",
+              "title": "Dejar la etapa sin equipo predeterminado es una decisión, no un olvido",
+              "body": [
+                "Cuando el equipo predeterminado queda en blanco, la etapa se vuelve comodín: la plantilla afirma que el paso existe, pero quién lo ejecuta depende de la demanda.",
+                "La asignación pasa a hacerse al crear la tarea — allí el gestor elige el equipo, opcionalmente el responsable, y escribe qué hay que hacer."
+              ],
+              "callout": {
+                "label": "Cuándo usarlo",
+                "text": "Etapas como “Apoyo”, “Revisión extra” o “Ajuste solicitado”, que aparecen en muchas entregas pero nunca con el mismo dueño. Si el paso siempre es del mismo equipo, define el equipo predeterminado — ese es el caso normal."
+              }
+            },
+            {
+              "n": "4",
+              "title": "Una etapa opcional en medio del flujo no traba la secuencia",
+              "body": [
+                "Marca “Opcional” y la etapa nace desmarcada en el formulario de creación: el gestor la incluye solo cuando corresponde.",
+                "Si queda fuera, la etapa siguiente no se queda esperándola — se abre en cuanto se concluye la etapa ANTERIOR a la opcional, aunque la dependencia esté declarada sobre la opcional."
+              ],
+              "callout": {
+                "label": "Ejemplo",
+                "text": "Diseño → Revisión (opcional) → Publicación. En una demanda sin revisión, concluir Diseño libera Publicación directamente."
+              }
             }
           ]
         },
@@ -265,6 +289,30 @@
             },
             {
               "n": "2",
+              "title": "Dirige las etapas comodín",
+              "body": [
+                "En la vista previa de etapas, las que la plantilla dejó sin equipo predeterminado aparecen con la etiqueta Comodín y piden tres cosas:"
+              ],
+              "bullets": [
+                "Equipo — a qué cola va la etapa. Sin esto no le aparece a nadie.",
+                "Responsable — opcional, elegido entre los miembros del equipo seleccionado.",
+                "Qué hay que hacer — la indicación que leerá quien tome la etapa. “Apoyo” no dice nada por sí solo."
+              ],
+              "callout": {
+                "label": "Dónde aparece después",
+                "text": "La indicación acompaña a la etapa: aparece en la cola del equipo antes de que alguien la tome, en el modal de cierre de etapa y en el detalle de la demanda."
+              }
+            },
+            {
+              "n": "3",
+              "title": "Elige qué etapas opcionales entran",
+              "body": [
+                "Las etapas marcadas como opcionales en la plantilla vienen desmarcadas. Marca solo las que esta demanda necesita.",
+                "Una etapa no incluida no genera registro alguno y no aparece en el flujo, en el historial ni en las devoluciones — y no bloquea a quien viene después."
+              ]
+            },
+            {
+              "n": "4",
               "title": "Qué ocurre al crear",
               "body": [
                 "La demanda nace en el Backlog. La primera etapa de la plantilla ya se activa automáticamente y queda disponible para el equipo responsable. A partir de ahí, es con los colaboradores."

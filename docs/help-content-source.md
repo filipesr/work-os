@@ -44,7 +44,14 @@ Arquivo: `prisma/schema.prisma`.
 2. **Adicionar etapas** (editor, "Etapas do Fluxo de Trabalho" → `+ Adicionar Nova Etapa`):
    - `Nome da Etapa *` (ex: "Roteiro")
    - `Ordem *` (sequência: 1, 2, 3…)
-   - `Time Padrão` (auto-atribui o time quando a tarefa chega na etapa) — default "Sem time padrão"
+   - `Time Padrão` (auto-atribui o time quando a tarefa chega na etapa) — default "Sem time padrão".
+     **Deixar em branco é uma decisão de desenho**, não configuração faltando: a etapa vira
+     **coringa** e o roteamento (time + responsável + instrução) passa a ser feito na criação da
+     demanda. Ver Guia 2.
+   - `Opcional` (checkbox): a etapa nasce **desmarcada** no formulário de criação. Etapa não
+     incluída não gera linha — e **não bloqueia a seguinte**: quem libera é a etapa ANTERIOR à
+     opcional, mesmo que a dependência esteja declarada sobre a opcional (pré-requisito sem linha
+     na tarefa conta como satisfeito, `computeStageReadiness`).
 3. **Definir dependências** (dentro do form, `DependencySelector`): "Depende das Etapas (opcional)" — grid de
    botões clicáveis (badge de ordem + nome + check). Aviso: "Esta etapa só ficará disponível após todas as
    etapas selecionadas serem concluídas". Sem dependência → inicia imediatamente.
@@ -84,7 +91,15 @@ Campos:
 1. `Título da Tarefa *` (ex: "Criar vídeo demo do produto")
 2. `Descrição`
 3. `Projeto *` (formato "Cliente - Projeto"; botão "Novo Projeto" inline)
-4. `Template de Fluxo de Trabalho *` (formato "Nome (N etapas)") → mostra **Pré-visualização das Etapas**
+4. `Template de Fluxo de Trabalho *` (formato "Nome (N etapas)") → mostra **Pré-visualização das Etapas**,
+   com uma linha por etapa: checkbox de inclusão (só nas opcionais), selo `Coringa`/`Entrada` e o
+   seletor de responsável. Nas etapas **coringa** (template sem time padrão) a linha ganha ainda:
+   - `Time` (`team:<stageId>`) — para qual fila a etapa vai. Sem isso ela não aparece para ninguém.
+   - `Responsável` (`assignee:<stageId>`) — habilitado só depois de escolher o time; a lista são os
+     membros do time escolhido, e trocar de time limpa a escolha anterior.
+   - `O que precisa ser feito` (`instructions:<stageId>`) — direcionamento de quem pegar a etapa.
+     Persistido em `TaskActiveStage.instructions`; exibido na fila do time, no modal de conclusão
+     de etapa e no detalhe da demanda.
 5. `Prioridade *` (Baixa/Média/Alta/Urgente, default Média)
 6. `Data de Vencimento`
    Botões: `Criar Tarefa` / `Cancelar`.
@@ -97,8 +112,18 @@ Bloco "Como funciona:" (i18n `admin.tasks.new.howItWorks`):
 - Você será atribuído à primeira etapa automaticamente
 - A tarefa avança pelas etapas conforme o trabalho progride
 
-**Ao criar:** Task nasce `status: BACKLOG`; a 1ª etapa do template vira um `TaskActiveStage` com `status: ACTIVE`;
-registra `TaskStageLog`. Redireciona para `/admin/tasks/{taskId}`.
+**Ao criar:** Task nasce `status: BACKLOG`; a 1ª etapa **incluída** vira um `TaskActiveStage` com
+`status: ACTIVE`; registra `TaskStageLog`. Redireciona para `/admin/tasks/{taskId}`. Se a etapa de
+entrada já nascer com responsável, a tarefa vai direto para `IN_PROGRESS` (o fluxo de "reivindicar",
+que faz essa promoção, não roda quando a etapa já tem dono).
+
+**Time efetivo de uma etapa:** `TaskActiveStage.teamId ?? stage.defaultTeamId` — regra única em
+`lib/stage-team.ts` (`effectiveStageTeam`, `stageTeamWhere`, `routedStageTerms`), usada por fila,
+cockpit, calendário e relatórios. Exceção deliberada: o **teto de WIP** continua escopado pelo time
+padrão, porque é propriedade da coluna no fluxo, não da demanda.
+
+**Limitação atual:** o roteamento da etapa coringa só é definido na criação — não há tela para
+redirecionar depois.
 
 ### Componentes
 

@@ -133,6 +133,30 @@
               },
               "image": "templates-05-campos-etapa.png",
               "caption": "Campos de uma etapa."
+            },
+            {
+              "n": "3",
+              "title": "Deixar a etapa sem time padrão é uma decisão, não um esquecimento",
+              "body": [
+                "Quando o time padrão fica em branco, a etapa vira coringa: o template afirma que o passo existe, mas quem executa depende da demanda.",
+                "O direcionamento passa a ser feito na criação da tarefa — lá o gestor escolhe o time, opcionalmente o responsável, e escreve o que precisa ser feito."
+              ],
+              "callout": {
+                "label": "Quando usar",
+                "text": "Etapas como “Apoio”, “Revisão extra” ou “Ajuste solicitado”, que aparecem em muitas entregas mas nunca com o mesmo dono. Se o passo é sempre do mesmo time, defina o time padrão — é o caso normal."
+              }
+            },
+            {
+              "n": "4",
+              "title": "Etapa opcional no meio do fluxo não trava a sequência",
+              "body": [
+                "Marque “Opcional” e a etapa nasce desmarcada no formulário de criação: o gestor inclui só quando couber na demanda.",
+                "Se ela ficar de fora, a etapa seguinte não fica esperando por ela — abre assim que a etapa ANTERIOR à opcional for concluída, mesmo que a dependência esteja declarada na opcional."
+              ],
+              "callout": {
+                "label": "Exemplo",
+                "text": "Design → Revisão (opcional) → Publicação. Numa demanda sem revisão, concluir Design libera Publicação direto."
+              }
             }
           ]
         },
@@ -265,6 +289,30 @@
             },
             {
               "n": "2",
+              "title": "Direcione as etapas coringa",
+              "body": [
+                "Na pré-visualização das etapas, as que o template deixou sem time padrão aparecem com o selo Coringa e pedem três coisas:"
+              ],
+              "bullets": [
+                "Time — para qual fila a etapa vai. Sem isso ela não aparece para ninguém.",
+                "Responsável — opcional, escolhido entre os membros do time selecionado.",
+                "O que precisa ser feito — o direcionamento que quem pegar a etapa vai ler. “Apoio” não diz nada sozinho."
+              ],
+              "callout": {
+                "label": "Onde isso aparece depois",
+                "text": "A instrução acompanha a etapa: aparece na fila do time antes de alguém pegar, no modal de conclusão de etapa e no detalhe da demanda."
+              }
+            },
+            {
+              "n": "3",
+              "title": "Escolha quais etapas opcionais entram",
+              "body": [
+                "Etapas marcadas como opcionais no template vêm desmarcadas. Marque só as que esta demanda precisa.",
+                "Etapa não incluída não gera registro algum e não aparece no fluxo, no histórico nem nos retornos — e não bloqueia quem vem depois."
+              ]
+            },
+            {
+              "n": "4",
               "title": "O que acontece ao criar",
               "body": [
                 "A demanda nasce no Backlog. A primeira etapa do template já é ativada automaticamente e fica disponível para o time responsável. A partir daí, é com os colaboradores."

@@ -19,9 +19,9 @@ Este documento detalha as principais funções e tipos do sistema de workflow pa
 
 ```typescript
 enum ActiveStageStatus {
-  ACTIVE    = "ACTIVE",    // Pronta para trabalho
-  BLOCKED   = "BLOCKED",   // Aguardando dependências
-  COMPLETED = "COMPLETED"  // Trabalho finalizado
+  ACTIVE = "ACTIVE", // Pronta para trabalho
+  BLOCKED = "BLOCKED", // Aguardando dependências
+  COMPLETED = "COMPLETED", // Trabalho finalizado
 }
 ```
 
@@ -36,13 +36,27 @@ type TaskActiveStage = {
   assigneeId: string | null;
   activatedAt: Date;
   completedAt: Date | null;
+  blockedAt: Date | null; // carimbado ao ENTRAR em BLOCKED
+  assignedAt: Date | null; // carimbado quando o assigneeId atual foi definido
+
+  // Etapa coringa: o template deixou a etapa SEM time padrão de propósito, e o
+  // roteamento é decidido na criação da demanda. Null = herda stage.defaultTeamId.
+  teamId: string | null;
+  instructions: string | null; // o que precisa ser feito nesta etapa
 
   // Relations
   task: Task;
   stage: TemplateStage;
   assignee: User | null;
-}
+  team: Team | null;
+};
 ```
+
+**Time efetivo da etapa** = `teamId ?? stage.defaultTeamId`. A regra vive em
+`lib/stage-team.ts` (`effectiveStageTeam`, `stageTeamWhere`, `routedStageTerms`)
+e vale para fila do time, cockpit, calendário e relatórios. Exceção deliberada:
+o teto de WIP continua escopado pelo time padrão do template, porque é
+propriedade da coluna no fluxo, não da demanda.
 
 ### ActiveStageWithDetails
 
@@ -85,7 +99,7 @@ type ActiveStageWithDetails = {
     name: string | null;
     email: string | null;
   } | null;
-}
+};
 ```
 
 ---
@@ -99,6 +113,7 @@ Completa uma etapa ativa e executa fork/join automático.
 **Localização:** `lib/actions/task.ts`
 
 **Assinatura:**
+
 ```typescript
 async function completeStageAndAdvance(
   taskId: string,
@@ -109,14 +124,16 @@ async function completeStageAndAdvance(
   completed?: TemplateStage;
   activated?: TemplateStage[];
   blocked?: TemplateStage[];
-}>
+}>;
 ```
 
 **Parâmetros:**
+
 - `taskId` - ID da tarefa
 - `stageId` - ID da etapa a ser completada
 
 **Retorno:**
+
 - `success` - true se a operação foi bem-sucedida
 - `error` - Mensagem de erro, se houver
 - `completed` - Etapa que foi completada
@@ -124,29 +141,29 @@ async function completeStageAndAdvance(
 - `blocked` - Array de etapas que foram criadas como bloqueadas (JOIN pendente)
 
 **Validações:**
+
 - Etapa deve estar ACTIVE
 - Usuário deve ser admin, manager ou assignee da etapa
 - Usuário regular deve ter pelo menos 1 artefato OU comentário na tarefa
 - Etapa deve existir e pertencer à tarefa
 
 **Exemplo de Uso:**
+
 ```typescript
-const result = await completeStageAndAdvance(
-  "task-id-123",
-  "stage-id-456"
-);
+const result = await completeStageAndAdvance("task-id-123", "stage-id-456");
 
 if (result.error) {
   toast.error(result.error);
 } else {
   toast.success(
     `Etapa ${result.completed?.name} completada! ` +
-    `${result.activated?.length || 0} etapas ativadas.`
+      `${result.activated?.length || 0} etapas ativadas.`
   );
 }
 ```
 
 **Fluxo Interno:**
+
 1. Valida que etapa está ACTIVE
 2. Verifica permissões do usuário
 3. Valida contribuições (se necessário)
@@ -164,6 +181,7 @@ Implementa a lógica fork/join para ativar próximas etapas.
 **Localização:** `lib/actions/task.ts`
 
 **Assinatura:**
+
 ```typescript
 async function activateNextStages(
   taskId: string,
@@ -171,29 +189,39 @@ async function activateNextStages(
 ): Promise<{
   activated: TemplateStage[];
   blocked: TemplateStage[];
-}>
+}>;
 ```
 
 **Parâmetros:**
+
 - `taskId` - ID da tarefa
 - `completedStageId` - ID da etapa que foi completada
 
 **Retorno:**
+
 - `activated` - Etapas que foram ativadas (todas dependências satisfeitas)
 - `blocked` - Etapas que foram bloqueadas (dependências pendentes)
 
-**Lógica:**
-1. Marca etapa completada como COMPLETED
-2. Busca todas as etapas que dependem da etapa completada
-3. Para cada etapa dependente:
-   - Se já existe TaskActiveStage e está BLOCKED:
-     - Verifica se todas as dependências estão completas
-     - Se sim, muda para ACTIVE (JOIN)
-   - Se não existe TaskActiveStage:
-     - Verifica se todas as dependências estão completas
-     - Se sim, cria como ACTIVE (FORK)
-     - Se não, cria como BLOCKED
-4. Retorna arrays de etapas ativadas e bloqueadas
+**Lógica** (desde a 2.3.0 as etapas são pré-criadas na criação da demanda —
+`createTaskStages` — então esta função **nunca cria linha**, só recalcula status):
+
+1. Marca a etapa concluída como COMPLETED.
+2. Carrega as linhas da tarefa = as etapas **incluídas**. Etapa de template sem
+   linha ficou de fora (opcional desmarcada na criação).
+3. Carrega o grafo de dependências do template inteiro.
+4. `computeStageReadiness` recalcula cada etapa incluída ainda INACTIVE/BLOCKED:
+   - **ACTIVE** quando todo pré-requisito está satisfeito. Um pré-requisito é
+     satisfeito se está COMPLETED **ou não está incluído** nesta tarefa — é o
+     _pass-through_ que faz a etapa opcional excluída no meio do fluxo não travar
+     a sequência: quem libera a seguinte é a etapa ANTERIOR à opcional.
+   - **BLOCKED** quando não está pronta mas foi "alcançada" (≥1 pré-requisito
+     incluído já COMPLETED).
+   - Etapas já ACTIVE/COMPLETED nunca regridem.
+5. Aplica só as mudanças reais e retorna os arrays de ativadas e bloqueadas.
+   `assigneeId` nunca é tocado aqui.
+
+`previewNextStages()` (modal de avanço) roda **este mesmo motor** em modo
+somente-leitura — preview e execução não podem divergir.
 
 **Não deve ser chamada diretamente** - use `completeStageAndAdvance()` ao invés.
 
@@ -206,22 +234,23 @@ Verifica se todas as dependências de uma etapa foram completadas.
 **Localização:** `lib/actions/task.ts`
 
 **Assinatura:**
+
 ```typescript
-async function checkAllDependenciesComplete(
-  taskId: string,
-  stageId: string
-): Promise<boolean>
+async function checkAllDependenciesComplete(taskId: string, stageId: string): Promise<boolean>;
 ```
 
 **Parâmetros:**
+
 - `taskId` - ID da tarefa
 - `stageId` - ID da etapa a verificar
 
 **Retorno:**
+
 - `true` se TODAS as dependências estão completas
 - `false` se pelo menos uma dependência está incompleta
 
 **Lógica:**
+
 1. Busca todas as StageDependency da etapa
 2. Para cada dependência:
    - Verifica se existe TaskActiveStage com status COMPLETED
@@ -238,6 +267,7 @@ Permite que um usuário reivindique uma etapa ativa.
 **Localização:** `lib/actions/task.ts`
 
 **Assinatura:**
+
 ```typescript
 async function claimActiveStage(
   taskId: string,
@@ -245,19 +275,22 @@ async function claimActiveStage(
 ): Promise<{
   success?: boolean;
   error?: string;
-}>
+}>;
 ```
 
 **Parâmetros:**
+
 - `taskId` - ID da tarefa
 - `stageId` - ID da etapa a reivindicar
 
 **Validações:**
+
 - Etapa deve estar ACTIVE (não pode pegar BLOCKED)
 - Etapa não pode estar já atribuída
 - Usuário deve pertencer ao team da etapa
 
 **Exemplo de Uso:**
+
 ```typescript
 const result = await claimActiveStage(taskId, stageId);
 
@@ -278,6 +311,7 @@ Libera uma etapa atribuída, devolvendo-a ao backlog do time.
 **Localização:** `lib/actions/task.ts`
 
 **Assinatura:**
+
 ```typescript
 async function unassignActiveStage(
   taskId: string,
@@ -285,14 +319,16 @@ async function unassignActiveStage(
 ): Promise<{
   success?: boolean;
   error?: string;
-}>
+}>;
 ```
 
 **Validações:**
+
 - Usuário deve ser admin, manager OU o próprio assignee
 - Etapa deve estar atribuída
 
 **Exemplo de Uso:**
+
 ```typescript
 const result = await unassignActiveStage(taskId, stageId);
 
@@ -315,13 +351,15 @@ Retorna todas as etapas ativas atribuídas ao usuário atual.
 **Localização:** `lib/actions/task.ts`
 
 **Assinatura:**
+
 ```typescript
-async function getMyActiveStages(): Promise<ActiveStageWithDetails[]>
+async function getMyActiveStages(): Promise<ActiveStageWithDetails[]>;
 ```
 
 **Retorno:** Array de etapas ativas com todos os detalhes necessários para display.
 
 **Query SQL (simplificada):**
+
 ```sql
 SELECT * FROM "TaskActiveStage"
 WHERE "assigneeId" = $userId
@@ -330,6 +368,7 @@ ORDER BY task.dueDate, task.priority
 ```
 
 **Uso no Dashboard:**
+
 ```typescript
 const myStages = await getMyActiveStages();
 
@@ -348,18 +387,19 @@ Retorna etapas ativas não atribuídas do time.
 **Localização:** `lib/actions/task.ts`
 
 **Assinatura:**
+
 ```typescript
-async function getTeamBacklog(
-  teamId: string
-): Promise<ActiveStageWithDetails[]>
+async function getTeamBacklog(teamId: string): Promise<ActiveStageWithDetails[]>;
 ```
 
 **Parâmetros:**
+
 - `teamId` - ID do time
 
 **Retorno:** Array de etapas disponíveis para o time.
 
 **Query SQL (simplificada):**
+
 ```sql
 SELECT * FROM "TaskActiveStage"
 WHERE "assigneeId" IS NULL
@@ -369,6 +409,7 @@ ORDER BY task.priority, task.dueDate
 ```
 
 **Uso no Dashboard:**
+
 ```typescript
 const backlog = await getTeamBacklog(currentUser.teamId);
 
@@ -391,11 +432,13 @@ Busca tarefa com todas as etapas ativas.
 **Localização:** `lib/actions/task.ts`
 
 **Assinatura:**
+
 ```typescript
-async function getTaskById(taskId: string): Promise<TaskWithActiveStages | null>
+async function getTaskById(taskId: string): Promise<TaskWithActiveStages | null>;
 ```
 
 **Retorno:**
+
 ```typescript
 {
   ...task,
@@ -407,6 +450,7 @@ async function getTaskById(taskId: string): Promise<TaskWithActiveStages | null>
 ```
 
 **Computed Properties:**
+
 - `currentStage` - Primeira etapa com status ACTIVE (ou null)
 - `currentStageId` - ID da primeira etapa ACTIVE (ou null)
 
@@ -421,6 +465,7 @@ Botão para completar etapa com preview de fork/join.
 **Localização:** `components/tasks/AdvanceStageButton.tsx`
 
 **Props:**
+
 ```typescript
 interface AdvanceStageButtonProps {
   taskId: string;
@@ -429,6 +474,7 @@ interface AdvanceStageButtonProps {
 ```
 
 **Features:**
+
 - Modal de confirmação com preview
 - Mostra etapas que serão ativadas (fork)
 - Mostra etapas que ficarão bloqueadas (join)
@@ -436,11 +482,9 @@ interface AdvanceStageButtonProps {
 - Toast com resumo após sucesso
 
 **Uso:**
+
 ```tsx
-<AdvanceStageButton
-  taskId={task.id}
-  currentStageId={activeStage.stageId}
-/>
+<AdvanceStageButton taskId={task.id} currentStageId={activeStage.stageId} />
 ```
 
 ---
@@ -452,6 +496,7 @@ Botão para pegar etapa do backlog.
 **Localização:** `components/tasks/ClaimActiveStageButton.tsx`
 
 **Props:**
+
 ```typescript
 interface ClaimActiveStageButtonProps {
   taskId: string;
@@ -461,11 +506,13 @@ interface ClaimActiveStageButtonProps {
 ```
 
 **Features:**
+
 - Desabilitado para etapas BLOCKED
 - Validação automática de team
 - Feedback visual durante atribuição
 
 **Uso:**
+
 ```tsx
 <ClaimActiveStageButton
   taskId={task.id}
@@ -483,6 +530,7 @@ Botão para liberar etapa atribuída.
 **Localização:** `components/tasks/UnassignActiveStageButton.tsx`
 
 **Props:**
+
 ```typescript
 interface UnassignActiveStageButtonProps {
   taskId: string;
@@ -492,11 +540,13 @@ interface UnassignActiveStageButtonProps {
 ```
 
 **Features:**
+
 - Confirmação antes de liberar
 - Valida permissões automaticamente
 - Atualiza dashboard após sucesso
 
 **Uso:**
+
 ```tsx
 <UnassignActiveStageButton
   taskId={task.id}
@@ -514,6 +564,7 @@ Visualização do workflow com status das etapas.
 **Localização:** `components/tasks/StageWorkflowVisualization.tsx`
 
 **Props:**
+
 ```typescript
 interface StageWorkflowVisualizationProps {
   currentStageId: string | null;
@@ -525,12 +576,14 @@ interface StageWorkflowVisualizationProps {
 ```
 
 **Features:**
+
 - Mostra todas as etapas do template
 - Indica visualmente: COMPLETED, ACTIVE, PENDING
 - Mostra tempo em cada etapa
 - Timeline de progresso
 
 **Uso:**
+
 ```tsx
 <StageWorkflowVisualization
   currentStageId={task.currentStageId}
@@ -548,10 +601,9 @@ interface StageWorkflowVisualizationProps {
 Obtém a primeira etapa ativa de uma tarefa.
 
 **Uso:**
+
 ```typescript
-const currentActiveStage = task.activeStages.find(
-  as => as.status === "ACTIVE"
-);
+const currentActiveStage = task.activeStages.find((as) => as.status === "ACTIVE");
 ```
 
 ### getDependenciesStatus()
@@ -559,11 +611,9 @@ const currentActiveStage = task.activeStages.find(
 Verifica status de todas as dependências de uma etapa.
 
 **Implementação:**
+
 ```typescript
-async function getDependenciesStatus(
-  taskId: string,
-  stageId: string
-) {
+async function getDependenciesStatus(taskId: string, stageId: string) {
   const dependencies = await prisma.stageDependency.findMany({
     where: { stageId },
     include: { dependsOn: true },
@@ -668,19 +718,13 @@ console.log(`Bloqueadas: ${result.blocked?.length}`);
 const task = await getTaskById(taskId);
 
 // Etapas ativas
-const activeStages = task.activeStages.filter(
-  s => s.status === "ACTIVE"
-);
+const activeStages = task.activeStages.filter((s) => s.status === "ACTIVE");
 
 // Etapas bloqueadas
-const blockedStages = task.activeStages.filter(
-  s => s.status === "BLOCKED"
-);
+const blockedStages = task.activeStages.filter((s) => s.status === "BLOCKED");
 
 // Etapas completadas
-const completedStages = task.activeStages.filter(
-  s => s.status === "COMPLETED"
-);
+const completedStages = task.activeStages.filter((s) => s.status === "COMPLETED");
 ```
 
 ### Verificar se Pode Avançar
@@ -770,6 +814,7 @@ const stages = await prisma.taskActiveStage.findMany({
 **Problema:** Completei todas as dependências mas etapa continua BLOCKED.
 
 **Debug:**
+
 ```typescript
 // Verificar dependências
 const deps = await prisma.stageDependency.findMany({
@@ -794,6 +839,7 @@ for (const dep of deps) {
 ```
 
 **Possíveis Causas:**
+
 1. Dependência não está marcada como COMPLETED
 2. TaskActiveStage não existe para alguma dependência
 3. Configuração incorreta de StageDependency

@@ -5,6 +5,45 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### 🚀 Adicionado
+
+#### Fluxo de trabalho
+
+- **Etapa coringa (roteamento na criação):** uma etapa de template **sem time padrão** deixa de
+  nascer órfã. `TaskActiveStage` ganhou `teamId` e `instructions` (ambos anuláveis, sem backfill):
+  na criação da demanda o gestor escolhe o **time**, opcionalmente o **responsável** (validado
+  contra os membros do time escolhido) e escreve **o que precisa ser feito**. A instrução aparece
+  na fila do time, no modal de conclusão de etapa e no detalhe da demanda. Override numa etapa que
+  já tem time no template é **ignorado** — quem manda no fluxo é o template.
+- **Time efetivo como regra única** (`lib/stage-team.ts`): roteamento da tarefa, senão o time
+  padrão do template. Aplicado em fila do time, etapas bloqueadas, cockpit de saúde, calendário,
+  carga, "minhas etapas", filtros da lista de tarefas e relatórios (produtividade, desempenho,
+  flow efficiency, CFD, retrabalho, lead time, throughput e on-time por time). Para as tabelas
+  históricas — que guardam `(taskId, stageId)` mas não o roteamento — `routedStageTerms` agrupa por
+  etapa, gerando um termo por etapa coringa em vez de um por demanda.
+
+### 🐛 Corrigido
+
+- **Preview de avanço divergia da execução:** `previewNextStages` olhava apenas as etapas que
+  dependem **diretamente** da etapa concluída. Com uma **etapa opcional excluída no meio do fluxo**,
+  ele anunciava a própria etapa excluída como "próxima" e escondia a que de fato abre. Passou a
+  rodar o **mesmo motor** da ativação (`computeStageReadiness`) sobre o grafo inteiro do template —
+  pré-requisito sem linha na tarefa conta como satisfeito, então quem libera a seguinte é a etapa
+  **anterior** à opcional. O motor de ativação já se comportava assim; era o preview que mentia.
+- **Atribuição da próxima etapa em etapa coringa:** a validação do responsável usava só o
+  `defaultTeam` (nulo numa coringa) e recusava qualquer atribuição, deixando a etapa
+  permanentemente sem responsável. Agora valida contra o time efetivo.
+
+### 📝 Notas de migração
+
+- Migration `20260825120000_add_stage_team_override` — puramente aditiva (duas colunas anuláveis,
+  FK `SET NULL` e índice). `teamId` nulo = herda o time padrão da etapa, que é o comportamento de
+  todas as linhas existentes.
+- **Limitação conhecida:** o roteamento de uma etapa coringa só pode ser definido **na criação** —
+  ainda não há como redirecionar ou corrigir o time depois.
+
 ## [2.3.0] - 2026-07-07
 
 ### 🚀 Adicionado
