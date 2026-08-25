@@ -10,10 +10,13 @@ import { auth } from "@/auth";
 import { requireMemberOrHigher, requireManagerOrAdmin, getSessionUser } from "@/lib/permissions";
 import { createTaskSchema } from "@/lib/validations";
 import { availableStageWhere } from "@/lib/task-availability";
+import { stageTeamWhere, stageTeamInclude, effectiveStageTeam } from "@/lib/stage-team";
 import {
   createTaskStages,
   parseStageAssignments,
   parseSelectedStages,
+  parseStageTeams,
+  parseStageInstructions,
   isValidStageAssignee,
   computeStageReadiness,
 } from "@/lib/stage-assignment-helpers";
@@ -78,6 +81,11 @@ export async function createTask(formData: FormData) {
 
   const assignments = parseStageAssignments(formData);
   const selectedStageIds = parseSelectedStages(formData);
+  // Etapas coringa (template sem time padrão): quem executa e o que precisa ser
+  // feito são decididos aqui, na criação — é o único momento em que alguém
+  // conhece a demanda concreta o bastante para dizer isso.
+  const stageTeams = parseStageTeams(formData);
+  const stageInstructions = parseStageInstructions(formData);
 
   // Execute task creation within a transaction
   const task = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -100,6 +108,8 @@ export async function createTask(formData: FormData) {
       userId,
       assignments,
       selectedStageIds,
+      teams: stageTeams,
+      instructions: stageInstructions,
     });
 
     // Pré-atribuir a etapa inicial na criação já coloca a tarefa em andamento:
@@ -348,8 +358,15 @@ export async function getTaskById(taskId: string) {
     where: { taskId },
     include: {
       stage: {
-        select: { id: true, name: true, order: true, defaultTeam: { select: { name: true } } },
+        select: {
+          id: true,
+          name: true,
+          order: true,
+          defaultTeam: { select: { id: true, name: true } },
+        },
       },
+      // Roteamento e direcionamento das etapas coringa, decididos na criação.
+      ...stageTeamInclude,
       assignee: { select: { id: true, name: true, email: true } },
     },
     orderBy: { stage: { order: "asc" } },
@@ -460,7 +477,8 @@ export async function getTasks(options?: {
   if (filters.teamId) {
     and.push({
       activeStages: {
-        some: { status: { in: OPEN_STAGE_STATUSES }, stage: { defaultTeamId: filters.teamId } },
+        // Time EFETIVO — a etapa coringa pertence ao time roteado na criação.
+        some: { status: { in: OPEN_STAGE_STATUSES }, ...stageTeamWhere(filters.teamId) },
       },
     });
   }
@@ -903,19 +921,35 @@ export async function completeStageAndAdvance(
       const nextStages = [...activated, ...blocked];
       const requestedStageIds = nextStages.map((next) => next.id).filter((id) => assignments[id]);
       if (requestedStageIds.length > 0) {
-        const stageTeams = await prisma.templateStage.findMany({
-          where: { id: { in: requestedStageIds } },
-          select: {
-            id: true,
-            defaultTeamId: true,
-            defaultTeam: { select: { members: { select: { id: true } } } },
-          },
-        });
+        // A validação é contra o time EFETIVO: numa etapa coringa o time veio
+        // do roteamento da criação, e checar só o `defaultTeam` (nulo) recusaria
+        // toda atribuição — a etapa ficaria eternamente sem responsável.
+        const [stageTeams, rows] = await Promise.all([
+          prisma.templateStage.findMany({
+            where: { id: { in: requestedStageIds } },
+            select: {
+              id: true,
+              defaultTeamId: true,
+              defaultTeam: { select: { members: { select: { id: true } } } },
+            },
+          }),
+          prisma.taskActiveStage.findMany({
+            where: { taskId, stageId: { in: requestedStageIds }, teamId: { not: null } },
+            select: { stageId: true, team: { select: { members: { select: { id: true } } } } },
+          }),
+        ]);
         const stageTeamById = new Map(stageTeams.map((s) => [s.id, s]));
+        const routedMembersByStage = new Map(
+          rows.map((r) => [r.stageId, new Set((r.team?.members ?? []).map((m) => m.id))])
+        );
         for (const stageId of requestedStageIds) {
           const requested = assignments[stageId];
           const stageTeam = stageTeamById.get(stageId);
-          if (stageTeam && isValidStageAssignee(stageTeam, requested)) {
+          const routed = routedMembersByStage.get(stageId);
+          const valid = routed
+            ? routed.has(requested)
+            : !!stageTeam && isValidStageAssignee(stageTeam, requested);
+          if (valid) {
             await prisma.taskActiveStage.update({
               where: { taskId_stageId: { taskId, stageId } },
               data: { assigneeId: requested, assignedAt: new Date() },
@@ -1120,6 +1154,7 @@ export async function getMyAllStages(filters?: {
           },
         },
       },
+      ...stageTeamInclude,
     },
     orderBy: {
       task: {
@@ -1171,7 +1206,9 @@ export async function getMyAllStages(filters?: {
       name: s.stage.name,
       order: s.stage.order,
       expectedDurationHours: s.stage.expectedDurationHours,
-      defaultTeam: s.stage.defaultTeam,
+      // Time EFETIVO: quem olha "minhas etapas" precisa ver o time que de fato
+      // responde por ela, não o vazio que o template deixou na coringa.
+      defaultTeam: effectiveStageTeam(s),
       template: s.stage.template,
     },
   }));
@@ -1197,15 +1234,16 @@ export async function getTeamBacklog(teamIds: string[]) {
     where: {
       assigneeId: null,
       status: "ACTIVE",
-      stage: {
-        defaultTeamId: { in: teamIds },
-      },
+      // Time EFETIVO: uma etapa coringa roteada na criação pertence ao time
+      // escolhido, não ao padrão do template (que aqui é justamente nenhum).
+      ...stageTeamWhere(teamIds),
       // Demanda cujo início planejado ainda não chegou não é trabalho para
       // pegar hoje — apareceria como disponível e puxaria alguém para começar
       // cedo, gastando a folga que existe justamente para o imprevisto.
       ...availableStageWhere(),
     },
     include: {
+      ...stageTeamInclude,
       task: {
         include: {
           project: {
@@ -1237,11 +1275,10 @@ export async function getTeamBlockedStages(teamId: string) {
   return await prisma.taskActiveStage.findMany({
     where: {
       status: "BLOCKED",
-      stage: {
-        defaultTeamId: teamId,
-      },
+      ...stageTeamWhere(teamId),
     },
     include: {
+      ...stageTeamInclude,
       task: {
         include: {
           project: {

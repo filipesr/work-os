@@ -85,6 +85,10 @@ interface TaskDetailViewProps {
   allTemplateStages: (TemplateStage & { defaultTeam: { id: string; name: string } | null })[];
   canPerformActions: boolean;
   currentStageAssignee?: string | null;
+  /** Time EFETIVO da etapa atual (roteado na criação, se for coringa). */
+  currentStageTeam?: { id: string; name: string } | null;
+  /** O que precisa ser feito nesta etapa — escrito na criação da demanda. */
+  currentStageInstructions?: string | null;
 }
 
 /** Pílula de contagem para os headers de seção (comentários / artefatos / horas). */
@@ -113,6 +117,8 @@ export function TaskDetailView({
   allTemplateStages,
   canPerformActions,
   currentStageAssignee,
+  currentStageTeam,
+  currentStageInstructions,
 }: TaskDetailViewProps) {
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
   const canViewTimeLogs =
@@ -226,6 +232,25 @@ export function TaskDetailView({
                 )}
               </div>
             </div>
+
+            {/* Direcionamento da etapa atual. Numa etapa coringa o nome não diz
+                o que fazer — sem isto, quem executa fica sem instrução alguma. */}
+            {currentStageInstructions && task.currentStage && (
+              <>
+                <Separator />
+                <div className="rounded-lg border border-warning/30 bg-warning-subtle p-3">
+                  <p className="mb-1 text-xs font-semibold text-warning">
+                    {tDetail("stageInstructions", {
+                      stage: task.currentStage.name,
+                      team: currentStageTeam?.name ?? tDetail("unassigned"),
+                    })}
+                  </p>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                    {currentStageInstructions}
+                  </p>
+                </div>
+              </>
+            )}
 
             {/* Description */}
             {task.description && (

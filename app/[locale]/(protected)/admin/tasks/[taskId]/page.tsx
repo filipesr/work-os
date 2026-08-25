@@ -20,6 +20,7 @@ import { getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { formatDisplayDate, formatDisplayDateTime } from "@/lib/dates";
+import { effectiveStageTeam } from "@/lib/stage-team";
 
 interface StageLogRow {
   id: string;
@@ -69,6 +70,11 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
       },
     },
   });
+
+  // Time EFETIVO da etapa atual: numa etapa coringa quem responde é o time
+  // roteado na criação, não o "sem equipe" que o template deixou.
+  const currentPipelineRow = task.stagePipeline.find((ps) => ps.stageId === task.currentStageId);
+  const currentRouting = currentPipelineRow ? effectiveStageTeam(currentPipelineRow) : null;
 
   const artifactRows = [
     ...task.artifacts.map((a) => mapArtifactRow(a, "TASK", { id: task.id, title: task.title })),
@@ -160,9 +166,9 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                     <p className="text-sm text-muted-foreground">
                       {t("template")} {task.currentStage.template.name}
                     </p>
-                    {task.currentStage.defaultTeam && (
+                    {currentRouting && (
                       <p className="text-sm text-muted-foreground">
-                        {t("team")} {task.currentStage.defaultTeam.name}
+                        {t("team")} {currentRouting.name}
                       </p>
                     )}
                   </div>
@@ -198,9 +204,18 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                       <p className="truncate text-sm font-medium text-foreground">
                         {ps.stage.name}
                       </p>
-                      {ps.stage.defaultTeam && (
+                      {effectiveStageTeam(ps) ? (
                         <p className="truncate text-xs text-muted-foreground">
-                          {ps.stage.defaultTeam.name}
+                          {effectiveStageTeam(ps)!.name}
+                        </p>
+                      ) : (
+                        // Coringa sem roteamento: a etapa existe e não está na
+                        // fila de ninguém. Mostrar isso é o que permite corrigir.
+                        <p className="truncate text-xs text-warning">{t("noTeamRouted")}</p>
+                      )}
+                      {ps.instructions && (
+                        <p className="mt-1 whitespace-pre-wrap rounded border border-warning/30 bg-warning-subtle px-2 py-1 text-xs text-warning">
+                          {ps.instructions}
                         </p>
                       )}
                     </div>

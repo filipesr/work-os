@@ -591,7 +591,8 @@
         "HIGH": "Alta",
         "MEDIUM": "Media",
         "LOW": "Baja"
-      }
+      },
+      "noTeamRouted": "Sin equipo asignado"
     }
   },
   "health": {

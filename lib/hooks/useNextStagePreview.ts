@@ -47,12 +47,12 @@ export function useNextStagePreview(
         if (cancelled) return;
 
         const allStages = [...result.activated, ...result.blocked];
-        const stagesWithTeam = allStages.filter((s) => s.defaultTeamId !== null);
+        const stagesWithTeam = allStages.filter((s) => s.teamId !== null);
 
         const memberResults = await Promise.all(
           stagesWithTeam.map(async (s) => ({
             stageId: s.id,
-            members: await getTeamMembers(s.defaultTeamId as string),
+            members: await getTeamMembers(s.teamId as string),
           }))
         );
 

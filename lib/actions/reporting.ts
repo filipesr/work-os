@@ -4,6 +4,12 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { Prisma } from "@prisma/client";
+import {
+  stageTeamWhere,
+  routedStageTerms,
+  routedTeamByPair,
+  effectiveStageTeam,
+} from "@/lib/stage-team";
 import { formatISODate, currentMonthSaoPaulo, monthKeySaoPaulo } from "@/lib/dates";
 import { utilizationRatio } from "@/lib/team-health-format";
 import { statusDurations, statusAt, type TransitionRow } from "@/lib/stage-transitions";
@@ -34,7 +40,7 @@ export interface ProductivityFilters {
  * date range with user / team (the stage's defaultTeam) / project / client
  * filters so every breakdown applies the same criteria.
  */
-function buildTimeLogWhere(filters: ProductivityFilters): Prisma.TimeLogWhereInput {
+async function buildTimeLogWhere(filters: ProductivityFilters): Promise<Prisma.TimeLogWhereInput> {
   const where: Prisma.TimeLogWhereInput = {};
 
   if (filters.startDate || filters.endDate) {
@@ -46,8 +52,14 @@ function buildTimeLogWhere(filters: ProductivityFilters): Prisma.TimeLogWhereInp
 
   if (filters.userId) where.userId = filters.userId;
 
-  // Team filter targets the stage the time was logged against.
-  if (filters.teamId) where.stage = { defaultTeamId: filters.teamId };
+  // Team filter targets the stage the time was logged against — pelo time
+  // EFETIVO: etapa com time no template, mais as coringa roteadas para ele.
+  if (filters.teamId) {
+    where.OR = [
+      { stage: { defaultTeamId: filters.teamId } },
+      ...(await routedStageTerms(filters.teamId)),
+    ];
+  }
 
   // Project / client both constrain the parent task.
   const taskFilter: Prisma.TaskWhereInput = {};
@@ -112,7 +124,7 @@ export async function getHoursByUser(filters: ProductivityFilters = {}) {
   await requireManagerOrAdmin();
   filters = productivityFiltersSchema.parse(filters);
 
-  const where = buildTimeLogWhere(filters);
+  const where = await buildTimeLogWhere(filters);
 
   const timeLogs = await prisma.timeLog.findMany({
     where,
@@ -166,7 +178,7 @@ export async function getHoursByProject(filters: ProductivityFilters = {}) {
   await requireManagerOrAdmin();
   filters = productivityFiltersSchema.parse(filters);
 
-  const where = buildTimeLogWhere(filters);
+  const where = await buildTimeLogWhere(filters);
 
   const timeLogs = await prisma.timeLog.findMany({
     where,
@@ -208,7 +220,7 @@ export async function getHoursByClient(filters: ProductivityFilters = {}) {
   await requireManagerOrAdmin();
   filters = productivityFiltersSchema.parse(filters);
 
-  const where = buildTimeLogWhere(filters);
+  const where = await buildTimeLogWhere(filters);
 
   const timeLogs = await prisma.timeLog.findMany({
     where,
@@ -249,7 +261,7 @@ export async function getHoursByStage(filters: ProductivityFilters = {}) {
   await requireManagerOrAdmin();
   filters = productivityFiltersSchema.parse(filters);
 
-  const where = buildTimeLogWhere(filters);
+  const where = await buildTimeLogWhere(filters);
 
   const timeLogs = await prisma.timeLog.findMany({
     where: {
@@ -298,7 +310,9 @@ export interface PerformanceFilters {
 
 /** Shared where for stage-log-based performance metrics (avg time, rework):
  * date range + team (stage.defaultTeam) + project/client (parent task). */
-function buildStageLogWhere(filters: PerformanceFilters): Prisma.TaskStageLogWhereInput {
+async function buildStageLogWhere(
+  filters: PerformanceFilters
+): Promise<Prisma.TaskStageLogWhereInput> {
   const where: Prisma.TaskStageLogWhereInput = { exitedAt: { not: null } };
 
   if (filters.startDate || filters.endDate) {
@@ -310,8 +324,16 @@ function buildStageLogWhere(filters: PerformanceFilters): Prisma.TaskStageLogWhe
 
   const stageFilter: Prisma.TemplateStageWhereInput = {};
   if (filters.templateId) stageFilter.templateId = filters.templateId;
-  if (filters.teamId) stageFilter.defaultTeamId = filters.teamId;
   if (Object.keys(stageFilter).length > 0) where.stage = stageFilter;
+
+  // Time EFETIVO — ver routedStageTerms. Fica em OR próprio para não brigar com
+  // o filtro de template acima, que também mira `stage`.
+  if (filters.teamId) {
+    where.OR = [
+      { stage: { defaultTeamId: filters.teamId } },
+      ...(await routedStageTerms(filters.teamId)),
+    ];
+  }
 
   const taskFilter: Prisma.TaskWhereInput = {};
   if (filters.projectId) taskFilter.projectId = filters.projectId;
@@ -323,7 +345,7 @@ function buildStageLogWhere(filters: PerformanceFilters): Prisma.TaskStageLogWhe
 
 /** Task where for lead-time metrics (completed tasks), with the same filters.
  * Team applies to tasks that actually entered a stage owned by that team. */
-function buildLeadTimeWhere(filters: PerformanceFilters): Prisma.TaskWhereInput {
+async function buildLeadTimeWhere(filters: PerformanceFilters): Promise<Prisma.TaskWhereInput> {
   const where: Prisma.TaskWhereInput = {};
 
   if (filters.startDate || filters.endDate) {
@@ -337,7 +359,18 @@ function buildLeadTimeWhere(filters: PerformanceFilters): Prisma.TaskWhereInput 
 
   if (filters.projectId) where.projectId = filters.projectId;
   if (filters.clientId) where.project = { clientId: filters.clientId };
-  if (filters.teamId) where.stageLogs = { some: { stage: { defaultTeamId: filters.teamId } } };
+  // Time EFETIVO: passou por uma etapa do time, seja pelo template, seja por
+  // roteamento de etapa coringa na criação.
+  if (filters.teamId) {
+    where.stageLogs = {
+      some: {
+        OR: [
+          { stage: { defaultTeamId: filters.teamId } },
+          ...(await routedStageTerms(filters.teamId)),
+        ],
+      },
+    };
+  }
   if (filters.templateId) where.workflowTemplateId = filters.templateId;
 
   return where;
@@ -400,7 +433,7 @@ export async function getAverageTimePerStage(filters: PerformanceFilters = {}) {
   await requireManagerOrAdmin();
   filters = performanceFiltersSchema.parse(filters);
 
-  const where = buildStageLogWhere(filters);
+  const where = await buildStageLogWhere(filters);
 
   const stageLogs = await prisma.taskStageLog.findMany({
     where,
@@ -478,7 +511,6 @@ export async function getFlowEfficiencyByStage(filters: PerformanceFilters = {})
 
   const stageFilter: Prisma.TemplateStageWhereInput = {};
   if (filters.templateId) stageFilter.templateId = filters.templateId;
-  if (filters.teamId) stageFilter.defaultTeamId = filters.teamId;
 
   const taskFilter: Prisma.TaskWhereInput = {};
   if (filters.projectId) taskFilter.projectId = filters.projectId;
@@ -487,6 +519,13 @@ export async function getFlowEfficiencyByStage(filters: PerformanceFilters = {})
   const where: Prisma.StageTransitionWhereInput = {};
   if (Object.keys(stageFilter).length > 0) where.stage = stageFilter;
   if (Object.keys(taskFilter).length > 0) where.task = taskFilter;
+  // Time EFETIVO — inclui as etapas coringa roteadas para o time.
+  if (filters.teamId) {
+    where.OR = [
+      { stage: { defaultTeamId: filters.teamId } },
+      ...(await routedStageTerms(filters.teamId)),
+    ];
+  }
 
   const rows = await prisma.stageTransition.findMany({
     where,
@@ -589,7 +628,7 @@ export async function getReworkRateByStage(filters: PerformanceFilters = {}) {
   filters = performanceFiltersSchema.parse(filters);
 
   const where: Prisma.TaskStageLogWhereInput = {
-    ...buildStageLogWhere(filters),
+    ...(await buildStageLogWhere(filters)),
     status: { not: null }, // Only logs with status set
   };
 
@@ -664,7 +703,9 @@ export interface ReworkBySourceStage {
 /** Where para ReworkEvent: janela (por `at`) + template/time via sourceStage
  * (sourceStage.templateId / sourceStage.defaultTeamId, coerente com
  * buildStageLogWhere) + project/client via task. */
-function buildReworkWhere(filters: PerformanceFilters): Prisma.ReworkEventWhereInput {
+async function buildReworkWhere(
+  filters: PerformanceFilters
+): Promise<Prisma.ReworkEventWhereInput> {
   const where: Prisma.ReworkEventWhereInput = {};
   if (filters.startDate || filters.endDate) {
     const at: Prisma.DateTimeFilter = {};
@@ -674,8 +715,22 @@ function buildReworkWhere(filters: PerformanceFilters): Prisma.ReworkEventWhereI
   }
   const stageFilter: Prisma.TemplateStageWhereInput = {};
   if (filters.templateId) stageFilter.templateId = filters.templateId;
-  if (filters.teamId) stageFilter.defaultTeamId = filters.teamId;
   if (Object.keys(stageFilter).length > 0) where.sourceStage = stageFilter;
+  // Time EFETIVO da etapa-ORIGEM. Vai em AND porque `where.OR` abaixo já é do
+  // filtro de defeito — dois OR no mesmo nível se sobrescreveriam.
+  if (filters.teamId) {
+    where.AND = [
+      {
+        OR: [
+          { sourceStage: { defaultTeamId: filters.teamId } },
+          ...(await routedStageTerms(filters.teamId)).map((term) => ({
+            sourceStageId: term.stageId,
+            taskId: term.taskId,
+          })),
+        ],
+      },
+    ];
+  }
   const taskFilter: Prisma.TaskWhereInput = {};
   if (filters.projectId) taskFilter.projectId = filters.projectId;
   if (filters.clientId) taskFilter.project = { clientId: filters.clientId };
@@ -698,7 +753,7 @@ export async function getReworkBySourceStage(
   filters = performanceFiltersSchema.parse(filters);
 
   const events = await prisma.reworkEvent.findMany({
-    where: buildReworkWhere(filters),
+    where: await buildReworkWhere(filters),
     select: {
       kind: true,
       sourceStage: { select: { id: true, name: true, template: { select: { name: true } } } },
@@ -749,14 +804,14 @@ export async function getFirstTimeRightByStage(
 
   const [completedLogs, reworkEvents] = await Promise.all([
     prisma.taskStageLog.findMany({
-      where: { ...buildStageLogWhere(filters), status: "COMPLETED" },
+      where: { ...(await buildStageLogWhere(filters)), status: "COMPLETED" },
       select: {
         stageId: true,
         stage: { select: { name: true, template: { select: { name: true } } } },
       },
     }),
     prisma.reworkEvent.findMany({
-      where: buildReworkWhere(filters),
+      where: await buildReworkWhere(filters),
       select: { sourceStageId: true },
     }),
   ]);
@@ -814,7 +869,7 @@ export async function getLeadTimeMetrics(
   await requireManagerOrAdmin();
   filters = performanceFiltersSchema.parse(filters);
 
-  const where = buildLeadTimeWhere(filters);
+  const where = await buildLeadTimeWhere(filters);
 
   const tasks = await prisma.task.findMany({
     where,
@@ -893,7 +948,7 @@ export async function getCycleTimePercentiles(
   await requireManagerOrAdmin();
   filters = performanceFiltersSchema.parse(filters);
 
-  const where = buildLeadTimeWhere(filters);
+  const where = await buildLeadTimeWhere(filters);
   const [tasks, completedInScope] = await Promise.all([
     prisma.task.findMany({
       where: { ...where, startedAt: { not: null } },
@@ -984,7 +1039,7 @@ function buildOpenTaskWhere(filters: PerformanceFilters): Prisma.TaskWhereInput 
   if (filters.clientId) where.project = { clientId: filters.clientId };
   if (filters.teamId) {
     where.activeStages = {
-      some: { status: { in: ["ACTIVE", "BLOCKED"] }, stage: { defaultTeamId: filters.teamId } },
+      some: { status: { in: ["ACTIVE", "BLOCKED"] }, ...stageTeamWhere(filters.teamId) },
     };
   }
   if (filters.templateId) where.workflowTemplateId = filters.templateId;
@@ -999,7 +1054,7 @@ async function dailyThroughputSamples(
   now: number
 ): Promise<number[]> {
   const from = new Date(now - windowDays * DAY_MS);
-  const where = buildLeadTimeWhere({ ...filters, startDate: from, endDate: new Date(now) });
+  const where = await buildLeadTimeWhere({ ...filters, startDate: from, endDate: new Date(now) });
   const tasks = await prisma.task.findMany({ where, select: { completedAt: true } });
 
   const buckets = new Array(windowDays).fill(0);
@@ -1098,7 +1153,6 @@ export async function getFlowCfdSeries(filters: PerformanceFilters = {}): Promis
 
   const stageFilter: Prisma.TemplateStageWhereInput = {};
   if (filters.templateId) stageFilter.templateId = filters.templateId;
-  if (filters.teamId) stageFilter.defaultTeamId = filters.teamId;
   const taskFilter: Prisma.TaskWhereInput = {};
   if (filters.projectId) taskFilter.projectId = filters.projectId;
   if (filters.clientId) taskFilter.project = { clientId: filters.clientId };
@@ -1106,6 +1160,13 @@ export async function getFlowCfdSeries(filters: PerformanceFilters = {}): Promis
   const where: Prisma.StageTransitionWhereInput = { at: { lte: new Date(now) } };
   if (Object.keys(stageFilter).length > 0) where.stage = stageFilter;
   if (Object.keys(taskFilter).length > 0) where.task = taskFilter;
+  // Time EFETIVO — inclui as etapas coringa roteadas para o time.
+  if (filters.teamId) {
+    where.OR = [
+      { stage: { defaultTeamId: filters.teamId } },
+      ...(await routedStageTerms(filters.teamId)),
+    ];
+  }
 
   const rows = await prisma.stageTransition.findMany({
     where,
@@ -1212,7 +1273,7 @@ export async function getCalendarTasks(filters: CalendarFilters): Promise<Calend
             activeStages: {
               some: {
                 status: { in: ["ACTIVE", "BLOCKED"] },
-                ...(teamId ? { stage: { defaultTeamId: teamId } } : {}),
+                ...(teamId ? stageTeamWhere(teamId) : {}),
                 ...(userId ? { assigneeId: userId } : {}),
               },
             },
@@ -1225,6 +1286,7 @@ export async function getCalendarTasks(filters: CalendarFilters): Promise<Calend
       activeStages: {
         include: {
           stage: { include: { defaultTeam: true } },
+          team: { select: { id: true, name: true } },
           assignee: { select: { id: true, name: true } },
         },
         orderBy: { stage: { order: "asc" } },
@@ -1265,8 +1327,10 @@ export async function getCalendarTasks(filters: CalendarFilters): Promise<Calend
       extraStageCount,
       assigneeId: stageAssignee?.id ?? task.assignee?.id ?? null,
       assigneeName: stageAssignee?.name ?? task.assignee?.name ?? null,
-      teamId: primaryStage?.stage.defaultTeam?.id ?? null,
-      teamName: primaryStage?.stage.defaultTeam?.name ?? null,
+      // Time EFETIVO: o coringa roteado na criação pertence a quem foi
+      // roteado, não ao "sem equipe" do template.
+      teamId: primaryStage ? (effectiveStageTeam(primaryStage)?.id ?? null) : null,
+      teamName: primaryStage ? (effectiveStageTeam(primaryStage)?.name ?? null) : null,
     };
   });
 
@@ -1352,7 +1416,7 @@ export async function getMonthlyCalendarDemands(
   const openStage: Prisma.TaskActiveStageWhereInput = {
     status: { in: ["ACTIVE", "BLOCKED"] },
   };
-  if (filters.teamId) openStage.stage = { defaultTeamId: filters.teamId };
+  if (filters.teamId) Object.assign(openStage, stageTeamWhere(filters.teamId));
   if (filters.userId) openStage.assigneeId = filters.userId;
 
   const tasks = await prisma.task.findMany({
@@ -1442,7 +1506,7 @@ export async function getTeamThroughput(range: PeriodRange): Promise<TeamThrough
   const prevFrom = new Date(range.from.getTime() - spanMs);
   const prevTo = new Date(range.from.getTime() - 1);
 
-  const [currentLogs, previousLogs, teams] = await Promise.all([
+  const [currentLogs, previousLogs, teams, routed] = await Promise.all([
     prisma.taskStageLog.findMany({
       where: {
         exitedAt: { gte: range.from, lte: range.to, not: null },
@@ -1458,13 +1522,16 @@ export async function getTeamThroughput(range: PeriodRange): Promise<TeamThrough
       include: { stage: { include: { defaultTeam: true } } },
     }),
     prisma.team.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    routedTeamByPair(),
   ]);
 
   // Count distinct (teamId, taskId) pairs where each task was last completed by the team
   const tally = (logs: typeof currentLogs) => {
     const seen = new Map<string, Set<string>>();
     for (const log of logs) {
-      const tid = log.stage.defaultTeam?.id;
+      // Time EFETIVO: o roteamento da etapa coringa (feito na criação) vence o
+      // time padrão do template — que numa coringa é justamente nenhum.
+      const tid = routed.get(`${log.taskId}:${log.stageId}`) ?? log.stage.defaultTeam?.id;
       if (!tid) continue;
       if (!seen.has(tid)) seen.set(tid, new Set());
       seen.get(tid)!.add(log.taskId);
@@ -1505,6 +1572,7 @@ export async function getTeamCurrentLoad(): Promise<TeamLoadRow[]> {
       where: { status: "ACTIVE" },
       include: {
         stage: { include: { defaultTeam: true } },
+        team: { select: { id: true, name: true } },
         task: { select: { id: true, dueDate: true } },
       },
     }),
@@ -1517,7 +1585,7 @@ export async function getTeamCurrentLoad(): Promise<TeamLoadRow[]> {
   >();
 
   for (const active of activeStages) {
-    const tid = active.stage.defaultTeam?.id;
+    const tid = effectiveStageTeam(active)?.id;
     if (!tid) continue;
     let bucket = seenByTeam.get(tid);
     if (!bucket) {
@@ -1648,7 +1716,10 @@ export async function getOnTimeRate(range: PeriodRange): Promise<OnTimeRateResul
           where: { status: "COMPLETED" },
           orderBy: { stage: { order: "desc" } },
           take: 1,
-          include: { stage: { include: { defaultTeam: true } } },
+          include: {
+            stage: { include: { defaultTeam: true } },
+            team: { select: { id: true, name: true } },
+          },
         },
       },
     });
@@ -1674,7 +1745,7 @@ export async function getOnTimeRate(range: PeriodRange): Promise<OnTimeRateResul
   const byTeamMap = new Map<string, { teamName: string; onTime: number; total: number }>();
   for (const t of currentTasks) {
     const lastStage = t.activeStages[0];
-    const team = lastStage?.stage.defaultTeam;
+    const team = lastStage ? effectiveStageTeam(lastStage) : null;
     if (!team) continue;
     const key = team.id;
     if (!byTeamMap.has(key)) {

@@ -440,6 +440,14 @@ Cada superfície e a razão de existir **daquela forma**.
 
 - **Checagem de viabilidade ao vivo** → **P1/P3/P4**: usa a distribuição do tipo
   para dizer se o prazo nasceu apertado; **informa, não bloqueia** (P1).
+- **Etapa coringa (template sem time padrão) roteada na criação** → o template
+  afirma que o passo **existe**, não quem o executa; uma etapa sem `defaultTeam`
+  é uma decisão de desenho, não configuração faltando. Quem executa e **o que
+  precisa ser feito** (instrução por etapa) são escolhidos na criação, único
+  momento em que alguém conhece a demanda concreta. Antes disso a etapa nascia
+  órfã: nenhuma fila de time a mostrava. Roteamento **não** sobrescreve etapa que
+  já tem time no template — senão cada demanda viraria uma variante do processo,
+  que é o que o template existe para evitar. _(P3/P7)_
 
 ### Dashboard pessoal ("Meu foco" / etapas ativas)
 
@@ -538,6 +546,17 @@ team-profiles.test.ts` reprova vocabulário de premiação/ordenação dentro de
   pro drawer. _(P2/P7)_
 - **WIP limit = restrição de pull** — bloqueia reivindicar além do teto; a
   auto-ativação por dependência **nunca** bloqueia (não trava o motor). _(P3)_
+- **Time EFETIVO da etapa = roteamento da tarefa ?? time padrão do template**
+  (`lib/stage-team.ts`) — regra única para fila, cockpit, calendário e
+  relatórios. Estava prestes a ser reescrita por consulta, e regra repetida
+  diverge: bastaria uma tela esquecer o override para a mesma etapa aparecer em
+  dois times conforme a tela. O teto de WIP é a exceção deliberada — ele é
+  propriedade da **coluna** no fluxo, não da demanda. _(P4)_
+- **Preview de avanço roda o MESMO motor da ativação** (`computeStageReadiness`)
+  — a versão que só olhava dependentes diretos anunciava a etapa opcional
+  **excluída** como próxima e escondia a que de fato abre (pré-requisito sem
+  linha na tarefa conta como satisfeito). Preview divergir da execução é pior que
+  não ter preview: confirma-se uma coisa e o sistema faz outra. _(P3)_
 - **`"use server"` só exporta funções async** — constante (`MIN_CLASS_SAMPLES`)
   mora em módulo plano (`lib/reporting-constants.ts`); um const num módulo
   `"use server"` quebra `next build`. _(constraint de plataforma)_

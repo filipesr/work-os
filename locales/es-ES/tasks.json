@@ -37,7 +37,8 @@
     "activeStages": "Etapas Activas",
     "completedStages": "Etapas Completadas",
     "pendingStages": "Etapas Pendientes",
-    "blockedStages": "Etapas Bloqueadas"
+    "blockedStages": "Etapas Bloqueadas",
+    "stageInstructions": "Qué hacer en {stage} · {team}"
   },
   "stages": {
     "title": "Etapas del Flujo de Trabajo",
@@ -410,6 +411,14 @@
     "entryBadge": "Entrada",
     "includeStage": "Incluir etapa",
     "responsibleLabel": "Responsable",
+    "flexibleBadge": "Comodín",
+    "teamLabel": "Equipo",
+    "teamPlaceholder": "Elegir equipo…",
+    "teamAriaLabel": "Equipo de la etapa {stage}",
+    "chooseTeamFirst": "Elige primero el equipo",
+    "instructionsLabel": "Qué hay que hacer",
+    "instructionsPlaceholder": "Indicaciones para quien tome esta etapa…",
+    "instructionsAriaLabel": "Instrucciones de la etapa {stage}",
     "entryFooter": "La entrada del flujo será <b>{stage}</b>, la primera etapa incluida.",
     "entryFooterNone": "Ninguna etapa incluida todavía — incluye al menos una.",
     "typeSelected": "Tipo seleccionado",

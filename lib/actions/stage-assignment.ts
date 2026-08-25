@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { requireMemberOrHigher } from "@/lib/permissions";
-import { areAllPrerequisitesComplete } from "@/lib/stage-assignment-helpers";
+import { computeStageReadiness } from "@/lib/stage-assignment-helpers";
 
 // Client-callable Server Actions only. Pure/server-only helpers
 // (isValidStageAssignee, parseStageAssignments, createTaskStages) live in
@@ -13,16 +13,30 @@ export type PreviewStage = {
   id: string;
   name: string;
   order: number;
-  defaultTeamId: string | null;
-  defaultTeam: { name: string } | null;
+  /** Time EFETIVO da etapa: o roteado na criação (coringa) ou o padrão do
+   *  template. Null = etapa coringa que ninguém direcionou ainda. */
+  teamId: string | null;
+  team: { name: string } | null;
   /** Responsible already assigned to this (pre-created) stage, if any. */
   assigneeId: string | null;
+  /** O que precisa ser feito nesta etapa coringa, escrito na criação. */
+  instructions: string | null;
 };
 
 /**
  * Read-only preview of which stages will be activated or blocked when
  * `completedStageId` is completed. Does NOT mutate anything.
  * Used by the advance-stage modal to show next stages before confirmation.
+ *
+ * Roda o MESMO motor da ativação real (`computeStageReadiness`) sobre o grafo
+ * inteiro do template, e não apenas sobre quem depende diretamente da etapa
+ * concluída. A diferença aparece exatamente no caso que motivou isto: uma etapa
+ * opcional no meio do fluxo, deixada de fora na criação. A versão antiga
+ * anunciava a própria etapa excluída como "próxima" — ela é quem depende da
+ * concluída — e escondia a etapa seguinte, que é a que de fato abre, porque um
+ * pré-requisito SEM LINHA nesta tarefa conta como satisfeito. Preview e
+ * execução divergirem é pior do que não ter preview: o gestor confirma uma coisa
+ * e o sistema faz outra.
  */
 export async function previewNextStages(
   taskId: string,
@@ -30,89 +44,85 @@ export async function previewNextStages(
 ): Promise<{ activated: PreviewStage[]; blocked: PreviewStage[] }> {
   await requireMemberOrHigher();
 
-  // Stages that list completedStageId as a prerequisite
-  const dependentRows = await prisma.stageDependency.findMany({
-    where: { dependsOnStageId: completedStageId },
-    select: {
-      stage: {
-        select: {
-          id: true,
-          name: true,
-          order: true,
-          defaultTeamId: true,
-          defaultTeam: { select: { name: true } },
-        },
-      },
-    },
+  const anchor = await prisma.templateStage.findUnique({
+    where: { id: completedStageId },
+    select: { templateId: true },
   });
-  const candidateStages = dependentRows.map((r) => r.stage);
-  const candidateIds = candidateStages.map((s) => s.id);
+  if (!anchor) return { activated: [], blocked: [] };
 
-  // Bulk-load everything the loop needs in three queries instead of O(stages ×
-  // prerequisites) point reads (the previous N+1).
-  const [existingRows, prereqRows, completedRows] = await Promise.all([
-    prisma.taskActiveStage.findMany({
-      where: { taskId, stageId: { in: candidateIds } },
-      select: { stageId: true, status: true, assigneeId: true },
+  const [templateStages, rows] = await Promise.all([
+    prisma.templateStage.findMany({
+      where: { templateId: anchor.templateId },
+      orderBy: { order: "asc" },
+      select: {
+        id: true,
+        name: true,
+        order: true,
+        defaultTeamId: true,
+        defaultTeam: { select: { id: true, name: true } },
+        dependencies: { select: { dependsOnStageId: true } },
+      },
     }),
-    prisma.stageDependency.findMany({
-      where: { stageId: { in: candidateIds } },
-      select: { stageId: true, dependsOnStageId: true },
-    }),
+    // As linhas da tarefa são a lista de etapas INCLUÍDAS: etapa de template sem
+    // linha aqui ficou de fora na criação.
     prisma.taskActiveStage.findMany({
-      where: { taskId, status: "COMPLETED" },
-      select: { stageId: true },
+      where: { taskId },
+      select: {
+        stageId: true,
+        status: true,
+        assigneeId: true,
+        instructions: true,
+        teamId: true,
+        team: { select: { id: true, name: true } },
+      },
     }),
   ]);
 
-  const existingByStage = new Map(existingRows.map((e) => [e.stageId, e]));
-  const prereqsByStage = new Map<string, string[]>();
-  for (const p of prereqRows) {
-    const arr = prereqsByStage.get(p.stageId);
-    if (arr) arr.push(p.dependsOnStageId);
-    else prereqsByStage.set(p.stageId, [p.dependsOnStageId]);
-  }
-  // Treat completedStageId as completed ("will be completed" on confirm).
-  const completedSet = new Set(completedRows.map((c) => c.stageId));
-  completedSet.add(completedStageId);
+  const rowByStage = new Map(rows.map((r) => [r.stageId, r]));
+  const includedStageIds = new Set(rows.map((r) => r.stageId));
+  const completedStageIds = new Set(
+    rows.filter((r) => r.status === "COMPLETED").map((r) => r.stageId)
+  );
+  // "Será concluída" ao confirmar — é o que o preview está antecipando.
+  completedStageIds.add(completedStageId);
+  const statusByStage = new Map(rows.map((r) => [r.stageId, r.status]));
+  statusByStage.set(completedStageId, "COMPLETED");
 
+  const transitions = computeStageReadiness({
+    stages: templateStages.map((st) => ({
+      id: st.id,
+      dependsOnIds: st.dependencies.map((d) => d.dependsOnStageId),
+    })),
+    includedStageIds,
+    completedStageIds,
+    statusByStage,
+  });
+
+  const stageById = new Map(templateStages.map((st) => [st.id, st]));
   const activated: PreviewStage[] = [];
   const blocked: PreviewStage[] = [];
 
-  for (const stage of candidateStages) {
-    const existing = existingByStage.get(stage.id);
-
-    // Skip stages already active or completed (no-regress guard)
-    if (existing?.status === "ACTIVE" || existing?.status === "COMPLETED") {
-      continue;
-    }
-
-    const prereqs = prereqsByStage.get(stage.id) ?? [];
-    const allOtherComplete = areAllPrerequisitesComplete(prereqs, completedSet);
-
-    // Skip already-blocked stages that remain partially unmet (no-op, matches
-    // the behaviour in activateNextStages)
-    if (existing?.status === "BLOCKED" && !allOtherComplete) {
-      continue;
-    }
-
+  for (const [stageId, next] of transitions) {
+    if (statusByStage.get(stageId) === next) continue; // no-op: espelha activateNextStages
+    const stage = stageById.get(stageId);
+    if (!stage) continue;
+    const row = rowByStage.get(stageId);
+    const team = row?.team ?? stage.defaultTeam ?? null;
     const preview: PreviewStage = {
       id: stage.id,
       name: stage.name,
       order: stage.order,
-      defaultTeamId: stage.defaultTeamId,
-      defaultTeam: stage.defaultTeam,
-      assigneeId: existing?.assigneeId ?? null,
+      teamId: team?.id ?? null,
+      team: team ? { name: team.name } : null,
+      assigneeId: row?.assigneeId ?? null,
+      instructions: row?.instructions ?? null,
     };
-
-    if (allOtherComplete) {
-      activated.push(preview);
-    } else {
-      blocked.push(preview);
-    }
+    if (next === "ACTIVE") activated.push(preview);
+    else blocked.push(preview);
   }
 
-  return { activated, blocked };
+  const byOrder = (a: PreviewStage, b: PreviewStage) => a.order - b.order;
+  return { activated: activated.sort(byOrder), blocked: blocked.sort(byOrder) };
 }
 
 /** Members of a team, for the per-stage assignee selector. */

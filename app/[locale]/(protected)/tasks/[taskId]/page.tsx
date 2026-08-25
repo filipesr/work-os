@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { TaskDetailView } from "@/components/tasks/TaskDetailView";
 import { mapArtifactRow } from "@/lib/artifacts/unify";
 import { getAvailableNextStages, getPreviousStages } from "@/lib/actions/task";
+import { effectiveStageTeam } from "@/lib/stage-team";
 import { getCurrentActiveLog } from "@/lib/actions/activity";
 import { UserRole } from "@prisma/client";
 
@@ -62,6 +63,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
               template: true,
             },
           },
+          team: { select: { id: true, name: true } },
           assignee: {
             select: { id: true, name: true, email: true, image: true },
           },
@@ -209,6 +211,8 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
         allTemplateStages={allTemplateStages}
         canPerformActions={canPerformActions}
         currentStageAssignee={currentStageAssignee}
+        currentStageTeam={currentActiveStage ? effectiveStageTeam(currentActiveStage) : null}
+        currentStageInstructions={currentActiveStage?.instructions ?? null}
       />
     </div>
   );

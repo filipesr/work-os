@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin, getSessionUser } from "@/lib/permissions";
+import { stageTeamWhere } from "@/lib/stage-team";
 
 export const OVERLOAD_CEILING = 8;
 export const OVERLOAD_MARGIN = 3;
@@ -174,7 +175,8 @@ export async function getAgingStages(teamIds?: string[]): Promise<AgingItem[]> {
   const now = Date.now();
 
   const stages = await prisma.taskActiveStage.findMany({
-    where: { status: "ACTIVE", stage: { defaultTeamId: { in: scope } } },
+    // Time EFETIVO — inclui as etapas coringa roteadas para o time na criação.
+    where: { status: "ACTIVE", ...stageTeamWhere(scope) },
     select: {
       activatedAt: true,
       task: { select: { id: true, title: true, dueDate: true } },
@@ -208,7 +210,7 @@ export async function getBlockedStages(teamIds?: string[]): Promise<BlockedItem[
   const now = Date.now();
 
   const blocked = await prisma.taskActiveStage.findMany({
-    where: { status: "BLOCKED", stage: { defaultTeamId: { in: scope } } },
+    where: { status: "BLOCKED", ...stageTeamWhere(scope) },
     select: {
       stageId: true,
       activatedAt: true,
@@ -283,6 +285,11 @@ export async function getBlockedStages(teamIds?: string[]): Promise<BlockedItem[
  * over (`over`) their limit — the breaches worth surfacing. Auto-activation
  * never blocks, so `over` arises from direct admin assignment or a lowered
  * limit. Scoped by the stage's team.
+ *
+ * Aqui o escopo é o time PADRÃO do template, de propósito: o teto de WIP é
+ * propriedade da coluna no fluxo, não da demanda. Uma etapa coringa não tem
+ * coluna de um time só — as instâncias dela vão para times diferentes conforme
+ * a demanda — então contá-la no teto de um deles mediria a fila errada.
  */
 export async function getWipStatus(teamIds?: string[]): Promise<WipStageStatus[]> {
   await requireManagerOrAdmin();
@@ -340,7 +347,7 @@ export async function getSystemConstraint(teamIds?: string[]): Promise<SystemCon
   const now = Date.now();
 
   const blocked = await prisma.taskActiveStage.findMany({
-    where: { status: "BLOCKED", stage: { defaultTeamId: { in: scope } } },
+    where: { status: "BLOCKED", ...stageTeamWhere(scope) },
     select: {
       stageId: true,
       activatedAt: true,

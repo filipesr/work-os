@@ -194,10 +194,12 @@ model User {
 }
 
 model Team {
-  id            String          @id @default(cuid())
-  name          String          @unique
-  members       User[]          @relation("UserTeams")
+  id            String            @id @default(cuid())
+  name          String            @unique
+  members       User[]            @relation("UserTeams")
   defaultStages TemplateStage[] // Stages this team is default for
+  // Etapas coringa roteadas para este time na criação da tarefa (override).
+  routedStages  TaskActiveStage[] @relation("StageTeamOverride")
 }
 
 // --- 2. Client & Project Models ---
@@ -294,14 +296,14 @@ model StageDependency {
 // This is the "Single Task"
 
 model Task {
-  id          String       @id @default(cuid())
-  title       String
-  description String?      @db.Text
-  status      TaskStatus   @default(BACKLOG)
-  priority    TaskPriority @default(MEDIUM)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  dueDate     DateTime?
+  id             String       @id @default(cuid())
+  title          String
+  description    String?      @db.Text
+  status         TaskStatus   @default(BACKLOG)
+  priority       TaskPriority @default(MEDIUM)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  dueDate        DateTime?
   // Carimbado UMA vez, na PRIMEIRA promoção para IN_PROGRESS (ver lib/task-start.ts).
   // Separa as três métricas que antes colapsavam numa só:
   //   lead time  = completedAt − createdAt (demanda → entrega, o que o cliente sente)
@@ -373,6 +375,22 @@ model TaskActiveStage {
   assigneeId String?
   assignee   User?   @relation("StageAssignee", fields: [assigneeId], references: [id], onUpdate: NoAction, onDelete: SetNull)
 
+  // --- Etapa coringa: roteamento decidido na CRIAÇÃO, não no template ---
+  // Uma etapa de template sem `defaultTeamId` é deliberadamente flexível: o
+  // template diz que o passo existe, não quem o executa. Sem este campo a etapa
+  // nascia órfã — nenhuma fila de time a mostrava, porque toda consulta de
+  // execução parte de `stage.defaultTeamId`. O time efetivo da etapa é
+  // `teamId ?? stage.defaultTeamId` (ver lib/stage-team.ts); null = herda o
+  // template, que continua sendo o caso da esmagadora maioria das etapas.
+  teamId String?
+  team   Team?   @relation("StageTeamOverride", fields: [teamId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+
+  // O que precisa ser feito NESTA instância da etapa. Existe porque a etapa
+  // coringa não carrega significado do template: "Apoio" não diz nada sozinho.
+  // É direcionamento do gestor para quem for pegar, não conversa — discussão
+  // continua em TaskComment, que é datada e por autor.
+  instructions String? @db.Text
+
   // Timestamps
   activatedAt DateTime  @default(now())
   completedAt DateTime?
@@ -390,6 +408,7 @@ model TaskActiveStage {
   @@index([stageId])
   @@index([assigneeId])
   @@index([status])
+  @@index([teamId])
 }
 
 model TaskComment {
@@ -676,12 +695,12 @@ model ActivityLog {
   /// iniciar nada, e o erro aparece longe daqui, como violação de unicidade.
   openForUserId String? @unique
 
-  @@index([userId, endedAt]) // Index for quickly finding active tasks
-
   // O banco também tem o índice parcial `ActivityLog_userId_open_key` (migração
   // 20260812160000), que garante o mesmo derivando de `endedAt`. Virou defesa
   // REDUNDANTE: se um `migrate dev` propuser derrubá-lo, pode aceitar — a coluna
   // acima sustenta a regra sozinha.
+
+  @@index([userId, endedAt]) // Index for quickly finding active tasks
 }
 
 // --- 7. Calendário de datas (spec 2026-08-12) ---

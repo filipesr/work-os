@@ -591,7 +591,8 @@
         "HIGH": "Alta",
         "MEDIUM": "Média",
         "LOW": "Baixa"
-      }
+      },
+      "noTeamRouted": "Sem time direcionado"
     }
   },
   "health": {

@@ -91,6 +91,34 @@ export function computeStageReadiness(args: {
   return out;
 }
 
+/** Reads `team:<stageId>` form fields into a { stageId: teamId } map, skipping
+ * empty values. Só as etapas CORINGA (sem `defaultTeamId`) postam este campo —
+ * o roteamento delas é decidido na criação, não no template. */
+export function parseStageTeams(formData: FormData): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    if (!key.startsWith("team:")) continue;
+    const stageId = key.slice("team:".length);
+    const teamId = typeof value === "string" ? value.trim() : "";
+    if (stageId && teamId) out[stageId] = teamId;
+  }
+  return out;
+}
+
+/** Reads `instructions:<stageId>` form fields into a { stageId: text } map.
+ * O que precisa ser feito naquela instância da etapa coringa — direcionamento
+ * do gestor, não conversa (discussão continua nos comentários da tarefa). */
+export function parseStageInstructions(formData: FormData): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    if (!key.startsWith("instructions:")) continue;
+    const stageId = key.slice("instructions:".length);
+    const text = typeof value === "string" ? value.trim() : "";
+    if (stageId && text) out[stageId] = text;
+  }
+  return out;
+}
+
 /** Reads `assignee:<stageId>` form fields into a { stageId: assigneeId } map,
  * skipping empty values (= "no assignment"). */
 export function parseStageAssignments(formData: FormData): Record<string, string> {
@@ -115,9 +143,18 @@ export function parseStageAssignments(formData: FormData): Record<string, string
  *
  * The lowest-order INCLUDED stage starts ACTIVE (the workflow entry point); the
  * rest start INACTIVE. We key off `order` (source of truth for the start) rather
- * than "no dependencies". Assignments apply only when valid (assignee ∈
- * stage.defaultTeam). A TaskStageLog is opened only for the initial ACTIVE stage.
- * Runs inside a caller-provided transaction; not a Server Action. */
+ * than "no dependencies". A TaskStageLog is opened only for the initial ACTIVE
+ * stage. Runs inside a caller-provided transaction; not a Server Action.
+ *
+ * Roteamento (`teams`) e instruções (`instructions`) só valem para etapas
+ * CORINGA — as que o template deixou sem `defaultTeamId`. Numa etapa que já tem
+ * time padrão o override é ignorado em silêncio: quem decide o fluxo dela é o
+ * template, e deixar a criação sobrescrever transformaria cada demanda numa
+ * variante do processo, que é exatamente o que o template existe para evitar.
+ *
+ * Assignments valem quando o responsável pertence ao time EFETIVO da etapa
+ * (override, senão o padrão) — atribuir alguém a um time que não é o dela seria
+ * criar trabalho que não aparece na fila de ninguém. */
 export async function createTaskStages(
   tx: Prisma.TransactionClient,
   args: {
@@ -126,9 +163,21 @@ export async function createTaskStages(
     userId: string;
     assignments?: Record<string, string>;
     selectedStageIds?: ReadonlySet<string>;
+    /** { stageId: teamId } — roteamento das etapas coringa, vindo da criação. */
+    teams?: Record<string, string>;
+    /** { stageId: texto } — o que precisa ser feito naquela etapa coringa. */
+    instructions?: Record<string, string>;
   }
 ): Promise<{ initialAssigned: boolean }> {
-  const { taskId, templateId, userId, assignments = {}, selectedStageIds } = args;
+  const {
+    taskId,
+    templateId,
+    userId,
+    assignments = {},
+    selectedStageIds,
+    teams = {},
+    instructions = {},
+  } = args;
 
   const stages = await tx.templateStage.findMany({
     where: { templateId },
@@ -154,15 +203,45 @@ export async function createTaskStages(
     throw new Error("At least one stage must be included in the task.");
   }
 
+  // Roteamento válido = etapa coringa (sem time padrão) + time existente. A
+  // consulta dos membros só acontece quando há override — o caso comum (todas
+  // as etapas com time padrão) não paga por ela.
+  const routable = new Map<string, string>();
+  for (const stage of included) {
+    const requestedTeam = teams[stage.id];
+    if (requestedTeam && !stage.defaultTeamId) routable.set(stage.id, requestedTeam);
+  }
+  const membersByTeam = new Map<string, Set<string>>();
+  if (routable.size > 0) {
+    const rows = await tx.team.findMany({
+      where: { id: { in: [...new Set(routable.values())] } },
+      select: { id: true, members: { select: { id: true } } },
+    });
+    for (const team of rows) membersByTeam.set(team.id, new Set(team.members.map((m) => m.id)));
+  }
+
   // Lowest order among the INCLUDED stages (already sorted asc) is the entry point.
   const startStageId = included[0].id;
   let initialAssigned = false;
 
   for (const stage of included) {
     const isStart = stage.id === startStageId;
+
+    // Time inexistente vira "sem roteamento" em vez de erro: a etapa reaparece
+    // como coringa não-direcionada (visível e corrigível) em vez de derrubar a
+    // criação da demanda inteira.
+    const requestedTeam = routable.get(stage.id);
+    const teamId = requestedTeam && membersByTeam.has(requestedTeam) ? requestedTeam : null;
+
     const requested = assignments[stage.id];
-    const assigneeId = requested && isValidStageAssignee(stage, requested) ? requested : null;
+    const allowed = teamId
+      ? (membersByTeam.get(teamId) ?? new Set<string>())
+      : new Set((stage.defaultTeam?.members ?? []).map((m) => m.id));
+    const assigneeId = requested && allowed.has(requested) ? requested : null;
     if (isStart && assigneeId) initialAssigned = true;
+
+    // Instrução só faz sentido onde o template não diz o que fazer.
+    const note = stage.defaultTeamId ? undefined : instructions[stage.id];
 
     await tx.taskActiveStage.create({
       data: {
@@ -170,6 +249,8 @@ export async function createTaskStages(
         stageId: stage.id,
         status: isStart ? "ACTIVE" : "INACTIVE",
         assigneeId,
+        ...(teamId ? { teamId } : {}),
+        ...(note ? { instructions: note } : {}),
         ...(assigneeId ? { assignedAt: new Date() } : {}),
       },
     });

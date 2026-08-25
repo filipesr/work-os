@@ -232,6 +232,13 @@ export default async function DashboardPage() {
                   <div className="mt-0.5 text-xs text-muted-foreground">
                     {dueInfo(b.task.dueDate, nowMs, tFlow).label}
                   </div>
+                  {/* Etapa coringa: o nome não diz o que fazer. Sem a instrução
+                      aqui, a pessoa só descobriria depois de pegar. */}
+                  {b.instructions && (
+                    <p className="mt-1 line-clamp-2 rounded border border-warning/30 bg-warning-subtle px-2 py-1 text-xs text-warning">
+                      {b.instructions}
+                    </p>
+                  )}
                 </div>
                 <ClaimActiveStageButton taskId={b.task.id} stageId={b.stage.id} isBlocked={false} />
               </li>

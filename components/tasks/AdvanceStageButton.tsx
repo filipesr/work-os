@@ -181,20 +181,27 @@ export function AdvanceStageButton({
                     </p>
                     <ul className="space-y-2">
                       {previewData.activated.map((stage) => (
-                        <li
-                          key={stage.id}
-                          className="flex items-center justify-between gap-2 text-xs text-success"
-                        >
-                          <span>
-                            • {stage.name} ({t("advanceModal.orderLabel", { order: stage.order })})
-                          </span>
-                          <StageAssigneeSelect
-                            stageId={stage.id}
-                            teamName={stage.defaultTeam?.name ?? null}
-                            members={membersByStage[stage.id] ?? []}
-                            value={assignments[stage.id] ?? ""}
-                            onChange={(userId) => setAssignment(stage.id, userId)}
-                          />
+                        <li key={stage.id} className="text-xs text-success">
+                          <div className="flex items-center justify-between gap-2">
+                            <span>
+                              • {stage.name} ({t("advanceModal.orderLabel", { order: stage.order })}
+                              )
+                            </span>
+                            <StageAssigneeSelect
+                              stageId={stage.id}
+                              teamName={stage.team?.name ?? null}
+                              members={membersByStage[stage.id] ?? []}
+                              value={assignments[stage.id] ?? ""}
+                              onChange={(userId) => setAssignment(stage.id, userId)}
+                            />
+                          </div>
+                          {/* Etapa coringa: quem recebe precisa ler o
+                              direcionamento escrito na criação. */}
+                          {stage.instructions && (
+                            <p className="ml-3 mt-1 whitespace-pre-wrap opacity-90">
+                              {stage.instructions}
+                            </p>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -208,20 +215,27 @@ export function AdvanceStageButton({
                     </p>
                     <ul className="space-y-2">
                       {previewData.blocked.map((stage) => (
-                        <li
-                          key={stage.id}
-                          className="flex items-center justify-between gap-2 text-xs text-warning"
-                        >
-                          <span>
-                            • {stage.name} ({t("advanceModal.orderLabel", { order: stage.order })})
-                          </span>
-                          <StageAssigneeSelect
-                            stageId={stage.id}
-                            teamName={stage.defaultTeam?.name ?? null}
-                            members={membersByStage[stage.id] ?? []}
-                            value={assignments[stage.id] ?? ""}
-                            onChange={(userId) => setAssignment(stage.id, userId)}
-                          />
+                        <li key={stage.id} className="text-xs text-warning">
+                          <div className="flex items-center justify-between gap-2">
+                            <span>
+                              • {stage.name} ({t("advanceModal.orderLabel", { order: stage.order })}
+                              )
+                            </span>
+                            <StageAssigneeSelect
+                              stageId={stage.id}
+                              teamName={stage.team?.name ?? null}
+                              members={membersByStage[stage.id] ?? []}
+                              value={assignments[stage.id] ?? ""}
+                              onChange={(userId) => setAssignment(stage.id, userId)}
+                            />
+                          </div>
+                          {/* Etapa coringa: quem recebe precisa ler o
+                              direcionamento escrito na criação. */}
+                          {stage.instructions && (
+                            <p className="ml-3 mt-1 whitespace-pre-wrap opacity-90">
+                              {stage.instructions}
+                            </p>
+                          )}
                         </li>
                       ))}
                     </ul>

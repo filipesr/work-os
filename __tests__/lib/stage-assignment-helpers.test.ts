@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import type { Prisma } from "@prisma/client";
 import {
   parseSelectedStages,
+  parseStageTeams,
+  parseStageInstructions,
   createTaskStages,
   computeStageReadiness,
 } from "@/lib/stage-assignment-helpers";
@@ -165,5 +167,104 @@ describe("computeStageReadiness", () => {
       ]),
     });
     expect(r.get("D")).toBe("ACTIVE");
+  });
+});
+
+describe("parseStageTeams / parseStageInstructions", () => {
+  it("lê team:<id> e instructions:<id>, descartando vazios", () => {
+    const fd = new FormData();
+    fd.append("team:s1", "t1");
+    fd.append("team:s2", "   ");
+    fd.append("instructions:s1", "  Fazer o corte do vídeo  ");
+    fd.append("instructions:s2", "");
+    fd.append("assignee:s1", "u1"); // outro prefixo — ignorado
+    expect(parseStageTeams(fd)).toEqual({ s1: "t1" });
+    expect(parseStageInstructions(fd)).toEqual({ s1: "Fazer o corte do vídeo" });
+  });
+});
+
+describe("createTaskStages — roteamento de etapa coringa", () => {
+  // s1 tem time no template; s2 é coringa (defaultTeamId null).
+  const stages = [
+    {
+      id: "s1",
+      optional: false,
+      order: 1,
+      defaultTeamId: "tA",
+      defaultTeam: { members: [{ id: "uA" }] },
+    },
+    { id: "s2", optional: false, order: 2, defaultTeamId: null, defaultTeam: null },
+  ];
+
+  function makeTx(teamRows: { id: string; members: { id: string }[] }[] = []) {
+    const create = vi.fn().mockResolvedValue({});
+    const tx = {
+      templateStage: { findMany: vi.fn().mockResolvedValue(stages) },
+      team: { findMany: vi.fn().mockResolvedValue(teamRows) },
+      taskActiveStage: { create },
+      taskStageLog: { create: vi.fn().mockResolvedValue({}) },
+      stageTransition: {
+        create: vi.fn().mockResolvedValue({}),
+        createMany: vi.fn().mockResolvedValue({}),
+      },
+    };
+    const dataFor = (stageId: string) =>
+      create.mock.calls
+        .map((c) => c[0].data as Record<string, unknown>)
+        .find((d) => d.stageId === stageId);
+    return { tx: tx as unknown as Prisma.TransactionClient, dataFor };
+  }
+
+  it("grava time e instrução na etapa coringa, e o responsável do time escolhido", async () => {
+    const { tx, dataFor } = makeTx([{ id: "tB", members: [{ id: "uB" }] }]);
+    await createTaskStages(tx, {
+      taskId: "t1",
+      templateId: "tpl",
+      userId: "u1",
+      teams: { s2: "tB" },
+      instructions: { s2: "Revisar o roteiro" },
+      assignments: { s2: "uB" },
+    });
+    const s2 = dataFor("s2")!;
+    expect(s2.teamId).toBe("tB");
+    expect(s2.instructions).toBe("Revisar o roteiro");
+    expect(s2.assigneeId).toBe("uB");
+  });
+
+  it("recusa responsável fora do time escolhido", async () => {
+    const { tx, dataFor } = makeTx([{ id: "tB", members: [{ id: "uB" }] }]);
+    await createTaskStages(tx, {
+      taskId: "t1",
+      templateId: "tpl",
+      userId: "u1",
+      teams: { s2: "tB" },
+      assignments: { s2: "intruso" },
+    });
+    expect(dataFor("s2")!.assigneeId).toBeNull();
+  });
+
+  it("ignora override numa etapa que já tem time no template — quem manda é o fluxo", async () => {
+    const { tx, dataFor } = makeTx();
+    await createTaskStages(tx, {
+      taskId: "t1",
+      templateId: "tpl",
+      userId: "u1",
+      teams: { s1: "tB" },
+      instructions: { s1: "não deve entrar" },
+    });
+    const s1 = dataFor("s1")!;
+    expect(s1.teamId).toBeUndefined();
+    expect(s1.instructions).toBeUndefined();
+  });
+
+  it("time inexistente não derruba a criação: a etapa fica sem roteamento", async () => {
+    const { tx, dataFor } = makeTx([]); // nenhum time encontrado
+    await createTaskStages(tx, {
+      taskId: "t1",
+      templateId: "tpl",
+      userId: "u1",
+      teams: { s2: "fantasma" },
+    });
+    expect(dataFor("s2")!.teamId).toBeUndefined();
   });
 });

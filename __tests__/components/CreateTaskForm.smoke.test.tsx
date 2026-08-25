@@ -44,13 +44,16 @@ const projects = [
   { id: "p2", name: "App", clientId: "c1", client: { name: "ACME" } },
 ];
 const templates = [{ id: "t1", name: "Landing", description: null, _count: { stages: 3 } }];
+const teams = [{ id: "tm1", name: "Design", members: [{ id: "u1", name: "Ana", email: null }] }];
 
 describe("CreateTaskForm — smoke (Radix Select → FormData)", () => {
   it("renders a form that submits projectId, templateId and priority via hidden native selects", async () => {
     let container!: HTMLElement;
     // Wrap in act(): the component fires a getClients() effect on mount.
     await act(async () => {
-      ({ container } = render(<CreateTaskForm projects={projects} templates={templates} />));
+      ({ container } = render(
+        <CreateTaskForm projects={projects} templates={templates} teams={teams} />
+      ));
     });
 
     const form = container.querySelector("form");

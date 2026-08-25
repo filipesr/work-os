@@ -59,9 +59,17 @@ interface Template {
   };
 }
 
+interface TeamOption {
+  id: string;
+  name: string;
+  members: { id: string; name: string | null; email: string | null }[];
+}
+
 interface CreateTaskFormProps {
   projects: Project[];
   templates: Template[];
+  /** Times com membros — usados só pelas etapas CORINGA (sem time padrão). */
+  teams: TeamOption[];
   defaultProjectId?: string;
 }
 
@@ -71,6 +79,7 @@ type StagePreviewItem = Awaited<ReturnType<typeof getTemplateStagePreview>>[0];
 export function CreateTaskForm({
   projects: initialProjects,
   templates,
+  teams,
   defaultProjectId,
 }: CreateTaskFormProps) {
   const t = useTranslations("tasks");
@@ -95,6 +104,9 @@ export function CreateTaskForm({
   // which stages are included (checkbox) and who is assigned to each.
   const [checkedStages, setCheckedStages] = useState<Record<string, boolean>>({});
   const [stageAssignees, setStageAssignees] = useState<Record<string, string>>({});
+  // Roteamento das etapas CORINGA: o template deixou a etapa sem time de
+  // propósito, então o time (e só então o responsável) é escolhido aqui.
+  const [stageTeams, setStageTeams] = useState<Record<string, string>>({});
   const [entryExperienced, setEntryExperienced] = useState<boolean | null>(null);
 
   // Load clients for QuickCreateProject
@@ -121,6 +133,7 @@ export function CreateTaskForm({
     setSelectedTemplateId(templateId);
     setCheckedStages({});
     setStageAssignees({});
+    setStageTeams({});
     setEntryExperienced(null);
     if (!templateId) {
       setStagePreview([]);
@@ -389,13 +402,20 @@ export function CreateTaskForm({
                   {stagePreview.map((stage, index) => {
                     const isChecked = checkedStages[stage.id] ?? !stage.optional;
                     const isEntry = stage.id === entryStageId;
+                    // Coringa = o template deixou a etapa sem time padrão. É uma
+                    // decisão do template ("este passo existe, quem faz depende
+                    // da demanda"), não uma configuração faltando.
+                    const isFlexible = !stage.defaultTeam;
+                    const chosenTeam = isFlexible
+                      ? (teams.find((tm) => tm.id === stageTeams[stage.id]) ?? null)
+                      : null;
                     const dimmed = stage.optional && !isChecked;
                     return (
                       <li
                         key={stage.id}
-                        className={`grid gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-center ${
-                          dimmed ? "opacity-60" : ""
-                        }`}
+                        className={`grid gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_14rem] ${
+                          isFlexible ? "sm:items-start" : "sm:items-center"
+                        } ${dimmed ? "opacity-60" : ""}`}
                       >
                         <div className="flex min-w-0 items-start gap-3">
                           <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
@@ -409,6 +429,11 @@ export function CreateTaskForm({
                               {stage.optional && (
                                 <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                                   {t("create.optionalBadge")}
+                                </span>
+                              )}
+                              {isFlexible && (
+                                <span className="rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
+                                  {t("create.flexibleBadge")}
                                 </span>
                               )}
                               {isEntry && (
@@ -439,21 +464,80 @@ export function CreateTaskForm({
                             )}
                           </div>
                         </div>
-                        <div>
-                          <p className="mb-1 text-xs font-medium text-muted-foreground">
-                            {t("create.responsibleLabel")}
-                          </p>
-                          <StageAssigneeSelect
-                            stageId={stage.id}
-                            teamName={stage.defaultTeam?.name ?? null}
-                            members={stage.defaultTeam?.members ?? []}
-                            className="w-full"
-                            disabled={!isChecked}
-                            onChange={(v: string) =>
-                              setStageAssignees((prev) => ({ ...prev, [stage.id]: v }))
-                            }
-                          />
+                        <div className="space-y-3">
+                          {/* Etapa coringa: o template não nomeia o time, então
+                              o roteamento é escolhido aqui. Sem isto a etapa
+                              nasceria fora da fila de todos os times. */}
+                          {isFlexible && (
+                            <div>
+                              <p className="mb-1 text-xs font-medium text-muted-foreground">
+                                {t("create.teamLabel")}
+                              </p>
+                              <select
+                                name={`team:${stage.id}`}
+                                value={chosenTeam?.id ?? ""}
+                                disabled={!isChecked}
+                                aria-label={t("create.teamAriaLabel", { stage: stage.name })}
+                                onChange={(e) => {
+                                  const teamId = e.target.value;
+                                  setStageTeams((prev) => ({ ...prev, [stage.id]: teamId }));
+                                  // Trocar de time invalida quem já estava escolhido:
+                                  // a pessoa pode não pertencer ao time novo.
+                                  setStageAssignees((prev) => ({ ...prev, [stage.id]: "" }));
+                                }}
+                                className="h-9 w-full rounded-md border border-input-border bg-input px-2 text-sm text-foreground focus-visible:border-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-muted/50 disabled:opacity-60"
+                              >
+                                <option value="">{t("create.teamPlaceholder")}</option>
+                                {teams.map((team) => (
+                                  <option key={team.id} value={team.id}>
+                                    {team.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                          <div>
+                            <p className="mb-1 text-xs font-medium text-muted-foreground">
+                              {t("create.responsibleLabel")}
+                            </p>
+                            {isFlexible && !chosenTeam ? (
+                              <p className="text-xs text-muted-foreground">
+                                {t("create.chooseTeamFirst")}
+                              </p>
+                            ) : (
+                              <StageAssigneeSelect
+                                // Remonta ao trocar de time: sem isto o <select>
+                                // não-controlado guardaria o responsável antigo.
+                                key={chosenTeam?.id ?? "default"}
+                                stageId={stage.id}
+                                teamName={chosenTeam?.name ?? stage.defaultTeam?.name ?? null}
+                                members={chosenTeam?.members ?? stage.defaultTeam?.members ?? []}
+                                className="w-full"
+                                disabled={!isChecked}
+                                onChange={(v: string) =>
+                                  setStageAssignees((prev) => ({ ...prev, [stage.id]: v }))
+                                }
+                              />
+                            )}
+                          </div>
                         </div>
+
+                        {/* "Apoio" não diz nada sozinho: numa etapa coringa,
+                            quem pega precisa ler o que exatamente é para fazer. */}
+                        {isFlexible && (
+                          <div className="sm:col-span-2">
+                            <p className="mb-1 text-xs font-medium text-muted-foreground">
+                              {t("create.instructionsLabel")}
+                            </p>
+                            <Textarea
+                              name={`instructions:${stage.id}`}
+                              rows={2}
+                              disabled={!isChecked}
+                              placeholder={t("create.instructionsPlaceholder")}
+                              aria-label={t("create.instructionsAriaLabel", { stage: stage.name })}
+                            />
+                          </div>
+                        )}
                       </li>
                     );
                   })}

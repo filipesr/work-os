@@ -41,8 +41,16 @@ describe("getMonthlyCalendarDemands — filtros da visão de mês", () => {
     // Onde o trabalho está agora — não onde já passou. Filtrar por etapa
     // concluída traria de volta tarefas que o time já entregou.
     await getMonthlyCalendarDemands(RANGE, { teamId: "t1" });
+    // Time EFETIVO: etapa com time no template OU coringa roteada para ele na
+    // criação. Sem o segundo ramo a etapa coringa sumiria do calendário.
     expect(whereOf().activeStages).toEqual({
-      some: { status: { in: ["ACTIVE", "BLOCKED"] }, stage: { defaultTeamId: "t1" } },
+      some: {
+        status: { in: ["ACTIVE", "BLOCKED"] },
+        OR: [
+          { teamId: { in: ["t1"] } },
+          { teamId: null, stage: { defaultTeamId: { in: ["t1"] } } },
+        ],
+      },
     });
   });
 
@@ -60,7 +68,10 @@ describe("getMonthlyCalendarDemands — filtros da visão de mês", () => {
     expect(whereOf().activeStages).toEqual({
       some: {
         status: { in: ["ACTIVE", "BLOCKED"] },
-        stage: { defaultTeamId: "t1" },
+        OR: [
+          { teamId: { in: ["t1"] } },
+          { teamId: null, stage: { defaultTeamId: { in: ["t1"] } } },
+        ],
         assigneeId: "u1",
       },
     });

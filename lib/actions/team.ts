@@ -2,7 +2,28 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/permissions";
+import { requireAdmin, requireMemberOrHigher } from "@/lib/permissions";
+
+/** Times com seus membros, para rotear uma etapa CORINGA (template sem time
+ *  padrão) na criação da demanda. Aberto a member-or-higher porque é a mesma
+ *  permissão de criar tarefa — exigir admin aqui travaria o próprio formulário. */
+export async function getTeamsWithMembers(): Promise<
+  {
+    id: string;
+    name: string;
+    members: { id: string; name: string | null; email: string | null }[];
+  }[]
+> {
+  await requireMemberOrHigher();
+  return prisma.team.findMany({
+    select: {
+      id: true,
+      name: true,
+      members: { select: { id: true, name: true, email: true }, orderBy: { name: "asc" } },
+    },
+    orderBy: { name: "asc" },
+  });
+}
 
 // ========== Team detail page actions (movidas de admin/teams/[teamId]/page) ==========
 
