@@ -557,6 +557,14 @@ team-profiles.test.ts` reprova vocabulário de premiação/ordenação dentro de
   **excluída** como próxima e escondia a que de fato abre (pré-requisito sem
   linha na tarefa conta como satisfeito). Preview divergir da execução é pior que
   não ter preview: confirma-se uma coisa e o sistema faz outra. _(P3)_
+- **Retorno preserva o que foi determinado na criação** — a reversão reativa a
+  etapa-alvo por `update` na linha existente (nunca `create`), então `teamId` e
+  `instructions` sobrevivem: a etapa coringa volta para a fila do time escolhido
+  na criação, com a instrução intacta. O `assigneeId` é limpo de propósito (volta
+  ao backlog), e é justamente isso que a faz reaparecer para o time certo. Só se
+  volta para etapa que a tarefa **percorreu** (`getPreviousStages` deriva de logs
+  fechados) e que **faz parte** dela — etapa opcional excluída não tem linha e é
+  recusada antes de qualquer escrita, sem `ReworkEvent` fantasma. _(P3/P5)_
 - **`"use server"` só exporta funções async** — constante (`MIN_CLASS_SAMPLES`)
   mora em módulo plano (`lib/reporting-constants.ts`); um const num módulo
   `"use server"` quebra `next build`. _(constraint de plataforma)_
