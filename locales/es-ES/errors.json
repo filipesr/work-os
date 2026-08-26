@@ -42,5 +42,17 @@
     "projectRequired": "Selecciona al menos un proyecto.",
     "invalidDueDate": "Fecha de vencimiento inválida.",
     "noValidProject": "Ningún proyecto válido seleccionado."
+  },
+  "stageSetup": {
+    "taskRequired": "Demanda no informada.",
+    "taskNotFound": "Demanda no encontrada.",
+    "noTemplate": "Esta demanda no tiene flujo de trabajo asociado.",
+    "noStages": "El flujo de trabajo no tiene etapas.",
+    "atLeastOneStage": "Incluye al menos una etapa.",
+    "locked": {
+      "started": "La demanda ya empezó y no puede reconfigurarse.",
+      "assigned": "Una etapa ya tiene responsable — la configuración está bloqueada.",
+      "status": "La demanda no está en el backlog y no puede reconfigurarse."
+    }
   }
 }

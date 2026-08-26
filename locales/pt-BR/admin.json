@@ -592,7 +592,8 @@
         "MEDIUM": "Média",
         "LOW": "Baixa"
       },
-      "noTeamRouted": "Sem time direcionado"
+      "noTeamRouted": "Sem time direcionado",
+      "stageSetupTitle": "Configuração das etapas"
     }
   },
   "health": {

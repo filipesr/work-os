@@ -17,6 +17,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   contra os membros do time escolhido) e escreve **o que precisa ser feito**. A instrução aparece
   na fila do time, no modal de conclusão de etapa e no detalhe da demanda. Override numa etapa que
   já tem time no template é **ignorado** — quem manda no fluxo é o template.
+- **Correção de demanda ainda não iniciada** (`/admin/tasks/[taskId]` → "Configuração das etapas"):
+  enquanto a demanda é **virgem**, o gestor pode reconfigurar quais etapas opcionais entram, para
+  qual time vai cada etapa coringa, quem responde e a instrução. Fecha o buraco em que uma etapa
+  roteada errado — ou não roteada — ficava presa para sempre. Virgem = `Task.startedAt` nulo,
+  nenhuma etapa com responsável e status `BACKLOG` (`lib/task-virgin.ts`); o carimbo write-once já
+  existente é a âncora, em vez de um predicado novo de "teve interação". A janela fecha porque
+  depois disso mudar o time de uma etapa **reescreveria medição** já produzida (throughput,
+  on-time, flow efficiency por time), e não corrigiria erro de planejamento. Etapa **não-opcional
+  entra sempre**: a correção não pode virar reescrita do fluxo. A lista de etapas é o mesmo
+  componente do formulário de criação (`StageSetupRows`) — é a mesma decisão, tomada depois.
 - **Time efetivo como regra única** (`lib/stage-team.ts`): roteamento da tarefa, senão o time
   padrão do template. Aplicado em fila do time, etapas bloqueadas, cockpit de saúde, calendário,
   carga, "minhas etapas", filtros da lista de tarefas e relatórios (produtividade, desempenho,
@@ -46,8 +56,9 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Migration `20260825120000_add_stage_team_override` — puramente aditiva (duas colunas anuláveis,
   FK `SET NULL` e índice). `teamId` nulo = herda o time padrão da etapa, que é o comportamento de
   todas as linhas existentes.
-- **Limitação conhecida:** o roteamento de uma etapa coringa só pode ser definido **na criação** —
-  ainda não há como redirecionar ou corrigir o time depois.
+- Nenhuma mudança de schema além da migration acima. A correção de demanda virgem apaga linhas de
+  etapa, transições e log das etapas removidas: a tarefa nunca as percorreu, então não há história
+  a preservar — manter descreveria algo que não aconteceu.
 
 ## [2.3.0] - 2026-07-07
 

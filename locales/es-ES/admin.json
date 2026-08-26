@@ -592,7 +592,8 @@
         "MEDIUM": "Media",
         "LOW": "Baja"
       },
-      "noTeamRouted": "Sin equipo asignado"
+      "noTeamRouted": "Sin equipo asignado",
+      "stageSetupTitle": "Configuración de las etapas"
     }
   },
   "health": {

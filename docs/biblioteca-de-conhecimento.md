@@ -447,7 +447,9 @@ Cada superfície e a razão de existir **daquela forma**.
   momento em que alguém conhece a demanda concreta. Antes disso a etapa nascia
   órfã: nenhuma fila de time a mostrava. Roteamento **não** sobrescreve etapa que
   já tem time no template — senão cada demanda viraria uma variante do processo,
-  que é o que o template existe para evitar. _(P3/P7)_
+  que é o que o template existe para evitar. Errar o roteamento é corrigível
+  enquanto a demanda não começou (ver ADR "janela de correção"); depois disso é
+  erro de processo que já produziu medição. _(P3/P7)_
 
 ### Dashboard pessoal ("Meu foco" / etapas ativas)
 
@@ -557,6 +559,15 @@ team-profiles.test.ts` reprova vocabulário de premiação/ordenação dentro de
   **excluída** como próxima e escondia a que de fato abre (pré-requisito sem
   linha na tarefa conta como satisfeito). Preview divergir da execução é pior que
   não ter preview: confirma-se uma coisa e o sistema faz outra. _(P3)_
+- **Janela de correção = antes de iniciar** (`lib/task-virgin.ts`) — reconfigurar
+  etapas e roteamento é livre enquanto nada foi executado, e proibido depois:
+  mudar o time de uma etapa já trabalhada moveria throughput e on-time de um time
+  para outro, falsificando a medição. A âncora é `Task.startedAt` (carimbo
+  write-once que já existia) mais "nenhuma etapa com responsável" — e não um
+  predicado novo de "teve interação", que teria de decidir se comentário conta,
+  se artefato conta, e divergiria em cada tela nova. O bloqueio devolve o MOTIVO,
+  para a tela poder dizer por que travou em vez de só sumir com o botão.
+  _(P1/P2/P3)_
 - **Retorno preserva o que foi determinado na criação** — a reversão reativa a
   etapa-alvo por `update` na linha existente (nunca `create`), então `teamId` e
   `instructions` sobrevivem: a etapa coringa volta para a fila do time escolhido

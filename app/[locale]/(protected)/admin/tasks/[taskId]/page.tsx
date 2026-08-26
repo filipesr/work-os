@@ -21,6 +21,9 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { formatDisplayDate, formatDisplayDateTime } from "@/lib/dates";
 import { effectiveStageTeam } from "@/lib/stage-team";
+import { taskVirginBlocker } from "@/lib/task-virgin";
+import { getTeamsWithMembers } from "@/lib/actions/team";
+import { TaskStageSetupEditor } from "@/components/tasks/TaskStageSetupEditor";
 
 interface StageLogRow {
   id: string;
@@ -70,6 +73,57 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
       },
     },
   });
+
+  // Correção do desenho da demanda: só enquanto ela não começou. Carrega as
+  // etapas do template com os membros de cada time padrão, para o seletor de
+  // responsável funcionar igual ao do formulário de criação.
+  const setupBlocker = taskVirginBlocker({
+    status: task.status,
+    startedAt: task.startedAt,
+    activeStages: task.stagePipeline,
+  });
+  const [setupStages, setupTeams] = task.workflowTemplateId
+    ? await Promise.all([
+        prisma.templateStage.findMany({
+          where: { templateId: task.workflowTemplateId },
+          orderBy: { order: "asc" },
+          select: {
+            id: true,
+            name: true,
+            order: true,
+            optional: true,
+            defaultTeam: {
+              select: {
+                id: true,
+                name: true,
+                members: {
+                  select: { id: true, name: true, email: true },
+                  orderBy: { name: "asc" },
+                },
+              },
+            },
+          },
+        }),
+        getTeamsWithMembers(),
+      ])
+    : [[], []];
+
+  const currentSetup = {
+    includedStageIds: task.stagePipeline.map((ps) => ps.stageId),
+    teamByStage: Object.fromEntries(
+      task.stagePipeline.filter((ps) => ps.teamId).map((ps) => [ps.stageId, ps.teamId as string])
+    ),
+    assigneeByStage: Object.fromEntries(
+      task.stagePipeline
+        .filter((ps) => ps.assigneeId)
+        .map((ps) => [ps.stageId, ps.assigneeId as string])
+    ),
+    instructionsByStage: Object.fromEntries(
+      task.stagePipeline
+        .filter((ps) => ps.instructions)
+        .map((ps) => [ps.stageId, ps.instructions as string])
+    ),
+  };
 
   // Time EFETIVO da etapa atual: numa etapa coringa quem responde é o time
   // roteado na criação, não o "sem equipe" que o template deixou.
@@ -238,6 +292,19 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
               })}
             </div>
           </SectionCard>
+
+          {/* Correção do desenho — só enquanto a demanda não começou */}
+          {setupStages.length > 0 && (
+            <SectionCard title={t("stageSetupTitle")}>
+              <TaskStageSetupEditor
+                taskId={task.id}
+                stages={setupStages}
+                teams={setupTeams}
+                currentSetup={currentSetup}
+                blocker={setupBlocker}
+              />
+            </SectionCard>
+          )}
 
           {/* Stage History */}
           <SectionCard title={t("stageHistory")}>

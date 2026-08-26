@@ -471,5 +471,17 @@
     "kpiCompleted": "Completadas",
     "kpiOverdue": "Atrasadas",
     "kpiHours": "Horas"
+  },
+  "stageSetup": {
+    "intro": "Ajusta qué etapas opcionales entran, a qué equipo va cada etapa comodín y qué hay que hacer en ella.",
+    "save": "Guardar configuración",
+    "saved": "Configuración de las etapas actualizada.",
+    "windowNote": "Editable solo mientras la demanda no ha empezado: después, cambiar el equipo reescribiría medición ya producida.",
+    "lockedTitle": "Configuración bloqueada",
+    "locked": {
+      "started": "La demanda ya empezó. Cambiar el equipo de una etapa ahora movería trabajo ya medido de un equipo a otro.",
+      "assigned": "Una etapa ya tiene responsable. Redirigirla ahora dejaría a esa persona atada a una etapa que pasó a ser de otro equipo.",
+      "status": "La demanda no está en el backlog — reconfigurar su flujo no tendría efecto."
+    }
   }
 }

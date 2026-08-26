@@ -471,5 +471,17 @@
     "kpiCompleted": "Concluídas",
     "kpiOverdue": "Atrasadas",
     "kpiHours": "Horas"
+  },
+  "stageSetup": {
+    "intro": "Ajuste quais etapas opcionais entram, para qual time vai cada etapa coringa e o que precisa ser feito nela.",
+    "save": "Salvar configuração",
+    "saved": "Configuração das etapas atualizada.",
+    "windowNote": "Editável só enquanto a demanda não começou: depois disso, mudar o time reescreveria medição já produzida.",
+    "lockedTitle": "Configuração travada",
+    "locked": {
+      "started": "A demanda já foi iniciada. Mudar o time de uma etapa agora moveria trabalho já medido de um time para outro.",
+      "assigned": "Uma etapa já tem responsável. Re-rotear agora deixaria a pessoa presa a uma etapa que passou a ser de outro time.",
+      "status": "A demanda não está no backlog — reconfigurar o fluxo dela não teria efeito."
+    }
   }
 }

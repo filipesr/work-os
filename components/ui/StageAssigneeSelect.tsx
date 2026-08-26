@@ -23,6 +23,7 @@ export function StageAssigneeSelect({
   teamName,
   members,
   value,
+  defaultValue = "",
   onChange,
   className = "",
   disabled = false,
@@ -30,6 +31,8 @@ export function StageAssigneeSelect({
   stageId: string;
   teamName: string | null;
   members: Member[];
+  /** Valor inicial no modo não-controlado (edição pré-preenche o já gravado). */
+  defaultValue?: string;
   /** Controlled value. Provide together with `onChange` to enable controlled mode. */
   value?: string;
   /** Controlled change handler. Provide together with `value` to enable controlled mode. */
@@ -49,7 +52,7 @@ export function StageAssigneeSelect({
 
   return (
     <select
-      {...(!isControlled ? { name: `assignee:${stageId}`, defaultValue: "" } : {})}
+      {...(!isControlled ? { name: `assignee:${stageId}`, defaultValue } : {})}
       {...(isControlled ? { value } : {})}
       {...(onChange ? { onChange: (e) => onChange(e.target.value) } : {})}
       disabled={disabled}
