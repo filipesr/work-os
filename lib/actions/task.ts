@@ -2059,7 +2059,16 @@ export async function markTaskObsolete(taskId: string) {
 
 /** Duplica a tarefa (só metadados): título+"(cópia)", descrição, projeto e o mesmo template, com
  * as MESMAS etapas incluídas recriadas frescas (status zerado); sem comentários, sem artefatos.
- * Redireciona para a nova tarefa (aberta para edição). MANAGER+. */
+ * Redireciona para a nova tarefa (aberta para edição). MANAGER+.
+ *
+ * Carrega também o DESENHO das etapas coringa — time roteado e instrução — porque é a mesma
+ * decisão que já viaja nas etapas opcionais incluídas. Duplicar é o caminho de conserto de uma
+ * demanda que travou (obsoleta → duplica → corrige); fazer o gestor redecidir cada coringa do
+ * zero para consertar UMA transformaria o conserto em retrabalho.
+ *
+ * O que deliberadamente NÃO viaja é o responsável: sem ele a cópia nasce em BACKLOG com
+ * `startedAt` nulo — virgem — e por isso continua dentro da janela de correção
+ * (ver lib/task-virgin.ts). Copiar o responsável travaria a cópia no mesmo instante. */
 export async function duplicateTask(taskId: string) {
   const user = await requireManagerOrAdmin();
   const userId = user.id as string;
@@ -2073,7 +2082,14 @@ export async function duplicateTask(taskId: string) {
         description: true,
         priority: true,
         projectId: true,
-        activeStages: { select: { stageId: true, stage: { select: { templateId: true } } } },
+        activeStages: {
+          select: {
+            stageId: true,
+            teamId: true,
+            instructions: true,
+            stage: { select: { templateId: true } },
+          },
+        },
       },
     });
     if (!original) return { error: "Tarefa não encontrada." };
@@ -2081,6 +2097,14 @@ export async function duplicateTask(taskId: string) {
 
     const templateId = original.activeStages[0].stage.templateId;
     const selectedStageIds = new Set(original.activeStages.map((s) => s.stageId));
+    const teams = Object.fromEntries(
+      original.activeStages.filter((s) => s.teamId).map((s) => [s.stageId, s.teamId as string])
+    );
+    const instructions = Object.fromEntries(
+      original.activeStages
+        .filter((s) => s.instructions)
+        .map((s) => [s.stageId, s.instructions as string])
+    );
 
     const created = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const t = await tx.task.create({
@@ -2094,7 +2118,14 @@ export async function duplicateTask(taskId: string) {
           workflowTemplateId: templateId,
         },
       });
-      await createTaskStages(tx, { taskId: t.id, templateId, userId, selectedStageIds });
+      await createTaskStages(tx, {
+        taskId: t.id,
+        templateId,
+        userId,
+        selectedStageIds,
+        teams,
+        instructions,
+      });
       return t;
     });
     newId = created.id;

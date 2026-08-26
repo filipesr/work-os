@@ -449,7 +449,10 @@ Cada superfície e a razão de existir **daquela forma**.
   já tem time no template — senão cada demanda viraria uma variante do processo,
   que é o que o template existe para evitar. Errar o roteamento é corrigível
   enquanto a demanda não começou (ver ADR "janela de correção"); depois disso é
-  erro de processo que já produziu medição. _(P3/P7)_
+  erro de processo que já produziu medição, e a saída é **marcar obsoleta e
+  duplicar** — a cópia nasce sem responsável, logo virgem, e carrega o desenho
+  (etapas incluídas + roteamento + instrução) para que consertar UMA coisa não
+  custe redecidir todas. _(P3/P7)_
 
 ### Dashboard pessoal ("Meu foco" / etapas ativas)
 

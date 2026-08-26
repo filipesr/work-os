@@ -27,6 +27,11 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   on-time, flow efficiency por time), e não corrigiria erro de planejamento. Etapa **não-opcional
   entra sempre**: a correção não pode virar reescrita do fluxo. A lista de etapas é o mesmo
   componente do formulário de criação (`StageSetupRows`) — é a mesma decisão, tomada depois.
+- **Duplicar carrega o desenho das etapas coringa:** `duplicateTask` já recriava as MESMAS etapas
+  incluídas, mas perdia o time roteado e a instrução. Agora viajam junto. Duplicar é o caminho de
+  conserto de uma demanda que travou (obsoleta → duplica → corrige), e redecidir cada coringa do
+  zero para consertar uma transformaria o conserto em retrabalho. O **responsável** continua
+  deliberadamente fora: é a ausência dele que faz a cópia nascer virgem e, portanto, corrigível.
 - **Time efetivo como regra única** (`lib/stage-team.ts`): roteamento da tarefa, senão o time
   padrão do template. Aplicado em fila do time, etapas bloqueadas, cockpit de saúde, calendário,
   carga, "minhas etapas", filtros da lista de tarefas e relatórios (produtividade, desempenho,
