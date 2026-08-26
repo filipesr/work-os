@@ -1670,6 +1670,19 @@ export async function revertTaskStage(
       return { error: "Só é possível reverter para uma etapa anterior." };
     }
 
+    // Guard: a etapa-alvo precisa FAZER PARTE desta tarefa. Etapa opcional
+    // deixada de fora na criação (ou de outro template) não tem linha aqui — a
+    // reversão a reativaria por `update`, que falharia com erro genérico. A UI
+    // só oferece etapas percorridas, então isto é defesa de borda: a tarefa
+    // volta para o que foi determinado na criação, nunca para fora dele.
+    const targetRow = await prisma.taskActiveStage.findUnique({
+      where: { taskId_stageId: { taskId, stageId: revertToStageId } },
+      select: { id: true },
+    });
+    if (!targetRow) {
+      return { error: "Esta etapa não faz parte desta tarefa." };
+    }
+
     // Check permissions - must be admin, manager, or assignee of at least one active stage
     const isAdmin = userWithRole?.role === "ADMIN";
     const isManager = userWithRole?.role === "MANAGER";

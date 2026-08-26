@@ -33,7 +33,8 @@ const tx = {
 vi.mock("@/lib/prisma", () => ({
   default: {
     templateStage: { findUnique: vi.fn() },
-    taskActiveStage: { findMany: vi.fn() },
+    taskActiveStage: { findMany: vi.fn(), findUnique: vi.fn() },
+    taskStageLog: { findMany: vi.fn() },
     user: { findUnique: vi.fn() },
     $transaction: vi.fn(async (cb: (t: typeof tx) => Promise<unknown>) => cb(tx)),
   },
@@ -41,11 +42,13 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import prisma from "@/lib/prisma";
-import { revertTaskStage } from "@/lib/actions/task";
+import { auth } from "@/auth";
+import { revertTaskStage, getPreviousStages } from "@/lib/actions/task";
 
 const db = prisma as unknown as {
   templateStage: { findUnique: ReturnType<typeof vi.fn> };
-  taskActiveStage: { findMany: ReturnType<typeof vi.fn> };
+  taskActiveStage: { findMany: ReturnType<typeof vi.fn>; findUnique: ReturnType<typeof vi.fn> };
+  taskStageLog: { findMany: ReturnType<typeof vi.fn> };
   user: { findUnique: ReturnType<typeof vi.fn> };
 };
 
@@ -62,6 +65,8 @@ function setupValidRevert() {
     { stageId: "sNow", assigneeId: "u1", stage: { id: "sNow", order: 3, name: "QC" } },
   ]);
   db.user.findUnique.mockResolvedValue({ role: "ADMIN", name: "Ana" });
+  // A etapa-alvo faz parte da tarefa (tem linha).
+  db.taskActiveStage.findUnique.mockResolvedValue({ id: "row-target" });
 }
 
 describe("revertTaskStage — ReworkEvent", () => {
@@ -98,5 +103,105 @@ describe("revertTaskStage — ReworkEvent", () => {
     tx.taskActiveStage.findUnique.mockResolvedValue({ assigneeId: "worker1" });
     await revertTaskStage("t1", "sTarget", "motivo", "INTERNAL");
     expect(tx.reworkEvent.create.mock.calls[0][0].data.sourceAssigneeId).toBe("worker1");
+  });
+});
+
+// O retorno mexe justamente nas linhas que carregam o roteamento da etapa
+// coringa (teamId/instructions, escolhidos na criação). Se ele recriasse a linha
+// em vez de atualizá-la, a etapa voltaria órfã — fora da fila de todo mundo.
+describe("revertTaskStage — preserva o que foi determinado na criação", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.values(tx).forEach((m) =>
+      Object.values(m).forEach((fn) => (fn as ReturnType<typeof vi.fn>).mockClear?.())
+    );
+  });
+
+  it("reativa a etapa-alvo por UPDATE, sem tocar em teamId nem instructions", async () => {
+    setupValidRevert();
+    const res = await revertTaskStage("t1", "sTarget", "brief incompleto", "INTERNAL");
+    expect(res).toEqual(expect.objectContaining({ success: true }));
+
+    const call = tx.taskActiveStage.update.mock.calls.find(
+      (c) => c[0].where?.taskId_stageId?.stageId === "sTarget"
+    );
+    expect(call, "a etapa-alvo deve ser reativada").toBeTruthy();
+    // Um `create` aqui perderia o roteamento; o `update` preserva a linha.
+    expect(Object.keys(call![0].data).sort()).toEqual(["assigneeId", "completedAt", "status"]);
+    expect(call![0].data.status).toBe("ACTIVE");
+    // Assignee limpo de propósito (volta ao backlog) — o TIME continua o mesmo,
+    // então a etapa coringa reaparece na fila do time roteado na criação.
+    expect(call![0].data.assigneeId).toBeNull();
+  });
+
+  it("reset das posteriores é por UPDATE em linha existente — não ressuscita etapa excluída", async () => {
+    setupValidRevert();
+    // `tx.taskActiveStage` não expõe `create`: se a reversão tentasse criar
+    // linha, a chamada explodiria e a ação devolveria erro em vez de success.
+    const res = await revertTaskStage("t1", "sTarget", "motivo", "INTERNAL");
+    expect(res).toEqual(expect.objectContaining({ success: true }));
+
+    // Etapa opcional deixada de fora na criação não tem linha; um updateMany
+    // escopado por taskId nunca a alcança (e nada aqui cria linha nova).
+    expect(tx.taskActiveStage.updateMany).toHaveBeenCalledTimes(1);
+    expect(tx.taskActiveStage.updateMany.mock.calls[0][0].where).toEqual({
+      taskId: "t1",
+      stage: { order: { gt: 1 } },
+    });
+  });
+});
+
+describe("getPreviousStages — só oferece etapa que a tarefa realmente percorreu", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ user: { id: "u1" } });
+  });
+
+  it("etapa opcional excluída na criação nunca aparece como destino de retorno", async () => {
+    // Posição atual: ordem 3. Logs fechados só de A (1) — B (2, opcional) ficou
+    // de fora na criação, então nunca gerou linha nem log.
+    db.taskActiveStage.findMany.mockResolvedValue([{ stage: { order: 3 } }]);
+    db.taskStageLog.findMany.mockResolvedValue([
+      { stage: { id: "A", order: 1, name: "Briefing" } },
+    ]);
+
+    const stages = await getPreviousStages("t1");
+    expect(stages.map((s) => s.id)).toEqual(["A"]);
+  });
+
+  it("não oferece etapa de ordem igual ou superior à posição atual", async () => {
+    db.taskActiveStage.findMany.mockResolvedValue([{ stage: { order: 2 } }]);
+    db.taskStageLog.findMany.mockResolvedValue([
+      { stage: { id: "A", order: 1, name: "Briefing" } },
+      { stage: { id: "B", order: 2, name: "Design" } },
+      { stage: { id: "C", order: 3, name: "QC" } },
+    ]);
+
+    expect((await getPreviousStages("t1")).map((s) => s.id)).toEqual(["A"]);
+  });
+
+  it("tarefa sem etapa aberta não tem para onde voltar", async () => {
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+    expect(await getPreviousStages("t1")).toEqual([]);
+  });
+});
+
+describe("revertTaskStage — etapa fora da tarefa", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.values(tx).forEach((m) =>
+      Object.values(m).forEach((fn) => (fn as ReturnType<typeof vi.fn>).mockClear?.())
+    );
+  });
+
+  it("recusa reverter para etapa opcional que ficou de fora na criação", async () => {
+    setupValidRevert();
+    db.taskActiveStage.findUnique.mockResolvedValue(null); // sem linha nesta tarefa
+
+    const res = await revertTaskStage("t1", "sExcluida", "motivo", "INTERNAL");
+    expect(res).toEqual(expect.objectContaining({ error: expect.any(String) }));
+    // Recusa ANTES de escrever qualquer coisa — nada de retrabalho fantasma.
+    expect(tx.reworkEvent.create).not.toHaveBeenCalled();
+    expect(tx.taskActiveStage.update).not.toHaveBeenCalled();
   });
 });

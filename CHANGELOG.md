@@ -32,6 +32,11 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   rodar o **mesmo motor** da ativação (`computeStageReadiness`) sobre o grafo inteiro do template —
   pré-requisito sem linha na tarefa conta como satisfeito, então quem libera a seguinte é a etapa
   **anterior** à opcional. O motor de ativação já se comportava assim; era o preview que mentia.
+- **Reversão para etapa fora da tarefa:** `revertTaskStage` validava a ordem da etapa-alvo, mas não
+  se ela **faz parte** da tarefa. Uma etapa opcional excluída na criação (ou de outro template)
+  passava pela validação e falhava depois, no `update`, com erro genérico. Agora é recusada antes
+  de qualquer escrita — sem `ReworkEvent` fantasma. Inalcançável pela UI (a lista de retorno só
+  oferece etapas percorridas); é defesa de borda da server action.
 - **Atribuição da próxima etapa em etapa coringa:** a validação do responsável usava só o
   `defaultTeam` (nulo numa coringa) e recusava qualquer atribuição, deixando a etapa
   permanentemente sem responsável. Agora valida contra o time efetivo.
