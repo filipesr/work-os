@@ -27,6 +27,10 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   on-time, flow efficiency por time), e não corrigiria erro de planejamento. Etapa **não-opcional
   entra sempre**: a correção não pode virar reescrita do fluxo. A lista de etapas é o mesmo
   componente do formulário de criação (`StageSetupRows`) — é a mesma decisão, tomada depois.
+- **Descrição do projeto visível na demanda de admin** (`/admin/tasks/[taskId]`): o contexto que
+  explica para que a demanda existe já aparecia na visão do executor (`/tasks/[taskId]`), mas não
+  na de admin — as duas telas contavam histórias diferentes sobre a mesma demanda. O bloco virou
+  componente único (`ProjectContextNote`, sem hooks, servindo Server e Client Component).
 - **Duplicar carrega o desenho das etapas coringa:** `duplicateTask` já recriava as MESMAS etapas
   incluídas, mas perdia o time roteado e a instrução. Agora viajam junto. Duplicar é o caminho de
   conserto de uma demanda que travou (obsoleta → duplica → corrige), e redecidir cada coringa do

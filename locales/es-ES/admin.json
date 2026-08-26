@@ -593,7 +593,8 @@
         "LOW": "Baja"
       },
       "noTeamRouted": "Sin equipo asignado",
-      "stageSetupTitle": "Configuración de las etapas"
+      "stageSetupTitle": "Configuración de las etapas",
+      "aboutProject": "Sobre el proyecto"
     }
   },
   "health": {

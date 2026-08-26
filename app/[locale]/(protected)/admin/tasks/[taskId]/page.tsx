@@ -24,6 +24,7 @@ import { effectiveStageTeam } from "@/lib/stage-team";
 import { taskVirginBlocker } from "@/lib/task-virgin";
 import { getTeamsWithMembers } from "@/lib/actions/team";
 import { TaskStageSetupEditor } from "@/components/tasks/TaskStageSetupEditor";
+import { ProjectContextNote } from "@/components/tasks/ProjectContextNote";
 
 interface StageLogRow {
   id: string;
@@ -187,6 +188,19 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                 </p>
               </div>
             </div>
+
+            {/* Contexto do projeto: mesma leitura que o executor tem em
+                /tasks/[taskId], para as duas telas não contarem histórias
+                diferentes sobre a mesma demanda. */}
+            {task.project.description && (
+              <div className="mt-4 border-t border-border pt-4">
+                <ProjectContextNote
+                  label={t("aboutProject")}
+                  projectName={task.project.name}
+                  description={task.project.description}
+                />
+              </div>
+            )}
           </SectionCard>
 
           {/* Current Stage & Actions */}

@@ -41,6 +41,7 @@ const WorkflowHistoryModal = dynamic(
   () => import("./WorkflowHistoryModal").then((mod) => mod.WorkflowHistoryModal),
   { ssr: false }
 );
+import { ProjectContextNote } from "@/components/tasks/ProjectContextNote";
 import { format } from "date-fns";
 import { dateFnsLocale } from "@/lib/date-locale";
 import { useTranslations, useLocale } from "next-intl";
@@ -269,14 +270,11 @@ export function TaskDetailView({
             {task.project.description && (
               <>
                 <Separator />
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-                  <p className="mb-1 text-xs font-semibold text-primary">
-                    {tDetail("aboutProject")} · {task.project.name}
-                  </p>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                    {task.project.description}
-                  </p>
-                </div>
+                <ProjectContextNote
+                  label={tDetail("aboutProject")}
+                  projectName={task.project.name}
+                  description={task.project.description}
+                />
               </>
             )}
           </SectionCard>
