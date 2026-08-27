@@ -1,5 +1,22 @@
 # NAS PoC — spike de viabilidade (antes de implementar no work-os)
 
+> ## Qual arquivo é o de produção?
+>
+> | Arquivo                  | Estado                                | Topologia                                                                                                                                                                             |
+> | ------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | **`docker-compose.yml`** | ✅ **é o que está no ar**             | agente em `127.0.0.1:8080` (invisível na LAN) + **Caddy** terminando TLS na `:443`, cert Let's Encrypt por **ACME DNS-01** na Cloudflare. Acompanha `Caddyfile` e `Dockerfile.caddy`. |
+> | `compose.tunnel.yml`     | ⏳ plano futuro, **não implementado** | agente publicado em `8080:8080` + `cloudflared`, para o **download externo** do §4 do checklist. Depende da migração do NS para a Cloudflare.                                         |
+>
+> É de propósito que a topologia de produção tem o nome padrão: um `docker compose up -d` distraído
+> neste diretório sobe o que está rodando no NAS. **Não suba o `compose.tunnel.yml`** achando que é a
+> versão atual — ele expõe o agente em HTTP puro na rede local, sem TLS.
+>
+> O NAS roda um arquivo de mesmo nome (`/volume1/home/Filipe/nas-poc/docker-compose.yml`), com a
+> **mesma topologia e os mesmos valores** — mas os dois **não são idênticos byte a byte**: o do NAS
+> foi escrito direto no terminal, com comentários mais curtos e sem acentos. Diferença só de
+> comentário; nenhuma de comportamento. Um `rsync` deste diretório para o NAS converge os dois com
+> segurança. (Conferido em 27/ago/2026.)
+
 Valida e **metrifica** o caminho `browser (LAN) → agente no NAS → filesystem` + download externo via
 Cloudflare Tunnel, com arquivos de tipos/tamanhos/clientes/campanhas variados. Código isolado do
 work-os de produção. Ver o plano em `~/.claude/plans/` e o design em
@@ -23,7 +40,8 @@ confira o "resultado esperado" e me diga **ok** ou **cole o erro**. Não avance 
   35 testes passando; smoke local ok.
 - `scripts/nas-poc-gen-keys.mjs` — gera o par de chaves.
 - `scripts/nas-poc-loadtest.mjs` — carga + métricas (CSV em `nas-poc/out/`).
-- `nas-poc/docker-compose.yml`, `.env.example`, `agent/cloudflared/config.yml`.
+- `nas-poc/docker-compose.yml` (TLS — produção), `nas-poc/compose.tunnel.yml` (túnel — §4, futuro),
+  `.env.example`, `agent/cloudflared/config.yml`.
 
 ## Passo 0 — Gerar as chaves (na sua máquina de dev)
 
@@ -64,6 +82,13 @@ node scripts/nas-poc-gen-keys.mjs
 
 ## Fase A2 — Build + deploy do agente via SSH
 
+> **Histórico do spike.** Os comandos abaixo são de quando o agente ainda escutava em
+> `0.0.0.0:8080` na LAN (hoje isso só existe no `compose.tunnel.yml`). Com o
+> `docker-compose.yml` atual o agente fica em **loopback** e quem responde na rede é o Caddy —
+> então o `.env` precisa também de `CF_API_TOKEN`, o serviço `caddy` sobe junto, e a sanidade
+> se faz por `curl https://nas-agent-lan.goonmarketing.com/v1/health` (sem `-k`), não por
+> `http://IP:8080`.
+
 Pré: Fase A1 feita (share `WorkOS-PoC`, usuário `svc-nasagent`, ACL) e SSH habilitado.
 (Portainer fica só como painel opcional de monitoramento — ver containers/logs no navegador.)
 
@@ -84,6 +109,7 @@ Pré: Fase A1 feita (share `WorkOS-PoC`, usuário `svc-nasagent`, ACL) e SSH hab
    Preencha: `NAS_SHARE_PATH=/volume1/WorkOS-PoC`, `AGENT_UID`/`AGENT_GID` (passo 1),
    `POC_HASH_MODE=inline`, `TOKEN_PUBLIC_KEYS=` (a linha do Passo 0). Deixe `TUNNEL_TOKEN` vazio (Fase A4).
 4. **Suba só o agente** (build acontece na NAS) — no SSH:
+
    ```bash
    docker compose up -d --build agent
    docker compose logs -f agent      # espere: "agent up — LAN 0.0.0.0:8080 ..."  (Ctrl-C p/ sair do log)
@@ -92,7 +118,9 @@ Pré: Fase A1 feita (share `WorkOS-PoC`, usuário `svc-nasagent`, ACL) e SSH hab
    - _Se `docker compose` não existir:_ tente `docker-compose ...` (v1) — ou me avise; a Docker Engine 28 traz o v2.
    - _Se `EADDRINUSE :8080`:_ algo já usa a 8080 no NAS — me avise que troco a `LAN_PORT` no compose.
    - _Se erro de permissão ao gravar:_ `AGENT_UID/GID` não bate com o dono de `WorkOS-PoC` — reveja A1.
+
 5. **Sanidade** — do NAS ou do seu Mac:
+
    ```bash
    curl http://192.168.200.216:8080/v1/health
    ```
@@ -128,11 +156,15 @@ AGENT_LAN_URL=http://IP_DO_NAS:8080 PROFILE=full CONCURRENCY=1,2,4 node scripts/
 
 ---
 
-## Fase A4 — Cloudflare Tunnel (expor só o download)
+## Fase A4 — Cloudflare Tunnel (expor só o download) — NÃO IMPLEMENTADO
+
+> Corresponde ao §4 do `docs/nas-rollout-checklist.md` e usa o `compose.tunnel.yml`, **não** o
+> `docker-compose.yml` de produção. Bloqueado até o NS da zona migrar para a Cloudflare.
 
 1. Ter um domínio no Cloudflare + **Zero Trust** ativo.
 2. Zero Trust → **Networks → Tunnels → Create a tunnel** (Cloudflared) → nomeie → copie o **token**.
-3. No SSH: ponha o token em `~/nas-poc/.env` (`TUNNEL_TOKEN=...`) e `docker compose up -d` (sobe o `cloudflared`).
+3. No SSH: ponha o token em `~/nas-poc/.env` (`TUNNEL_TOKEN=...`) e
+   `docker compose -f compose.tunnel.yml up -d` (sobe o `cloudflared`).
 4. Ainda no tunnel → **Public Hostnames → Add**:
    - Subdomain `nas-agent-download`, seu domínio;
    - **Path** `v1/download` (ou regex `^/v1/download` na versão avançada);

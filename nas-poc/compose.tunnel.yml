@@ -1,0 +1,66 @@
+# ============================================================================
+#  ⚠️  NÃO É A TOPOLOGIA EM PRODUÇÃO. NÃO SUBA ESTE ARQUIVO POR ENGANO.
+#
+#  Produção é o `docker-compose.yml` deste diretório (agente em loopback +
+#  Caddy terminando TLS na :443 com ACME DNS-01). É ele que está rodando no NAS.
+#
+#  Este arquivo guarda a variante de túnel — o plano do §4 do
+#  `docs/nas-rollout-checklist.md` (download EXTERNO via Cloudflare Tunnel),
+#  que segue **não implementado** enquanto o NS não migra pra Cloudflare.
+#
+#  O risco concreto: aqui o agente é publicado em `8080:8080` com
+#  `LAN_HOST=0.0.0.0`, ou seja, HTTP puro visível pra rede local inteira — sem
+#  TLS, sem o Caddy na frente. Subir isso é regredir a segurança do que está no ar.
+#
+#  Para usar de propósito, quando o §4 sair do papel:
+#      docker compose -f compose.tunnel.yml up -d
+# ============================================================================
+
+# NAS PoC stack — deploy via Portainer (Stacks -> Add stack -> Web editor) or `docker compose -f compose.tunnel.yml up -d`.
+# Two services on one private network:
+#   agent       — LAN listener published on 8080; tunnel listener on 8081 is NOT published to the
+#                 host, so it is reachable ONLY by cloudflared inside this compose network.
+#   cloudflared — Cloudflare Tunnel connector; exposes ONLY GET /v1/download to the internet.
+#
+# Fill the values in .env (same folder) — see .env.example.
+services:
+  agent:
+    build: ./agent
+    image: nas-poc-agent:latest
+    restart: unless-stopped
+    # Match the NAS ACL owner (svc-nasagent) so the agent is the only writer.
+    user: "${AGENT_UID}:${AGENT_GID}"
+    environment:
+      NAS_ROOT: /data
+      # Estado persistente (jti/fila de finalize/auditoria) — sobrevive a restart do container.
+      STATE_DIR: /data/.agent-state
+      LAN_PORT: "8080"
+      LAN_HOST: "0.0.0.0"
+      TUNNEL_PORT: "8081"
+      # 0.0.0.0 inside the container is fine: port 8081 is never published to the host, so only
+      # cloudflared (same compose network) can reach it. The LAN cannot.
+      TUNNEL_HOST: "0.0.0.0"
+      POC_HASH_MODE: "${POC_HASH_MODE:-inline}"
+      MAX_UPLOAD_BYTES: "${MAX_UPLOAD_BYTES:-5368709120}"
+      ALLOWED_ORIGIN: "${ALLOWED_ORIGIN:-*}"
+      # Finalize push (agente -> URL pública da Vercel; container alcança via saída de internet).
+      CLOUD_FINALIZE_URL: "${CLOUD_FINALIZE_URL}"
+      FINALIZE_SECRET: "${FINALIZE_SECRET}"
+      # Auth (Bearer) dos endpoints /v1/reconcile/* (LAN). Sem ele -> 503.
+      RECONCILE_TOKEN: "${RECONCILE_TOKEN}"
+      TOKEN_PUBLIC_KEYS: "${TOKEN_PUBLIC_KEYS}"
+      AGENT_VERSION: "0.2.0"
+    volumes:
+      - "${NAS_SHARE_PATH:-/volume1/WorkOS-PoC}:/data"
+    ports:
+      - "8080:8080" # LAN only. 8081 intentionally omitted (tunnel-only, private).
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    # Token mode: create the tunnel + public hostname in the Zero Trust dashboard and set
+    # TUNNEL_TOKEN. In the dashboard, point the public hostname at http://agent:8081 with path
+    # /v1/download. (Alternative: file-based config — see cloudflared/config.yml + README.)
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    depends_on:
+      - agent

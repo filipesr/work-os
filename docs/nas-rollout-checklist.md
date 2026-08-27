@@ -97,7 +97,8 @@ automático. Envs (de `nas-poc/.env.example`):
 | `NAS_SHARE_PATH`          | caminho do share no filesystem do container (ex.: `/volume1/WorkOS`)                   |
 | `MAX_UPLOAD_BYTES`        | teto de upload (bate com a allowlist do app)                                           |
 | `AGENT_UID` / `AGENT_GID` | usuário **dono da árvore** (users = ACL read-only; só o agente escreve)                |
-| `TUNNEL_TOKEN`            | token do Cloudflare Tunnel (só se o cloudflared rodar no mesmo compose)                |
+| `CF_API_TOKEN`            | token Cloudflare `Zone:DNS:Edit` — o Caddy usa p/ o ACME DNS-01 (§5)                   |
+| `TUNNEL_TOKEN`            | token do Cloudflare Tunnel — só no `compose.tunnel.yml` (§4, não implementado)         |
 | `STATE_DIR`               | estado persistente (jti/fila de finalize/auditoria). Default `{NAS_ROOT}/.agent-state` |
 | `RECONCILE_TOKEN`         | auth (Bearer) dos endpoints `/v1/reconcile/*` (LAN). Sem ele → 503                     |
 | `TMP_TTL_MS`              | TTL de `.uploading-*.tmp` órfãos p/ o reconcile cleanup (default 24h)                  |
@@ -112,6 +113,9 @@ automático. Envs (de `nas-poc/.env.example`):
 > app. O `nas-poc/agent/src/nas-path.ts` (PoC) está desatualizado mas **não é usado em runtime**.
 
 ## 4. Cloudflare Tunnel + DNS (por subdomínio)
+
+> **Ainda não implementado.** O compose desta topologia é o `nas-poc/compose.tunnel.yml` — **não** o
+> `nas-poc/docker-compose.yml`, que é o que está no ar (agente em loopback + Caddy/TLS, §5).
 
 - [ ] `nas-agent-lan.goonmarketing.com` → **A** para o **IP privado** do NAS (split-DNS/hairpin na
       LAN; VPN com rota privada funciona transparente). Não passa pelo túnel.
@@ -158,7 +162,8 @@ CERTIFICATE----------BEGIN CERTIFICATE-----` na mesma linha e o `pem.Decode` do 
 - [x] **Reverse proxy = container Caddy** no mesmo compose (o Asustor ADM não tem proxy embutido
       prático). Caddy na `:443` com `tls /certs/fullchain.pem /certs/key.pem` → `reverse_proxy
 agent:8080`. Agente volta pra rede **bridge** (finalize vai pra URL pública da Vercel).
-      Artefatos: `nas-poc/out/lan-deploy-tls/{compose.tls.yml,Caddyfile,certs/}` (gitignored).
+      Artefatos daquele interim: `nas-poc/out/lan-deploy-tls/` (gitignored). No repositório, a
+      topologia TLS vive hoje no `nas-poc/docker-compose.yml` — o nome padrão é a versão em produção.
 - [x] **Envs:** `node scripts/nas-prod-setup.mjs` → `app.env` no Vercel (**rebuild** — `NEXT_PUBLIC_*`
       é build-time) + `agent.env` no NAS. `FINALIZE_SECRET` do agente == `NAS_FINALIZE_SECRET` do app.
       **Sem** `NAS_AGENT_URL_TUNNEL` (sem túnel → download externo degrada com aviso).

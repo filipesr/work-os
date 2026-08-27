@@ -1,4 +1,6 @@
-# Cloudflare Tunnel — FILE-BASED config (alternative to the dashboard token mode in docker-compose).
+# Cloudflare Tunnel — FILE-BASED config (alternative to the dashboard token mode in compose.tunnel.yml).
+# Pertence à variante de túnel (§4 do checklist), que NÃO está em produção — o que roda no NAS é o
+# `nas-poc/docker-compose.yml` (agente em loopback + Caddy/TLS), e ele não sobe cloudflared.
 # Use this only if you run cloudflared with a credentials file instead of TUNNEL_TOKEN.
 #
 # Ingress matches by hostname + path (regex) — NOT by HTTP method. "GET only" is enforced by:

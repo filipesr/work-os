@@ -1,48 +1,58 @@
-# NAS PoC stack — deploy via Portainer (Stacks -> Add stack -> Web editor) or `docker compose up -d`.
-# Two services on one private network:
-#   agent       — LAN listener published on 8080; tunnel listener on 8081 is NOT published to the
-#                 host, so it is reachable ONLY by cloudflared inside this compose network.
-#   cloudflared — Cloudflare Tunnel connector; exposes ONLY GET /v1/download to the internet.
-#
-# Fill the values in .env (same folder) — see .env.example.
+# TOPOLOGIA EM PRODUÇÃO — é este arquivo que roda no NAS hoje (mesmo conteúdo do
+# `~/nas-poc/docker-compose.yml` de lá). A variante com Cloudflare Tunnel para download
+# externo (§4, não implementado) está em `compose.tunnel.yml` e NÃO deve ser subida.
+
+# §5b (host networking) — a bridge do NAS não dá egress pra internet, então agente E caddy usam a
+# rede do host (que alcança a Vercel p/ o finalize). Caddy termina TLS na :443 e fala com o agente
+# por localhost:8080 (agente em loopback — não exposto na LAN em http). Sem túnel (upload LAN-only).
 services:
   agent:
     build: ./agent
     image: nas-poc-agent:latest
     restart: unless-stopped
-    # Match the NAS ACL owner (svc-nasagent) so the agent is the only writer.
+    network_mode: host
     user: "${AGENT_UID}:${AGENT_GID}"
     environment:
       NAS_ROOT: /data
-      # Estado persistente (jti/fila de finalize/auditoria) — sobrevive a restart do container.
       STATE_DIR: /data/.agent-state
       LAN_PORT: "8080"
-      LAN_HOST: "0.0.0.0"
+      LAN_HOST: "127.0.0.1" # loopback: só o Caddy (mesma rede host) alcança; LAN não vê o http cru
       TUNNEL_PORT: "8081"
-      # 0.0.0.0 inside the container is fine: port 8081 is never published to the host, so only
-      # cloudflared (same compose network) can reach it. The LAN cannot.
-      TUNNEL_HOST: "0.0.0.0"
+      TUNNEL_HOST: "127.0.0.1"
       POC_HASH_MODE: "${POC_HASH_MODE:-inline}"
       MAX_UPLOAD_BYTES: "${MAX_UPLOAD_BYTES:-5368709120}"
-      ALLOWED_ORIGIN: "${ALLOWED_ORIGIN:-*}"
-      # Finalize push (agente -> URL pública da Vercel; container alcança via saída de internet).
+      ALLOWED_ORIGIN: "${ALLOWED_ORIGIN}"
       CLOUD_FINALIZE_URL: "${CLOUD_FINALIZE_URL}"
       FINALIZE_SECRET: "${FINALIZE_SECRET}"
-      # Auth (Bearer) dos endpoints /v1/reconcile/* (LAN). Sem ele -> 503.
       RECONCILE_TOKEN: "${RECONCILE_TOKEN}"
       TOKEN_PUBLIC_KEYS: "${TOKEN_PUBLIC_KEYS}"
       AGENT_VERSION: "0.2.0"
     volumes:
       - "${NAS_SHARE_PATH:-/volume1/WorkOS-PoC}:/data"
-    ports:
-      - "8080:8080" # LAN only. 8081 intentionally omitted (tunnel-only, private).
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest
+  caddy:
+    # Build local com o módulo DNS da Cloudflare (ver Dockerfile.caddy) — a imagem oficial
+    # `caddy:2` não traz provedores de DNS, e sem provedor não há ACME DNS-01.
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    image: caddy-cloudflare:2
     restart: unless-stopped
-    # Token mode: create the tunnel + public hostname in the Zero Trust dashboard and set
-    # TUNNEL_TOKEN. In the dashboard, point the public hostname at http://agent:8081 with path
-    # /v1/download. (Alternative: file-based config — see cloudflared/config.yml + README.)
-    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    network_mode: host
     depends_on:
       - agent
+    environment:
+      # Token da Cloudflare com escopo Zone:DNS:Edit na zona goonmarketing.com. Vive no .env do
+      # NAS, nunca no repositório. É o que permite ao Caddy escrever o TXT de desafio.
+      CF_API_TOKEN: "${CF_API_TOKEN}"
+    volumes:
+      - "./Caddyfile:/etc/caddy/Caddyfile:ro"
+      # `./certs` saiu: não há mais cert copiado à mão. O certificado emitido e a conta ACME
+      # vivem em `caddy_data` — este volume PRECISA persistir, senão cada recriação do container
+      # pede um certificado novo e bate no limite de emissões da Let's Encrypt.
+      - "caddy_data:/data"
+      - "caddy_config:/config"
+
+volumes:
+  caddy_data:
+  caddy_config:

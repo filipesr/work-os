@@ -54,7 +54,7 @@ CRON_SECRET=${cronSecret}
 `;
 fs.writeFileSync(path.join(outDir, "app.env"), appEnv);
 
-const agentEnv = `# --- Agente (NAS): .env do docker-compose de produção (agent + cloudflared) ---
+const agentEnv = `# --- Agente (NAS): .env do nas-poc/docker-compose.yml de produção (agent em loopback + Caddy/TLS) ---
 NAS_SHARE_PATH=/volume1/WorkOS
 AGENT_UID=<uid svc-nasagent>
 AGENT_GID=<gid svc-nasagent>
@@ -66,6 +66,8 @@ CLOUD_FINALIZE_URL=https://${APP}/api/artifacts/finalize
 FINALIZE_SECRET=${finalizeSecret}
 RECONCILE_TOKEN=${reconcileToken}
 TOKEN_PUBLIC_KEYS=${tokenPublicKeys}
+CF_API_TOKEN=<token Cloudflare Zone:DNS:Edit — o Caddy usa p/ o ACME DNS-01>
+# Só para a variante de túnel (compose.tunnel.yml, §4 — ainda não implementado):
 TUNNEL_TOKEN=<token do Cloudflare Zero Trust>
 `;
 fs.writeFileSync(path.join(outDir, "agent.env"), agentEnv);
@@ -75,7 +77,7 @@ console.log(`  chaves: nas-poc/keys/${kid}.{private,public}.pem   (gitignored, m
 console.log(`  blocos: nas-poc/out/prod/app.env  +  nas-poc/out/prod/agent.env  (gitignored)\n`);
 console.log("Próximos passos:");
 console.log("  1) App:   suba app.env no Vercel (Production). NAS_FINALIZE_SECRET == FINALIZE_SECRET do agente.");
-console.log("  2) Agente: preencha os <placeholders> do agent.env (uid/gid, SMB host, TUNNEL_TOKEN) e");
-console.log("     use no .env do nas-poc/docker-compose.yml (agent + cloudflared).");
+console.log("  2) Agente: preencha os <placeholders> do agent.env (uid/gid, SMB host, CF_API_TOKEN) e");
+console.log("     use no .env do nas-poc/docker-compose.yml (agent em loopback + Caddy/TLS).");
 console.log("  3) DNS/TLS/túnel: siga docs/nas-rollout-checklist.md §4–5.");
 console.log("\n⚠️  Segredos e chave privada gerados. NÃO commitar (nas-poc/keys e nas-poc/out são gitignored).");
