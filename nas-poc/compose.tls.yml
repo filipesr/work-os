@@ -27,14 +27,25 @@ services:
       - "${NAS_SHARE_PATH:-/volume1/WorkOS-PoC}:/data"
 
   caddy:
-    image: caddy:2
+    # Build local com o módulo DNS da Cloudflare (ver Dockerfile.caddy) — a imagem oficial
+    # `caddy:2` não traz provedores de DNS, e sem provedor não há ACME DNS-01.
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    image: caddy-cloudflare:2
     restart: unless-stopped
     network_mode: host
     depends_on:
       - agent
+    environment:
+      # Token da Cloudflare com escopo Zone:DNS:Edit na zona goonmarketing.com. Vive no .env do
+      # NAS, nunca no repositório. É o que permite ao Caddy escrever o TXT de desafio.
+      CF_API_TOKEN: "${CF_API_TOKEN}"
     volumes:
       - "./Caddyfile:/etc/caddy/Caddyfile:ro"
-      - "./certs:/certs:ro"
+      # `./certs` saiu: não há mais cert copiado à mão. O certificado emitido e a conta ACME
+      # vivem em `caddy_data` — este volume PRECISA persistir, senão cada recriação do container
+      # pede um certificado novo e bate no limite de emissões da Let's Encrypt.
       - "caddy_data:/data"
       - "caddy_config:/config"
 

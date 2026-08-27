@@ -1,0 +1,15 @@
+# Caddy + módulo DNS da Cloudflare.
+#
+# A imagem oficial `caddy:2` NÃO traz provedores de DNS — e sem provedor não há ACME DNS-01.
+# Precisamos de DNS-01 (e não do HTTP-01 padrão) porque `nas-agent-lan.goonmarketing.com` aponta
+# para um IP PRIVADO (192.168.200.216): a Let's Encrypt não tem como alcançar este host para o
+# desafio HTTP. O desafio por TXT no DNS resolve sem exposição nenhuma à internet.
+#
+# Build em dois estágios com as imagens OFICIAIS do Caddy, em vez de uma imagem de terceiro já
+# pronta com o plugin: o binário sai de um builder que nós controlamos, sem confiar em quem
+# empacotou. O NAS tem saída para a internet (network_mode: host), então o build roda nele.
+FROM caddy:2-builder AS builder
+RUN xcaddy build --with github.com/caddy-dns/cloudflare
+
+FROM caddy:2
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy

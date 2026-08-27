@@ -1,9 +1,30 @@
 {
-	# cert explícito (wildcard exportado da cPanel) — sem ACME. Sem redirect :80.
+	# ACME com desafio DNS-01, emitido e RENOVADO pelo próprio Caddy (~a cada 60 dias).
+	#
+	# Substitui o wildcard exportado à mão da cPanel, que não renovava sozinho e venceu em
+	# 26/ago/2026 — derrubando o upload sem aviso e sem deixar rastro legível na aplicação
+	# (o probe do agente só sabia dizer "não encontrado"). Renovação manual num certificado de
+	# 90 dias é uma falha agendada, não um risco.
+	#
+	# Avisos de expiração da Let's Encrypt vão para este endereço — é a rede de segurança caso
+	# a renovação automática pare por algum motivo.
+	email movimento.jant@gmail.com
+
+	# Sem redirect :80 — o agente só existe em HTTPS na LAN.
 	auto_https disable_redirects
 }
+
 nas-agent-lan.goonmarketing.com {
-	tls /certs/fullchain.pem /certs/key.pem
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+
+		# ⚠️ Resolvedores PÚBLICOS explícitos, e não o do NAS.
+		# Este hostname resolve para 192.168.200.216 (IP privado) na LAN — split-horizon. Se o
+		# Caddy usasse o resolvedor local para conferir a propagação do TXT de desafio, ele
+		# consultaria uma visão do domínio que não contém o registro e ficaria em loop até falhar.
+		resolvers 1.1.1.1 1.0.0.1
+	}
+
 	reverse_proxy localhost:8080 {
 		# Private Network Access: navegador exige este header no preflight quando um site
 		# público (https) acessa um IP privado (o agente na LAN). Sem ele, o browser bloqueia.
