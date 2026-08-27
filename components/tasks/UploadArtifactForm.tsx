@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { resolveUploadEndpoint, type UploadEndpoint } from "@/lib/nas/endpoint";
+import { nasFailureMessage } from "@/lib/nas/failure-message";
 import { getArtifactUploadOptions } from "@/lib/actions/artifact";
 import { guessMediaType, uploadFileToNas } from "@/lib/nas/upload-client";
 
@@ -58,6 +59,7 @@ export function UploadArtifactForm({
 }: UploadArtifactFormProps) {
   const router = useRouter();
   const t = useTranslations("tasks.upload");
+  const tNas = useTranslations("tasks.nasProbe");
   const tMedia = useTranslations("tasks.artifacts.mediaTypes");
   const [checking, setChecking] = useState(true);
   const [endpoint, setEndpoint] = useState<UploadEndpoint | null>(null);
@@ -90,10 +92,15 @@ export function UploadArtifactForm({
     };
   }, [scope, taskId, projectId, clientId]);
 
+  // Cada motivo pede uma ação diferente: certificado vencido não se resolve procurando cabo de rede,
+  // e disco cheio no NAS não se resolve entrando na VPN. `t("blockedAgent")` fica só como rede de
+  // segurança para um endpoint sem motivo (não deveria acontecer).
   const blockedReason = checking
     ? null
     : !endpoint?.uploadEnabled
-      ? t("blockedAgent")
+      ? endpoint?.failure
+        ? nasFailureMessage(tNas, endpoint.failure, endpoint.failureStatus)
+        : t("blockedAgent")
       : !options?.uploadConfigured
         ? t("blockedNotConfigured")
         : null;

@@ -1,4 +1,12 @@
 {
+  "nasProbe": {
+    "notConfigured": "El NAS no está aprovisionado en este entorno: no hay agente para subir ni descargar archivos.",
+    "timeout": "El agente del NAS no respondió a tiempo en {url}. Puede estar sobrecargado o la red lenta; inténtalo de nuevo en unos segundos.",
+    "unreachable": "No se pudo conectar con el agente del NAS en {url}. Las causas probables son el certificado TLS del agente caducado, el DNS, o que estés fuera de la LAN/VPN. Abre {url} en el navegador: si es el certificado, el error aparece al instante.",
+    "blocked": "El agente del NAS respondió en {url}, pero el navegador bloqueó la respuesta (CORS o acceso a red privada). El agente está activo; lo que hay que ajustar es el origen permitido en su configuración.",
+    "httpError": "El agente del NAS respondió con error HTTP {status} en {url}. Está activo, pero el servicio de salud falló; revisa los registros del agente.",
+    "unhealthy": "El agente del NAS respondió en {url}, pero se declaró no disponible (sin espacio en disco o carpeta del NAS inaccesible). Libera espacio o revisa el montaje antes de reintentar."
+  },
   "list": {
     "title": "Mis Tareas",
     "subtitle": "Tareas asignadas a ti",

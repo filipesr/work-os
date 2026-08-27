@@ -8,7 +8,12 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Download, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { probeLanAgent, nasClientConfigured, NAS_ENDPOINT_CONFIG } from "@/lib/nas/endpoint";
+import {
+  probeLanAgentDetailed,
+  nasClientConfigured,
+  NAS_ENDPOINT_CONFIG,
+} from "@/lib/nas/endpoint";
+import { nasFailureMessage } from "@/lib/nas/failure-message";
 
 export function DownloadArtifactButton({
   artifactId,
@@ -19,6 +24,7 @@ export function DownloadArtifactButton({
   iconOnly?: boolean;
 }) {
   const t = useTranslations("tasks.artifacts.download");
+  const tNas = useTranslations("tasks.nasProbe");
   const [busy, setBusy] = useState(false);
 
   async function go() {
@@ -28,14 +34,21 @@ export function DownloadArtifactButton({
       return;
     }
     setBusy(true);
-    const health = await probeLanAgent();
-    // Sem agente na LAN e sem túnel configurado → não há como baixar. Avisa e não navega.
-    if (!health?.ok && !NAS_ENDPOINT_CONFIG.TUNNEL_URL) {
+    const probe = await probeLanAgentDetailed();
+    // Para BAIXAR, disco cheio não atrapalha: `writable:false` impede o ENVIO, não a leitura — e a
+    // LAN serve qualquer sensibilidade, enquanto o túnel só serve CLIENTE. Mas isso vale só quando
+    // o agente se declarou OK: um `ok:false` (ou corpo ilegível) é agente em mau estado, e aí o
+    // túnel é a aposta melhor — que era o comportamento antes desta tela ganhar motivos.
+    const lanUsable = probe.ok || (probe.reason === "unhealthy" && probe.health?.ok === true);
+    // Sem agente na LAN e sem túnel configurado → não há como baixar. Avisa DIZENDO O MOTIVO (o
+    // genérico "conecte-se à LAN/VPN" foi o que mandou caçar rede num certificado vencido) e não
+    // navega.
+    if (!lanUsable && !NAS_ENDPOINT_CONFIG.TUNNEL_URL) {
       setBusy(false);
-      toast.error(t("agentNotFound"));
+      toast.error(nasFailureMessage(tNas, probe.reason, probe.status));
       return;
     }
-    const net = health?.ok ? "lan" : "remote";
+    const net = lanUsable ? "lan" : "remote";
     window.location.href = `/api/artifacts/${artifactId}/download?net=${net}`;
     // O download é uma navegação que NÃO descarrega a página; sem isto o botão fica "girando" para
     // sempre (inclusive se o usuário cancela). Libera após iniciar.
