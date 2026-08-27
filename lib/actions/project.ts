@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireMemberOrHigher, requireManagerOrAdmin } from "@/lib/permissions";
 import { createProjectSchema } from "@/lib/validations";
@@ -28,7 +29,8 @@ export async function createProject(data: CreateProjectData) {
     });
 
     if (!client) {
-      return { error: "Cliente não encontrado" };
+      const tCommon = await getTranslations("errors.common");
+      return { error: tCommon("clientNotFound") };
     }
 
     const project = await prisma.project.create({
@@ -49,7 +51,8 @@ export async function createProject(data: CreateProjectData) {
     return { project };
   } catch (error) {
     console.error("Error creating project:", error);
-    return { error: "Erro ao criar projeto" };
+    const tProject = await getTranslations("errors.project");
+    return { error: tProject("createFailed") };
   }
 }
 

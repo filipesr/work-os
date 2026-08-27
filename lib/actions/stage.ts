@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
@@ -54,7 +55,7 @@ export async function createTemplateStage(templateId: string, formData: FormData
     return { success: true };
   } catch (error) {
     logger.error("[CREATE STAGE] Error:", error);
-    return { error: "Failed to create stage" };
+    return { error: (await getTranslations("errors.stage"))("createFailed") };
   }
 }
 
@@ -110,7 +111,7 @@ export async function updateTemplateStage(stageId: string, templateId: string, f
     return { success: true };
   } catch (error) {
     logger.error("[UPDATE STAGE] Error:", error);
-    return { error: "Failed to update stage" };
+    return { error: (await getTranslations("errors.stage"))("updateFailed") };
   }
 }
 
@@ -132,7 +133,7 @@ export async function deleteTemplateStage(stageId: string, templateId: string) {
     return { success: true };
   } catch (error) {
     logger.error("Error deleting stage:", error);
-    return { error: "Failed to delete stage" };
+    return { error: (await getTranslations("errors.stage"))("deleteFailed") };
   }
 }
 

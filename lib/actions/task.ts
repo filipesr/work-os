@@ -589,6 +589,8 @@ export async function getAvailableNextStages(taskId: string) {
 export async function unassignTask(taskId: string) {
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser.id as string;
+  const tTask = await getTranslations("errors.task");
+  const tCommon = await getTranslations("errors.common");
 
   try {
     // Fetch task + current user's role in parallel (independent queries)
@@ -611,7 +613,7 @@ export async function unassignTask(taskId: string) {
     ]);
 
     if (!task) {
-      return { error: "Tarefa não encontrada" };
+      return { error: tCommon("taskNotFound") };
     }
 
     // Check permissions: must be admin, manager, or the assignee themselves
@@ -621,7 +623,7 @@ export async function unassignTask(taskId: string) {
 
     if (!isAdmin && !isManager && !isAssignee) {
       return {
-        error: "Apenas administradores, gerentes ou o responsável atual podem desatribuir tarefas",
+        error: tTask("unassignTaskOnlyAssigneeOrManager"),
       };
     }
 
@@ -653,7 +655,7 @@ export async function unassignTask(taskId: string) {
     return { success: true };
   } catch (error) {
     console.error("Error unassigning task:", error);
-    return { error: "Erro ao desatribuir tarefa" };
+    return { error: tTask("unassignTaskFailed") };
   }
 }
 
@@ -664,6 +666,8 @@ export async function unassignTask(taskId: string) {
 export async function completeTask(taskId: string) {
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser.id as string;
+  const tTask = await getTranslations("errors.task");
+  const tCommon = await getTranslations("errors.common");
 
   try {
     // Fetch task + current user's role in parallel (independent queries)
@@ -681,7 +685,7 @@ export async function completeTask(taskId: string) {
     ]);
 
     if (!task) {
-      return { error: "Tarefa não encontrada" };
+      return { error: tCommon("taskNotFound") };
     }
 
     // Check permissions: must be admin, manager, or the assignee
@@ -691,13 +695,13 @@ export async function completeTask(taskId: string) {
 
     if (!isAdmin && !isManager && !isAssignee) {
       return {
-        error: "Apenas administradores, gerentes ou o responsável atual podem concluir tarefas",
+        error: tTask("completeOnlyAssigneeOrManager"),
       };
     }
 
     // Check if task is already completed
     if (task.status === "COMPLETED") {
-      return { error: "Esta tarefa já está concluída" };
+      return { error: tTask("taskAlreadyCompleted") };
     }
 
     // Mark task as completed
@@ -726,7 +730,7 @@ export async function completeTask(taskId: string) {
     return { success: true };
   } catch (error) {
     console.error("Error completing task:", error);
-    return { error: "Erro ao concluir tarefa" };
+    return { error: tTask("completeTaskFailed") };
   }
 }
 
@@ -820,6 +824,8 @@ export async function completeStageAndAdvance(
 ) {
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser.id as string;
+  const tTask = await getTranslations("errors.task");
+  const tCommon = await getTranslations("errors.common");
 
   try {
     // 1. Get current active stage + current user's role in parallel
@@ -856,11 +862,11 @@ export async function completeStageAndAdvance(
     ]);
 
     if (!activeStage) {
-      return { error: "Etapa ativa não encontrada" };
+      return { error: tCommon("activeStageNotFound") };
     }
 
     if (activeStage.status !== "ACTIVE") {
-      return { error: "Esta etapa não está ativa" };
+      return { error: tTask("stageNotActive") };
     }
 
     // 2. Check permissions
@@ -869,7 +875,7 @@ export async function completeStageAndAdvance(
     const isAssignee = activeStage.assigneeId === currentUserId;
 
     if (!isAdmin && !isManager && !isAssignee) {
-      return { error: "Você não tem permissão para completar esta etapa" };
+      return { error: tTask("noPermissionCompleteStage") };
     }
 
     // 3. Validate contribution (if not admin/manager)
@@ -885,10 +891,7 @@ export async function completeStageAndAdvance(
 
       const [artifactCount, commentCount] = contributions;
       if (artifactCount === 0 && commentCount === 0) {
-        return {
-          error:
-            "Você precisa adicionar pelo menos 1 artefato ou comentário antes de completar esta etapa.",
-        };
+        return { error: tTask("evidenceRequired") };
       }
     }
 
@@ -1020,7 +1023,7 @@ export async function completeStageAndAdvance(
     };
   } catch (error) {
     console.error("Error completing stage:", error);
-    return { error: "Erro ao completar etapa" };
+    return { error: tTask("completeStageFailed") };
   }
 }
 
@@ -1304,6 +1307,8 @@ export async function getTeamBlockedStages(teamId: string) {
 export async function claimActiveStage(taskId: string, stageId: string) {
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser.id as string;
+  const tTask = await getTranslations("errors.task");
+  const tCommon = await getTranslations("errors.common");
 
   try {
     const activeStage = await prisma.taskActiveStage.findUnique({
@@ -1319,15 +1324,15 @@ export async function claimActiveStage(taskId: string, stageId: string) {
     });
 
     if (!activeStage) {
-      return { error: "Etapa ativa não encontrada" };
+      return { error: tCommon("activeStageNotFound") };
     }
 
     if (activeStage.status !== "ACTIVE") {
-      return { error: "Esta etapa não está disponível para reivindicação" };
+      return { error: tTask("stageNotClaimable") };
     }
 
     if (activeStage.assigneeId) {
-      return { error: "Esta etapa já está atribuída" };
+      return { error: tTask("stageAlreadyAssigned") };
     }
 
     // WIP limit enforced as a PULL constraint: block claiming when this stage
@@ -1340,7 +1345,10 @@ export async function claimActiveStage(taskId: string, stageId: string) {
       });
       if (inProgress >= activeStage.stage.wipLimit) {
         return {
-          error: `Etapa no limite de WIP (${inProgress}/${activeStage.stage.wipLimit}). Conclua trabalho aqui antes de pegar mais.`,
+          error: (await getTranslations("errors.task"))("wipLimitReached", {
+            inProgress,
+            limit: activeStage.stage.wipLimit,
+          }),
         };
       }
     }
@@ -1385,7 +1393,7 @@ export async function claimActiveStage(taskId: string, stageId: string) {
     return { success: true };
   } catch (error) {
     console.error("Error claiming active stage:", error);
-    return { error: "Erro ao reivindicar etapa" };
+    return { error: tTask("claimStageFailed") };
   }
 }
 
@@ -1395,6 +1403,8 @@ export async function claimActiveStage(taskId: string, stageId: string) {
 export async function unassignActiveStage(taskId: string, stageId: string) {
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser.id as string;
+  const tTask = await getTranslations("errors.task");
+  const tCommon = await getTranslations("errors.common");
 
   try {
     // Fetch active stage + current user's role in parallel (independent queries)
@@ -1418,7 +1428,7 @@ export async function unassignActiveStage(taskId: string, stageId: string) {
     ]);
 
     if (!activeStage) {
-      return { error: "Etapa ativa não encontrada" };
+      return { error: tCommon("activeStageNotFound") };
     }
 
     // Check permissions
@@ -1428,7 +1438,7 @@ export async function unassignActiveStage(taskId: string, stageId: string) {
 
     if (!isAdmin && !isManager && !isAssignee) {
       return {
-        error: "Apenas administradores, gerentes ou o responsável atual podem desatribuir etapas",
+        error: tTask("unassignStageOnlyAssigneeOrManager"),
       };
     }
 
@@ -1472,7 +1482,7 @@ export async function unassignActiveStage(taskId: string, stageId: string) {
     return { success: true };
   } catch (error) {
     console.error("Error unassigning active stage:", error);
-    return { error: "Erro ao desatribuir etapa" };
+    return { error: tTask("unassignStageFailed") };
   }
 }
 
@@ -1542,11 +1552,16 @@ export async function getPreviousStages(taskId: string) {
 /**
  * Advances a task to the next stage (forward movement).
  * Validates that all dependencies are met before allowing the transition.
- * This is the core of the workflow engine.
+ *
+ * ⚠️ CÓDIGO MORTO — não há nenhum chamador no repositório (busca em 2026-08-27); a função termina
+ * devolvendo o próprio aviso de depreciação, e quem move etapa hoje é `completeStageAndAdvance`.
+ * Por isso as mensagens aqui dentro ficaram SEM tradução: traduzir texto que ninguém alcança é
+ * trabalho que não chega a usuário nenhum. Candidata a remoção — fora do escopo desta passagem.
  */
 export async function advanceTaskStage(taskId: string, nextStageId: string) {
   const user = await requireMemberOrHigher();
   const currentUserId = user.id as string;
+  const tTask = await getTranslations("errors.task");
 
   try {
     // Check if user is admin or manager
@@ -1562,9 +1577,7 @@ export async function advanceTaskStage(taskId: string, nextStageId: string) {
 
     // Admin/Manager can bypass team requirement
     if (!isAdminOrManager && userTeamIds.length === 0) {
-      return {
-        error: "Você não está atribuído a nenhum time. Contate o administrador.",
-      };
+      return { error: tTask("noTeamAssigned") };
     }
 
     const nextStage = await prisma.templateStage.findUnique({
@@ -1578,7 +1591,7 @@ export async function advanceTaskStage(taskId: string, nextStageId: string) {
     });
 
     if (!nextStage) {
-      return { error: "Etapa de destino não encontrada." };
+      return { error: tTask("targetStageNotFound") };
     }
 
     // ✅ Admin/Manager can bypass team validation
@@ -1595,10 +1608,13 @@ export async function advanceTaskStage(taskId: string, nextStageId: string) {
     }
 
     // DEPRECATED: This function is no longer used in the fork/join system
+    // Texto mantido em português de propósito: é migalha de migração para quem
+    // desenvolve (nomeia a função substituta), num caminho morto que a UI não
+    // alcança — traduzir não serviria a usuário nenhum.
     return { error: "Esta função foi depreciada. Use completeStageAndAdvance() em vez disso." };
   } catch (error) {
     console.error("Error advancing task stage:", error);
-    return { error: "Erro ao avançar tarefa" };
+    return { error: tTask("advanceFailed") };
   }
 }
 
@@ -1620,13 +1636,14 @@ export async function revertTaskStage(
   const user = await requireMemberOrHigher();
   const currentUserId = user.id as string;
   const userRole = user.role;
+  const tTask = await getTranslations("errors.task");
 
   if (!comment || comment.trim().length === 0) {
-    return { error: "Um comentário explicando a reversão é obrigatório." };
+    return { error: tTask("revertCommentRequired") };
   }
 
   if (kind !== "INTERNAL" && kind !== "CLIENT") {
-    return { error: "Origem do retorno inválida (interno ou cliente)." };
+    return { error: tTask("invalidReworkKind") };
   }
 
   try {
@@ -1656,18 +1673,18 @@ export async function revertTaskStage(
     ]);
 
     if (!targetStage) {
-      return { error: "Etapa de destino não encontrada" };
+      return { error: tTask("targetStageNotFound") };
     }
 
     if (currentActiveStages.length === 0) {
-      return { error: "Não há etapas ativas para reverter" };
+      return { error: tTask("noActiveStagesToRevert") };
     }
 
     // Guard: only allow reverting to a genuine PREVIOUS stage (lower order than
     // the current position). Prevents reverting forward / infinite reverts.
     const currentMinOrder = Math.min(...currentActiveStages.map((as) => as.stage.order));
     if (targetStage.order >= currentMinOrder) {
-      return { error: "Só é possível reverter para uma etapa anterior." };
+      return { error: tTask("revertOnlyBackwards") };
     }
 
     // Guard: a etapa-alvo precisa FAZER PARTE desta tarefa. Etapa opcional
@@ -1680,7 +1697,7 @@ export async function revertTaskStage(
       select: { id: true },
     });
     if (!targetRow) {
-      return { error: "Esta etapa não faz parte desta tarefa." };
+      return { error: tTask("stageNotInTask") };
     }
 
     // Check permissions - must be admin, manager, or assignee of at least one active stage
@@ -1689,7 +1706,7 @@ export async function revertTaskStage(
     const isAssignee = currentActiveStages.some((as) => as.assigneeId === currentUserId);
 
     if (!isAdmin && !isManager && !isAssignee) {
-      return { error: "Você não tem permissão para reverter esta tarefa" };
+      return { error: tTask("noPermissionRevert") };
     }
 
     // 4. Execute reversion in a transaction
@@ -1795,7 +1812,7 @@ export async function revertTaskStage(
     };
   } catch (error) {
     console.error("Error reverting task stage:", error);
-    return { error: "Erro ao reverter tarefa" };
+    return { error: tTask("revertFailed") };
   }
 }
 
@@ -1806,7 +1823,7 @@ export async function addComment(taskId: string, content: string) {
   const userId = user.id as string;
 
   if (!content || content.trim().length === 0) {
-    return { error: "Comment content is required" };
+    return { error: (await getTranslations("errors.task"))("commentRequired") };
   }
 
   try {
@@ -1854,11 +1871,11 @@ export async function addLinkArtifact(
   const userId = user.id as string;
 
   if (!title || title.trim().length === 0) {
-    return { error: "Artifact title is required" };
+    return { error: (await getTranslations("errors.task"))("artifactTitleRequired") };
   }
 
   if (!url || url.trim().length === 0) {
-    return { error: "Artifact URL is required" };
+    return { error: (await getTranslations("errors.task"))("artifactUrlRequired") };
   }
 
   try {
@@ -1912,15 +1929,15 @@ export async function logTime(
 
   // Validation
   if (!taskId) {
-    return { error: "Task ID is required" };
+    return { error: (await getTranslations("errors.task"))("taskIdRequired") };
   }
 
   if (!hoursSpent || hoursSpent <= 0) {
-    return { error: "Hours spent must be greater than 0" };
+    return { error: (await getTranslations("errors.task"))("hoursMustBePositive") };
   }
 
   if (!logDate) {
-    return { error: "Log date is required" };
+    return { error: (await getTranslations("errors.task"))("logDateRequired") };
   }
 
   try {
@@ -1939,7 +1956,7 @@ export async function logTime(
     });
 
     if (!task) {
-      return { error: "Task not found" };
+      return { error: (await getTranslations("errors.common"))("taskNotFound") };
     }
 
     // Create the time log entry
@@ -1993,17 +2010,21 @@ export async function logTime(
 export async function claimTask(taskId: string) {
   const user = await requireMemberOrHigher();
   const userId = user.id as string;
+  const tTask = await getTranslations("errors.task");
 
   try {
     // DEPRECATED: Old claimTask function for task-level assignment
     // New system uses claimActiveStage for stage-level assignment
+    // Texto mantido em português de propósito: é migalha de migração para quem
+    // desenvolve (nomeia a função substituta), num caminho morto que a UI não
+    // alcança — traduzir não serviria a usuário nenhum.
     return {
       error:
         "Esta função foi depreciada. Use claimActiveStage() para reivindicar etapas específicas.",
     };
   } catch (error) {
     console.error("Error claiming task:", error);
-    return { error: "Erro ao reivindicar tarefa" };
+    return { error: tTask("claimTaskFailed") };
   }
 }
 
@@ -2013,6 +2034,9 @@ export async function assignTask(taskId: string, targetUserId: string) {
   try {
     // DEPRECATED: Old assignTask function for task-level assignment
     // New system uses claimActiveStage for stage-level assignment with automatic team validation
+    // Texto mantido em português de propósito: é migalha de migração para quem
+    // desenvolve (nomeia a função substituta), num caminho morto que a UI não
+    // alcança — traduzir não serviria a usuário nenhum.
     return {
       error: "Esta função foi depreciada. Use claimActiveStage() para atribuir etapas específicas.",
     };
@@ -2029,12 +2053,13 @@ export async function assignTask(taskId: string, targetUserId: string) {
 /** Marca a tarefa como OBSOLETE (arquival): sai de pendentes e do % do projeto. MANAGER+. */
 export async function markTaskObsolete(taskId: string) {
   const user = await requireManagerOrAdmin();
+  const tCommon = await getTranslations("errors.common");
   try {
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       select: { id: true, projectId: true },
     });
-    if (!task) return { error: "Tarefa não encontrada." };
+    if (!task) return { error: tCommon("taskNotFound") };
 
     await prisma.task.update({ where: { id: taskId }, data: { status: "OBSOLETE" } });
     await prisma.taskComment.create({
@@ -2053,7 +2078,7 @@ export async function markTaskObsolete(taskId: string) {
     return { success: true };
   } catch (error) {
     console.error("markTaskObsolete error:", error);
-    return { error: "Erro ao marcar como obsoleta." };
+    return { error: (await getTranslations("errors.task"))("markObsoleteFailed") };
   }
 }
 
@@ -2072,6 +2097,8 @@ export async function markTaskObsolete(taskId: string) {
 export async function duplicateTask(taskId: string) {
   const user = await requireManagerOrAdmin();
   const userId = user.id as string;
+  const tTask = await getTranslations("errors.task");
+  const tCommon = await getTranslations("errors.common");
   let newId: string | null = null;
 
   try {
@@ -2092,8 +2119,8 @@ export async function duplicateTask(taskId: string) {
         },
       },
     });
-    if (!original) return { error: "Tarefa não encontrada." };
-    if (original.activeStages.length === 0) return { error: "Tarefa sem etapas para duplicar." };
+    if (!original) return { error: tCommon("taskNotFound") };
+    if (original.activeStages.length === 0) return { error: tTask("noStagesToDuplicate") };
 
     const templateId = original.activeStages[0].stage.templateId;
     const selectedStageIds = new Set(original.activeStages.map((s) => s.stageId));
@@ -2135,7 +2162,7 @@ export async function duplicateTask(taskId: string) {
     if (original.projectId) revalidatePath(`/admin/projects/${original.projectId}`);
   } catch (error) {
     console.error("duplicateTask error:", error);
-    return { error: "Erro ao duplicar tarefa." };
+    return { error: (await getTranslations("errors.task"))("duplicateFailed") };
   }
 
   // redirect() lança — fora do try para não ser capturado.

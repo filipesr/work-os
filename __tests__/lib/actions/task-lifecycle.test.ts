@@ -3,7 +3,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
-vi.mock("next-intl/server", () => ({ getTranslations: vi.fn() }));
+// Devolve a própria chave: estas asserções olham o MOTIVO do erro, não o texto. O mock anterior
+// (`vi.fn()` cru) devolvia undefined e quebrava assim que a action passou a traduzir de fato.
+vi.mock("next-intl/server", () => ({
+  getTranslations: vi.fn().mockResolvedValue((k: string) => k),
+}));
 
 vi.mock("@/lib/permissions", () => ({
   requireManagerOrAdmin: vi.fn(),

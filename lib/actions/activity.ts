@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
@@ -45,7 +46,7 @@ export async function startWorkOnTask(
   const userId = user.id as string;
 
   if (!taskId || !currentStageId) {
-    return { error: "Missing required data (taskId or stageId)" };
+    return { error: (await getTranslations("errors.activity"))("missingData") };
   }
 
   try {
@@ -116,7 +117,7 @@ export async function stopWorkOnTask(activeLogId: string, taskId: string, descri
   const user = await requireMemberOrHigher();
 
   if (!activeLogId) {
-    return { error: "Missing active log ID" };
+    return { error: (await getTranslations("errors.activity"))("missingLogId") };
   }
 
   try {
@@ -132,11 +133,11 @@ export async function stopWorkOnTask(activeLogId: string, taskId: string, descri
     });
 
     if (!log) {
-      return { error: "Activity log not found" };
+      return { error: (await getTranslations("errors.activity"))("logNotFound") };
     }
 
     if (log.userId !== user.id) {
-      return { error: "Unauthorized: This activity log does not belong to you" };
+      return { error: (await getTranslations("errors.activity"))("notYours") };
     }
 
     // Mesmo caminho de fechamento da interrupção — é o que garante que os dois

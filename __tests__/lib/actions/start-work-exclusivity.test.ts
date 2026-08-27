@@ -17,6 +17,13 @@ const tx = {
   timeLog: { create: vi.fn(async (_a: unknown) => ({})) },
 };
 
+// A action agora traduz suas mensagens; no ambiente de teste o next-intl resolve para o build de
+// cliente, onde `getTranslations` lança. O mock devolve a própria chave — as asserções olham o
+// FORMATO do retorno, não o texto.
+vi.mock("next-intl/server", () => ({
+  getTranslations: vi.fn().mockResolvedValue((k: string) => k),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   default: {
     $transaction: vi.fn(async (fn: (c: unknown) => Promise<unknown>) => fn(tx)),

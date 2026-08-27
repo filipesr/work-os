@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
 import { stageDependenciesSchema } from "@/lib/validations";
@@ -69,7 +70,7 @@ export async function updateStageDependencies(
     return { success: true };
   } catch (error) {
     console.error("Error updating stage dependencies:", error);
-    return { error: "Failed to update dependencies" };
+    return { error: (await getTranslations("errors.dependency"))("updateFailed") };
   }
 }
 

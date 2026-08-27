@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { materializeYear } from "@/lib/calendar/materialize";
@@ -116,7 +117,8 @@ export async function materializeCatalogYear(year: number) {
   await requireManagerOrAdmin();
 
   if (!Number.isInteger(year) || year < 2020 || year > 2100) {
-    return { error: "Ano inválido" };
+    const t = await getTranslations("errors.calendar");
+    return { error: t("invalidYear") };
   }
 
   const result = await materializeYear(prisma, year);
@@ -131,27 +133,29 @@ export interface OccurrenceInput {
   kind: OccurrenceKind;
 }
 
-function parseInput(formData: FormData): OccurrenceInput | { error: string } {
+async function parseInput(formData: FormData): Promise<OccurrenceInput | { error: string }> {
+  const t = await getTranslations("errors.calendar");
+
   const date = String(formData.get("date") ?? "").trim();
   const titlePt = String(formData.get("titlePt") ?? "").trim();
   const titleEs = String(formData.get("titleEs") ?? "").trim();
   const kind = String(formData.get("kind") ?? "EVENT") as OccurrenceKind;
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Data inválida" };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: t("invalidDate") };
 
   // Fora da janela a linha existiria sem aparecer em lugar nenhum.
   const { start, end } = planningHorizon();
   const parsedDate = new Date(`${date}T00:00:00.000Z`);
   if (parsedDate < start || parsedDate > end) {
     return {
-      error: `A data precisa estar entre ${formatISODate(start)} e ${formatISODate(end)}. Aniversários e datas de admissão não vão aqui — são campos da pessoa em Administração › Usuários, e o calendário já os mostra todo ano.`,
+      error: t("dateOutsideHorizon", { start: formatISODate(start), end: formatISODate(end) }),
     };
   }
-  if (!titlePt) return { error: "Título (pt) obrigatório" };
+  if (!titlePt) return { error: t("titlePtRequired") };
   // P8: a data aparece nos dois idiomas do app, então o título espanhol não é
   // opcional — cair no português no es-ES seria vazamento de idioma.
-  if (!titleEs) return { error: "Título (es) obrigatório" };
-  if (!["HOLIDAY", "COMMERCIAL", "EVENT"].includes(kind)) return { error: "Tipo inválido" };
+  if (!titleEs) return { error: t("titleEsRequired") };
+  if (!["HOLIDAY", "COMMERCIAL", "EVENT"].includes(kind)) return { error: t("invalidType") };
 
   return { date, titlePt, titleEs, kind };
 }
@@ -159,7 +163,7 @@ function parseInput(formData: FormData): OccurrenceInput | { error: string } {
 /** Cadastra uma data própria (FestPop, feira, ativação local). Sempre CUSTOM. */
 export async function createOccurrence(formData: FormData) {
   await requireManagerOrAdmin();
-  const parsed = parseInput(formData);
+  const parsed = await parseInput(formData);
   if ("error" in parsed) return parsed;
 
   await prisma.calendarOccurrence.create({
@@ -183,19 +187,25 @@ export async function createOccurrence(formData: FormData) {
 export async function updateOccurrence(formData: FormData) {
   await requireManagerOrAdmin();
   const id = String(formData.get("id") ?? "");
-  if (!id) return { error: "Id ausente" };
+  if (!id) return { error: (await getTranslations("errors.common"))("idMissing") };
 
-  const parsed = parseInput(formData);
+  const parsed = await parseInput(formData);
   if ("error" in parsed) return parsed;
 
   const existing = await prisma.calendarOccurrence.findUnique({
     where: { id },
     select: { source: true },
   });
-  if (!existing) return { error: "Data não encontrada" };
+  if (!existing) {
+    const tCommon = await getTranslations("errors.common");
+    return { error: tCommon("dateNotFound") };
+  }
   // Editar uma linha CURATED seria perdido na próxima rematerialização — melhor
   // recusar do que aceitar em silêncio uma edição com prazo de validade.
-  if (existing.source === "CURATED") return { error: "Datas do catálogo não são editáveis" };
+  if (existing.source === "CURATED") {
+    const t = await getTranslations("errors.calendar");
+    return { error: t("catalogNotEditable") };
+  }
 
   await prisma.calendarOccurrence.update({
     where: { id },
@@ -214,14 +224,20 @@ export async function updateOccurrence(formData: FormData) {
 export async function deleteOccurrence(formData: FormData) {
   await requireManagerOrAdmin();
   const id = String(formData.get("id") ?? "");
-  if (!id) return { error: "Id ausente" };
+  if (!id) return { error: (await getTranslations("errors.common"))("idMissing") };
 
   const existing = await prisma.calendarOccurrence.findUnique({
     where: { id },
     select: { source: true },
   });
-  if (!existing) return { error: "Data não encontrada" };
-  if (existing.source === "CURATED") return { error: "Datas do catálogo não são removíveis" };
+  if (!existing) {
+    const tCommon = await getTranslations("errors.common");
+    return { error: tCommon("dateNotFound") };
+  }
+  if (existing.source === "CURATED") {
+    const t = await getTranslations("errors.calendar");
+    return { error: t("catalogNotRemovable") };
+  }
 
   // As demandas vinculadas sobrevivem: a FK é SET NULL. Apagar uma data do
   // calendário não pode arrastar o trabalho junto.

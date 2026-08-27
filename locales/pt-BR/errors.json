@@ -24,13 +24,53 @@
     "deleteFailed": "Falha ao excluir tarefa",
     "alreadyActive": "Você já está trabalhando nesta tarefa",
     "startFailed": "Falha ao iniciar trabalho",
-    "stopFailed": "Falha ao parar trabalho"
+    "stopFailed": "Falha ao parar trabalho",
+    "completeOnlyAssigneeOrManager": "Apenas administradores, gerentes ou o responsável atual podem concluir tarefas.",
+    "unassignStageOnlyAssigneeOrManager": "Apenas administradores, gerentes ou o responsável atual podem desatribuir etapas.",
+    "unassignTaskOnlyAssigneeOrManager": "Apenas administradores, gerentes ou o responsável atual podem desatribuir tarefas.",
+    "advanceFailed": "Erro ao avançar a tarefa.",
+    "completeStageFailed": "Erro ao concluir a etapa.",
+    "completeTaskFailed": "Erro ao concluir a tarefa.",
+    "unassignStageFailed": "Erro ao desatribuir a etapa.",
+    "unassignTaskFailed": "Erro ao desatribuir a tarefa.",
+    "claimStageFailed": "Erro ao reivindicar a etapa.",
+    "claimTaskFailed": "Erro ao reivindicar a tarefa.",
+    "revertFailed": "Erro ao reverter a tarefa.",
+    "stageAlreadyAssigned": "Esta etapa já está atribuída.",
+    "stageNotActive": "Esta etapa não está ativa.",
+    "stageNotClaimable": "Esta etapa não está disponível para reivindicação.",
+    "stageNotInTask": "Esta etapa não faz parte desta tarefa.",
+    "taskAlreadyCompleted": "Esta tarefa já está concluída.",
+    "targetStageNotFound": "Etapa de destino não encontrada.",
+    "noActiveStagesToRevert": "Não há etapas ativas para reverter.",
+    "invalidReworkKind": "Origem do retorno inválida (interno ou cliente).",
+    "revertOnlyBackwards": "Só é possível reverter para uma etapa anterior.",
+    "noStagesToDuplicate": "Tarefa sem etapas para duplicar.",
+    "revertCommentRequired": "Um comentário explicando a reversão é obrigatório.",
+    "noTeamAssigned": "Você não está atribuído a nenhum time. Contate o administrador.",
+    "noPermissionCompleteStage": "Você não tem permissão para concluir esta etapa.",
+    "noPermissionRevert": "Você não tem permissão para reverter esta tarefa.",
+    "evidenceRequired": "Adicione ao menos um artefato ou comentário antes de concluir esta etapa.",
+    "wipLimitReached": "Etapa no limite de WIP ({inProgress}/{limit}). Conclua o trabalho daqui antes de pegar mais.",
+    "wrongTeamForStage": "Você não pode avançar para a etapa \"{stage}\" porque ela pertence ao time \"{stageTeam}\". Você faz parte de: {userTeams}.",
+    "markObsoleteFailed": "Erro ao marcar a tarefa como obsoleta.",
+    "duplicateFailed": "Erro ao duplicar a tarefa.",
+    "commentRequired": "Escreva um comentário.",
+    "artifactTitleRequired": "Informe o título do artefato.",
+    "artifactUrlRequired": "Informe a URL do artefato.",
+    "taskIdRequired": "Tarefa não informada.",
+    "hoursMustBePositive": "As horas precisam ser maiores que zero.",
+    "logDateRequired": "Informe a data do apontamento."
   },
   "user": {
     "notFound": "Usuário não encontrado",
     "createFailed": "Falha ao criar usuário",
     "updateFailed": "Falha ao atualizar usuário",
-    "deleteFailed": "Falha ao excluir usuário"
+    "deleteFailed": "Falha ao excluir usuário",
+    "invalidEmail": "Informe um e-mail válido.",
+    "emailTaken": "Já existe um usuário com este e-mail.",
+    "invalidRole": "Papel inválido.",
+    "cannotDisableSelf": "Você não pode desativar a si mesmo."
   },
   "general": {
     "somethingWentWrong": "Algo deu errado",
@@ -62,5 +102,87 @@
       "tooLong": "O nome passou de 60 caracteres.",
       "invalidChars": "Use apenas letras, espaço, apóstrofo e hífen — sem números, símbolos ou emojis."
     }
+  },
+  "common": {
+    "taskNotFound": "Tarefa não encontrada.",
+    "clientNotFound": "Cliente não encontrado.",
+    "projectNotFound": "Projeto não encontrado.",
+    "artifactNotFound": "Artefato não encontrado.",
+    "activeStageNotFound": "Etapa ativa não encontrada.",
+    "dateNotFound": "Data não encontrada.",
+    "idMissing": "Identificador ausente.",
+    "invalidData": "Dados inválidos.",
+    "unauthorized": "Sessão expirada. Entre novamente."
+  },
+  "artifact": {
+    "notReady": "Artefato ainda não está pronto.",
+    "invalid": "Artefato inválido.",
+    "notPending": "Artefato não está pendente.",
+    "readyNotDeletable": "Artefato pronto — não é removível por aqui.",
+    "taskArtifactsNotHere": "Artefatos de tarefa não são removidos por aqui.",
+    "taskArtifactsUseTaskFlow": "Artefatos de tarefa usam o fluxo da própria demanda.",
+    "clientWithoutFolder": "Cliente sem pasta (folderName) definida para o NAS.",
+    "shareNotConfigured": "Compartilhamento externo não configurado.",
+    "linkNotFoundOrRevoked": "Link não encontrado ou já revogado.",
+    "invalidPurpose": "Propósito inválido ou inativo.",
+    "noPermissionDelete": "Sem permissão para excluir este artefato.",
+    "onlyCurrentVersion": "Só a versão vigente pode receber uma nova versão.",
+    "onlyNasUploads": "Só uploads NAS saem por aqui.",
+    "invalidUrl": "URL inválida.",
+    "urlRequired": "URL é obrigatória.",
+    "uploadNotConfigured": "Upload no NAS não está configurado neste ambiente.",
+    "demandNotFound": "Demanda não encontrada.",
+    "prepareUploadFailed": "Erro ao preparar o envio.",
+    "loadOptionsFailed": "Erro ao carregar as opções de envio.",
+    "markUploadFailed": "Erro ao marcar o envio.",
+    "createShareFailed": "Erro ao criar o link de compartilhamento.",
+    "revokeShareFailed": "Erro ao revogar o link.",
+    "changeSensitivityFailed": "Erro ao alterar a sensibilidade.",
+    "deleteFailed": "Erro ao excluir o artefato.",
+    "restoreFailed": "Erro ao restaurar o artefato.",
+    "addFailed": "Erro ao adicionar o artefato.",
+    "removeFailed": "Erro ao remover o artefato.",
+    "newVersionFailed": "Erro ao criar a nova versão.",
+    "onlyClientShareable": "Somente artefatos CLIENTE podem ser compartilhados externamente.",
+    "fileTooLarge": "O arquivo passa do limite de {limit} MB para {mediaType}."
+  },
+  "calendar": {
+    "invalidYear": "Ano inválido.",
+    "invalidDate": "Data inválida.",
+    "catalogNotEditable": "Datas do catálogo não são editáveis.",
+    "catalogNotRemovable": "Datas do catálogo não são removíveis.",
+    "invalidType": "Tipo inválido.",
+    "titleEsRequired": "Título (es) é obrigatório.",
+    "titlePtRequired": "Título (pt) é obrigatório.",
+    "dateOutsideHorizon": "A data precisa estar entre {start} e {end}. Aniversários e datas de admissão não vão aqui — são campos da pessoa em Administração › Usuários, e o calendário já os mostra todo ano."
+  },
+  "project": {
+    "createFailed": "Erro ao criar o projeto."
+  },
+  "client": {
+    "createFailed": "Erro ao criar o cliente."
+  },
+  "oneOnOne": {
+    "memberRequired": "Colaborador não informado."
+  },
+  "rework": {
+    "invalidClass": "Classificação inválida."
+  },
+  "activity": {
+    "missingData": "Dados obrigatórios ausentes (tarefa ou etapa).",
+    "missingLogId": "Registro de atividade não informado.",
+    "logNotFound": "Registro de atividade não encontrado.",
+    "notYours": "Este registro de atividade não é seu."
+  },
+  "stage": {
+    "createFailed": "Erro ao criar a etapa.",
+    "updateFailed": "Erro ao atualizar a etapa.",
+    "deleteFailed": "Erro ao excluir a etapa."
+  },
+  "dependency": {
+    "updateFailed": "Erro ao atualizar as dependências."
+  },
+  "template": {
+    "updateFailed": "Erro ao atualizar o fluxo de trabalho."
   }
 }

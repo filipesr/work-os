@@ -19,7 +19,10 @@ import { normalizeDisplayName, validateDisplayName } from "@/lib/display-name";
  *  o app é bilíngue e um erro só em pt-BR é meio recurso. */
 export async function updateDisplayName(formData: FormData) {
   const me = await getSessionUser();
-  if (!me?.id) return { error: "unauthorized" };
+  if (!me?.id) {
+    // Devolvia a string crua "unauthorized", que chegaria ao usuário como está.
+    return { error: (await getTranslations("errors.common"))("unauthorized") };
+  }
 
   const t = await getTranslations("errors.profile");
   const raw = String(formData.get("name") ?? "");

@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next-intl/server", () => ({
+  // A ação devolve a CHAVE como mensagem; o teste afirma o motivo, não o texto.
+  getTranslations: vi.fn().mockResolvedValue((k: string) => k),
+}));
 
 vi.mock("@/lib/permissions", () => ({
   requireManagerOrAdmin: vi.fn(),

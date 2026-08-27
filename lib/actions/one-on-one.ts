@@ -1,5 +1,6 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin, getSessionUser } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
@@ -15,7 +16,10 @@ export async function logOneOnOne(
   await requireManagerOrAdmin();
   const manager = await getSessionUser();
 
-  if (!userId) return { error: "Colaborador não informado" };
+  if (!userId) {
+    const t = await getTranslations("errors.oneOnOne");
+    return { error: t("memberRequired") };
+  }
 
   await prisma.oneOnOneLog.create({
     data: {

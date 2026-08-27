@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
 import { requireAdmin, getSessionUser } from "@/lib/permissions";
@@ -106,6 +107,7 @@ export async function updateUserRoleAndTeams(formData: FormData) {
  *  por convite — sem isto, ninguém novo jamais entraria. */
 export async function inviteUser(formData: FormData) {
   await requireAdmin();
+  const t = await getTranslations("errors.user");
 
   const email = String(formData.get("email") ?? "")
     .toLowerCase()
@@ -114,11 +116,11 @@ export async function inviteUser(formData: FormData) {
   const role = (formData.get("role") as UserRole) || UserRole.MEMBER;
   const teamIds = formData.getAll("teamIds").map(String).filter(Boolean);
 
-  if (!email || !email.includes("@")) return { error: "Informe um e-mail válido." };
-  if (!Object.values(UserRole).includes(role)) return { error: "Papel inválido." };
+  if (!email || !email.includes("@")) return { error: t("invalidEmail") };
+  if (!Object.values(UserRole).includes(role)) return { error: t("invalidRole") };
 
   const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-  if (existing) return { error: "Já existe um usuário com este e-mail." };
+  if (existing) return { error: t("emailTaken") };
 
   const user = await prisma.user.create({
     data: {
@@ -144,7 +146,8 @@ export async function setUserDisabled(userId: string, disabled: boolean) {
   // Um admin que se desativa perde o acesso à tela que reverteria isso. Como o acesso agora é por
   // convite, não há caminho de volta a não ser mexer no banco.
   if (disabled && me?.id === userId) {
-    return { error: "Você não pode desativar a si mesmo." };
+    const t = await getTranslations("errors.user");
+    return { error: t("cannotDisableSelf") };
   }
 
   await prisma.$transaction(async (tx) => {

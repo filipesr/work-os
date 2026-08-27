@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireMemberOrHigher, requireManagerOrAdmin } from "@/lib/permissions";
@@ -53,7 +54,8 @@ export async function createClient(data: CreateClientData) {
     return { client };
   } catch (error) {
     console.error("Error creating client:", error);
-    return { error: "Erro ao criar cliente" };
+    const t = await getTranslations("errors.client");
+    return { error: t("createFailed") };
   }
 }
 

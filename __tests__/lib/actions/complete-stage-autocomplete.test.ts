@@ -2,6 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mocks required for task.ts to load in the test environment
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("next-intl/server", () => ({
+  // A action traduz suas mensagens; sob jsdom o next-intl resolve para o build de cliente, onde
+  // `getTranslations` lança por design. Devolver a própria chave basta: estes testes afirmam o
+  // MOTIVO do erro, nunca o texto.
+  getTranslations: vi.fn().mockResolvedValue((k: string) => k),
+}));
+
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 

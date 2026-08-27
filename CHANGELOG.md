@@ -92,6 +92,22 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   `defaultTeam` (nulo numa coringa) e recusava qualquer atribuição, deixando a etapa
   permanentemente sem responsável. Agora valida contra o time efetivo.
 
+#### i18n das mensagens de erro
+
+- **113 mensagens de erro deixaram de ser texto fixo** e passaram a vir do dicionário, em 13 arquivos
+  de `lib/actions/`. Elas chegam ao usuário por toast: para quem usa o app em espanhol, **todo erro
+  aparecia em português** — e parte deles nem isso, aparecia em **inglês** (`activity.ts`,
+  `stage.ts`, `dependency.ts`, `template.ts`), coisa que a primeira auditoria não pegou porque
+  filtrava por acento e palavra portuguesa.
+- Efeito colateral bom: variações da mesma mensagem convergiram para uma chave só. Conviviam
+  `"Tarefa não encontrada"` e `"Tarefa não encontrada."`, `"Etapa de destino não encontrada"` e a
+  versão com ponto.
+- **Sobraram 6, de propósito:** 2 são mensagens de schema Zod definidas no topo do módulo, onde
+  `getTranslations` não roda (precisa de outra abordagem, com código de erro traduzido na borda); 3
+  são avisos de função depreciada que citam o nome da função substituta — migalha para quem
+  desenvolve, não texto de usuário; 1 vive dentro de `advanceTaskStage`, que **não tem chamador
+  nenhum** no repositório e ficou marcada como candidata a remoção.
+
 #### Conta e perfil
 
 - **Nome de exibição editável** em `/account`, com validação compartilhada entre tela e servidor

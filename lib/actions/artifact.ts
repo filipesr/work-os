@@ -6,6 +6,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { Prisma } from "@prisma/client";
 import { hash as argon2Hash } from "@node-rs/argon2";
 
@@ -192,6 +193,8 @@ async function createArtifactWithVersion(
  */
 export async function prepareArtifactUpload(input: unknown) {
   try {
+    const t = await getTranslations("errors.artifact");
+    const tc = await getTranslations("errors.common");
     const parsed = prepareArtifactUploadSchema.safeParse(input);
     if (!parsed.success) return { error: parsed.error.issues[0].message };
     const data = parsed.data;
@@ -202,7 +205,7 @@ export async function prepareArtifactUpload(input: unknown) {
     const userId = user.id as string;
 
     if (!isNasUploadConfigured()) {
-      return { error: "Upload no NAS não está configurado neste ambiente." };
+      return { error: t("uploadNotConfigured") };
     }
 
     // Resolve folderName (raiz do cliente) + nome/id do dono conforme o escopo.
@@ -222,7 +225,7 @@ export async function prepareArtifactUpload(input: unknown) {
           project: { select: { client: { select: { folderName: true } } } },
         },
       });
-      if (!task) return { error: "Demanda não encontrada." };
+      if (!task) return { error: t("demandNotFound") };
       folderName = task.project.client.folderName;
       ownerName = task.title;
       ownerId = task.id;
@@ -232,7 +235,7 @@ export async function prepareArtifactUpload(input: unknown) {
         where: { id: data.projectId ?? "" },
         select: { id: true, name: true, client: { select: { folderName: true } } },
       });
-      if (!project) return { error: "Projeto não encontrado." };
+      if (!project) return { error: tc("projectNotFound") };
       folderName = project.client.folderName;
       ownerName = project.name;
       ownerId = project.id;
@@ -242,11 +245,11 @@ export async function prepareArtifactUpload(input: unknown) {
         where: { id: data.clientId ?? "" },
         select: { id: true, folderName: true },
       });
-      if (!client) return { error: "Cliente não encontrado." };
+      if (!client) return { error: tc("clientNotFound") };
       folderName = client.folderName;
       clientId = client.id;
     }
-    if (!folderName) return { error: "Cliente sem pasta (folderName) definida para o NAS." };
+    if (!folderName) return { error: t("clientWithoutFolder") };
 
     // Propósito é opcional: quando informado, valida; quando ausente, o nome sai sem esse segmento.
     let purposeId: string | null = null;
@@ -256,7 +259,7 @@ export async function prepareArtifactUpload(input: unknown) {
         where: { id: data.purposeId },
         select: { id: true, label: true, active: true },
       });
-      if (!purpose || !purpose.active) return { error: "Propósito inválido ou inativo." };
+      if (!purpose || !purpose.active) return { error: t("invalidPurpose") };
       purposeId = purpose.id;
       purposeLabel = purpose.label;
     }
@@ -271,7 +274,10 @@ export async function prepareArtifactUpload(input: unknown) {
     const maxBytes = ALLOWLIST[data.mediaType].maxBytes;
     if (data.sizeBytes > maxBytes) {
       return {
-        error: `Arquivo excede o limite de ${Math.round(maxBytes / 1024 / 1024)} MB para ${data.mediaType}.`,
+        error: t("fileTooLarge", {
+          limit: Math.round(maxBytes / 1024 / 1024),
+          mediaType: data.mediaType,
+        }),
       };
     }
 
@@ -339,7 +345,7 @@ export async function prepareArtifactUpload(input: unknown) {
     };
   } catch (error) {
     console.error("prepareArtifactUpload error:", error);
-    return { error: "Erro ao preparar upload." };
+    return { error: (await getTranslations("errors.artifact"))("prepareUploadFailed") };
   }
 }
 
@@ -357,44 +363,46 @@ export async function getArtifactUploadOptions(_args: {
     };
   } catch (error) {
     console.error("getArtifactUploadOptions error:", error);
-    return { error: "Erro ao carregar opções de upload." };
+    return { error: (await getTranslations("errors.artifact"))("loadOptionsFailed") };
   }
 }
 
 /** UX hint — the browser flags PENDING -> UPLOADING right before the PUT. Not authoritative. */
 export async function markUploading(artifactId: string) {
   try {
+    const t = await getTranslations("errors.artifact");
     await requireMemberOrHigher();
     const res = await prisma.taskArtifact.updateMany({
       where: { id: artifactId, uploadStatus: "PENDING" },
       data: { uploadStatus: "UPLOADING" },
     });
-    if (res.count === 0) return { error: "Artefato não está pendente." };
+    if (res.count === 0) return { error: t("notPending") };
     return { success: true as const };
   } catch (error) {
     console.error("markUploading error:", error);
-    return { error: "Erro ao marcar upload." };
+    return { error: (await getTranslations("errors.artifact"))("markUploadFailed") };
   }
 }
 
 /** Create an external share link (só CLIENTE, SUPERVISOR+). Token is shown once. */
 export async function createShareLink(input: unknown) {
   try {
+    const t = await getTranslations("errors.artifact");
     const user = await requireSupervisorOrHigher();
     const parsed = createShareLinkSchema.safeParse(input);
     if (!parsed.success) return { error: parsed.error.issues[0].message };
     const data = parsed.data;
 
-    if (!isNasTunnelConfigured()) return { error: "Compartilhamento externo não configurado." };
+    if (!isNasTunnelConfigured()) return { error: t("shareNotConfigured") };
 
     const artifact = await prisma.taskArtifact.findUnique({
       where: { id: data.artifactId },
       select: { id: true, sensitivity: true, uploadStatus: true, storageKind: true, taskId: true },
     });
-    if (!artifact || artifact.storageKind !== "NAS_UPLOAD") return { error: "Artefato inválido." };
-    if (artifact.uploadStatus !== "READY") return { error: "Artefato ainda não está pronto." };
+    if (!artifact || artifact.storageKind !== "NAS_UPLOAD") return { error: t("invalid") };
+    if (artifact.uploadStatus !== "READY") return { error: t("notReady") };
     if (!canShare(artifact.sensitivity)) {
-      return { error: "Somente artefatos CLIENTE podem ser compartilhados externamente." };
+      return { error: (await getTranslations("errors.artifact"))("onlyClientShareable") };
     }
 
     const { publicId, secret, token } = generateShareToken();
@@ -433,18 +441,19 @@ export async function createShareLink(input: unknown) {
     };
   } catch (error) {
     console.error("createShareLink error:", error);
-    return { error: "Erro ao criar link de compartilhamento." };
+    return { error: (await getTranslations("errors.artifact"))("createShareFailed") };
   }
 }
 
 export async function revokeShareLink(shareLinkId: string) {
   try {
+    const t = await getTranslations("errors.artifact");
     const user = await requireSupervisorOrHigher();
     const res = await prisma.artifactShareLink.updateMany({
       where: { id: shareLinkId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
-    if (res.count === 0) return { error: "Link não encontrado ou já revogado." };
+    if (res.count === 0) return { error: t("linkNotFoundOrRevoked") };
     await audit(prisma, {
       actorUserId: user.id as string,
       eventType: "SHARE_REVOKED",
@@ -453,13 +462,14 @@ export async function revokeShareLink(shareLinkId: string) {
     return { success: true as const };
   } catch (error) {
     console.error("revokeShareLink error:", error);
-    return { error: "Erro ao revogar link." };
+    return { error: (await getTranslations("errors.artifact"))("revokeShareFailed") };
   }
 }
 
 /** Change sensitivity (MANAGER+). Leaving CLIENTE auto-revokes active shares. */
 export async function changeSensitivity(input: unknown) {
   try {
+    const tc = await getTranslations("errors.common");
     const user = await requireManagerOrAdmin();
     const parsed = changeSensitivitySchema.safeParse(input);
     if (!parsed.success) return { error: parsed.error.issues[0].message };
@@ -469,7 +479,7 @@ export async function changeSensitivity(input: unknown) {
       where: { id: artifactId },
       select: { id: true, sensitivity: true, taskId: true },
     });
-    if (!artifact) return { error: "Artefato não encontrado." };
+    if (!artifact) return { error: tc("artifactNotFound") };
     const from = artifact.sensitivity;
 
     await prisma.$transaction(async (tx) => {
@@ -492,13 +502,15 @@ export async function changeSensitivity(input: unknown) {
     return { success: true as const };
   } catch (error) {
     console.error("changeSensitivity error:", error);
-    return { error: "Erro ao alterar sensibilidade." };
+    return { error: (await getTranslations("errors.artifact"))("changeSensitivityFailed") };
   }
 }
 
 /** Soft delete (autor ou MANAGER+). Marca deleteRequestedAt; o agente move p/ _trash depois. */
 export async function softDeleteArtifact(artifactId: string) {
   try {
+    const t = await getTranslations("errors.artifact");
+    const tc = await getTranslations("errors.common");
     const user = await getSessionUser();
     const artifact = await prisma.taskArtifact.findUnique({
       where: { id: artifactId },
@@ -511,11 +523,11 @@ export async function softDeleteArtifact(artifactId: string) {
         deleteRequestedAt: true,
       },
     });
-    if (!artifact) return { error: "Artefato não encontrado." };
+    if (!artifact) return { error: tc("artifactNotFound") };
 
     const isAuthor = artifact.uploadedById === user.id || artifact.userId === user.id;
     const isManager = user.role === "ADMIN" || user.role === "MANAGER";
-    if (!isAuthor && !isManager) return { error: "Sem permissão para excluir este artefato." };
+    if (!isAuthor && !isManager) return { error: t("noPermissionDelete") };
     if (artifact.deletedAt || artifact.deleteRequestedAt) return { success: true as const }; // idempotent
 
     await prisma.$transaction(async (tx) => {
@@ -538,19 +550,20 @@ export async function softDeleteArtifact(artifactId: string) {
     return { success: true as const };
   } catch (error) {
     console.error("softDeleteArtifact error:", error);
-    return { error: "Erro ao excluir artefato." };
+    return { error: (await getTranslations("errors.artifact"))("deleteFailed") };
   }
 }
 
 /** Restore a soft-deleted artifact (MANAGER+). */
 export async function restoreArtifact(artifactId: string) {
   try {
+    const tc = await getTranslations("errors.common");
     const user = await requireManagerOrAdmin();
     const artifact = await prisma.taskArtifact.findUnique({
       where: { id: artifactId },
       select: { taskId: true },
     });
-    if (!artifact) return { error: "Artefato não encontrado." };
+    if (!artifact) return { error: tc("artifactNotFound") };
 
     await prisma.taskArtifact.update({
       where: { id: artifactId },
@@ -562,7 +575,7 @@ export async function restoreArtifact(artifactId: string) {
     return { success: true as const };
   } catch (error) {
     console.error("restoreArtifact error:", error);
-    return { error: "Erro ao restaurar artefato." };
+    return { error: (await getTranslations("errors.artifact"))("restoreFailed") };
   }
 }
 
@@ -571,6 +584,7 @@ export async function restoreArtifact(artifactId: string) {
 // addLinkArtifact in lib/actions/task.ts. Owner/scope invariant enforced by the schema.
 
 export async function addScopedLinkArtifact(input: unknown) {
+  const t = await getTranslations("errors.artifact");
   const user = await requireManagerOrAdmin();
   const parsed = scopedLinkArtifactSchema.safeParse(input);
   if (!parsed.success) {
@@ -578,7 +592,7 @@ export async function addScopedLinkArtifact(input: unknown) {
   }
   const { scope, projectId, clientId, title, url, type } = parsed.data;
   if (scope === "TASK") {
-    return { error: "Artefatos de tarefa usam o fluxo da própria demanda." };
+    return { error: t("taskArtifactsUseTaskFlow") };
   }
 
   try {
@@ -600,20 +614,22 @@ export async function addScopedLinkArtifact(input: unknown) {
     return { success: true };
   } catch (error) {
     console.error("addScopedLinkArtifact error:", error);
-    return { error: "Erro ao adicionar artefato." };
+    return { error: (await getTranslations("errors.artifact"))("addFailed") };
   }
 }
 
 export async function removeScopedArtifact(id: string) {
+  const t = await getTranslations("errors.artifact");
+  const tc = await getTranslations("errors.common");
   await requireManagerOrAdmin();
   try {
     const art = await prisma.taskArtifact.findUnique({
       where: { id },
       select: { scope: true, projectId: true, clientId: true },
     });
-    if (!art) return { error: "Artefato não encontrado." };
+    if (!art) return { error: tc("artifactNotFound") };
     if (art.scope === "TASK") {
-      return { error: "Artefatos de tarefa não são removidos por aqui." };
+      return { error: t("taskArtifactsNotHere") };
     }
     await prisma.taskArtifact.delete({ where: { id } });
     if (art.projectId) revalidatePath(`/admin/projects/${art.projectId}`);
@@ -621,7 +637,7 @@ export async function removeScopedArtifact(id: string) {
     return { success: true };
   } catch (error) {
     console.error("removeScopedArtifact error:", error);
-    return { error: "Erro ao remover artefato." };
+    return { error: (await getTranslations("errors.artifact"))("removeFailed") };
   }
 }
 
@@ -629,6 +645,8 @@ export async function removeScopedArtifact(id: string) {
  *  Se era a versão vigente, promove a anterior da cadeia a vigente (não deixa a cadeia sem current).
  *  READY não sai por aqui. RBAC por escopo (tarefa = membro+; projeto/cliente = MANAGER+). */
 export async function removeFailedArtifact(id: string) {
+  const t = await getTranslations("errors.artifact");
+  const tc = await getTranslations("errors.common");
   const art = await prisma.taskArtifact.findUnique({
     where: { id },
     select: {
@@ -642,10 +660,10 @@ export async function removeFailedArtifact(id: string) {
       isCurrent: true,
     },
   });
-  if (!art) return { error: "Artefato não encontrado." };
+  if (!art) return { error: tc("artifactNotFound") };
   await requireForArtifactScope(art.scope); // throws (propaga) se não autorizado
-  if (art.storageKind !== "NAS_UPLOAD") return { error: "Só uploads NAS saem por aqui." };
-  if (art.uploadStatus === "READY") return { error: "Artefato pronto — não é removível por aqui." };
+  if (art.storageKind !== "NAS_UPLOAD") return { error: t("onlyNasUploads") };
+  if (art.uploadStatus === "READY") return { error: t("readyNotDeletable") };
   try {
     await prisma.$transaction(async (tx) => {
       await tx.artifactAuditLog.deleteMany({ where: { artifactId: id } });
@@ -666,7 +684,7 @@ export async function removeFailedArtifact(id: string) {
     return { success: true };
   } catch (error) {
     console.error("removeFailedArtifact error:", error);
-    return { error: "Erro ao remover artefato." };
+    return { error: (await getTranslations("errors.artifact"))("removeFailed") };
   }
 }
 
@@ -695,18 +713,20 @@ function revalidateForArtifact(a: {
  * só a URL muda. Só a versão vigente pode ser versionada. */
 export async function addLinkArtifactVersion(artifactId: string, input: { url: string }) {
   try {
+    const t = await getTranslations("errors.artifact");
+    const tc = await getTranslations("errors.common");
     const current = await prisma.taskArtifact.findUnique({ where: { id: artifactId } });
-    if (!current) return { error: "Artefato não encontrado." };
-    if (!current.isCurrent) return { error: "Só a versão vigente pode receber uma nova versão." };
+    if (!current) return { error: tc("artifactNotFound") };
+    if (!current.isCurrent) return { error: t("onlyCurrentVersion") };
 
     const user = await requireForArtifactScope(current.scope);
 
     const url = input.url?.trim();
-    if (!url) return { error: "URL é obrigatória." };
+    if (!url) return { error: t("urlRequired") };
     try {
       new URL(url);
     } catch {
-      return { error: "URL inválida." };
+      return { error: t("invalidUrl") };
     }
     const rootId = current.rootId ?? current.id;
 
@@ -735,7 +755,7 @@ export async function addLinkArtifactVersion(artifactId: string, input: { url: s
     return { success: true };
   } catch (error) {
     console.error("addLinkArtifactVersion error:", error);
-    return { error: "Erro ao criar nova versão." };
+    return { error: (await getTranslations("errors.artifact"))("newVersionFailed") };
   }
 }
 
