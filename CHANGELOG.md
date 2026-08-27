@@ -43,6 +43,26 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   históricas — que guardam `(taskId, stageId)` mas não o roteamento — `routedStageTerms` agrupa por
   etapa, gerando um termo por etapa coringa em vez de um por demanda.
 
+#### Acesso e login
+
+- **Cadastro de pessoas e login por convite:** o acesso deixou de ser aberto. Antes, **qualquer conta
+  Google do mundo** que abrisse a URL virava um usuário MEMBER criado pelo adapter — e desativar
+  alguém seria inócuo, porque bastaria entrar de novo. Agora um callback `signIn` só deixa passar
+  quem já tem cadastro e não está desativado. Como consequência obrigatória, veio a ação
+  **"Cadastrar pessoa"** em `/admin/users`: sem um jeito de criar o usuário ANTES do primeiro login,
+  o convite trancaria a porta com a chave do lado de fora.
+- **Desativar / reativar acesso** (`User.disabledAt`): a pessoa deixa de entrar e **as sessões
+  abertas caem na hora** — sem isso, "desativado" só valeria quando o cookie expirasse. O histórico
+  é preservado: comentários, horas e etapas continuam atribuídos a ela. Um admin não consegue
+  desativar a si mesmo (seria irreversível pela interface).
+- **"Renovar acesso Google"**: remove o vínculo `Account` para que o próximo login o refaça do zero.
+  Serve para vínculo errado ou obsoleto — não para "perdemos o banco", caso em que o próprio login
+  já reconstrói.
+- **A tela de login explica o erro.** Ela ignorava `?error=` por completo: a pessoa via
+  `?error=OAuthAccountNotLinked` na barra de endereços e uma tela idêntica à normal. Agora há
+  mensagem por código, incluindo os nossos (`NotInvited`, `AccountDisabled`), e o botão só oferece
+  "tentar de novo" onde insistir pode resolver.
+
 #### NAS
 
 - **Falha do agente NAS passou a dizer QUAL é a falha** (`lib/nas/endpoint.ts`): `probeLanAgentDetailed`
@@ -72,6 +92,15 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   `defaultTeam` (nulo numa coringa) e recusava qualquer atribuição, deixando a etapa
   permanentemente sem responsável. Agora valida contra o time efetivo.
 
+#### Acesso e login
+
+- **`OAuthAccountNotLinked` travava quem existia antes da perda do banco.** As linhas de `User`
+  voltaram, as de `Account` (o vínculo Google) não — e o Auth.js recusa vincular por e-mail para
+  impedir sequestro de conta. Eram **31 de 34 usuários**. Resolvido ligando
+  `allowDangerousEmailAccountLinking` no provedor Google: o "dangerous" do nome vale para app com
+  vários provedores ou com provedor que não verifica e-mail, e aqui só existe Google, que verifica.
+  Todos revinculam sozinhos no próximo login, sem intervenção por pessoa.
+
 #### NAS
 
 - **Certificado do agente vencido derrubou o upload (26/ago/2026).** O wildcard `*.goonmarketing.com`
@@ -95,6 +124,10 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Migration `20260825120000_add_stage_team_override` — puramente aditiva (duas colunas anuláveis,
   FK `SET NULL` e índice). `teamId` nulo = herda o time padrão da etapa, que é o comportamento de
   todas as linhas existentes.
+- **Acesso:** migration `20260827140000_add_user_disabled_at` (coluna anulável, sem backfill — null =
+  ativo). ⚠️ **Ordem do deploy importa:** aplique a migration ANTES de publicar o código, porque a
+  tela de usuários e o login leem `disabledAt`. E, a partir deste deploy, quem **não** tiver cadastro
+  não entra mais: confirme a lista de pessoas antes de publicar.
 - **NAS:** o `.env` do NAS passa a exigir `CF_API_TOKEN` (token Cloudflare com escopo
   `Zone:DNS:Edit`). O volume `caddy_data` guarda a conta ACME e o certificado — **apagá-lo força
   reemissão** e pode bater no limite semanal da Let's Encrypt. E `resolvers 1.1.1.1 1.0.0.1` no bloco

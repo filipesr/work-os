@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { updateUserRoleAndTeams } from "@/lib/actions/user";
+import { InviteUserButton } from "./InviteUserButton";
+import { UserAccessActions } from "./UserAccessActions";
+import { getSessionUser } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Usuários",
@@ -72,7 +75,12 @@ async function getUsers(page: number, pageSize: number, query: UsersQuery) {
   const [items, total] = await Promise.all([
     prisma.user.findMany({
       where,
-      include: { teams: { select: { id: true, name: true }, orderBy: { name: "asc" } } },
+      include: {
+        teams: { select: { id: true, name: true }, orderBy: { name: "asc" } },
+        // Só a CONTAGEM: o que a tela precisa saber é se há vínculo com o Google, não os tokens —
+        // que são credenciais e não têm por que trafegar até o servidor de render.
+        _count: { select: { accounts: true } },
+      },
       orderBy: buildOrderBy(sortField, direction),
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -104,9 +112,10 @@ export default async function UsersPage({
     dir: firstParam(params.dir),
   };
 
-  const [paginatedUsers, teams] = await Promise.all([
+  const [paginatedUsers, teams, me] = await Promise.all([
     getUsers(page, DEFAULT_PAGE_SIZE, query),
     getTeams(),
+    getSessionUser(),
   ]);
   const { items: users, total, totalPages, pageSize } = paginatedUsers;
   const t = await getTranslations("admin.users");
@@ -164,7 +173,12 @@ export default async function UsersPage({
         kicker={t("kicker")}
         title={t("title")}
         subtitle={t("subtitle")}
-        actions={<UserFilters teams={teams} />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <UserFilters teams={teams} />
+            <InviteUserButton teams={teams} />
+          </div>
+        }
       />
 
       {/* Users List */}
@@ -195,12 +209,21 @@ export default async function UsersPage({
                         alt=""
                       />
                     )}
-                    <Link
-                      href={`/admin/users/${user.id}`}
-                      className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-                    >
-                      {user.name || t("noName")}
-                    </Link>
+                    <div className="min-w-0">
+                      <Link
+                        href={`/admin/users/${user.id}`}
+                        className="text-sm font-semibold text-primary transition-colors hover:text-primary/80"
+                      >
+                        {user.name || t("noName")}
+                      </Link>
+                      {/* Desativado precisa saltar na lista: é o estado que explica por que a
+                          pessoa está reclamando que não consegue entrar. */}
+                      {user.disabledAt && (
+                        <span className="ml-2 rounded-full bg-danger/15 px-2 py-0.5 text-xs font-medium text-danger">
+                          {t("access.disabledBadge")}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -216,23 +239,32 @@ export default async function UsersPage({
                       : t("noTeam")}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <EditUserButton
-                    user={{
-                      id: user.id,
-                      name: user.name,
-                      email: user.email,
-                      role: user.role,
-                      teams: user.teams,
-                      birthday: user.birthday ? user.birthday.toISOString().slice(0, 10) : null,
-                      admissionDate: user.admissionDate
-                        ? user.admissionDate.toISOString().slice(0, 10)
-                        : null,
-                      weeklyCapacityHours: user.weeklyCapacityHours,
-                    }}
-                    teams={teams}
-                    updateUser={updateUserRoleAndTeams}
-                  />
+                <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                  <div className="inline-flex items-center gap-1">
+                    <EditUserButton
+                      user={{
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role,
+                        teams: user.teams,
+                        birthday: user.birthday ? user.birthday.toISOString().slice(0, 10) : null,
+                        admissionDate: user.admissionDate
+                          ? user.admissionDate.toISOString().slice(0, 10)
+                          : null,
+                        weeklyCapacityHours: user.weeklyCapacityHours,
+                      }}
+                      teams={teams}
+                      updateUser={updateUserRoleAndTeams}
+                    />
+                    <UserAccessActions
+                      userId={user.id}
+                      userName={user.name || user.email || ""}
+                      disabled={user.disabledAt !== null}
+                      isSelf={me?.id === user.id}
+                      hasGoogleLink={user._count.accounts > 0}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}

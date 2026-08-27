@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
-import { requireAdmin } from "@/lib/permissions";
+import { requireAdmin, getSessionUser } from "@/lib/permissions";
 
 export async function updateUserRoleAndTeams(formData: FormData) {
   await requireAdmin();
@@ -93,4 +93,92 @@ export async function updateUserRoleAndTeams(formData: FormData) {
   revalidatePath(`/admin/users/${id}`);
   revalidatePath("/admin/users");
   revalidatePath("/dashboard"); // ✅ Revalidate dashboard
+}
+
+// ========== Ciclo de vida do acesso ==========
+//
+// Estas três ações existem porque o login passou a ser POR CONVITE (ver o callback `signIn` em
+// auth.config.ts). Enquanto qualquer conta Google entrava sozinha, nada disto fazia falta — e
+// desativar alguém seria inócuo, porque bastaria entrar de novo.
+
+/** Cadastra alguém que ainda não entrou. Sem senha e sem `Account`: o vínculo com o Google nasce
+ *  no primeiro login, por e-mail verificado. É o que destranca a porta depois que o acesso virou
+ *  por convite — sem isto, ninguém novo jamais entraria. */
+export async function inviteUser(formData: FormData) {
+  await requireAdmin();
+
+  const email = String(formData.get("email") ?? "")
+    .toLowerCase()
+    .trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const role = (formData.get("role") as UserRole) || UserRole.MEMBER;
+  const teamIds = formData.getAll("teamIds").map(String).filter(Boolean);
+
+  if (!email || !email.includes("@")) return { error: "Informe um e-mail válido." };
+  if (!Object.values(UserRole).includes(role)) return { error: "Papel inválido." };
+
+  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (existing) return { error: "Já existe um usuário com este e-mail." };
+
+  const user = await prisma.user.create({
+    data: {
+      email,
+      name: name || null,
+      role,
+      ...(teamIds.length > 0 ? { teams: { connect: teamIds.map((id) => ({ id })) } } : {}),
+    },
+    select: { id: true },
+  });
+
+  revalidatePath("/admin/users");
+  return { success: true as const, userId: user.id };
+}
+
+/** Liga/desliga o acesso. Desativar TAMBÉM derruba as sessões abertas: sem isso a pessoa seguiria
+ *  navegando com o cookie que já tinha até ele expirar, e "desativado" não significaria nada hoje —
+ *  só amanhã. As sessões são de banco, então apagar a linha corta na hora. */
+export async function setUserDisabled(userId: string, disabled: boolean) {
+  await requireAdmin();
+  const me = await getSessionUser();
+
+  // Um admin que se desativa perde o acesso à tela que reverteria isso. Como o acesso agora é por
+  // convite, não há caminho de volta a não ser mexer no banco.
+  if (disabled && me?.id === userId) {
+    return { error: "Você não pode desativar a si mesmo." };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data: { disabledAt: disabled ? new Date() : null },
+    });
+    if (disabled) await tx.session.deleteMany({ where: { userId } });
+  });
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
+  return { success: true as const };
+}
+
+/** "Renovar": desfaz o vínculo com o Google para que o próximo login o refaça do zero.
+ *
+ *  Serve para o vínculo ERRADO ou obsoleto — conta Google trocada, resquício de um projeto OAuth
+ *  antigo. Não é o remédio para "perdemos o banco": ali não há vínculo nenhum, e o próprio login
+ *  reconstrói (`allowDangerousEmailAccountLinking`).
+ *
+ *  Só remove `Account`. O User continua com papel, times, comentários e horas — o que se perde é a
+ *  credencial, não a pessoa. Derruba as sessões junto, senão a pessoa seguiria autenticada por uma
+ *  credencial que acabou de deixar de existir. */
+export async function renewGoogleLink(userId: string) {
+  await requireAdmin();
+
+  const removed = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.account.deleteMany({ where: { userId } });
+    await tx.session.deleteMany({ where: { userId } });
+    return count;
+  });
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
+  return { success: true as const, removed };
 }

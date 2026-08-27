@@ -128,6 +128,52 @@
       "all": "Todos",
       "apply": "Aplicar",
       "clear": "Limpar"
+    },
+    "invite": {
+      "trigger": "Cadastrar pessoa",
+      "title": "Cadastrar pessoa",
+      "description": "O acesso é por convite: só entra quem já está cadastrado aqui. Não há senha — o vínculo com o Google nasce no primeiro login.",
+      "emailLabel": "E-mail",
+      "emailPlaceholder": "pessoa@empresa.com",
+      "emailHint": "Precisa ser o mesmo e-mail da conta Google que ela vai usar para entrar.",
+      "nameLabel": "Nome",
+      "namePlaceholder": "Como a pessoa é chamada",
+      "nameHint": "Opcional — se ficar em branco, o nome vem do Google no primeiro login.",
+      "roleLabel": "Papel",
+      "teamsLabel": "Times",
+      "submit": "Cadastrar",
+      "success": "Pessoa cadastrada. Ela já pode entrar com o Google.",
+      "invalidEmail": "Informe um e-mail válido.",
+      "roles": {
+        "member": "Colaborador",
+        "supervisor": "Supervisor",
+        "manager": "Gestor",
+        "admin": "Administrador"
+      }
+    },
+    "access": {
+      "disabledBadge": "Desativado",
+      "renew": {
+        "trigger": "Renovar acesso Google",
+        "title": "Renovar o acesso Google",
+        "description": "Desfaz o vínculo com o Google de {name}. No próximo login o vínculo é refeito do zero, pelo e-mail. Use quando o vínculo estiver errado ou antigo. As sessões abertas caem agora.",
+        "confirm": "Renovar acesso",
+        "success": "Vínculo removido. O próximo login recria o acesso."
+      },
+      "disable": {
+        "trigger": "Desativar acesso",
+        "title": "Desativar o acesso",
+        "description": "{name} deixa de conseguir entrar, e as sessões abertas caem agora. O histórico é preservado: comentários, horas e etapas continuam atribuídos a ela.",
+        "confirm": "Desativar",
+        "success": "Acesso desativado."
+      },
+      "enable": {
+        "trigger": "Reativar acesso",
+        "title": "Reativar o acesso",
+        "description": "{name} volta a conseguir entrar com o Google, com o mesmo papel e times de antes.",
+        "confirm": "Reativar",
+        "success": "Acesso reativado."
+      }
     }
   },
   "teams": {

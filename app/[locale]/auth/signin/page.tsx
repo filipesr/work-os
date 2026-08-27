@@ -1,13 +1,23 @@
 import { signIn } from "@/auth";
 import { getTranslations } from "next-intl/server";
 import { safeRedirectPath } from "@/lib/safe-redirect";
+import { authErrorKey, isRetryableAuthError } from "@/lib/auth-error";
+import { AlertCircle } from "lucide-react";
 
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string | string[] }>;
+  searchParams: Promise<{ callbackUrl?: string | string[]; error?: string | string[] }>;
 }) {
-  const [t, sp] = await Promise.all([getTranslations("auth.signIn"), searchParams]);
+  const [t, tErr, sp] = await Promise.all([
+    getTranslations("auth.signIn"),
+    getTranslations("auth.errors"),
+    searchParams,
+  ]);
+
+  // A página ignorava `?error=` por completo: o Auth.js redirecionava para cá com o motivo na URL e
+  // a pessoa via a mesma tela de sempre, sem explicação nenhuma.
+  const errorKey = authErrorKey(sp.error);
 
   // O middleware carimba `?callbackUrl=<rota tentada>` ao barrar um anônimo, mas
   // esta página ignorava o parâmetro e mandava todo mundo para "/": quem clicava
@@ -24,6 +34,19 @@ export default async function SignInPage({
           </h2>
           <p className="text-base text-muted-foreground font-medium">{t("subtitle")}</p>
         </div>
+        {errorKey && (
+          <div
+            role="alert"
+            className="flex items-start gap-3 rounded-lg border border-danger/40 bg-danger-subtle p-4 text-left"
+          >
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-danger">{tErr(`${errorKey}.title`)}</p>
+              <p className="mt-1 text-sm text-foreground/80">{tErr(`${errorKey}.body`)}</p>
+            </div>
+          </div>
+        )}
+
         <div className="mt-10 space-y-6">
           <form
             action={async () => {
@@ -53,7 +76,9 @@ export default async function SignInPage({
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              {t("signInWithGoogle")}
+              {errorKey && !isRetryableAuthError(errorKey)
+                ? t("signInWithAnotherAccount")
+                : t("signInWithGoogle")}
             </button>
           </form>
           <p className="mt-6 text-center text-xs text-muted-foreground">{t("terms")}</p>

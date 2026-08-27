@@ -167,6 +167,16 @@ model User {
   admissionDate DateTime? // Contract / admission date
   lastSeenAt    DateTime? // Track last activity for online presence
 
+  /// Desativação de acesso. Null = ativo. Guarda QUANDO foi desativado, não um
+  /// booleano: "desde quando esta pessoa não entra mais" é a pergunta que se faz
+  /// depois, e um `true` não responde.
+  ///
+  /// Desativar NÃO apaga o usuário: comentários, horas apontadas e etapas
+  /// concluídas continuam atribuídos a ele. Apagar reescreveria histórico de
+  /// trabalho que realmente aconteceu (e `TaskComment` é onDelete: Cascade —
+  /// sumiria com a conversa junto).
+  disabledAt DateTime?
+
   // Capacity target: planned working hours per week. Null = no target set. The
   // productivity report divides logged TimeLog hours by this (prorated to the
   // period) to compute utilization — the denominator the app lacked before.

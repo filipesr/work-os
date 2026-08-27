@@ -128,6 +128,52 @@
       "all": "Todos",
       "apply": "Aplicar",
       "clear": "Limpiar"
+    },
+    "invite": {
+      "trigger": "Dar de alta a una persona",
+      "title": "Dar de alta a una persona",
+      "description": "El acceso es por invitación: solo entra quien ya está dado de alta aquí. No hay contraseña; el vínculo con Google se crea en el primer inicio de sesión.",
+      "emailLabel": "Correo",
+      "emailPlaceholder": "persona@empresa.com",
+      "emailHint": "Debe ser el mismo correo de la cuenta de Google con la que va a entrar.",
+      "nameLabel": "Nombre",
+      "namePlaceholder": "Cómo se llama a la persona",
+      "nameHint": "Opcional: si lo dejas en blanco, el nombre llega desde Google en el primer inicio de sesión.",
+      "roleLabel": "Rol",
+      "teamsLabel": "Equipos",
+      "submit": "Dar de alta",
+      "success": "Persona dada de alta. Ya puede entrar con Google.",
+      "invalidEmail": "Introduce un correo válido.",
+      "roles": {
+        "member": "Colaborador",
+        "supervisor": "Supervisor",
+        "manager": "Gestor",
+        "admin": "Administrador"
+      }
+    },
+    "access": {
+      "disabledBadge": "Desactivado",
+      "renew": {
+        "trigger": "Renovar acceso Google",
+        "title": "Renovar el acceso Google",
+        "description": "Deshace el vínculo con Google de {name}. En el próximo inicio de sesión el vínculo se rehace desde cero, por el correo. Úsalo cuando el vínculo esté equivocado o sea antiguo. Las sesiones abiertas se cierran ahora.",
+        "confirm": "Renovar acceso",
+        "success": "Vínculo eliminado. El próximo inicio de sesión recrea el acceso."
+      },
+      "disable": {
+        "trigger": "Desactivar acceso",
+        "title": "Desactivar el acceso",
+        "description": "{name} dejará de poder entrar, y las sesiones abiertas se cierran ahora. El historial se conserva: comentarios, horas y etapas siguen asignados a esa persona.",
+        "confirm": "Desactivar",
+        "success": "Acceso desactivado."
+      },
+      "enable": {
+        "trigger": "Reactivar acceso",
+        "title": "Reactivar el acceso",
+        "description": "{name} vuelve a poder entrar con Google, con el mismo rol y equipos de antes.",
+        "confirm": "Reactivar",
+        "success": "Acceso reactivado."
+      }
     }
   },
   "teams": {
