@@ -92,6 +92,17 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   `defaultTeam` (nulo numa coringa) e recusava qualquer atribuição, deixando a etapa
   permanentemente sem responsável. Agora valida contra o time efetivo.
 
+#### i18n
+
+- **Todo Server Component renderizava em pt-BR, qualquer que fosse a URL.** O `i18n.ts` usava a
+  assinatura da v3 do next-intl (`getRequestConfig(({ locale }) => …)`) com a biblioteca já na v4,
+  onde o parâmetro é `{ requestLocale }`. O argumento chegava `undefined`, a validação reprovava e
+  tudo caía no idioma padrão. Passava despercebido porque os **Client** Components continuavam
+  certos — o layout do `[locale]` alimenta o `NextIntlClientProvider` a partir de `params.locale` —,
+  então metade do app traduzia e metade não. Na prática, a versão em espanhol estava quebrada em
+  toda tela renderizada no servidor. O teste de paridade não pegava e nunca pegaria: ele garante que
+  a chave EXISTE nos dois idiomas, não que a certa foi escolhida. Há teste novo para essa pergunta.
+
 #### Acesso e login
 
 - **`OAuthAccountNotLinked` travava quem existia antes da perda do banco.** As linhas de `User`
