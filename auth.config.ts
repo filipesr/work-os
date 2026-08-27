@@ -90,6 +90,25 @@ export const authConfig = {
       return baseUrl;
     },
   },
+  events: {
+    /**
+     * Mantém a FOTO em dia com o Google a cada login.
+     *
+     * O adapter só grava `image` na criação do usuário: quem trocasse a foto no Google ficaria com
+     * a antiga aqui para sempre. Um botão "ressincronizar" não resolveria de forma confiável — o
+     * `access_token` do Google expira em ~1h e o `refresh_token` só vem no primeiro consentimento,
+     * então uma sincronização sob demanda falharia na maior parte das vezes. No login o perfil
+     * fresco chega de graça.
+     *
+     * O NOME é deliberadamente deixado de fora: a pessoa pode editá-lo em /account, e
+     * sobrescrevê-lo aqui desfaria essa escolha a cada entrada.
+     */
+    async signIn({ user, profile }) {
+      const image = profile?.picture;
+      if (!user?.id || typeof image !== "string" || image === user.image) return;
+      await prisma.user.update({ where: { id: user.id }, data: { image } });
+    },
+  },
   pages: {
     signIn: "/auth/signin",
   },

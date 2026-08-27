@@ -88,7 +88,17 @@ export default function middleware(request: NextRequest) {
       (request.cookies.has(WALLBOARD_COOKIE) || request.nextUrl.searchParams.has("token"));
 
     if (!sessionCookie && !hasWallboardCredential) {
-      const signInUrl = new URL("/auth/signin", request.url);
+      // O prefixo de idioma da rota tentada é PRESERVADO no destino. Sem isto, quem navegava em
+      // /es-ES/... caía num login em português: o redirecionamento apagava o idioma, e a pessoa
+      // recebia a primeira tela do app no idioma errado — justo no momento em que ela ainda não
+      // tem sessão nem preferência salva para nos corrigir.
+      // `localePrefix: "as-needed"`: o idioma padrão não tem prefixo, então só prefixamos quando a
+      // URL de origem já vinha prefixada.
+      const localePrefix = locales.find(
+        (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
+      );
+      const signInPath = localePrefix ? `/${localePrefix}/auth/signin` : "/auth/signin";
+      const signInUrl = new URL(signInPath, request.url);
       signInUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(signInUrl);
     }

@@ -54,5 +54,13 @@
       "assigned": "Uma etapa já tem responsável — a configuração está travada.",
       "status": "A demanda não está no backlog e não pode ser reconfigurada."
     }
+  },
+  "profile": {
+    "name": {
+      "empty": "Informe um nome.",
+      "tooShort": "O nome precisa de ao menos 2 letras.",
+      "tooLong": "O nome passou de 60 caracteres.",
+      "invalidChars": "Use apenas letras, espaço, apóstrofo e hífen — sem números, símbolos ou emojis."
+    }
   }
 }

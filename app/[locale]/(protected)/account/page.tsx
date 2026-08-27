@@ -12,6 +12,7 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { getProfilesForTeamNames } from "@/lib/team-profiles/catalog";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { ThemeControl } from "./ThemeControl";
+import { EditDisplayNameForm } from "./EditDisplayNameForm";
 
 export const metadata: Metadata = { title: "Conta" };
 
@@ -52,8 +53,9 @@ export default async function AccountPage() {
   // como não documentada. Ver docs/descritivos-de-equipe.md §6.
   const teamLinks = getProfilesForTeamNames(user.teams.map((tm) => tm.name));
 
+  // O NOME sai desta lista: virou campo editável, e não texto. Os demais continuam vindo do
+  // cadastro ou do Google, e não são editáveis pela própria pessoa.
   const fields: Array<{ label: string; value: string }> = [
-    { label: t("fields.name"), value: user.name || t("noInfo") },
     { label: t("fields.email"), value: user.email || t("noInfo") },
     { label: t("fields.role"), value: t(`roles.${user.role}`) },
     {
@@ -102,6 +104,13 @@ export default async function AccountPage() {
           </div>
 
           <dl className="mt-6 divide-y divide-border">
+            {/* Nome primeiro, como antes — só que agora editável no lugar. */}
+            <div className="flex items-baseline justify-between gap-4 py-3">
+              <dt className="text-sm font-medium text-muted-foreground">{t("fields.name")}</dt>
+              <dd className="text-right text-sm font-semibold text-foreground">
+                <EditDisplayNameForm currentName={user.name ?? ""} />
+              </dd>
+            </div>
             {fields.map((f) => (
               <div key={f.label} className="flex items-baseline justify-between gap-4 py-3">
                 <dt className="text-sm font-medium text-muted-foreground">{f.label}</dt>

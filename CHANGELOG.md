@@ -92,8 +92,23 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   `defaultTeam` (nulo numa coringa) e recusava qualquer atribuição, deixando a etapa
   permanentemente sem responsável. Agora valida contra o time efetivo.
 
+#### Conta e perfil
+
+- **Nome de exibição editável** em `/account`, com validação compartilhada entre tela e servidor
+  (`lib/display-name.ts`). Aceita letras acentuadas, espaço, **apóstrofo e hífen** — "Ana Luísa
+  D'Ávila" e "Anne-Marie" são nomes reais, e a regra literal "só letras e espaço" os recusaria.
+  Bloqueia números, símbolos e emojis, que era a intenção.
+- **Foto sincronizada com o Google a cada login.** O adapter só gravava `image` na criação: quem
+  trocasse a foto no Google ficava com a antiga para sempre. Um botão "ressincronizar" não seria
+  confiável — o `access_token` expira em ~1h e o `refresh_token` só vem no primeiro consentimento.
+  O **nome** ficou de fora dessa sincronização de propósito: sobrescrevê-lo desfaria a edição da
+  pessoa a cada entrada.
+
 #### i18n
 
+- **Redirecionamento para o login perdia o idioma.** Quem navegava em `/es-ES/...` sem sessão caía
+  num login em **português** — o middleware montava `/auth/signin` sem o prefixo. Justo a primeira
+  tela do app, no momento em que a pessoa ainda não tem sessão nem preferência salva para corrigir.
 - **Todo Server Component renderizava em pt-BR, qualquer que fosse a URL.** O `i18n.ts` usava a
   assinatura da v3 do next-intl (`getRequestConfig(({ locale }) => …)`) com a biblioteca já na v4,
   onde o parâmetro é `{ requestLocale }`. O argumento chegava `undefined`, a validação reprovava e

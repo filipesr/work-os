@@ -33,7 +33,7 @@
   },
   "googleSyncNote": {
     "label": "Nota:",
-    "message": "Seu nome e foto são sincronizados com sua Conta Google. Seu papel de acesso e sua equipe são atribuídos por um administrador."
+    "message": "Seu nome de exibição é editável aqui. A foto vem da sua Conta Google e é atualizada a cada login. Papel de acesso e equipe são atribuídos por um administrador."
   },
   "teamProfile": {
     "title": "Sua equipe",
@@ -42,5 +42,19 @@
     "notDocumented": "Descritivo ainda não documentado",
     "browseAll": "Ver todas as funções",
     "noTeamHint": "Você ainda não está em nenhuma equipe. Um administrador faz essa atribuição."
+  },
+  "editName": {
+    "trigger": "Editar nome de exibição",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "success": "Nome atualizado.",
+    "empty": "Sem nome",
+    "hint": "Só letras, espaço, apóstrofo e hífen. Sem números, símbolos ou emojis.",
+    "error": {
+      "empty": "Informe um nome.",
+      "tooShort": "O nome precisa de ao menos 2 letras.",
+      "tooLong": "O nome passou de 60 caracteres.",
+      "invalidChars": "Use apenas letras, espaço, apóstrofo e hífen — sem números, símbolos ou emojis."
+    }
   }
 }

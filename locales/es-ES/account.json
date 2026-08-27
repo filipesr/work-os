@@ -33,7 +33,7 @@
   },
   "googleSyncNote": {
     "label": "Nota:",
-    "message": "Tu nombre y foto se sincronizan con tu Cuenta de Google. Tu rol de acceso y tu equipo son asignados por un administrador."
+    "message": "Tu nombre visible se edita aquí. La foto viene de tu Cuenta de Google y se actualiza en cada inicio de sesión. El rol de acceso y el equipo los asigna un administrador."
   },
   "teamProfile": {
     "title": "Tu equipo",
@@ -42,5 +42,19 @@
     "notDocumented": "Descriptivo aún no documentado",
     "browseAll": "Ver todas las funciones",
     "noTeamHint": "Todavía no estás en ningún equipo. Un administrador hace esa asignación."
+  },
+  "editName": {
+    "trigger": "Editar nombre visible",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "success": "Nombre actualizado.",
+    "empty": "Sin nombre",
+    "hint": "Solo letras, espacio, apóstrofo y guion. Sin números, símbolos ni emojis.",
+    "error": {
+      "empty": "Introduce un nombre.",
+      "tooShort": "El nombre necesita al menos 2 letras.",
+      "tooLong": "El nombre supera los 60 caracteres.",
+      "invalidChars": "Usa solo letras, espacio, apóstrofo y guion; sin números, símbolos ni emojis."
+    }
   }
 }
