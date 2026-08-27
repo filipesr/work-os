@@ -43,6 +43,18 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   históricas — que guardam `(taskId, stageId)` mas não o roteamento — `routedStageTerms` agrupa por
   etapa, gerando um termo por etapa coringa em vez de um por demanda.
 
+#### NAS
+
+- **Falha do agente NAS passou a dizer QUAL é a falha** (`lib/nas/endpoint.ts`): `probeLanAgentDetailed`
+  devolve um motivo discriminado — `not-configured`, `timeout`, `unreachable`, `blocked`,
+  `http-error`, `unhealthy` — em vez do `null` que colapsava tudo em "agente não encontrado".
+  O desempate entre `blocked` e `unreachable` usa uma segunda tentativa com `mode: "no-cors"`: o
+  navegador nunca revela se um `fetch` falhou por TLS, DNS ou CORS (é sempre um `TypeError` opaco),
+  mas uma requisição no-cors **não** falha por CORS e ainda falha por TLS/DNS — se ela passa, quem
+  barrou foi o navegador; se estoura também, não houve conexão. A mensagem de `unreachable` cita
+  **certificado vencido** junto de DNS/LAN e repete a URL do agente, porque abri-la mostra o erro de
+  certificado em segundos. Texto compartilhado pelas duas telas em `lib/nas/failure-message.ts`.
+
 ### 🐛 Corrigido
 
 - **Preview de avanço divergia da execução:** `previewNextStages` olhava apenas as etapas que
@@ -60,11 +72,34 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   `defaultTeam` (nulo numa coringa) e recusava qualquer atribuição, deixando a etapa
   permanentemente sem responsável. Agora valida contra o time efetivo.
 
+#### NAS
+
+- **Certificado do agente vencido derrubou o upload (26/ago/2026).** O wildcard `*.goonmarketing.com`
+  exportado à mão da cPanel não renovava sozinho. NAS, agente e rede estavam íntegros o tempo todo —
+  só o navegador recusava o handshake, e a aplicação traduzia isso como "agente não encontrado".
+  Substituído por **ACME DNS-01 com renovação automática** pelo Caddy (§5 do checklist), agora que o
+  NS de `goonmarketing.com` está na Cloudflare. Não há mais data de certificado para vigiar.
+- **`nas-poc/docker-compose.yml` descrevia a topologia abandonada** — agente publicado em
+  `8080:8080` com `LAN_HOST=0.0.0.0` (HTTP puro visível na LAN inteira) + `cloudflared`. Um
+  `docker compose up -d` distraído naquele diretório subiria a versão sem TLS. O nome padrão passou a
+  ser a pilha em produção; a variante de túnel virou `compose.tunnel.yml`, com o risco no cabeçalho.
+- **`scripts/nas-prod-setup.mjs` gerava `agent.env` sem `CF_API_TOKEN`** — obrigatório desde que o
+  Caddy passou a emitir o próprio certificado. Quem seguisse o script montaria um NAS incapaz de
+  renovar.
+- **Download com o agente sem espaço ia para o túnel.** `writable:false` (disco cheio) impede o
+  envio, não a leitura, e o túnel só serve artefatos CLIENTE. Agora o corpo de saúde acompanha a
+  falha e a tela distingue "não grava" de "fora do ar".
+
 ### 📝 Notas de migração
 
 - Migration `20260825120000_add_stage_team_override` — puramente aditiva (duas colunas anuláveis,
   FK `SET NULL` e índice). `teamId` nulo = herda o time padrão da etapa, que é o comportamento de
   todas as linhas existentes.
+- **NAS:** o `.env` do NAS passa a exigir `CF_API_TOKEN` (token Cloudflare com escopo
+  `Zone:DNS:Edit`). O volume `caddy_data` guarda a conta ACME e o certificado — **apagá-lo força
+  reemissão** e pode bater no limite semanal da Let's Encrypt. E `resolvers 1.1.1.1 1.0.0.1` no bloco
+  `tls` do `Caddyfile` é obrigatório: o host resolve para IP privado na LAN (split-horizon) e, com o
+  resolvedor local, o Caddy não veria o TXT de desafio propagar.
 - Nenhuma mudança de schema além da migration acima. A correção de demanda virgem apaga linhas de
   etapa, transições e log das etapas removidas: a tarefa nunca as percorreu, então não há história
   a preservar — manter descreveria algo que não aconteceu.
