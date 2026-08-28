@@ -207,5 +207,19 @@
     "reorderFailed": "Erro ao reordenar.",
     "scheduledStage": "Etapa com horário marcado não entra na ordenação — ela acontece na hora dela.",
     "notYours": "Esta etapa não é sua."
+  },
+  "myWeek": {
+    "stageNotFound": "Etapa não encontrada.",
+    "notYours": "Esta etapa não é sua.",
+    "scheduledStage": "Etapa com horário marcado não entra na ordenação — ela acontece na hora dela.",
+    "reorderFailed": "Não foi possível reordenar.",
+    "alreadyAssigned": "Esta etapa já tem responsável.",
+    "notAvailable": "Esta etapa ainda não foi liberada.",
+    "otherTeam": "Esta etapa é de outro time.",
+    "invalidDate": "Data inválida.",
+    "pastDate": "Não dá para programar para um dia que já passou.",
+    "tooFarAhead": "Escolha um dia dentro das próximas quatro semanas.",
+    "pullFailed": "Não foi possível assumir a etapa.",
+    "moveFailed": "Não foi possível mudar o dia."
   }
 }
