@@ -10,9 +10,10 @@ import {
   formatDisplayDate,
   todayInSaoPaulo,
 } from "@/lib/dates";
+import prisma from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
-import { WeekNav } from "@/components/shared/WeekNav";
+import { ClientLoadControls } from "./ClientLoadControls";
 
 export const metadata: Metadata = { title: "Carga por cliente" };
 
@@ -33,7 +34,10 @@ export default async function ClientLoadPage({
   // array nesse caso — sem isto o tipo mentiria e o filtro do Prisma quebraria em runtime.
   const teamId = Array.isArray(sp.team) ? sp.team[0] : sp.team;
   const t = await getTranslations("planning.clientLoad");
-  const carga = await getClientLoad(formatISODate(monday), teamId);
+  const [carga, teams] = await Promise.all([
+    getClientLoad(formatISODate(monday), teamId),
+    prisma.team.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+  ]);
 
   return (
     <div className="mx-auto max-w-[110rem] px-4 py-8 sm:px-6 lg:px-8">
@@ -42,14 +46,11 @@ export default async function ClientLoadPage({
         title={t("title")}
         subtitle={`${t("subtitle")} · ${t("weekOf", { date: formatDisplayDate(monday) })}`}
         actions={
-          <WeekNav
+          <ClientLoadControls
             monday={monday}
             isCurrentWeek={formatISODate(monday) === formatISODate(mondayOfWeek(todayInSaoPaulo()))}
-            labels={{
-              previous: t("previousWeek"),
-              next: t("nextWeek"),
-              current: t("currentWeek"),
-            }}
+            teams={teams}
+            teamId={teamId}
           />
         }
       />
