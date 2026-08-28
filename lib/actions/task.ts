@@ -936,15 +936,26 @@ export async function completeStageAndAdvance(
               defaultTeam: { select: { members: { select: { id: true } } } },
             },
           }),
+          // Sem filtrar por `teamId`: a mesma leitura serve a duas perguntas — qual o time
+          // roteado (só as linhas com `teamId`) e QUEM já era o dono, que decide se esta
+          // atribuição é um remanejamento.
           prisma.taskActiveStage.findMany({
-            where: { taskId, stageId: { in: requestedStageIds }, teamId: { not: null } },
-            select: { stageId: true, team: { select: { members: { select: { id: true } } } } },
+            where: { taskId, stageId: { in: requestedStageIds } },
+            select: {
+              stageId: true,
+              teamId: true,
+              assigneeId: true,
+              team: { select: { members: { select: { id: true } } } },
+            },
           }),
         ]);
         const stageTeamById = new Map(stageTeams.map((s) => [s.id, s]));
         const routedMembersByStage = new Map(
-          rows.map((r) => [r.stageId, new Set((r.team?.members ?? []).map((m) => m.id))])
+          rows
+            .filter((r) => r.teamId !== null)
+            .map((r) => [r.stageId, new Set((r.team?.members ?? []).map((m) => m.id))])
         );
+        const donoAtualByStage = new Map(rows.map((r) => [r.stageId, r.assigneeId]));
         for (const stageId of requestedStageIds) {
           const requested = assignments[stageId];
           const stageTeam = stageTeamById.get(stageId);
@@ -953,9 +964,21 @@ export async function completeStageAndAdvance(
             ? routed.has(requested)
             : !!stageTeam && isValidStageAssignee(stageTeam, requested);
           if (valid) {
+            // Remanejar limpa a programação do dono ANTERIOR. `plannedDate`/`plannedOrder` são a
+            // posição na fila de uma pessoa específica: mantidos na troca, o item apareceria na
+            // grade do Bruno, no dia que era da Ana e com o número de ordem dela — uma semana que
+            // ninguém escolheu. Zerados, ele volta ao poço e o gestor o põe no dia de quem passou
+            // a fazê-lo. Só quando o dono MUDA: reafirmar o mesmo responsável não é remanejamento
+            // e não pode desmanchar a programação já feita.
+            const donoAnterior = donoAtualByStage.get(stageId) ?? null;
+            const remanejou = donoAnterior !== null && donoAnterior !== requested;
             await prisma.taskActiveStage.update({
               where: { taskId_stageId: { taskId, stageId } },
-              data: { assigneeId: requested, assignedAt: new Date() },
+              data: {
+                assigneeId: requested,
+                assignedAt: new Date(),
+                ...(remanejou ? { plannedDate: null, plannedOrder: null } : {}),
+              },
             });
           }
         }
