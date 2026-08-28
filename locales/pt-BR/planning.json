@@ -108,5 +108,31 @@
       "planned": "Planejada"
     },
     "planState": "Situação no plano"
+  },
+  "week": {
+    "kicker": "Planejamento",
+    "title": "Programação da semana",
+    "subtitle": "Distribua as etapas entre as pessoas e veja onde ainda há espaço.",
+    "poolTitle": "Disponíveis",
+    "poolEmpty": "Nenhuma etapa livre no momento.",
+    "conflictsTitle": "Agendamentos que não vão acontecer",
+    "conflictsHelp": "Estas etapas têm hora marcada mas ainda não foram liberadas. Libere a etapa anterior, remarque, ou troque o responsável.",
+    "weekOf": "Semana de {date}",
+    "capacity": "{used}h de {total}h",
+    "dayRuler": "régua de {hours}h — referência visual, não meta",
+    "estimated": "estimativa",
+    "waiting": "não liberada",
+    "scheduled": "agendada",
+    "schedule": "Programar",
+    "unschedule": "Tirar da semana",
+    "moveUp": "Subir",
+    "moveDown": "Descer",
+    "dialogTitle": "Programar etapa",
+    "dialogPerson": "Pessoa",
+    "dialogDay": "Dia",
+    "dialogSubmit": "Programar",
+    "scheduled_toast": "Etapa programada.",
+    "unscheduled_toast": "Etapa devolvida ao poço.",
+    "noCapacity": "Sem capacidade semanal cadastrada — usando o padrão de {hours}h."
   }
 }

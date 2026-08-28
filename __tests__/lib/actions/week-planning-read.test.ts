@@ -22,7 +22,11 @@ vi.mock("@/lib/prisma", () => ({
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getStageReferences } from "@/lib/planning/stage-reference";
-import { getWeekPlanning, DEFAULT_WEEKLY_HOURS } from "@/lib/actions/week-planning";
+import { getWeekPlanning } from "@/lib/actions/week-planning";
+// `DEFAULT_WEEKLY_HOURS` não é mais exportado por `week-planning.ts`: um arquivo `"use server"` só
+// pode exportar função assíncrona, e mesmo o re-export do valor quebrava `next build` em runtime.
+// Ver lib/planning/week-capacity.ts.
+import { DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
 
 const db = prisma as unknown as {
   user: { findMany: ReturnType<typeof vi.fn> };

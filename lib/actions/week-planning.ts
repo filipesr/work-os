@@ -8,6 +8,7 @@ import { formatISODate } from "@/lib/dates";
 import { buildDayQueue, type QueueItemInput, type QueueSlot } from "@/lib/planning/day-queue";
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { stageTeamWhere } from "@/lib/stage-team";
+import { DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
 
 /**
  * Mesa semanal do gestor: pessoa × dia.
@@ -17,11 +18,12 @@ import { stageTeamWhere } from "@/lib/stage-team";
  * trabalha sábado ou meio período. Quem distribui é o gestor.
  */
 
-/** Referência semanal de quem não tem `weeklyCapacityHours` preenchido. */
-export const DEFAULT_WEEKLY_HOURS = 45;
-
-/** Régua VISUAL do dia. Não é meta: ver o comentário acima. */
-export const DAY_VISUAL_HOURS = 8;
+// `DEFAULT_WEEKLY_HOURS` e `DAY_VISUAL_HOURS` moraram aqui originalmente, mas um arquivo
+// `"use server"` só pode exportar função assíncrona — mesmo um RE-EXPORT de `export const` quebra
+// `next build` em runtime ("A 'use server' file can only export async functions", checado no
+// registro de actions, não só na sintaxe). tsc e vitest não aplicam essa regra, então passavam
+// batido. Os dois valores vivem em `lib/planning/week-capacity.ts`; quem precisa deles importa de
+// lá diretamente, não daqui.
 
 export type DayView = { slots: QueueSlot[]; usedHours: number; nextRunnableId: string | null };
 
@@ -39,6 +41,8 @@ export type PoolItem = {
   stageName: string;
   clientName: string;
   referenceHours: number;
+  /** Ver `QueueItemInput.referenceSource`: "declared" é estimativa (SLA ou nem isso), não medição. */
+  referenceSource: "observed" | "declared";
 };
 
 export type WeekPlanning = { days: string[]; people: PersonWeek[]; pool: PoolItem[] };
@@ -112,7 +116,12 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
   const referencias = await getStageReferences([
     ...new Set([...programados.map((p) => p.stageId), ...livres.map((l) => l.stageId)]),
   ]);
+  // Sem entrada no Map = etapa nunca vista pelo getStageReferences (não deveria acontecer, dado o
+  // Set acima) — cai no mesmo fallback do resolveStageReference: 0h, "declared". A tela trata os
+  // dois casos (zero por falta de amostra E zero por falta de entrada) da mesma forma: estimativa,
+  // nunca "etapa de graça".
   const horasDe = (stageId: string) => referencias.get(stageId)?.hours ?? 0;
+  const sourceDe = (stageId: string) => referencias.get(stageId)?.source ?? "declared";
 
   const porPessoaEDia = new Map<string, Map<string, QueueItemInput[]>>();
   const primeiroDia = days[0];
@@ -130,6 +139,7 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
       available: row.status === "ACTIVE",
       plannedOrder: row.plannedOrder ?? 0,
       referenceHours: horasDe(row.stageId),
+      referenceSource: sourceDe(row.stageId),
       scheduledStart: row.scheduledStart,
     });
     daPessoa.set(dia, doDia);
@@ -167,6 +177,7 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
       stageName: l.stage.name,
       clientName: l.task.project.client.name,
       referenceHours: horasDe(l.stageId),
+      referenceSource: sourceDe(l.stageId),
     })),
   };
 }

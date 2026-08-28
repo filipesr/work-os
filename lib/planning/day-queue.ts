@@ -20,6 +20,10 @@ export type QueueItemInput = {
   referenceHours: number;
   /** Preenchido só nos itens com compromisso marcado. */
   scheduledStart: Date | null;
+  /** `"declared"` = SLA cadastrado (ou nem isso — pode vir com `referenceHours: 0`), não medição
+   *  real. Opcional e sem papel nenhum na fila: só atravessa até a tela, que é quem precisa avisar
+   *  que o número é estimativa. Ver `lib/planning/stage-reference.ts`. */
+  referenceSource?: "observed" | "declared";
 };
 
 export type QueueKind =

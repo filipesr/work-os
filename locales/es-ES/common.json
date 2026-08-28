@@ -46,7 +46,8 @@
     "openNav": "Abrir navegación",
     "closeNav": "Cerrar navegación",
     "datas": "Fechas",
-    "cobertura": "Cobertura Semanal"
+    "cobertura": "Cobertura Semanal",
+    "programacao": "Programación"
   },
   "buttons": {
     "save": "Guardar",
