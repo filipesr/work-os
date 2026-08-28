@@ -17,10 +17,28 @@ lista de etapas disponíveis e escolhendo por conta.
 A finalidade é **liberdade, não controle**: antecipar demanda para que a pessoa se organize, cumpra o
 dia e **use o tempo que sobrar** — estudar, sair mais cedo. O ganho de eficiência é dela.
 
-Isso decide o desenho. O sistema **nunca** compara planejado com realizado, e não há indicador de
-aderência em tela nenhuma. Um percentual de cumprimento transformaria a ferramenta no oposto do que
-ela existe para ser, e colidiria com P1 (informacional, nunca motivacional) e P2 (variação é do
-sistema, não da pessoa).
+Isso decide o desenho — mas a linha não é "nenhuma comparação". É outra, e mais fina.
+
+**Proibido: nota de aderência da PESSOA.** "Ana cumpriu 60% da agenda desta semana" é score de
+pessoa contra plano. Transformaria a ferramenta no oposto do que ela existe para ser, e colide com
+P1 (informacional, nunca motivacional) e P2 (variação é do sistema). Não existe em tela nenhuma, e a
+spec o torna impossível de calcular (ver "por que não uma tabela de agenda").
+
+**Permitido, e já existe: exceção da ETAPA contra a referência da classe.** "Esta etapa está em 5h
+onde a classe leva 1h" é leitura sobre o TRABALHO, não nota da pessoa — é exatamente o que o P2
+manda (atribuir ao processo/etapa) e o P6 (gestão por exceção). Sem isso, "liberdade criativa" vira
+justificativa para uma coisa simples ganhar escopo de semana, e a referência de tempo perde a
+serventia.
+
+Esse sinal **já está implementado**: `stageAgingRatio` compara o tempo em etapa com o
+`expectedDurationHours`, e `getAgingStages` lista o que passou do esperado. A programação semanal
+**consome** esse sinal; não constrói outro. Duas implementações da mesma leitura divergiriam, e a
+segunda quase certamente viraria a punitiva.
+
+**A forma importa tanto quanto o dado.** O envelhecimento aparece no item, com a referência ao lado
+("5h · referência 1h"), como convite a olhar — nunca agregado por pessoa, nunca em ranking, nunca
+somado num placar. É sinal de que algo travou naquele trabalho, e a causa costuma ser do sistema:
+dependência, retrabalho, briefing ruim.
 
 ### Por que isto não fere o P7
 
@@ -165,6 +183,8 @@ opções é próprio, porque o de lá é de 8 e 12 semanas.
   visível na posição; item agendado nunca é pulado; item agendado e não liberado vira conflito; item
   que não cabe no dia é puxado assim mesmo.
 - **Referência:** p50 quando há amostra; SLA quando não há; a marca de "estimativa" acompanha.
+- **Envelhecimento:** o item mostra o tempo decorrido ao lado da referência quando passa dela, vindo
+  de `stageAgingRatio`; e nenhuma tela agrega esse número por pessoa.
 - **Capacidade:** o acumulado da semana usa `weeklyCapacityHours`; sem o campo preenchido, cai em 45h
   e a tela avisa que é o padrão.
 - **Ação:** programar atribui (inclusive etapa `INACTIVE`); remanejar limpa o `plannedOrder` do dono
@@ -179,7 +199,9 @@ opções é próprio, porque o de lá é de 8 e 12 semanas.
 
 ## Fora do produto, por decisão
 
-- Qualquer comparação entre planejado e realizado, ou indicador de aderência.
+- **Nota de aderência da pessoa** (percentual de cumprimento do plano, agregado por pessoa, ranking).
+  O envelhecimento POR ETAPA contra a referência da classe é permitido e já existe — a diferença é
+  se a leitura é sobre o trabalho ou sobre quem o fez.
 - Grade de horários para trabalho comum. Hora existe só onde há compromisso marcado.
 - Duração de referência **por pessoa** — seria leitura de desempenho individual e colide com P2.
 - Escala de trabalho cadastrada. Se um dia fizer falta, é cadastro novo e muda a régua diária.
