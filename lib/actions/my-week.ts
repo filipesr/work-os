@@ -8,6 +8,7 @@ import {
   todayInSaoPaulo,
   nowInSaoPaulo,
   shiftWeek,
+  realInstant,
 } from "@/lib/dates";
 import { buildDayQueue, type QueueItemInput } from "@/lib/planning/day-queue";
 import { getStageReferences } from "@/lib/planning/stage-reference";
@@ -69,9 +70,24 @@ export async function getMyWeek(mondayISO: string): Promise<MyWeek> {
   const teamIds = eu?.teams.map((t) => t.id) ?? [];
 
   // Histórico de oito semanas para o reconhecimento, contado a partir da segunda em tela.
-  const inicioHistorico = new Date(
+  //
+  // `completedAt` é instante REAL (gravado com `new Date()`, ver `lib/actions/task.ts`) — diferente
+  // de `plannedDate`, que é gravado como representação SP-local (meia-noite, sem hora de verdade).
+  // `fim`/`inicio` acima servem só ao `plannedDate`: comparar `completedAt` contra eles erraria em
+  // três horas, e o erro só aparece na borda do dia — uma conclusão de sábado à noite em São Paulo
+  // vira domingo de madrugada em UTC e sumiria da consulta antes de chegar ao agrupamento. Bordas
+  // PRÓPRIAS aqui, convertidas com `realInstant`.
+  const inicioHistoricoSPLocal = new Date(
     `${formatISODate(shiftWeek(new Date(`${mondayISO}T00:00:00Z`), -PACE_HISTORY_WEEKS))}T00:00:00Z`
   );
+  const inicioHistorico = realInstant(inicioHistoricoSPLocal);
+  // A borda de cima vai até o fim do DOMINGO da semana em tela, não do sábado (`fim`, que para na
+  // grade visível de segunda-a-sábado): o agrupamento abaixo usa `mondayOfWeek`, que enxerga a
+  // semana como segunda-a-domingo e põe o domingo na semana que acabou de terminar. Se a consulta
+  // parasse no sábado, o domingo da semana corrente nunca entraria nela — ficaria fora tanto do
+  // histórico quanto da semana atual — e a comparação do reconhecimento ficaria enviesada contra
+  // quem está sendo avaliado.
+  const fimHistorico = realInstant(new Date(fim.getTime() + 86_400_000));
 
   const [programados, livres, concluidas] = await Promise.all([
     prisma.taskActiveStage.findMany({
@@ -117,7 +133,7 @@ export async function getMyWeek(mondayISO: string): Promise<MyWeek> {
       where: {
         assigneeId: me.id,
         status: "COMPLETED",
-        completedAt: { gte: inicioHistorico, lte: fim },
+        completedAt: { gte: inicioHistorico, lte: fimHistorico },
       },
       select: { completedAt: true },
     }),

@@ -157,6 +157,14 @@ export function monthKeySaoPaulo(instant: Date): string {
   return formatISODate(nowInSaoPaulo(instant)).slice(0, 7);
 }
 
+/** Instante real (UTC) equivalente a uma SP-local Date. Use ao filtrar COLUNA DE TIMESTAMP gravada
+ *  com `new Date()` — `completedAt`, `createdAt` —, que guarda instante de verdade, e não a
+ *  representação SP-local que `plannedDate` usa. Comparar as duas convenções erra em três horas,
+ *  e o erro só aparece na borda do dia: some trabalho concluído à noite. */
+export function realInstant(spLocal: Date): Date {
+  return new Date(spLocal.getTime() - SP_OFFSET_MS);
+}
+
 /**
  * Real UTC [start, end] instants covering the SP-local month "YYYY-MM"
  * (e.g. "2026-06" → 2026-06-01T03:00:00Z … 2026-07-01T02:59:59.999Z).
