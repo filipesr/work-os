@@ -9,6 +9,8 @@ import { buildDayQueue, type QueueItemInput, type QueueSlot } from "@/lib/planni
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { stageTeamWhere } from "@/lib/stage-team";
 import { DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
+import { weekDays } from "@/lib/planning/week-days";
+import { applyDayReorder } from "@/lib/planning/reorder";
 
 /**
  * Mesa semanal do gestor: pessoa × dia.
@@ -46,12 +48,6 @@ export type PoolItem = {
 };
 
 export type WeekPlanning = { days: string[]; people: PersonWeek[]; pool: PoolItem[] };
-
-/** Segunda a sábado. Sábado é coluna normal — recebe se o gestor colocar. */
-function weekDays(mondayISO: string): string[] {
-  const base = Date.parse(`${mondayISO}T00:00:00Z`);
-  return Array.from({ length: 6 }, (_, i) => formatISODate(new Date(base + i * 86_400_000)));
-}
 
 export async function getWeekPlanning(mondayISO: string, teamId?: string): Promise<WeekPlanning> {
   await requireManagerOrAdmin();
@@ -301,96 +297,13 @@ export async function unscheduleStage(activeStageId: string) {
   return { success: true as const };
 }
 
-/** Sobe ou desce um item dentro do dia, trocando de posição com o vizinho.
- *
- *  Dois caminhos, porque um só não dá conta:
- *
- *  - Vizinhos com números DIFERENTES: troca os dois valores. Duas escritas em vez de N, e a ordem
- *    dos outros não muda por tabela.
- *  - Vizinhos EMPATADOS (mesmo número, ou os dois sem número): trocar escreveria o mesmo valor nos
- *    dois e a seta viraria um no-op silencioso. Aí o dia é renumerado — N escritas, e os números
- *    dos outros mudam, mas a ORDEM em que eles aparecem é preservada exatamente. */
+/** Sobe ou desce um item dentro do dia. As regras moram em `lib/planning/reorder.ts`, porque a
+ *  tela da pessoa (fatia 2) reordena com exatamente as mesmas — e duas cópias divergiriam. */
 export async function moveStageOrder(activeStageId: string, direction: "up" | "down") {
   await requireManagerOrAdmin();
   const t = await getTranslations("errors.weekPlanning");
-
-  const alvo = await prisma.taskActiveStage.findUnique({
-    where: { id: activeStageId },
-    select: {
-      id: true,
-      assigneeId: true,
-      plannedDate: true,
-      plannedOrder: true,
-      scheduledStart: true,
-    },
-  });
-  if (!alvo || !alvo.assigneeId || !alvo.plannedDate) return { error: t("stageNotFound") };
-  // Item com horário marcado não entra na ordenação manual — ele acontece na hora dele, não na
-  // vez dele. Ordenar um compromisso marcado seria fingir que ele espera a vez.
-  if (alvo.scheduledStart) return { error: t("scheduledStage") };
-
-  // O dia INTEIRO, agendados inclusive. Eles não entram na ordenação (ninguém os move, e não são
-  // vizinhos de ninguém), mas precisam estar aqui: `buildDayQueue` ordena TODOS os slots por
-  // `plannedOrder`, então renumerar só os movíveis deixaria o agendado com o número velho e ele
-  // saltaria de posição sozinho, sem ninguém ter tocado nele.
-  const doDia = await prisma.taskActiveStage.findMany({
-    where: {
-      assigneeId: alvo.assigneeId,
-      plannedDate: alvo.plannedDate,
-      status: { not: "COMPLETED" },
-    },
-    select: { id: true, plannedOrder: true, scheduledStart: true },
-    // Mesmo desempate da leitura da tela (e de `buildDayQueue`): a seta precisa agir sobre a mesma
-    // ordem que o gestor está vendo.
-    orderBy: [{ plannedOrder: "asc" }, { id: "asc" }],
-  });
-
-  // O vizinho é o próximo item MOVÍVEL: um agendado no meio do caminho não é um degrau da fila.
-  const movaveis = doDia.filter((x) => !x.scheduledStart);
-  const i = movaveis.findIndex((x) => x.id === activeStageId);
-  const j = direction === "up" ? i - 1 : i + 1;
-  // Fora da lista não é erro: a seta simplesmente não tem para onde ir.
-  if (i < 0 || j < 0 || j >= movaveis.length) return { success: true as const };
-  const [origem, destino] = [movaveis[i], movaveis[j]];
-
-  try {
-    if (origem.plannedOrder !== destino.plannedOrder) {
-      // Caso normal: números distintos, trocar os dois basta.
-      await prisma.taskActiveStage.update({
-        where: { id: origem.id },
-        data: { plannedOrder: destino.plannedOrder },
-      });
-      await prisma.taskActiveStage.update({
-        where: { id: destino.id },
-        data: { plannedOrder: origem.plannedOrder },
-      });
-    } else {
-      // Empate — dois itens com o MESMO número, ou os dois sem número nenhum. Trocar os valores
-      // escreveria o mesmo número nos dois: o gestor clica na seta e nada muda, sem erro nenhum,
-      // que é o pior desfecho possível para um botão. Empatados, a ordem só existe pelo desempate
-      // por `id`, então não há valor a trocar: o dia é renumerado a partir da ordem que a tela já
-      // mostra, com os dois trocados de lugar. Custa N escritas, mas só acontece no empate.
-      //
-      // A renumeração é sobre a lista INTEIRA, na ordem exibida: o agendado ganha um número novo
-      // mas continua exatamente onde estava em relação aos vizinhos. Renumerar só os movíveis o
-      // deixaria com um número de outra escala e ele mudaria de lugar por efeito colateral.
-      const nova = [...doDia];
-      const posOrigem = nova.findIndex((x) => x.id === origem.id);
-      const posDestino = nova.findIndex((x) => x.id === destino.id);
-      [nova[posOrigem], nova[posDestino]] = [nova[posDestino], nova[posOrigem]];
-      for (const [pos, item] of nova.entries()) {
-        if (item.plannedOrder === pos + 1) continue;
-        await prisma.taskActiveStage.update({
-          where: { id: item.id },
-          data: { plannedOrder: pos + 1 },
-        });
-      }
-    }
-  } catch (error) {
-    console.error("moveStageOrder error:", error);
-    return { error: t("reorderFailed") };
-  }
-
+  const r = await applyDayReorder(activeStageId, direction);
+  if ("problem" in r) return { error: t(r.problem) };
   revalidatePath("/planning/week");
   return { success: true as const };
 }

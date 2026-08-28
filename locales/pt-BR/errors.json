@@ -205,6 +205,7 @@
     "invalidDate": "Informe uma data válida.",
     "scheduleFailed": "Erro ao programar a etapa.",
     "reorderFailed": "Erro ao reordenar.",
-    "scheduledStage": "Etapa com horário marcado não entra na ordenação — ela acontece na hora dela."
+    "scheduledStage": "Etapa com horário marcado não entra na ordenação — ela acontece na hora dela.",
+    "notYours": "Esta etapa não é sua."
   }
 }
