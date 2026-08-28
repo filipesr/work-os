@@ -453,6 +453,13 @@ Cada superfície e a razão de existir **daquela forma**.
   duplicar** — a cópia nasce sem responsável, logo virgem, e carrega o desenho
   (etapas incluídas + roteamento + instrução) para que consertar UMA coisa não
   custe redecidir todas. _(P3/P7)_
+- **Tarefa rápida é CLASSE separada, não exceção** → **P4**: registro de trabalho de etapa única
+  que já aconteceu (story em loja de cliente, publicação avulsa) tem lead time ≈ 0 por construção.
+  Na mesma distribuição das demandas normais, puxaria o p50/p85 do tipo para baixo — e são esses
+  percentis que alimentam a checagem de viabilidade. Como a previsão é por classe, um template
+  próprio marcado `quickEntry` resolve sem regra nova. Existe para o trabalho que hoje **não é
+  registrado**: o fluxo normal custa mais que a execução, e o efeito é resistência ao sistema.
+  _(P4/P1)_
 
 ### Dashboard pessoal ("Meu foco" / etapas ativas)
 

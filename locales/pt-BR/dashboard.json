@@ -1,6 +1,7 @@
 {
   "greeting": "Olá, {userName}!",
   "subtitle": "Visão geral das suas tarefas e responsabilidades",
+  "quickTaskCta": "Registrar trabalho já feito",
   "stats": {
     "activeTasks": "Tarefas Ativas",
     "completedWeek": "Concluídas (Semana)",

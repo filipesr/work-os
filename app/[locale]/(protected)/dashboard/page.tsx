@@ -3,8 +3,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { availableStageWhere } from "@/lib/task-availability";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { Activity, Hourglass, AlertTriangle, CheckCircle2, Clock, Info } from "lucide-react";
+import { Activity, Hourglass, AlertTriangle, CheckCircle2, Clock, Info, Zap } from "lucide-react";
 import { PersonalKPIs, type KpiItem } from "@/components/shared/PersonalKPIs";
 import { StageList, type StageRow } from "@/components/shared/StageList";
 import { ClaimActiveStageButton } from "@/components/tasks/ClaimActiveStageButton";
@@ -192,6 +193,16 @@ export default async function DashboardPage() {
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </header>
+
+      {/* O registro rápido só cumpre o objetivo se estiver a um toque de distância: a feature
+          existe para vencer atrito, e escondê-la num menu recriaria o atrito. */}
+      <Link
+        href="/tasks/quick"
+        className="mb-6 inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+      >
+        <Zap className="h-4 w-4 text-primary" />
+        {t("quickTaskCta")}
+      </Link>
 
       <PersonalKPIs items={kpis} />
 

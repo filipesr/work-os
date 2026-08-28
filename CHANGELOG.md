@@ -75,6 +75,20 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   **certificado vencido** junto de DNS/LAN e repete a URL do agente, porque abri-la mostra o erro de
   certificado em segundos. Texto compartilhado pelas duas telas em `lib/nas/failure-message.ts`.
 
+#### Tarefa rápida
+
+- **Registro de trabalho de etapa única que já aconteceu** (`/tasks/quick`): data, tempo e link, do
+  celular, sem abrir demanda. Existe para o trabalho que hoje **não é registrado** — o fluxo normal
+  custa mais que a própria execução, e o resultado é resistência ao sistema.
+- **A classe é o template:** só fluxos marcados como rápidos aparecem no formulário. Uma tarefa
+  rápida nasce e morre no mesmo instante (lead time ≈ 0) e, misturada às demandas normais, puxaria o
+  p50/p85 do tipo para baixo — os mesmos percentis que alimentam a checagem de viabilidade. Como a
+  previsão já é por classe (P4), separar o template resolve.
+- **Trava recíproca no editor de fluxo:** 2+ etapas desabilita a marca "rápido"; a marca ativa
+  desabilita "adicionar etapa" — com o motivo escrito ao lado, não como erro depois do envio.
+- **Corrigido:** era possível apagar a **última** etapa de um fluxo e deixá-lo com zero. A falha só
+  aparecia depois, na criação de uma demanda, longe de quem apagou.
+
 ### 🐛 Corrigido
 
 - **Preview de avanço divergia da execução:** `previewNextStages` olhava apenas as etapas que
