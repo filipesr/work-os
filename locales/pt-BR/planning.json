@@ -121,6 +121,8 @@
     "capacity": "{used}h de {total}h",
     "dayRuler": "régua de {hours}h — referência visual, não meta",
     "estimated": "estimativa",
+    "conflictReasonInactive": "a etapa anterior ainda não terminou",
+    "conflictReasonBlocked": "ainda faltam dependências para liberar",
     "waiting": "não liberada",
     "scheduled": "agendada",
     "schedule": "Programar",

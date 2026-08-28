@@ -24,6 +24,12 @@ export type QueueItemInput = {
    *  real. Opcional e sem papel nenhum na fila: só atravessa até a tela, que é quem precisa avisar
    *  que o número é estimativa. Ver `lib/planning/stage-reference.ts`. */
   referenceSource?: "observed" | "declared";
+  /** Rótulos de exibição — passthrough puro, como `referenceSource`: sem papel na classificação
+   *  nem na soma de horas, só atravessam até a tela (ex.: a lista de conflitos, que precisa dizer
+   *  QUAL trabalho está em risco e por quê). Preenchidos só onde a consulta os tem à mão. */
+  taskTitle?: string;
+  stageName?: string;
+  stageStatus?: "INACTIVE" | "ACTIVE" | "BLOCKED" | "COMPLETED";
 };
 
 export type QueueKind =

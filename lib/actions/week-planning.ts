@@ -141,6 +141,11 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
       referenceHours: horasDe(row.stageId),
       referenceSource: sourceDe(row.stageId),
       scheduledStart: row.scheduledStart,
+      // Rótulos para a lista de conflitos: sem eles a tela sabe QUE algo está em risco, mas não O
+      // QUE remarcar. Vêm de campos que a consulta acima já busca.
+      taskTitle: row.task.title,
+      stageName: row.stage.name,
+      stageStatus: row.status,
     });
     daPessoa.set(dia, doDia);
     porPessoaEDia.set(row.assigneeId, daPessoa);
