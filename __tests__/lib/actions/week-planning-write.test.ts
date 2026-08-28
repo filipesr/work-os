@@ -272,23 +272,63 @@ describe("moveStageOrder", () => {
       plannedOrder: 2,
       scheduledStart: null,
     });
-    // A consulta da fila já exclui os agendados (scheduledStart: null no where) — só as1 (agendado,
-    // order 1) ficaria de fora; a lista devolvida só tem os dois itens da fila manual.
+    // A consulta traz o dia INTEIRO, agendados inclusive (eles precisam ser renumerados junto no
+    // empate, senão saltariam de posição sozinhos); quem os tira da fila manual é o filtro em
+    // memória.
     db.taskActiveStage.findMany.mockResolvedValue([
-      { id: "as2", plannedOrder: 2 },
-      { id: "as3", plannedOrder: 3 },
+      { id: "as2", plannedOrder: 2, scheduledStart: null },
+      { id: "asX", plannedOrder: 3, scheduledStart: new Date("2026-08-31T14:00:00Z") },
+      { id: "as3", plannedOrder: 4, scheduledStart: null },
     ]);
     expect(await moveStageOrder("as2", "down")).toEqual({ success: true });
-    expect(db.taskActiveStage.findMany.mock.calls[0][0].where.scheduledStart).toBeNull();
-    // O comum troca com o próximo NÃO-agendado (as3) — nunca com o agendado que a consulta excluiu.
+    expect(db.taskActiveStage.findMany.mock.calls[0][0].where).not.toHaveProperty("scheduledStart");
+    // O comum troca com o próximo NÃO-agendado (as3), saltando o agendado que está no meio: um
+    // item com hora marcada não é um degrau da fila.
     expect(db.taskActiveStage.update).toHaveBeenNthCalledWith(1, {
       where: { id: "as2" },
-      data: { plannedOrder: 3 },
+      data: { plannedOrder: 4 },
     });
     expect(db.taskActiveStage.update).toHaveBeenNthCalledWith(2, {
       where: { id: "as3" },
       data: { plannedOrder: 2 },
     });
+  });
+
+  it("renumerar no empate não desloca o item agendado", async () => {
+    // A renumeração é sobre o dia inteiro, na ordem exibida. Se ela pulasse o agendado, ele
+    // ficaria com o número da escala velha e saltaria de posição sozinho — no dia A(1), B(5,
+    // agendado), C(10), D(10), subir D renumeraria A=1, D=2, C=3 e jogaria B para o fim, sem
+    // ninguém ter tocado nele.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "D",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      plannedDate: new Date("2026-08-31T00:00:00Z"),
+      plannedOrder: 10,
+      scheduledStart: null,
+    });
+    db.taskActiveStage.findMany.mockResolvedValue([
+      { id: "A", plannedOrder: 1, scheduledStart: null },
+      { id: "B", plannedOrder: 5, scheduledStart: new Date("2026-08-31T14:00:00Z") },
+      { id: "C", plannedOrder: 10, scheduledStart: null },
+      { id: "D", plannedOrder: 10, scheduledStart: null },
+    ]);
+    expect(await moveStageOrder("D", "up")).toEqual({ success: true });
+
+    const ordem = new Map<string, number>([
+      ["A", 1],
+      ["B", 5],
+      ["C", 10],
+      ["D", 10],
+    ]);
+    for (const [call] of db.taskActiveStage.update.mock.calls as [
+      { where: { id: string }; data: { plannedOrder: number } },
+    ][]) {
+      ordem.set(call.where.id, call.data.plannedOrder);
+    }
+    const ordenado = [...ordem.entries()].sort((x, y) => x[1] - y[1]).map(([id]) => id);
+    // D subiu uma posição na fila manual; B continua entre A e o resto, onde sempre esteve.
+    expect(ordenado).toEqual(["A", "B", "D", "C"]);
   });
 });
 
