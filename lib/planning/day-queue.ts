@@ -30,6 +30,10 @@ export type QueueItemInput = {
   taskTitle?: string;
   stageName?: string;
   stageStatus?: "INACTIVE" | "ACTIVE" | "BLOCKED" | "COMPLETED";
+  /** Desde quando a etapa está em execução (entrada do log ainda aberto). Passthrough como os
+   *  rótulos: a tela usa para mostrar o envelhecimento DESTA etapa ao lado da referência quando
+   *  passa dela. Nunca agregado por pessoa — ver a spec. */
+  activeSince?: Date | null;
 };
 
 export type QueueKind =

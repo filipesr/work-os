@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
-import { formatISODate } from "@/lib/dates";
+import { formatISODate, mondayOfWeek, todayInSaoPaulo } from "@/lib/dates";
 import { buildDayQueue, type QueueItemInput, type QueueSlot } from "@/lib/planning/day-queue";
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { stageTeamWhere } from "@/lib/stage-team";
@@ -59,19 +59,33 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
   const days = weekDays(mondayISO);
   const fim = new Date(`${days[5]}T23:59:59Z`);
 
+  // O piso só some na semana CORRENTE (ou numa passada): ali, o que não foi feito ontem tem de
+  // aparecer hoje, e sumir seria a pior perda porque é silenciosa. Numa semana FUTURA a pergunta é
+  // outra — "onde ainda há espaço para distribuir" —, e sem piso todo item atrasado das semanas
+  // anteriores desabaria no primeiro dia dela e no acumulado da pessoa: a semana que se está
+  // planejando nasceria cheia, que é o oposto do que a tela serve para responder.
+  const semanaCorrente = formatISODate(mondayOfWeek(todayInSaoPaulo()));
+  const inicio = days[0] > semanaCorrente ? new Date(`${days[0]}T00:00:00Z`) : null;
+
   const [people, programados, livres] = await Promise.all([
     prisma.user.findMany({
-      where: teamId ? { teams: { some: { id: teamId } } } : {},
-      select: { id: true, name: true, weeklyCapacityHours: true },
+      where: {
+        // A mesa é de quem executa: conta de portal (`CLIENT`) e ex-colaborador desativado
+        // ganhariam linha na grade — cada uma com o aviso de capacidade — e virariam alvo de
+        // atribuição no diálogo de programar.
+        role: { not: "CLIENT" },
+        disabledAt: null,
+        ...(teamId ? { teams: { some: { id: teamId } } } : {}),
+      },
+      select: { id: true, name: true, email: true, weeklyCapacityHours: true },
       orderBy: { name: "asc" },
     }),
     prisma.taskActiveStage.findMany({
       where: {
-        // `lte: fim` sem piso inferior de propósito: item planejado para ANTES desta semana e não
-        // concluído precisa continuar aparecendo, senão trabalho atrasado sumiria da tela na virada
-        // da semana — o pior tipo de perda, porque é silenciosa. Ele é realocado para o primeiro dia
-        // visível logo abaixo.
-        plannedDate: { not: null, lte: fim },
+        // Na semana corrente, `lte: fim` sem piso: o item planejado para ANTES dela e não concluído
+        // continua aparecendo (é realocado para o primeiro dia visível, logo abaixo). Numa semana
+        // futura entra o piso — ver o comentário em `inicio`.
+        plannedDate: { not: null, lte: fim, ...(inicio ? { gte: inicio } : {}) },
         status: { not: "COMPLETED" },
         ...(teamId ? { assignee: { teams: { some: { id: teamId } } } } : {}),
       },
@@ -85,7 +99,15 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
         scheduledStart: true,
         stage: { select: { name: true } },
         task: {
-          select: { title: true, project: { select: { client: { select: { name: true } } } } },
+          select: {
+            title: true,
+            project: { select: { client: { select: { name: true } } } },
+            // Desde quando a etapa está em execução: o log ABERTO dela. Vem aninhado na própria
+            // consulta da semana para não virar um N+1 por item. O `where` não alcança o `stageId`
+            // da linha de fora, então traz os logs abertos da demanda e o casamento é feito abaixo
+            // — são poucos por demanda (um por etapa em andamento).
+            stageLogs: { where: { exitedAt: null }, select: { stageId: true, enteredAt: true } },
+          },
         },
       },
       // Ordem de linha do Postgres não é garantida: sem `orderBy` a mesma célula podia listar os
@@ -158,6 +180,9 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
       taskTitle: row.task.title,
       stageName: row.stage.name,
       stageStatus: row.status,
+      // Envelhecimento por ETAPA (nunca por pessoa): a tela mostra o decorrido ao lado da
+      // referência quando passa dela. Só existe para etapa em execução — daí o log aberto.
+      activeSince: row.task.stageLogs.find((l) => l.stageId === row.stageId)?.enteredAt ?? null,
     });
     daPessoa.set(dia, doDia);
     porPessoaEDia.set(row.assigneeId, daPessoa);
@@ -178,7 +203,9 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
     }
     return {
       userId: u.id,
-      name: u.name ?? "",
+      // `name ?? email ?? id`, a convenção do projeto: sem isto, uma conta sem nome preenchido
+      // deixaria a linha inteira da grade sem rótulo — e a linha é a pessoa.
+      name: u.name ?? u.email ?? u.id,
       weeklyHours: u.weeklyCapacityHours ?? DEFAULT_WEEKLY_HOURS,
       usedHours,
       byDay,

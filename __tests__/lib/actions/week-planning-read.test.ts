@@ -27,6 +27,7 @@ import { getWeekPlanning } from "@/lib/actions/week-planning";
 // pode exportar função assíncrona, e mesmo o re-export do valor quebrava `next build` em runtime.
 // Ver lib/planning/week-capacity.ts.
 import { DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
+import { formatISODate, mondayOfWeek, todayInSaoPaulo } from "@/lib/dates";
 
 const db = prisma as unknown as {
   user: { findMany: ReturnType<typeof vi.fn> };
@@ -44,10 +45,23 @@ function stageRow(over: Record<string, unknown> = {}) {
     scheduledStart: null,
     scheduledEnd: null,
     stage: { name: "Edição" },
-    task: { title: "Vídeo", project: { client: { name: "ACME" } } },
+    // `stageLogs` = os logs ABERTOS da demanda; é de lá que sai desde quando a etapa está ativa.
+    task: { title: "Vídeo", project: { client: { name: "ACME" } }, stageLogs: [] },
     ...over,
   };
 }
+
+type FindManyArgs = { where: Record<string, unknown>; orderBy?: unknown };
+
+/** As duas consultas de `taskActiveStage` saem em paralelo; o poço é a que pede `assigneeId: null`. */
+function argsDeFindMany(doPoco: boolean): FindManyArgs {
+  const chamadas = db.taskActiveStage.findMany.mock.calls as [FindManyArgs][];
+  const achada = chamadas.map((c) => c[0]).find((a) => (a.where.assigneeId === null) === doPoco);
+  if (!achada) throw new Error("consulta não encontrada");
+  return achada;
+}
+const argsDoPoco = () => argsDeFindMany(true);
+const argsDaSemana = () => argsDeFindMany(false);
 
 describe("getWeekPlanning", () => {
   beforeEach(() => {
@@ -136,10 +150,7 @@ describe("getWeekPlanning", () => {
     const r = await getWeekPlanning("2026-08-31");
     expect(r.pool.map((p) => p.id)).toEqual(["orfa"]);
     // E o filtro que a causaria não pode voltar por descuido.
-    const wherePoco = db.taskActiveStage.findMany.mock.calls
-      .map((c: [{ where?: Record<string, unknown> }]) => c[0].where)
-      .find((w: Record<string, unknown> | undefined) => w?.assigneeId === null);
-    expect(wherePoco).not.toHaveProperty("plannedDate");
+    expect(argsDoPoco().where).not.toHaveProperty("plannedDate");
   });
 
   it("pede a semana já ordenada e desempatada por id", async () => {
@@ -147,10 +158,64 @@ describe("getWeekPlanning", () => {
     // itens em ordens diferentes entre dois carregamentos.
     db.taskActiveStage.findMany.mockResolvedValue([]);
     await getWeekPlanning("2026-08-31");
-    const daSemana = db.taskActiveStage.findMany.mock.calls
-      .map((c: [{ where?: Record<string, unknown>; orderBy?: unknown }]) => c[0])
-      .find((a: { where?: Record<string, unknown> }) => a.where?.assigneeId !== null);
-    expect(daSemana.orderBy).toEqual([{ plannedOrder: "asc" }, { id: "asc" }]);
+    expect(argsDaSemana().orderBy).toEqual([{ plannedOrder: "asc" }, { id: "asc" }]);
+  });
+
+  it("a semana CORRENTE não tem piso: o atrasado das semanas anteriores continua vindo", async () => {
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+    await getWeekPlanning(formatISODate(mondayOfWeek(todayInSaoPaulo())));
+    expect(argsDaSemana().where.plannedDate).not.toHaveProperty("gte");
+  });
+
+  it("a semana FUTURA tem piso na própria segunda", async () => {
+    // Sem piso, abrir a semana que vem para distribuir traria todo item não concluído das semanas
+    // anteriores empilhado na segunda e somado ao acumulado da pessoa: a semana que se está
+    // planejando nasceria cheia, que é o oposto do que a tela serve para responder.
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+    const proxima = new Date(mondayOfWeek(todayInSaoPaulo()).getTime() + 7 * 86_400_000);
+    await getWeekPlanning(formatISODate(proxima));
+    const plannedDate = argsDaSemana().where.plannedDate as { gte: Date };
+    expect(plannedDate.gte.toISOString()).toBe(`${formatISODate(proxima)}T00:00:00.000Z`);
+  });
+
+  it("a grade é de quem executa: sem conta de portal e sem desativado", async () => {
+    // Cada uma ganharia uma linha na grade — com o aviso de capacidade — e viraria alvo de
+    // atribuição no diálogo de programar.
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+    await getWeekPlanning("2026-08-31");
+    const where = db.user.findMany.mock.calls[0][0].where;
+    expect(where.role).toEqual({ not: "CLIENT" });
+    expect(where.disabledAt).toBeNull();
+  });
+
+  it("pessoa sem nome cai no e-mail, e sem e-mail no id — a linha nunca fica sem rótulo", async () => {
+    db.user.findMany.mockResolvedValue([
+      { id: "u1", name: null, email: "ana@example.com", weeklyCapacityHours: 40 },
+      { id: "u2", name: null, email: null, weeklyCapacityHours: 40 },
+    ]);
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+    const r = await getWeekPlanning("2026-08-31");
+    expect(r.people.map((p) => p.name)).toEqual(["ana@example.com", "u2"]);
+  });
+
+  it("traz o início da etapa em execução, para o envelhecimento aparecer no item", async () => {
+    // Envelhecimento é leitura sobre o TRABALHO (esta etapa contra a referência da classe), nunca
+    // nota da pessoa. Vem do log ainda aberto da etapa.
+    const desde = new Date("2026-08-31T09:00:00Z");
+    db.taskActiveStage.findMany.mockResolvedValue([
+      stageRow({
+        task: {
+          title: "Vídeo",
+          project: { client: { name: "ACME" } },
+          stageLogs: [
+            { stageId: "outra", enteredAt: new Date("2026-08-01T00:00:00Z") },
+            { stageId: "s1", enteredAt: desde },
+          ],
+        },
+      }),
+    ]);
+    const r = await getWeekPlanning("2026-08-31");
+    expect(r.people[0].byDay["2026-08-31"].slots[0].item.activeSince).toEqual(desde);
   });
 
   it("recusa quem não é gestor nem admin", async () => {
