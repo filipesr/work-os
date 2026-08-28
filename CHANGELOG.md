@@ -89,6 +89,21 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - **Corrigido:** era possível apagar a **última** etapa de um fluxo e deixá-lo com zero. A falha só
   aparecia depois, na criação de uma demanda, longe de quem apagou.
 
+#### Programação semanal (fatia 1)
+
+- **Mesa semanal do gestor** (`/planning/week`): pessoa × dia, com o espaço livre de cada um e o
+  poço de etapas disponíveis. O mapa de vagos é a própria mesa — a célula já mostra o quanto o dia
+  pegou.
+- **O dia é guardado, a rolagem é leitura.** A fila de hoje é "não concluído com data <= hoje", então
+  o que não foi feito ontem aparece hoje sem job nenhum; e quem termina o dia puxa o próximo. A folga
+  se acumula no fim da semana, que é o objetivo: o ganho de eficiência é de quem trabalhou.
+- **Agendamento que não vai acontecer aparece no topo.** Etapa com hora marcada e ainda não liberada
+  não é reordenada em silêncio — vira conflito em destaque, porque quem descobre no dia já perdeu a
+  locação.
+- **Não existe nota de aderência**, e o modelo a torna impossível: sem histórico de plano, não há o
+  que comparar. O envelhecimento POR ETAPA continua sendo o sinal, e é sobre o trabalho, não sobre
+  quem o fez.
+
 ### 🐛 Corrigido
 
 - **Preview de avanço divergia da execução:** `previewNextStages` olhava apenas as etapas que

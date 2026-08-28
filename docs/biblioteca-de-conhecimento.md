@@ -547,6 +547,14 @@ team-profiles.test.ts` reprova vocabulário de premiação/ordenação dentro de
   flow efficiency **exata** (ativo vs bloqueado) mesmo com ciclos de
   block/unblock/revert, que o timestamp único não retém. Só acumula a partir da
   migração (não fabricamos histórico). _(P3/P5)_
+- **Programação semanal sem histórico de plano** — o dia e a ordem vivem em campos de
+  `TaskActiveStage`, não numa tabela de agenda. Uma tabela guardaria o que foi planejado, e histórico
+  de plano é o insumo exato da nota de aderência ("cumpriu 60% da semana"), que P1/P2 proíbem. Sem
+  ele o cálculo é impossível, e a garantia deixa de depender de disciplina. _(P1/P2)_
+- **Fila ordenada, não grade de horários** — a unidade da programação é ordem, e a hora é referência
+  derivada da classe (P4). Hora fixa existe só onde a realidade a impõe: agendamento de pessoa, lugar
+  ou equipamento. É o que separa esta feature do que o P7 proíbe. A régua de 8h no dia é declarada na
+  própria tela como visual, não meta. _(P4/P7)_
 - **`Task.workflowTemplateId` denormalizado** — o tipo é dimensão consultada e
   agrupada o tempo todo → merece `GROUP BY` indexado, não join por etapa. Fixo na
   criação, nunca muda. _(P4)_
