@@ -20,6 +20,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import prisma from "@/lib/prisma";
+import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { getWeekPlanning, DEFAULT_WEEKLY_HOURS } from "@/lib/actions/week-planning";
 
@@ -109,5 +110,25 @@ describe("getWeekPlanning", () => {
     );
     const r = await getWeekPlanning("2026-08-31");
     expect(r.pool.map((p) => p.id)).toEqual(["livre"]);
+  });
+
+  it("recusa quem não é gestor nem admin", async () => {
+    // Todos os outros testes mockam MANAGER; sem este, uma regressão que apagasse a chamada a
+    // requireManagerOrAdmin passaria batido pela suíte inteira.
+    (requireManagerOrAdmin as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error("Access Denied: Insufficient permissions.")
+    );
+    await expect(getWeekPlanning("2026-08-31")).rejects.toThrow(/Access Denied/i);
+  });
+
+  it("etapa agendada e liberada chega ao dia com kind scheduled", async () => {
+    // O fio que faltava: select do Prisma -> QueueItemInput.scheduledStart -> classificação. A
+    // tabela de classificação em si já é testada na task 2 (day-queue); aqui só confere que o
+    // campo chega inteiro até lá.
+    db.taskActiveStage.findMany.mockResolvedValue([
+      stageRow({ scheduledStart: new Date("2026-08-31T14:00:00Z") }),
+    ]);
+    const r = await getWeekPlanning("2026-08-31");
+    expect(r.people[0].byDay["2026-08-31"].slots[0].kind).toBe("scheduled");
   });
 });

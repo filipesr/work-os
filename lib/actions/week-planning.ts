@@ -5,6 +5,7 @@ import { requireManagerOrAdmin } from "@/lib/permissions";
 import { formatISODate } from "@/lib/dates";
 import { buildDayQueue, type QueueItemInput, type QueueSlot } from "@/lib/planning/day-queue";
 import { getStageReferences } from "@/lib/planning/stage-reference";
+import { stageTeamWhere } from "@/lib/stage-team";
 
 /**
  * Mesa semanal do gestor: pessoa × dia.
@@ -50,7 +51,6 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
   await requireManagerOrAdmin();
 
   const days = weekDays(mondayISO);
-  const inicio = new Date(`${days[0]}T00:00:00Z`);
   const fim = new Date(`${days[5]}T23:59:59Z`);
 
   const [people, programados, livres] = await Promise.all([
@@ -85,7 +85,16 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
     }),
     // O poço: etapas liberadas, sem dono e ainda não programadas.
     prisma.taskActiveStage.findMany({
-      where: { assigneeId: null, status: "ACTIVE", plannedDate: null },
+      where: {
+        assigneeId: null,
+        status: "ACTIVE",
+        plannedDate: null,
+        // Sem `teamId`, o poço continua trazendo tudo, como hoje. Com a mesa filtrada por time,
+        // restringe ao time EFETIVO (`stageTeamWhere`) — não a `teamId` puro, porque uma etapa
+        // coringa (`teamId: null`) herda `stage.defaultTeamId`; filtrar só por `teamId` deixaria
+        // essas de fora e o gestor nem saberia que existem para o time dele.
+        ...(teamId ? stageTeamWhere(teamId) : {}),
+      },
       select: {
         id: true,
         stageId: true,
