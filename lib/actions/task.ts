@@ -1376,10 +1376,23 @@ export async function claimActiveStage(taskId: string, stageId: string) {
       }
     }
 
-    await prisma.taskActiveStage.update({
-      where: { id: activeStage.id },
+    // A atribuição carrega no `where` as MESMAS condições que a leitura acima conferiu, e é o
+    // banco — não o intervalo entre a consulta e a escrita — que decide quem levou a etapa.
+    //
+    // Sem isto há corrida real, e o poço é compartilhado: Ana e Bruno, do mesmo time, veem a
+    // mesma etapa e clicam quase juntos. As duas leituras encontram `assigneeId` nulo, os dois
+    // recebem "etapa assumida" e a etapa fica com quem escreveu por último — o outro atualiza a
+    // tela e o trabalho sumiu, sem nenhuma mensagem dizendo o que aconteceu.
+    //
+    // `count === 0` significa que alguma das condições deixou de valer entre a leitura e a
+    // escrita; na prática, alguém chegou antes. A resposta é a mesma recusa da checagem acima.
+    const claimed = await prisma.taskActiveStage.updateMany({
+      where: { id: activeStage.id, assigneeId: null, status: "ACTIVE" },
       data: { assigneeId: currentUserId, assignedAt: new Date() },
     });
+    if (claimed.count === 0) {
+      return { error: tTask("stageAlreadyAssigned") };
+    }
 
     // Update Task status to IN_PROGRESS
     await prisma.task.update({
