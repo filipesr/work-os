@@ -254,15 +254,25 @@ export async function moveStageOrder(activeStageId: string, direction: "up" | "d
 
   const alvo = await prisma.taskActiveStage.findUnique({
     where: { id: activeStageId },
-    select: { id: true, assigneeId: true, plannedDate: true, plannedOrder: true },
+    select: {
+      id: true,
+      assigneeId: true,
+      plannedDate: true,
+      plannedOrder: true,
+      scheduledStart: true,
+    },
   });
   if (!alvo || !alvo.assigneeId || !alvo.plannedDate) return { error: t("stageNotFound") };
+  // Item com horário marcado não entra na ordenação manual — ele acontece na hora dele, não na
+  // vez dele. Ordenar um compromisso marcado seria fingir que ele espera a vez.
+  if (alvo.scheduledStart) return { error: t("scheduledStage") };
 
   const doDia = await prisma.taskActiveStage.findMany({
     where: {
       assigneeId: alvo.assigneeId,
       plannedDate: alvo.plannedDate,
       status: { not: "COMPLETED" },
+      scheduledStart: null,
     },
     select: { id: true, plannedOrder: true },
     orderBy: { plannedOrder: "asc" },

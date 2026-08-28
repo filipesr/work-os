@@ -148,14 +148,23 @@ describe("moveStageOrder", () => {
       status: "ACTIVE",
       plannedDate: new Date("2026-08-31T00:00:00Z"),
       plannedOrder: 2,
+      scheduledStart: null,
     });
     db.taskActiveStage.findMany.mockResolvedValue([
       { id: "as1", plannedOrder: 1 },
       { id: "as2", plannedOrder: 2 },
     ]);
     expect(await moveStageOrder("as2", "up")).toEqual({ success: true });
-    // Duas escritas: cada um assume a posição do outro.
-    expect(db.taskActiveStage.update).toHaveBeenCalledTimes(2);
+    // Não basta contar duas escritas — precisa ser ESTA troca: cada um assume a
+    // posição do outro, sem inventar id nem repetir valor.
+    expect(db.taskActiveStage.update).toHaveBeenNthCalledWith(1, {
+      where: { id: "as2" },
+      data: { plannedOrder: 1 },
+    });
+    expect(db.taskActiveStage.update).toHaveBeenNthCalledWith(2, {
+      where: { id: "as1" },
+      data: { plannedOrder: 2 },
+    });
   });
 
   it("subir o primeiro não faz nada e não é erro", async () => {
@@ -165,10 +174,71 @@ describe("moveStageOrder", () => {
       status: "ACTIVE",
       plannedDate: new Date("2026-08-31T00:00:00Z"),
       plannedOrder: 1,
+      scheduledStart: null,
     });
     db.taskActiveStage.findMany.mockResolvedValue([{ id: "as1", plannedOrder: 1 }]);
     expect(await moveStageOrder("as1", "up")).toEqual({ success: true });
     expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("descer o último item não escreve nada", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as2",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      plannedDate: new Date("2026-08-31T00:00:00Z"),
+      plannedOrder: 2,
+      scheduledStart: null,
+    });
+    db.taskActiveStage.findMany.mockResolvedValue([
+      { id: "as1", plannedOrder: 1 },
+      { id: "as2", plannedOrder: 2 },
+    ]);
+    expect(await moveStageOrder("as2", "down")).toEqual({ success: true });
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("recusa mover etapa com horário marcado — ela acontece na hora dela, não na vez dela", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      plannedDate: new Date("2026-08-31T00:00:00Z"),
+      plannedOrder: 1,
+      scheduledStart: new Date("2026-08-31T14:00:00Z"),
+    });
+    expect(await moveStageOrder("as1", "down")).toEqual({ error: "scheduledStage" });
+    // Recusa antes mesmo de consultar a fila do dia — não há o que reordenar aqui.
+    expect(db.taskActiveStage.findMany).not.toHaveBeenCalled();
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("etapa agendada nunca é candidata a vizinha — fica de fora da consulta da fila manual", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as2",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      plannedDate: new Date("2026-08-31T00:00:00Z"),
+      plannedOrder: 2,
+      scheduledStart: null,
+    });
+    // A consulta da fila já exclui os agendados (scheduledStart: null no where) — só as1 (agendado,
+    // order 1) ficaria de fora; a lista devolvida só tem os dois itens da fila manual.
+    db.taskActiveStage.findMany.mockResolvedValue([
+      { id: "as2", plannedOrder: 2 },
+      { id: "as3", plannedOrder: 3 },
+    ]);
+    expect(await moveStageOrder("as2", "down")).toEqual({ success: true });
+    expect(db.taskActiveStage.findMany.mock.calls[0][0].where.scheduledStart).toBeNull();
+    // O comum troca com o próximo NÃO-agendado (as3) — nunca com o agendado que a consulta excluiu.
+    expect(db.taskActiveStage.update).toHaveBeenNthCalledWith(1, {
+      where: { id: "as2" },
+      data: { plannedOrder: 3 },
+    });
+    expect(db.taskActiveStage.update).toHaveBeenNthCalledWith(2, {
+      where: { id: "as3" },
+      data: { plannedOrder: 2 },
+    });
   });
 });
 

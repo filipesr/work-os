@@ -204,6 +204,7 @@
     "completedStage": "Etapa concluída não entra na programação.",
     "invalidDate": "Informe uma data válida.",
     "scheduleFailed": "Erro ao programar a etapa.",
-    "reorderFailed": "Erro ao reordenar."
+    "reorderFailed": "Erro ao reordenar.",
+    "scheduledStage": "Etapa com horário marcado não entra na ordenação — ela acontece na hora dela."
   }
 }

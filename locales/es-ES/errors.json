@@ -204,6 +204,7 @@
     "completedStage": "Una etapa cerrada no entra en la programación.",
     "invalidDate": "Introduce una fecha válida.",
     "scheduleFailed": "Error al programar la etapa.",
-    "reorderFailed": "Error al reordenar."
+    "reorderFailed": "Error al reordenar.",
+    "scheduledStage": "Una etapa con horario fijado no entra en la ordenación: ocurre a su hora, no a su turno."
   }
 }
