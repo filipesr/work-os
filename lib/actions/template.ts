@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
 import { workflowTemplateSchema } from "@/lib/validations";
+import { canEnableQuickEntry } from "@/lib/template-invariants";
 
 // ========== WorkflowTemplate Actions ==========
 
@@ -40,21 +41,29 @@ export async function updateWorkflowTemplate(templateId: string, formData: FormD
   const parsed = workflowTemplateSchema.safeParse({
     name: formData.get("name") ?? "",
     description: formData.get("description") ?? undefined,
+    // Checkbox ausente vem como null; `?? undefined` deixa o default do schema (false) valer.
+    quickEntry: formData.get("quickEntry") ?? undefined,
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const { name, description } = parsed.data;
+  const { name, description, quickEntry } = parsed.data;
+
+  // A marca só existe para fluxo de etapa única — ver lib/template-invariants.ts. Desmarcar é
+  // sempre permitido: é a saída para o fluxo poder crescer.
+  if (quickEntry) {
+    const stageCount = await prisma.templateStage.count({ where: { templateId } });
+    if (!canEnableQuickEntry(stageCount)) {
+      return { error: (await getTranslations("errors.template"))("quickNeedsSingleStage") };
+    }
+  }
 
   try {
     await prisma.workflowTemplate.update({
       where: { id: templateId },
-      data: {
-        name,
-        description,
-      },
+      data: { name, description, quickEntry },
     });
 
     revalidatePath("/admin/templates");

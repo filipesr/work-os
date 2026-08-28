@@ -159,6 +159,9 @@ export const changeSensitivitySchema = z.object({
 export const workflowTemplateSchema = z.object({
   name: z.string().min(1, "Template name is required").max(200),
   description: z.string().max(2000).optional().default(""),
+  // Checkbox: presente = "on", ausente = undefined. A guarda da invariante é na action, que sabe
+  // quantas etapas o template tem.
+  quickEntry: z.coerce.boolean().optional().default(false),
 });
 
 export const templateStageSchema = z.object({

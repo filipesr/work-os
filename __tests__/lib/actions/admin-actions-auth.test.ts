@@ -18,8 +18,8 @@ vi.mock("@/lib/logger", () => ({
 
 vi.mock("@/lib/prisma", () => ({
   default: {
-    templateStage: { create: vi.fn(), update: vi.fn(), findMany: vi.fn() },
-    workflowTemplate: { create: vi.fn(), update: vi.fn(), delete: vi.fn() },
+    templateStage: { create: vi.fn(), update: vi.fn(), findMany: vi.fn(), count: vi.fn() },
+    workflowTemplate: { create: vi.fn(), update: vi.fn(), delete: vi.fn(), findUnique: vi.fn() },
     stageDependency: {
       create: vi.fn(),
       createMany: vi.fn(),

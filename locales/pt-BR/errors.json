@@ -183,6 +183,9 @@
     "updateFailed": "Erro ao atualizar as dependências."
   },
   "template": {
-    "updateFailed": "Erro ao atualizar o fluxo de trabalho."
+    "updateFailed": "Erro ao atualizar o fluxo de trabalho.",
+    "quickNeedsSingleStage": "Só um fluxo de etapa única pode ser marcado como rápido.",
+    "quickCannotAddStage": "Um fluxo rápido tem etapa única. Desmarque \"fluxo rápido\" para adicionar mais etapas.",
+    "lastStageCannotBeDeleted": "Um fluxo precisa de ao menos uma etapa."
   }
 }

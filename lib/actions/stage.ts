@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
 import { templateStageSchema } from "@/lib/validations";
+import { canAddStage, canDeleteStage } from "@/lib/template-invariants";
 
 export async function createTemplateStage(templateId: string, formData: FormData) {
   await requireAdmin();
@@ -22,6 +23,19 @@ export async function createTemplateStage(templateId: string, formData: FormData
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  // Um fluxo rápido tem etapa única. A tela já desabilita o botão; aqui é a garantia, porque
+  // requisição fora da tela não passa pela tela.
+  const [template, stageCount] = await Promise.all([
+    prisma.workflowTemplate.findUnique({
+      where: { id: templateId },
+      select: { quickEntry: true },
+    }),
+    prisma.templateStage.count({ where: { templateId } }),
+  ]);
+  if (!canAddStage({ stageCount, quickEntry: template?.quickEntry ?? false })) {
+    return { error: (await getTranslations("errors.template"))("quickCannotAddStage") };
   }
 
   const { name, order, defaultTeamId, expectedDurationHours, wipLimit, optional, dependencies } =
@@ -117,6 +131,13 @@ export async function updateTemplateStage(stageId: string, templateId: string, f
 
 export async function deleteTemplateStage(stageId: string, templateId: string) {
   await requireAdmin();
+
+  // Template sem etapa não deve existir: `createTaskStages` lança "Template is misconfigured" só
+  // muito depois, quando alguém tenta criar uma demanda — longe de quem apagou.
+  const stageCount = await prisma.templateStage.count({ where: { templateId } });
+  if (!canDeleteStage(stageCount)) {
+    return { error: (await getTranslations("errors.template"))("lastStageCannotBeDeleted") };
+  }
 
   try {
     await prisma.stageDependency.deleteMany({

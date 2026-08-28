@@ -183,6 +183,9 @@
     "updateFailed": "Error al actualizar las dependencias."
   },
   "template": {
-    "updateFailed": "Error al actualizar el flujo de trabajo."
+    "updateFailed": "Error al actualizar el flujo de trabajo.",
+    "quickNeedsSingleStage": "Solo un flujo de una sola etapa puede marcarse como rápido.",
+    "quickCannotAddStage": "Un flujo rápido tiene una sola etapa. Desmarca «flujo rápido» para añadir más etapas.",
+    "lastStageCannotBeDeleted": "Un flujo necesita al menos una etapa."
   }
 }
