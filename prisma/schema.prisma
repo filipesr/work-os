@@ -412,6 +412,26 @@ model TaskActiveStage {
   // continua em TaskComment, que é datada e por autor.
   instructions String? @db.Text
 
+  // --- Programação semanal (docs/superpowers/specs/2026-08-28-programacao-semanal-design.md) ---
+  // O DIA é guardado, não calculado: a referência de capacidade é semanal e quem distribui é o
+  // gestor — o sistema não tem escala cadastrada e não sabe quem trabalha sábado.
+  //
+  // Rolagem e antecipação NÃO precisam de job: a fila de hoje é "não concluído com plannedDate <=
+  // hoje", então o que não foi feito ontem aparece hoje por consequência; e quando o dia acaba, a
+  // tela puxa os próximos por (plannedDate, plannedOrder).
+  //
+  // Não existe tabela de agenda de propósito: sem histórico de plano, o sistema NÃO CONSEGUE
+  // calcular nota de aderência da pessoa ("cumpriu 60%") nem que alguém peça depois.
+  plannedDate  DateTime? // o dia em que deve ser feito — escrito pelo gestor
+  plannedOrder Int? // posição dentro do dia — escrita pela pessoa
+
+  // Janela fixa: agendamento de pessoa, lugar ou equipamento. É a ÚNICA parte com hora, porque
+  // aqui a realidade tem hora (a locação é às 14h) — não é estimativa apresentada como verdade.
+  // Item com janela nunca é reordenado nem pulado; se a etapa não estiver liberada, vira CONFLITO
+  // em destaque para o gestor resolver.
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+
   // Timestamps
   activatedAt DateTime  @default(now())
   completedAt DateTime?
@@ -430,6 +450,7 @@ model TaskActiveStage {
   @@index([assigneeId])
   @@index([status])
   @@index([teamId])
+  @@index([assigneeId, plannedDate])
 }
 
 model TaskComment {
