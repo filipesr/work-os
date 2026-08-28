@@ -69,9 +69,35 @@ como enxerga qualquer trabalho.
 
 Nenhuma outra tabela muda. A tarefa rápida é uma `Task` comum.
 
-**Invariante:** um template com `quickEntry` tem **exatamente uma etapa**. Validado ao marcar a flag,
-ao criar etapa e ao excluir etapa — os três caminhos que podem quebrá-la. Sem isso, "etapa única"
-seria promessa de documentação, não garantia.
+### A trava recíproca entre `quickEntry` e as etapas
+
+A marca e a quantidade de etapas travam uma à outra, **na tela**, e não por recusa no envio. A ação
+impossível fica visivelmente indisponível com o motivo escrito ao lado — descobrir a regra por
+mensagem de erro depois de preencher o formulário é aprender do jeito pior.
+
+No editor do template (`/admin/templates/[id]`):
+
+| Estado                    | Marcar como rápido                                              | Adicionar etapa                                                                     |
+| ------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 1 etapa, **não** é rápido | habilitado                                                      | habilitado                                                                          |
+| 1 etapa, **é** rápido     | habilitado (desmarcar libera)                                   | **desabilitado** — "um fluxo rápido tem etapa única; desmarque para adicionar mais" |
+| 2+ etapas                 | **desabilitado** — "só um fluxo de etapa única pode ser rápido" | habilitado                                                                          |
+
+**Excluir etapa é bloqueado quando é a última**, em qualquer template — rápido ou não.
+
+O servidor repete as três regras. A tela **explica**; o servidor **garante**. Sem a checagem no
+servidor, qualquer requisição fora da tela quebra a invariante; sem a explicação na tela, a regra
+existe mas ninguém entende por que o botão recusou.
+
+### Bug pré-existente que entra no escopo
+
+`deleteTemplateStage` não tem guarda alguma: hoje é possível apagar a última etapa e deixar um
+template com **zero**. Nada avisa. A falha só aparece muito depois, quando alguém tenta criar uma
+demanda com aquele template e recebe `Template is misconfigured; no stages found` — longe da ação
+que causou o estrago, e sem pista de quem apagou o quê.
+
+Não é um extra: "template sem etapa não deve existir" é a mesma invariante que esta spec precisa
+para poder afirmar "etapa única".
 
 **A etapa não tem time padrão.** O trabalho é aberto a todas as equipes, e quem registra é o
 executor — o roteamento por time não tem papel aqui.
@@ -130,8 +156,11 @@ obrigaria a redigitar toda vez.
   decide o que as métricas dizem; erra em silêncio e contamina relatório.
 - **Ação:** grava as seis linhas na transação; recusa data fora da janela; recusa template sem
   `quickEntry`; recusa template com mais de uma etapa.
-- **Invariante do template:** marcar `quickEntry` num template de duas etapas é recusado; adicionar
-  segunda etapa a um template `quickEntry` é recusado.
+- **Invariante do template (servidor):** marcar `quickEntry` num template de duas etapas é recusado;
+  adicionar segunda etapa a um template `quickEntry` é recusado; excluir a última etapa de qualquer
+  template é recusado.
+- **Trava na tela:** cada um dos três estados da tabela acima renderiza o controle certo habilitado
+  ou desabilitado, com o texto do motivo.
 - **i18n:** mensagens novas em pt-BR e es-ES, como manda o guarda de paridade.
 
 ## Fora de escopo
