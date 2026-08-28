@@ -104,6 +104,20 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   que comparar. O envelhecimento POR ETAPA continua sendo o sinal, e é sobre o trabalho, não sobre
   quem o fez.
 
+#### Programação semanal (fatias 2 e 3)
+
+- **Minha semana** (`/planning/my-week`): a pessoa vê os próprios seis dias, reordena, assume etapa
+  livre do time dela e muda de dia o que já é seu. A leitura é escopada na sessão e **não aceita um
+  `userId`** — sem esse parâmetro, ler a semana de outra pessoa é impossível, não só proibido.
+- **Terminar o dia puxa o próximo**, como convite e não cobrança: quem quiser adiantar, adianta;
+  quem não quiser, fechou o dia e o tempo que sobrou é dele.
+- **Reconhecimento do próprio ritmo** — decisão explícita da gestão, e a única exceção ao princípio
+  de "informar, não motivar". Compara a pessoa com o histórico dela (mediana das oito semanas
+  anteriores), existe só no lado positivo, e o número não é gravado em lugar nenhum.
+- **Carga por cliente** (`/planning/client-load`): a mesma semana pelo eixo do cliente, leitura
+  pura. As horas saem do mesmo cálculo da mesa — etapa não liberada aparece sem somar —, senão o
+  mesmo cliente teria dois números diferentes na mesma semana.
+
 ### 🐛 Corrigido
 
 - **Preview de avanço divergia da execução:** `previewNextStages` olhava apenas as etapas que

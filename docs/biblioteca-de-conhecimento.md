@@ -597,6 +597,18 @@ team-profiles.test.ts` reprova vocabulário de premiação/ordenação dentro de
 - **`"use server"` só exporta funções async** — constante (`MIN_CLASS_SAMPLES`)
   mora em módulo plano (`lib/reporting-constants.ts`); um const num módulo
   `"use server"` quebra `next build`. _(constraint de plataforma)_
+- **Leitura da semana pessoal sem parâmetro de pessoa** — `getMyWeek(mondayISO)` escopa na sessão e
+  não aceita `userId`. Com o parâmetro, a proteção dependeria de nunca ninguém errar uma checagem;
+  sem ele, ler a semana de outro é impossível de codificar por engano. _(P1)_
+- **Reconhecimento do ritmo próprio — exceção registrada a P1/P2** — a tela da pessoa diz "seu
+  rendimento está acima da média" quando ela fecha mais etapas que de costume. É **decisão explícita
+  da gestão**, para empurrar a fechar a semana sem o peso da crítica, e é exceção porque a regra
+  continua valendo em todo o resto do produto. Quatro travas a separam de um placar, e as quatro são
+  obrigatórias: (1) compara com o histórico DELA, nunca com colegas; (2) mediana, não média, porque
+  contagem semanal é enviesada; (3) só existe no lado positivo — não há versão inversa nem tom
+  neutro de "abaixo do seu ritmo"; (4) o número **não é persistido**, então não há histórico para
+  alguém transformar em indicador depois. Quem copiar esta mensagem para outra tela precisa copiar
+  as quatro. _(exceção a P1/P2)_
 
 ---
 
