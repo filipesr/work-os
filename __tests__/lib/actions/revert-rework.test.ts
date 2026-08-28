@@ -133,8 +133,17 @@ describe("revertTaskStage — preserva o que foi determinado na criação", () =
       (c) => c[0].where?.taskId_stageId?.stageId === "sTarget"
     );
     expect(call, "a etapa-alvo deve ser reativada").toBeTruthy();
-    // Um `create` aqui perderia o roteamento; o `update` preserva a linha.
-    expect(Object.keys(call![0].data).sort()).toEqual(["assigneeId", "completedAt", "status"]);
+    // Um `create` aqui perderia o roteamento; o `update` preserva a linha. A lista é fechada de
+    // propósito: `teamId` e `instructions` NÃO podem entrar. `plannedDate`/`plannedOrder` entram
+    // porque são posição na fila de uma pessoa e saem junto com o assignee — sem isso a etapa
+    // revertida ficaria com dia marcado e sem dono, fora da grade e fora do poço.
+    expect(Object.keys(call![0].data).sort()).toEqual([
+      "assigneeId",
+      "completedAt",
+      "plannedDate",
+      "plannedOrder",
+      "status",
+    ]);
     expect(call![0].data.status).toBe("ACTIVE");
     // Assignee limpo de propósito (volta ao backlog) — o TIME continua o mesmo,
     // então a etapa coringa reaparece na fila do time roteado na criação.
