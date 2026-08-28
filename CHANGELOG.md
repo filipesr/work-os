@@ -180,6 +180,11 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Migration `20260825120000_add_stage_team_override` — puramente aditiva (duas colunas anuláveis,
   FK `SET NULL` e índice). `teamId` nulo = herda o time padrão da etapa, que é o comportamento de
   todas as linhas existentes.
+- **Tarefa rápida:** migration `20260828120000_add_template_quick_entry` (coluna booleana com default
+  `false`, sem backfill). **Aplicada em 28/ago/2026.** Sem backfill de propósito: marcar um template
+  existente como rápido retroativamente mudaria a CLASSE de demandas já entregues, reescrevendo
+  métrica fechada. ⚠️ Ordem do deploy: a migration vem antes do código — o editor de fluxo e a tela
+  `/tasks/quick` leem `quickEntry`.
 - **Acesso:** migration `20260827140000_add_user_disabled_at` (coluna anulável, sem backfill — null =
   ativo). ⚠️ **Ordem do deploy importa:** aplique a migration ANTES de publicar o código, porque a
   tela de usuários e o login leem `disabledAt`. E, a partir deste deploy, quem **não** tiver cadastro
