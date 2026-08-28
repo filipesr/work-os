@@ -84,6 +84,24 @@ describe("createQuickTask", () => {
     const stage = tx.taskActiveStage.create.mock.calls[0][0].data;
     expect(stage.status).toBe("COMPLETED");
     expect(stage.assigneeId).toBe("u1"); // quem registra é quem fez
+
+    // Nenhuma tela mostra `taskStageLog`/`stageTransition` — quem lê essas linhas são os relatórios
+    // de gargalo e de flow efficiency. Sem afirmar aqui, um "esqueci de gravar o log" passaria pela
+    // suíte inteira em silêncio: a tarefa gravaria certo e o relatório mentiria.
+    const log = tx.taskStageLog.create.mock.calls[0][0].data;
+    expect(log.stageId).toBe("s1");
+    expect(log.userId).toBe("u1");
+    expect(log.status).toBe("COMPLETED");
+    expect(log.enteredAt.toISOString()).toBe(task.startedAt.toISOString());
+    expect(log.exitedAt.toISOString()).toBe(task.completedAt.toISOString());
+
+    // Duas transições — entrada e saída — para o histórico de fluxo ficar reconstruível.
+    expect(tx.stageTransition.create).toHaveBeenCalledTimes(2);
+    const [entrada, saida] = tx.stageTransition.create.mock.calls.map((c) => c[0].data);
+    expect(entrada).toMatchObject({ stageId: "s1", status: "ACTIVE" });
+    expect(entrada.at.toISOString()).toBe(task.startedAt.toISOString());
+    expect(saida).toMatchObject({ stageId: "s1", status: "COMPLETED" });
+    expect(saida.at.toISOString()).toBe(task.completedAt.toISOString());
   });
 
   it("grava as horas no dia informado, em HORAS", async () => {
@@ -109,6 +127,19 @@ describe("createQuickTask", () => {
       id: "tpl",
       quickEntry: false,
       stages: [{ id: "s1" }],
+    });
+    expect(await createQuickTask(form())).toEqual({ error: "templateNotQuick" });
+    expect(tx.task.create).not.toHaveBeenCalled();
+  });
+
+  it("recusa template com duas ou mais etapas, mesmo marcado quickEntry", async () => {
+    // A marca sozinha não basta: um template `quickEntry: true` com etapas de sobra (estado que
+    // não deveria existir, mas a query só pede `take: 2`) não pode nascer com lead time zero — é
+    // exatamente essa contaminação do p50/p85 do tipo que a guarda de `stages.length !== 1` evita.
+    db.workflowTemplate.findUnique.mockResolvedValue({
+      id: "tpl",
+      quickEntry: true,
+      stages: [{ id: "s1" }, { id: "s2" }],
     });
     expect(await createQuickTask(form())).toEqual({ error: "templateNotQuick" });
     expect(tx.task.create).not.toHaveBeenCalled();

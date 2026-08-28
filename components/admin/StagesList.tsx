@@ -7,6 +7,7 @@ import { ConfirmActionButton } from "@/components/ui/ConfirmActionButton";
 import { StageEditForm } from "./StageEditForm";
 import { useTranslations } from "next-intl";
 import type { Stage } from "@/lib/types/stages";
+import { canDeleteStage } from "@/lib/template-invariants";
 
 interface StagesListProps {
   stages: Stage[];
@@ -44,6 +45,12 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
   if (stages.length === 0) {
     return <div className="text-center text-muted-foreground py-8">{t("empty")}</div>;
   }
+
+  // Template sem etapa não deve existir — a mesma invariante que o servidor garante. Com uma etapa
+  // só, excluir fica indisponível para as duas (não é "a última etapa é especial", é "não sobra
+  // nenhuma"), com o motivo ao lado: confirmar o diálogo e só então levar erro é aprender a regra
+  // do jeito pior.
+  const podeExcluir = canDeleteStage(stages.length);
 
   return (
     <div className="space-y-4">
@@ -124,19 +131,32 @@ export function StagesList({ stages, templateId, teams }: StagesListProps) {
                     >
                       {t("editButton")}
                     </button>
-                    <ConfirmActionButton
-                      action={() => deleteTemplateStage(stage.id, templateId)}
-                      title={t("deleteConfirmTitle")}
-                      description={t("deleteConfirmMessage", { stageName: stage.name })}
-                      confirmLabel={t("deleteConfirmButton")}
-                      cancelLabel={t("cancel")}
-                      confirmVariant="destructive"
-                      trigger={
-                        <button className="px-4 py-2 text-sm font-semibold bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-all shadow-sm">
-                          {t("deleteButton")}
-                        </button>
-                      }
-                    />
+                    <div>
+                      <ConfirmActionButton
+                        action={() => deleteTemplateStage(stage.id, templateId)}
+                        title={t("deleteConfirmTitle")}
+                        description={t("deleteConfirmMessage", { stageName: stage.name })}
+                        confirmLabel={t("deleteConfirmButton")}
+                        cancelLabel={t("cancel")}
+                        confirmVariant="destructive"
+                        trigger={
+                          <button
+                            disabled={!podeExcluir}
+                            className="px-4 py-2 text-sm font-semibold bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {t("deleteButton")}
+                          </button>
+                        }
+                      />
+                      {/* O motivo ao lado do botão desabilitado, igual ao que "adicionar etapa" já
+                          faz em CreateStageForm — botão cinza sem explicação vira chamado de
+                          suporte. */}
+                      {!podeExcluir && (
+                        <p className="mt-1 max-w-[10rem] text-right text-xs text-muted-foreground">
+                          {t("lastStageBlocked")}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </>

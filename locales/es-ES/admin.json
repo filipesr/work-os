@@ -442,6 +442,7 @@
       "deleteConfirmTitle": "¿Eliminar Etapa?",
       "deleteConfirmMessage": "¿Está seguro de que desea eliminar la etapa \"{stageName}\"? Esto también eliminará todas las dependencias. Esta acción no se puede deshacer.",
       "deleteConfirmButton": "Eliminar Etapa",
+      "lastStageBlocked": "Un flujo sin etapa no puede existir. Esta es la última — elimina la plantilla o agrega otra antes.",
       "successMessage": "¡Etapa actualizada con éxito!",
       "errorMessage": "Error al actualizar etapa",
       "slaLabel": "SLA (horas)",

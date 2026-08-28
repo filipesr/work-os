@@ -442,6 +442,7 @@
       "deleteConfirmTitle": "Excluir Etapa?",
       "deleteConfirmMessage": "Tem certeza que deseja excluir a etapa \"{stageName}\"? Isso também excluirá todas as dependências. Esta ação não pode ser desfeita.",
       "deleteConfirmButton": "Excluir Etapa",
+      "lastStageBlocked": "Um fluxo sem etapa não pode existir. Esta é a última — exclua o template ou adicione outra antes.",
       "successMessage": "Etapa atualizada com sucesso!",
       "errorMessage": "Erro ao atualizar etapa",
       "slaLabel": "SLA (horas)",

@@ -146,9 +146,13 @@ export async function createQuickTask(formData: FormData) {
             scope: "TASK",
             storageKind: "LINK",
             uploadStatus: "READY",
-            // Nunca CONFIDENCIAL nesta classe: o conteúdo é material publicado, e o nível alto
-            // dispararia regras de compartilhamento que não fazem sentido para um link público.
-            sensitivity: "CLIENTE",
+            // INTERNO, não CLIENTE: `lib/nas/sensitivity.ts` mostra que CLIENTE é o nível mais
+            // PERMISSIVO — o único que libera download externo e link de compartilhamento público.
+            // Quem lança aqui é MEMBER, e `changeSensitivity` reserva escolher esse nível a
+            // MANAGER+; gravar CLIENTE por padrão deixaria um MEMBER conceder, sem querer, o que a
+            // action de mudança de sensibilidade existe para vedar. INTERNO cumpre o que a spec
+            // pede ("nunca CONFIDENCIAL") sem abrir esse canal.
+            sensitivity: "INTERNO",
             taskId: task.id,
             userId,
           },

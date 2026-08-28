@@ -32,13 +32,22 @@ nova: a tarefa rápida ganha a própria referência e não contamina ninguém.
 
 ### O carimbo do tempo
 
-Informa-se a **data** e o **tempo gasto**. Os instantes são derivados:
+Informa-se a **data** e o **tempo gasto**. Os instantes são derivados, mas `completedAt` não é
+sempre o mesmo tipo de carimbo — depende de a data informada ser hoje ou um dia passado:
 
 ```
-completedAt = data informada
-startedAt   = data informada − tempo gasto
+completedAt = agora,                          se a data informada é hoje (em São Paulo)
+            = meio-dia de São Paulo da data,   se é um dia passado
+
+startedAt   = completedAt − tempo gasto
 createdAt   = startedAt
 ```
+
+**Por quê dois casos.** Para hoje, o instante real do envio é a verdade mais próxima que existe —
+não há motivo para descartá-lo em favor de um marcador fixo. Para um dia passado, o horário do dia
+não é capturado (seria mais um campo, e nenhum relatório usa) e meio-dia é um marcador neutro,
+determinístico e que nunca cai no futuro — carimbar à meia-noite, por exemplo, arriscaria ficar
+depois de "agora" caso a validação rodasse perto da virada do dia.
 
 Resultado: **cycle time = tempo real de trabalho**, **lead time = o mesmo**, **queue time = zero** —
 todos verdadeiros para este tipo de trabalho, em que a demanda e a execução foram o mesmo momento.
@@ -145,8 +154,9 @@ obrigaria a redigitar toda vez.
 
 ## Limites
 
-- **Janela retroativa de 1 semana**, e nada no futuro. Sem limite, um lançamento antigo reescreveria
-  relatório histórico já fechado.
+- **Janela retroativa de 1 semana** — na prática, **hoje mais sete dias-calendário anteriores**
+  (oito dias ao todo) —, e nada no futuro. Sem limite, um lançamento antigo reescreveria relatório
+  histórico já fechado.
 - **Sensibilidade**: nunca `CONFIDENCIAL`. O conteúdo é material publicado.
 - **Todas as equipes** têm acesso — não há restrição por time.
 
@@ -171,6 +181,12 @@ obrigaria a redigitar toda vez.
   existe para qualquer demanda: um gestor marca como **obsoleta** (sai de pendentes e do % do
   projeto) e a pessoa lança de novo — são poucos campos. Vale medir a frequência disso antes de
   construir edição: se acontecer toda semana, o formulário é que está confuso, e a correção é lá.
+
+  **Limitação conhecida deste caminho:** marcar como obsoleta não apaga o `TimeLog` da tarefa
+  errada, e nem o relatório de produtividade nem o de utilização filtram por status da tarefa — as
+  horas erradas continuam somando ao total de quem registrou, e o relançamento soma por cima, não
+  no lugar. Corrigir isso está fora do escopo desta feature: é um comportamento de `markTaskObsolete`
+  compartilhado com toda demanda, não algo específico da tarefa rápida.
 
 ## Problema em aberto — foto do artefato fora da rede
 

@@ -11,6 +11,7 @@ import { FieldLabel } from "@/components/ui/FieldLabel";
 import { createQuickTask } from "@/lib/actions/quick-task";
 import { useServerAction } from "@/lib/hooks/useServerAction";
 import { formatISODate, todayInSaoPaulo } from "@/lib/dates";
+import { QUICK_TASK_MAX_BACKDATE_DAYS } from "@/lib/quick-task";
 
 type Template = { id: string; name: string };
 type Project = { id: string; name: string; client: { name: string } };
@@ -36,6 +37,12 @@ export function QuickTaskForm({
   // mais se registra o dia. `todayInSaoPaulo` é a mesma fonte que a Server Action usa para
   // validar `date`, então cliente e servidor nunca discordam sobre o que é "hoje".
   const hoje = formatISODate(todayInSaoPaulo());
+  // Mesma janela que `validateQuickTaskDate` (lib/quick-task.ts) aplica no servidor: hoje e mais
+  // sete dias-calendário anteriores. Sem o `min`, o calendário deixa escolher qualquer data antiga
+  // e a pessoa só descobre a regra depois de preencher tudo e enviar — o erro que a spec proíbe.
+  const minData = formatISODate(
+    new Date(todayInSaoPaulo().getTime() - QUICK_TASK_MAX_BACKDATE_DAYS * 24 * 60 * 60 * 1000)
+  );
   const [templateId, setTemplateId] = useState(templates[0]?.id ?? "");
   const [projectId, setProjectId] = useState("");
   const [date, setDate] = useState(hoje);
@@ -136,6 +143,7 @@ export function QuickTaskForm({
             required
             value={date}
             max={hoje}
+            min={minData}
             onChange={(e) => setDate(e.target.value)}
           />
         </div>
