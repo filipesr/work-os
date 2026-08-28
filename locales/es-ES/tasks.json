@@ -1,4 +1,26 @@
 {
+  "quick": {
+    "kicker": "Registro rápido",
+    "title": "Registrar trabajo ya hecho",
+    "subtitle": "Para trabajo de una sola etapa que ya ocurrió, sin abrir una demanda.",
+    "type": "Tipo de trabajo",
+    "typePlaceholder": "Elegir tipo…",
+    "project": "Proyecto",
+    "projectPlaceholder": "Elegir proyecto…",
+    "date": "Fecha",
+    "minutes": "Tiempo dedicado (minutos)",
+    "link": "Enlace de la publicación",
+    "linkHint": "Opcional: la URL del story o del post.",
+    "titleField": "Título",
+    "titleHint": "Se rellena solo; edítalo si quieres.",
+    "description": "Descripción",
+    "save": "Guardar",
+    "saveAndRepeat": "Guardar y repetir",
+    "cancel": "Cancelar",
+    "saved": "Trabajo registrado.",
+    "savedKeepGoing": "Registrado. Sigue con el siguiente.",
+    "noTemplates": "No hay ningún tipo de flujo rápido dado de alta. Un administrador debe marcar un flujo de una sola etapa como rápido."
+  },
   "nasProbe": {
     "notConfigured": "El NAS no está aprovisionado en este entorno: no hay agente para subir ni descargar archivos.",
     "timeout": "El agente del NAS no respondió a tiempo en {url}. Puede estar sobrecargado o la red lenta; inténtalo de nuevo en unos segundos.",
