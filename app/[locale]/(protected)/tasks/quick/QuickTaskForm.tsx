@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FieldLabel } from "@/components/ui/FieldLabel";
 import { createQuickTask } from "@/lib/actions/quick-task";
 import { useServerAction } from "@/lib/hooks/useServerAction";
+import { formatISODate, todayInSaoPaulo } from "@/lib/dates";
 
 type Template = { id: string; name: string };
 type Project = { id: string; name: string; client: { name: string } };
@@ -30,7 +31,11 @@ export function QuickTaskForm({
   const t = useTranslations("tasks.quick");
   const router = useRouter();
 
-  const hoje = new Date().toISOString().slice(0, 10);
+  // Não usar `toISOString()` (UTC puro): o app opera em horário de São Paulo, e das 21h às
+  // 23h59 de SP o relógio UTC já virou o dia seguinte — justo no fim do expediente, quando
+  // mais se registra o dia. `todayInSaoPaulo` é a mesma fonte que a Server Action usa para
+  // validar `date`, então cliente e servidor nunca discordam sobre o que é "hoje".
+  const hoje = formatISODate(todayInSaoPaulo());
   const [templateId, setTemplateId] = useState(templates[0]?.id ?? "");
   const [projectId, setProjectId] = useState("");
   const [date, setDate] = useState(hoje);
@@ -187,9 +192,9 @@ export function QuickTaskForm({
         />
       </div>
 
-      {/* Os DOIS botões são `type="submit"` do MESMO form. O onClick só marca a intenção antes de
-          o submit disparar — assim o `e.currentTarget` do onSubmit é sempre o form, e a validação
-          nativa do navegador vale para os dois caminhos. */}
+      {/* Os DOIS botões de submit são `type="submit"` do MESMO form. O onClick só marca a intenção
+          antes de o submit disparar — assim o `e.currentTarget` do onSubmit é sempre o form, e a
+          validação nativa do navegador vale para os dois caminhos. */}
       <div className="flex flex-wrap gap-2 border-t border-border pt-4">
         <button
           type="submit"
@@ -210,6 +215,16 @@ export function QuickTaskForm({
           {t("saveAndRepeat")}
         </button>
       </div>
+      {/* Saída, não ação principal: por isso `type="button"` (fora do fluxo de submit dos outros
+          dois) e visualmente mais discreto, sem fundo nem borda. */}
+      <button
+        type="button"
+        disabled={isPending}
+        onClick={() => router.push("/dashboard")}
+        className="w-full py-2 text-center text-sm font-medium text-muted-foreground disabled:opacity-50"
+      >
+        {t("cancel")}
+      </button>
     </form>
   );
 }
