@@ -140,9 +140,10 @@ Responde duas perguntas que a mesa não responde: **onde este cliente está pega
 avisá-lo antes, não depois) e **que cliente está comendo a capacidade da agência** — que é conversa
 de contrato, não de pessoa.
 
-Reusa a mesma leitura da fatia 1 e só troca o eixo do agrupamento. O item sem cliente (se houver)
-aparece num grupo próprio e nomeado, nunca somado a outro: esconder o que não se encaixa é como um
-total deixa de fechar.
+Reusa a mesma matemática da fatia 1 e só troca o eixo do agrupamento — as horas de cada célula vêm
+do mesmo `buildDayQueue`, senão os dois números da mesma semana discordariam entre as duas telas.
+Todo item tem cliente: `Task.projectId` e `Project.clientId` são obrigatórios no modelo, então não
+existe grupo "sem cliente" para inventar.
 
 ## Modelo de dados
 
