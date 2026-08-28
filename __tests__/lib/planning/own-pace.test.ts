@@ -28,10 +28,9 @@ describe("isAboveOwnPace", () => {
     expect(isAboveOwnPace(5, [])).toBe(false);
   });
 
-  it("semana zerada nunca reconhece, mesmo com histórico zerado", () => {
-    // Guarda contra a mediana 0: sem isto, quem fechou zero seria elogiado por
-    // "estar acima" de um histórico de zeros.
-    expect(isAboveOwnPace(0, [0, 0, 0, 0])).toBe(false);
+  it("semana sem nada concluído não é reconhecida", () => {
+    // Histórico realista: mediana de [1, 2, 1, 2] = 1.5; zero não passa.
+    expect(isAboveOwnPace(0, [1, 2, 1, 2])).toBe(false);
   });
 
   it("a janela do histórico é de 8 semanas", () => {

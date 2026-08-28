@@ -28,8 +28,5 @@ export const PACE_MIN_WEEKS = 4;
 
 export function isAboveOwnPace(thisWeek: number, previousWeeks: number[]): boolean {
   if (previousWeeks.length < PACE_MIN_WEEKS) return false;
-  // Semana sem nada concluído nunca é reconhecida: sem esta guarda, um histórico de zeros faria
-  // qualquer coisa "passar da mediana" — inclusive outro zero.
-  if (thisWeek <= 0) return false;
   return thisWeek > percentile(previousWeeks, 0.5);
 }
