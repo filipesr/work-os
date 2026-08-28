@@ -6,6 +6,7 @@ import { DependencySelector } from "./DependencySelector";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
+import { canAddStage } from "@/lib/template-invariants";
 
 interface Stage {
   id: string;
@@ -17,9 +18,17 @@ interface CreateStageFormProps {
   templateId: string;
   teams: Array<{ id: string; name: string }>;
   existingStages: Stage[];
+  quickEntry: boolean;
+  stageCount: number;
 }
 
-export function CreateStageForm({ templateId, teams, existingStages }: CreateStageFormProps) {
+export function CreateStageForm({
+  templateId,
+  teams,
+  existingStages,
+  quickEntry,
+  stageCount,
+}: CreateStageFormProps) {
   const t = useTranslations("admin.workflows.createStage");
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDeps, setSelectedDeps] = useState<Set<string>>(new Set());
@@ -35,14 +44,24 @@ export function CreateStageForm({ templateId, teams, existingStages }: CreateSta
     setSelectedDeps(newSelected);
   };
 
+  const podeAdicionar = canAddStage({ stageCount, quickEntry });
+
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
-      >
-        {t("addButton")}
-      </button>
+      <div>
+        <button
+          onClick={() => setIsOpen(true)}
+          disabled={!podeAdicionar}
+          className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {t("addButton")}
+        </button>
+        {/* O motivo fica ao lado do botão desabilitado: botão cinza sem explicação vira chamado
+            de suporte. */}
+        {!podeAdicionar && (
+          <p className="mt-2 text-sm text-muted-foreground">{t("blockedByQuick")}</p>
+        )}
+      </div>
     );
   }
 

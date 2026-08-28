@@ -6,16 +6,19 @@ import { useTranslations } from "next-intl";
 import { ConfirmActionButton } from "@/components/ui/ConfirmActionButton";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { canEnableQuickEntry } from "@/lib/template-invariants";
 
 interface TemplateHeaderProps {
   template: {
     id: string;
     name: string;
     description: string | null;
+    quickEntry: boolean;
   };
+  stageCount: number;
 }
 
-export function TemplateHeader({ template }: TemplateHeaderProps) {
+export function TemplateHeader({ template, stageCount }: TemplateHeaderProps) {
   const t = useTranslations("admin.workflows.header");
   const [isEditing, setIsEditing] = useState(false);
 
@@ -51,6 +54,28 @@ export function TemplateHeader({ template }: TemplateHeaderProps) {
               rows={3}
               defaultValue={template.description || ""}
             />
+          </div>
+          {/* A caixa fica DESABILITADA com o motivo ao lado quando o fluxo tem mais de uma etapa.
+              Deixá-la clicável e recusar no envio ensinaria a regra do jeito pior: depois de
+              preencher. Já marcada, ela continua clicável — desmarcar é a saída para o fluxo crescer. */}
+          <div>
+            <label className="flex items-start gap-2 text-sm font-semibold text-foreground">
+              <input
+                type="checkbox"
+                name="quickEntry"
+                defaultChecked={template.quickEntry}
+                disabled={!template.quickEntry && !canEnableQuickEntry(stageCount)}
+                className="mt-0.5 h-4 w-4 accent-primary disabled:opacity-40"
+              />
+              <span>
+                {t("quickEntry.label")}
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                  {!template.quickEntry && !canEnableQuickEntry(stageCount)
+                    ? t("quickEntry.blockedByStages", { count: stageCount })
+                    : t("quickEntry.help")}
+                </span>
+              </span>
+            </label>
           </div>
           <div className="flex gap-3">
             <button

@@ -394,7 +394,12 @@
       "deleteButton": "Eliminar",
       "deleteConfirmTitle": "¿Eliminar Plantilla?",
       "deleteConfirmMessage": "¿Está seguro de que desea eliminar esta plantilla? Esto también eliminará todas las etapas y dependencias. Esta acción no se puede deshacer.",
-      "deleteConfirmButton": "Eliminar Plantilla"
+      "deleteConfirmButton": "Eliminar Plantilla",
+      "quickEntry": {
+        "label": "Flujo rápido (registro de trabajo ya hecho)",
+        "help": "Aparece en el formulario de registro rápido, para trabajo de una sola etapa que ya ocurrió.",
+        "blockedByStages": "Solo un flujo de una sola etapa puede ser rápido. Este tiene {count} etapas."
+      }
     },
     "detail": {
       "backToTemplates": "Volver a Plantillas",
@@ -417,7 +422,8 @@
       "slaLabel": "SLA (horas)",
       "slaPlaceholder": "ej: 24",
       "slaHelp": "Tiempo objetivo en la etapa. Deja vacío para sin SLA.",
-      "optional": "Etapa opcional"
+      "optional": "Etapa opcional",
+      "blockedByQuick": "Un flujo rápido tiene una sola etapa. Desmarca «flujo rápido» para añadir más."
     },
     "stagesList": {
       "empty": "Aún no hay etapas. Crea tu primera etapa arriba.",

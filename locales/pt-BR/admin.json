@@ -394,7 +394,12 @@
       "deleteButton": "Excluir",
       "deleteConfirmTitle": "Excluir Template?",
       "deleteConfirmMessage": "Tem certeza que deseja excluir este template? Isso também excluirá todas as etapas e dependências. Esta ação não pode ser desfeita.",
-      "deleteConfirmButton": "Excluir Template"
+      "deleteConfirmButton": "Excluir Template",
+      "quickEntry": {
+        "label": "Fluxo rápido (registro de trabalho já feito)",
+        "help": "Aparece no formulário de registro rápido, para trabalho de etapa única que já aconteceu.",
+        "blockedByStages": "Só um fluxo de etapa única pode ser rápido. Este tem {count} etapas."
+      }
     },
     "detail": {
       "backToTemplates": "Voltar para Templates",
@@ -417,7 +422,8 @@
       "slaLabel": "SLA (horas)",
       "slaPlaceholder": "ex: 24",
       "slaHelp": "Tempo-alvo na etapa. Deixe vazio para sem SLA.",
-      "optional": "Etapa opcional"
+      "optional": "Etapa opcional",
+      "blockedByQuick": "Um fluxo rápido tem etapa única. Desmarque \"fluxo rápido\" para adicionar mais."
     },
     "stagesList": {
       "empty": "Ainda não há etapas. Crie sua primeira etapa acima.",

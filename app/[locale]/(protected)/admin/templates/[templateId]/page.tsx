@@ -32,7 +32,7 @@ export default async function TemplateEditorPage({
       <BackLink href="/admin/templates" label={t("backToTemplates")} className="mb-6" />
 
       {/* Template Header - Name, Description, Delete */}
-      <TemplateHeader template={template} />
+      <TemplateHeader template={template} stageCount={template.stages.length} />
 
       {/* Stages Section */}
       <SectionCard
@@ -45,6 +45,8 @@ export default async function TemplateEditorPage({
           templateId={template.id}
           teams={teams}
           existingStages={template.stages.map((s) => ({ id: s.id, name: s.name, order: s.order }))}
+          quickEntry={template.quickEntry}
+          stageCount={template.stages.length}
         />
 
         {/* Stages List */}
