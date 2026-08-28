@@ -45,12 +45,16 @@ export function isNavGroup(item: NavItem): item is NavGroup {
 const memberItems: NavItem[] = [
   { id: "inicio", labelKey: "inicio", href: "/dashboard", icon: LayoutDashboard },
   { id: "meu-trabalho", labelKey: "meuTrabalho", href: "/tasks", icon: ClipboardList },
+  { id: "minha-semana", labelKey: "minhaSemana", href: "/planning/my-week", icon: CalendarRange },
 ];
 
 // Gestor (MANAGER/ADMIN): dashboard pessoal, demandas, entregas, relatórios.
 const managerItems: NavItem[] = [
   { id: "dashboard", labelKey: "dashboard", href: "/dashboard", icon: LayoutDashboard },
   { id: "demandas", labelKey: "demandas", href: "/admin/tasks", icon: ClipboardList },
+  // Fora do grupo "Planejamento" (que é de gestor): o gestor também executa a própria semana, e
+  // escondida lá dentro não seria encontrada por quem ela serve.
+  { id: "minha-semana", labelKey: "minhaSemana", href: "/planning/my-week", icon: CalendarRange },
   {
     id: "entregas",
     labelKey: "entregas",
