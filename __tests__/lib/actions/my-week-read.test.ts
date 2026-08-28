@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next-intl/server", () => ({
@@ -7,6 +7,9 @@ vi.mock("next-intl/server", () => ({
 vi.mock("@/lib/permissions", () => ({
   getSessionUser: vi.fn().mockResolvedValue({ id: "ana", role: "MEMBER" }),
 }));
+// `my-week.ts` importa `claimActiveStage` (a atribuição é delegada a ele). O módulo real puxa
+// `@/auth`, que não carrega sob vitest — e a leitura não usa nada dele.
+vi.mock("@/lib/actions/task", () => ({ claimActiveStage: vi.fn() }));
 vi.mock("@/lib/planning/stage-reference", () => ({
   getStageReferences: vi
     .fn()
@@ -128,6 +131,18 @@ describe("getMyWeek", () => {
     ]);
   });
 
+  it("o poço não mostra demanda cujo início planejado ainda não chegou", async () => {
+    await getMyWeek(SEGUNDA);
+    const where = (chamadas()[1] as { where: { task?: { OR?: unknown } } }).where;
+    // A MESMA condição de `getTeamBacklog` (`availableStageWhere`). Sem ela, o poço do dashboard e
+    // o poço da minha semana mostram listas diferentes na mesma sessão — e a demanda que só começa
+    // em novembro aparece como trabalho para pegar hoje.
+    expect(where.task?.OR).toEqual([
+      { plannedStartAt: null },
+      { plannedStartAt: { lte: expect.any(Date) } },
+    ]);
+  });
+
   it("pessoa sem time nenhum não vê nada no poço — não há trabalho que ela possa assumir", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       weeklyCapacityHours: 40,
@@ -211,5 +226,62 @@ describe("getMyWeek", () => {
     expect(where.completedAt.gte.toISOString()).toBe("2026-07-13T03:00:00.000Z");
     expect(concluidaSabadoNoite.getTime()).toBeGreaterThanOrEqual(where.completedAt.gte.getTime());
     expect(concluidaSabadoNoite.getTime()).toBeLessThanOrEqual(where.completedAt.lte.getTime());
+  });
+});
+
+/**
+ * O fim do dia. Aqui "hoje" precisa cair DENTRO da semana em tela — por isso o relógio falso.
+ */
+describe("getMyWeek: fim do dia e convite", () => {
+  // Quinta, 12h em São Paulo (15h UTC): dentro da semana de SEGUNDA.
+  const QUINTA = "2026-09-10";
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(`${QUINTA}T15:00:00.000Z`));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("dia vazio não é dia cumprido — a tela não pode dizer as duas coisas em duas linhas", async () => {
+    const semana = await getMyWeek(SEGUNDA);
+    expect(semana.todayISO).toBe(QUINTA);
+    // `nextRunnableId` nulo também é o valor de um dia SEM NADA: sem a contagem de itens, a quinta
+    // vazia renderizava "Nada programado neste dia." e logo abaixo "Dia cumprido.".
+    expect(semana.byDay[QUINTA].nextRunnableId).toBeNull();
+    expect(semana.dayDone).toBe(false);
+  });
+
+  it("dia cumprido só quando o dia TINHA itens e nenhum está executável agora", async () => {
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        // Item não liberado: visível, mas não executável — o dia não tem o que fazer.
+        stageRow({ id: "as1", status: "INACTIVE", plannedDate: new Date(`${QUINTA}T00:00:00Z`) }),
+      ] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never);
+
+    const semana = await getMyWeek(SEGUNDA);
+    expect(semana.dayDone).toBe(true);
+  });
+
+  it("o convite é a pendência do dia ANTERIOR, não o trabalho de sexta", async () => {
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        // Quarta ficou por fazer; hoje é quinta e não há nada executável nela; sexta tem trabalho.
+        stageRow({ id: "atrasada", plannedDate: new Date("2026-09-09T00:00:00Z") }),
+        stageRow({ id: "hoje", status: "INACTIVE", plannedDate: new Date(`${QUINTA}T00:00:00Z`) }),
+        stageRow({ id: "sexta", plannedDate: new Date("2026-09-11T00:00:00Z") }),
+      ] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never);
+
+    const semana = await getMyWeek(SEGUNDA);
+    // Varredura CRONOLÓGICA pulando hoje: oferecer sexta por cima do atrasado de quarta inverteria
+    // a ordem em que o trabalho deve acontecer.
+    expect(semana.nextUp?.id).toBe("atrasada");
+    expect(semana.nextUp?.dayISO).toBe("2026-09-09");
   });
 });

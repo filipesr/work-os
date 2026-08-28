@@ -184,8 +184,10 @@ export default async function MyWeekPage({
                 </ul>
               )}
 
-              {/* O fim do dia: cumprido, e o próximo já visível como convite — não como cobrança. */}
-              {hoje && dia.nextRunnableId === null && (
+              {/* O fim do dia: cumprido, e o próximo já visível como convite — não como cobrança.
+                  `dayDone` já exige que o dia TENHA tido itens: dizer "dia cumprido" numa quinta
+                  vazia, logo abaixo de "Nada programado neste dia", era a tela se contradizendo. */}
+              {hoje && semana.dayDone && (
                 <p className="mt-3 text-sm text-success">
                   {t("dayDone")}
                   {semana.nextUp && (

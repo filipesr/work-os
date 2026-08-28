@@ -8,6 +8,10 @@ vi.mock("@/lib/permissions", () => ({
   getSessionUser: vi.fn().mockResolvedValue({ id: "ana", role: "MEMBER" }),
 }));
 vi.mock("@/lib/planning/reorder", () => ({ applyDayReorder: vi.fn() }));
+// A ATRIBUIÇÃO não é escrita por `pullStageToMe`: ela delega ao caminho canônico de reivindicar,
+// que é quem aplica limite de WIP, log de etapa e carimbo de início. Aqui ele é mockado para que
+// os testes vejam O QUE foi delegado — e para provar que a recusa dele volta intacta.
+vi.mock("@/lib/actions/task", () => ({ claimActiveStage: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({
   default: {
     user: { findUnique: vi.fn() },
@@ -17,16 +21,45 @@ vi.mock("@/lib/prisma", () => ({
 
 import prisma from "@/lib/prisma";
 import { applyDayReorder } from "@/lib/planning/reorder";
+import { claimActiveStage } from "@/lib/actions/task";
 import { reorderMyDay, pullStageToMe, moveMyStageToDay } from "@/lib/actions/my-week";
+import { formatISODate, todayInSaoPaulo } from "@/lib/dates";
 
-/** Um dia bem à frente de "hoje" em qualquer execução: os testes não podem depender da data real. */
+const DIA_MS = 86_400_000;
+
+/** A data de N dias a partir de hoje, na MESMA convenção que a ação usa (SP-local, via
+ *  `todayInSaoPaulo`). Calcular em UTC com `toISOString()` fazia o teste do "dia no passado"
+ *  quebrar entre 21h e meia-noite em São Paulo: ali o UTC já virou o dia e a ação não. */
+function emDias(n: number): string {
+  return formatISODate(new Date(todayInSaoPaulo().getTime() + n * DIA_MS));
+}
+
+/** Um dia futuro que a ação aceita: amanhã, ou depois de amanhã se amanhã cair num domingo —
+ *  domingo não existe na grade de segunda-a-sábado e a ação recusa (ver `problemaDeData`). */
 function amanha(): string {
-  return new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  const alvo = new Date(todayInSaoPaulo().getTime() + DIA_MS);
+  return formatISODate(alvo.getUTCDay() === 0 ? new Date(alvo.getTime() + DIA_MS) : alvo);
+}
+
+/** Um dia além do teto de quatro semanas que não caia num domingo: a recusa de domingo vem antes
+ *  na validação, e sem este cuidado o teste passaria a acusar a outra chave aos sábados. */
+function foraDaJanela(): string {
+  const alvo = new Date(todayInSaoPaulo().getTime() + 29 * DIA_MS);
+  return formatISODate(alvo.getUTCDay() === 0 ? new Date(alvo.getTime() + DIA_MS) : alvo);
+}
+
+/** O próximo domingo — sempre no futuro, para isolar a recusa de domingo da de data passada. */
+function domingo(): string {
+  const hoje = todayInSaoPaulo();
+  const faltam = 7 - hoje.getUTCDay() || 7;
+  return formatISODate(new Date(hoje.getTime() + faltam * DIA_MS));
 }
 
 function livre(over: Record<string, unknown> = {}) {
   return {
     id: "as1",
+    taskId: "t1",
+    stageId: "s1",
     assigneeId: null,
     status: "ACTIVE",
     teamId: "time1",
@@ -43,6 +76,7 @@ beforeEach(() => {
     _max: { plannedOrder: 3 },
   } as never);
   vi.mocked(prisma.taskActiveStage.update).mockResolvedValue({} as never);
+  vi.mocked(claimActiveStage).mockResolvedValue({ success: true } as never);
 });
 
 describe("reorderMyDay", () => {
@@ -59,29 +93,44 @@ describe("reorderMyDay", () => {
 });
 
 describe("pullStageToMe", () => {
-  it("assume a etapa: responsável e dia juntos, no fim da fila do dia", async () => {
+  it("delega a atribuição e grava o dia no fim da fila", async () => {
     vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue(livre() as never);
     const dia = amanha();
 
     const r = await pullStageToMe("as1", dia);
     expect(r).toEqual({ success: true });
 
+    // A atribuição inteira (WIP, log de etapa, carimbo de início) vem do caminho canônico — esta
+    // tela não escreve `assigneeId` por fora dele.
+    expect(claimActiveStage).toHaveBeenCalledWith("t1", "s1");
     const data = vi.mocked(prisma.taskActiveStage.update).mock.calls[0][0].data as {
-      assigneeId: string;
+      assigneeId?: string;
       plannedDate: Date;
       plannedOrder: number;
     };
-    expect(data.assigneeId).toBe("ana");
+    expect(data.assigneeId).toBeUndefined();
     expect(data.plannedDate).toEqual(new Date(`${dia}T00:00:00Z`));
     // Entra DEPOIS do que já estava: quem chega não fura a ordem que a pessoa montou.
     expect(data.plannedOrder).toBe(4);
+  });
+
+  it("devolve a recusa de quem reivindica como está — a mensagem dela é a melhor", async () => {
+    // Dono, etapa não liberada e limite de WIP são recusas do caminho canônico. A dele diz, por
+    // exemplo, quantos itens já estão em andamento; uma genérica daqui perderia isso.
+    vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue(livre() as never);
+    vi.mocked(claimActiveStage).mockResolvedValue({ error: "wipLimitReached" } as never);
+
+    expect(await pullStageToMe("as1", amanha())).toEqual({ error: "wipLimitReached" });
+    // E o dia NÃO é gravado: sem dono, `plannedDate` sozinho sumiria do poço e da grade.
+    expect(prisma.taskActiveStage.update).not.toHaveBeenCalled();
   });
 
   it("recusa etapa que já tem dono", async () => {
     vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue(
       livre({ assigneeId: "bruno" }) as never
     );
-    expect(await pullStageToMe("as1", amanha())).toEqual({ error: "alreadyAssigned" });
+    vi.mocked(claimActiveStage).mockResolvedValue({ error: "stageAlreadyAssigned" } as never);
+    expect(await pullStageToMe("as1", amanha())).toEqual({ error: "stageAlreadyAssigned" });
     expect(prisma.taskActiveStage.update).not.toHaveBeenCalled();
   });
 
@@ -89,14 +138,17 @@ describe("pullStageToMe", () => {
     vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue(
       livre({ status: "INACTIVE" }) as never
     );
-    expect(await pullStageToMe("as1", amanha())).toEqual({ error: "notAvailable" });
+    vi.mocked(claimActiveStage).mockResolvedValue({ error: "stageNotClaimable" } as never);
+    expect(await pullStageToMe("as1", amanha())).toEqual({ error: "stageNotClaimable" });
+    expect(prisma.taskActiveStage.update).not.toHaveBeenCalled();
   });
 
-  it("recusa etapa de outro time", async () => {
+  it("recusa etapa de outro time — esta é recusa DAQUI, quem reivindica não valida time", async () => {
     vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue(
       livre({ teamId: "time9" }) as never
     );
     expect(await pullStageToMe("as1", amanha())).toEqual({ error: "otherTeam" });
+    expect(claimActiveStage).not.toHaveBeenCalled();
   });
 
   it("etapa coringa herda o time do modelo e é assumível", async () => {
@@ -109,8 +161,18 @@ describe("pullStageToMe", () => {
 
   it("recusa dia no passado", async () => {
     vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue(livre() as never);
-    const ontem = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
-    expect(await pullStageToMe("as1", ontem)).toEqual({ error: "pastDate" });
+    expect(await pullStageToMe("as1", emDias(-1))).toEqual({ error: "pastDate" });
+  });
+
+  it("recusa dia além das quatro semanas — sem teto, um dígito errado estaciona trabalho em 2031", async () => {
+    vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue(livre() as never);
+    expect(await pullStageToMe("as1", foraDaJanela())).toEqual({ error: "tooFarAhead" });
+    expect(prisma.taskActiveStage.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("recusa domingo — o que vai para lá some das três telas até a semana virar corrente", async () => {
+    vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue(livre() as never);
+    expect(await pullStageToMe("as1", domingo())).toEqual({ error: "sundayDate" });
   });
 
   it("recusa data malformada antes de consultar o banco", async () => {
@@ -124,6 +186,7 @@ describe("moveMyStageToDay", () => {
     vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue({
       id: "as1",
       assigneeId: "ana",
+      status: "ACTIVE",
       scheduledStart: null,
     } as never);
     const dia = amanha();
@@ -141,6 +204,7 @@ describe("moveMyStageToDay", () => {
     vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue({
       id: "as1",
       assigneeId: "bruno",
+      status: "ACTIVE",
       scheduledStart: null,
     } as never);
     expect(await moveMyStageToDay("as1", amanha())).toEqual({ error: "notYours" });
@@ -151,8 +215,20 @@ describe("moveMyStageToDay", () => {
     vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue({
       id: "as1",
       assigneeId: "ana",
+      status: "ACTIVE",
       scheduledStart: new Date("2026-09-10T14:00:00Z"),
     } as never);
     expect(await moveMyStageToDay("as1", amanha())).toEqual({ error: "scheduledStage" });
+  });
+
+  it("recusa mover etapa concluída — reprogramar o que já foi feito descreve uma semana falsa", async () => {
+    vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue({
+      id: "as1",
+      assigneeId: "ana",
+      status: "COMPLETED",
+      scheduledStart: null,
+    } as never);
+    expect(await moveMyStageToDay("as1", amanha())).toEqual({ error: "completedStage" });
+    expect(prisma.taskActiveStage.update).not.toHaveBeenCalled();
   });
 });

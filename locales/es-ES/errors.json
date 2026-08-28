@@ -220,6 +220,8 @@
     "pastDate": "No se puede programar para un día que ya ha pasado.",
     "tooFarAhead": "Elige un día dentro de las próximas cuatro semanas.",
     "pullFailed": "No se ha podido asumir la etapa.",
-    "moveFailed": "No se ha podido cambiar el día."
+    "moveFailed": "No se ha podido cambiar el día.",
+    "sundayDate": "La semana va de lunes a sábado: elige otro día.",
+    "completedStage": "Esta etapa ya está cerrada."
   }
 }
