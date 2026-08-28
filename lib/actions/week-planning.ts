@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { formatISODate } from "@/lib/dates";
@@ -167,4 +169,124 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
       referenceHours: horasDe(l.stageId),
     })),
   };
+}
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Põe a etapa no dia de alguém. Programar ATRIBUI — inclusive etapa ainda não liberada, que é
+ *  trabalho com dono à espera de liberar. Etapa de outra pessoa não é puxável por aqui: remanejar
+ *  responsável é decisão da própria etapa, não efeito colateral de arrastar na agenda. */
+export async function scheduleStage(input: {
+  activeStageId: string;
+  userId: string;
+  dateISO: string;
+}) {
+  await requireManagerOrAdmin();
+  const t = await getTranslations("errors.weekPlanning");
+
+  if (!DATE_ONLY.test(input.dateISO)) return { error: t("invalidDate") };
+
+  const row = await prisma.taskActiveStage.findUnique({
+    where: { id: input.activeStageId },
+    select: { id: true, assigneeId: true, status: true },
+  });
+  if (!row) return { error: t("stageNotFound") };
+  if (row.status === "COMPLETED") return { error: t("completedStage") };
+  if (row.assigneeId && row.assigneeId !== input.userId) return { error: t("alreadyAssigned") };
+
+  const plannedDate = new Date(`${input.dateISO}T00:00:00Z`);
+
+  // Entra no FIM do dia: quem chega depois não fura a ordem que a pessoa já montou.
+  const ultimo = await prisma.taskActiveStage.aggregate({
+    where: { assigneeId: input.userId, plannedDate },
+    _max: { plannedOrder: true },
+  });
+
+  try {
+    await prisma.taskActiveStage.update({
+      where: { id: input.activeStageId },
+      data: {
+        assigneeId: input.userId,
+        plannedDate,
+        plannedOrder: (ultimo._max.plannedOrder ?? 0) + 1,
+      },
+    });
+  } catch (error) {
+    console.error("scheduleStage error:", error);
+    return { error: t("scheduleFailed") };
+  }
+
+  revalidatePath("/planning/week");
+  return { success: true as const };
+}
+
+/** Tira da programação e devolve ao poço. O `assigneeId` sai junto: manter o dono sem dia deixaria
+ *  a etapa presa a alguém e invisível no poço — o pior dos dois mundos. */
+export async function unscheduleStage(activeStageId: string) {
+  await requireManagerOrAdmin();
+  const t = await getTranslations("errors.weekPlanning");
+
+  const row = await prisma.taskActiveStage.findUnique({
+    where: { id: activeStageId },
+    select: { id: true, assigneeId: true, status: true },
+  });
+  if (!row) return { error: t("stageNotFound") };
+
+  try {
+    await prisma.taskActiveStage.update({
+      where: { id: activeStageId },
+      data: { plannedDate: null, plannedOrder: null, assigneeId: null },
+    });
+  } catch (error) {
+    console.error("unscheduleStage error:", error);
+    return { error: t("scheduleFailed") };
+  }
+
+  revalidatePath("/planning/week");
+  return { success: true as const };
+}
+
+/** Sobe ou desce um item dentro do dia, trocando de posição com o vizinho. Troca em vez de
+ *  renumerar tudo: duas escritas em vez de N, e a ordem dos outros não muda por tabela. */
+export async function moveStageOrder(activeStageId: string, direction: "up" | "down") {
+  await requireManagerOrAdmin();
+  const t = await getTranslations("errors.weekPlanning");
+
+  const alvo = await prisma.taskActiveStage.findUnique({
+    where: { id: activeStageId },
+    select: { id: true, assigneeId: true, plannedDate: true, plannedOrder: true },
+  });
+  if (!alvo || !alvo.assigneeId || !alvo.plannedDate) return { error: t("stageNotFound") };
+
+  const doDia = await prisma.taskActiveStage.findMany({
+    where: {
+      assigneeId: alvo.assigneeId,
+      plannedDate: alvo.plannedDate,
+      status: { not: "COMPLETED" },
+    },
+    select: { id: true, plannedOrder: true },
+    orderBy: { plannedOrder: "asc" },
+  });
+
+  const i = doDia.findIndex((x) => x.id === activeStageId);
+  const j = direction === "up" ? i - 1 : i + 1;
+  // Fora da lista não é erro: a seta simplesmente não tem para onde ir.
+  if (i < 0 || j < 0 || j >= doDia.length) return { success: true as const };
+
+  try {
+    await prisma.taskActiveStage.update({
+      where: { id: doDia[i].id },
+      data: { plannedOrder: doDia[j].plannedOrder },
+    });
+    await prisma.taskActiveStage.update({
+      where: { id: doDia[j].id },
+      data: { plannedOrder: doDia[i].plannedOrder },
+    });
+  } catch (error) {
+    console.error("moveStageOrder error:", error);
+    return { error: t("reorderFailed") };
+  }
+
+  revalidatePath("/planning/week");
+  return { success: true as const };
 }

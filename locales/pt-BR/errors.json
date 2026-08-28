@@ -197,5 +197,13 @@
     "dateFuture": "A data não pode estar no futuro — o registro é de trabalho já feito.",
     "dateTooOld": "A data passou da janela de {days} dias.",
     "createFailed": "Erro ao registrar o trabalho."
+  },
+  "weekPlanning": {
+    "stageNotFound": "Etapa não encontrada.",
+    "alreadyAssigned": "Esta etapa já tem responsável. Remaneje pela própria etapa.",
+    "completedStage": "Etapa concluída não entra na programação.",
+    "invalidDate": "Informe uma data válida.",
+    "scheduleFailed": "Erro ao programar a etapa.",
+    "reorderFailed": "Erro ao reordenar."
   }
 }
