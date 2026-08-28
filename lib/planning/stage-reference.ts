@@ -65,6 +65,30 @@ export async function getStageReferences(stageIds: string[]): Promise<Map<string
     }),
   ]);
 
+  // Só ocorrência CONCLUÍDA vira amostra. A etapa em andamento tem horas pela metade — e é
+  // justamente ela que a mesa exibe —, então contá-la como amostra completa puxaria o p50 para
+  // baixo e a referência encolheria à medida que houvesse trabalho em curso: quanto mais gente
+  // trabalhando, menor a estimativa. O filtro é feito por pares (taskId, stageId) e não no
+  // `TimeLog`, que não tem noção de conclusão.
+  //
+  // A busca parte das demandas que APARECERAM na janela de tempo: sem isso a consulta traria todas
+  // as ocorrências concluídas da história, e o custo voltaria a crescer para sempre.
+  //
+  // Uma etapa revertida e refeita soma as duas tentativas numa ocorrência só. É deliberado, não
+  // descuido: retrabalho é custo real do trabalho, e a referência serve para dizer quanto essa
+  // etapa costuma custar de verdade — não quanto custaria se tudo desse certo na primeira vez.
+  const concluidas = logs.length
+    ? await prisma.taskActiveStage.findMany({
+        where: {
+          stageId: { in: stageIds },
+          status: "COMPLETED",
+          taskId: { in: [...new Set(logs.map((l) => l.taskId))] },
+        },
+        select: { taskId: true, stageId: true },
+      })
+    : [];
+  const ocorrenciasConcluidas = new Set(concluidas.map((c) => `${c.taskId}\u0000${c.stageId}`));
+
   // Uma OCORRÊNCIA da etapa é o par (taskId, stageId): a etapa acontece uma vez por demanda, mas o
   // apontamento vem picado — dois dias, duas pessoas, três lançamentos. Sem somar por ocorrência
   // antes do percentil, cada amostra seria "quanto alguém lançou num dia" e não "quanto esta etapa
@@ -74,6 +98,7 @@ export async function getStageReferences(stageIds: string[]): Promise<Map<string
     // `stageId` é anulável no TimeLog (a hora pode ser da demanda inteira). O `in` do where já
     // exclui os nulos; a guarda existe para o tipo.
     if (!log.stageId) continue;
+    if (!ocorrenciasConcluidas.has(`${log.taskId}\u0000${log.stageId}`)) continue;
     const ocorrencias = porEtapa.get(log.stageId) ?? new Map<string, number>();
     ocorrencias.set(log.taskId, (ocorrencias.get(log.taskId) ?? 0) + log.hoursSpent);
     porEtapa.set(log.stageId, ocorrencias);
