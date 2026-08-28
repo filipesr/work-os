@@ -175,5 +175,21 @@
     "conflictsTitle": "Citas en riesgo",
     "conflictsHelp": "Estas etapas tienen hora fijada y todavía no se han liberado. Habla con tu responsable.",
     "noCapacity": "Sin capacidad semanal registrada: se usa el valor por defecto de {hours}h."
+  },
+  "clientLoad": {
+    "kicker": "Planificación",
+    "title": "Carga por cliente",
+    "subtitle": "Dónde se lleva la semana cada cliente.",
+    "weekOf": "Semana del {date}",
+    "client": "Cliente",
+    "total": "Total",
+    "cell": "{hours}h · {count}",
+    "empty": "No hay nada programado esta semana.",
+    "ruler": "Las horas son la referencia de la etapa, no el tiempo imputado; una etapa no liberada aparece sin sumar.",
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Semana siguiente",
+    "currentWeek": "Semana actual",
+    "teamFilter": "Filtrar por equipo",
+    "allTeams": "Todos los equipos"
   }
 }

@@ -13,6 +13,7 @@ import {
   CalendarClock,
   Target,
   Activity,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -87,6 +88,12 @@ const managerItems: NavItem[] = [
         icon: CalendarRange,
       },
       { id: "programacao", labelKey: "programacao", href: "/planning/week", icon: CalendarClock },
+      {
+        id: "carga-cliente",
+        labelKey: "cargaCliente",
+        href: "/planning/client-load",
+        icon: Building2,
+      },
       { id: "cobertura", labelKey: "cobertura", href: "/planning/coverage", icon: Target },
       { id: "datas", labelKey: "datas", href: "/planning/dates", icon: CalendarDays },
     ],

@@ -175,5 +175,21 @@
     "conflictsTitle": "Agendamentos em risco",
     "conflictsHelp": "Estas etapas têm hora marcada e ainda não foram liberadas. Fale com seu gestor.",
     "noCapacity": "Sem capacidade semanal cadastrada — usando o padrão de {hours}h."
+  },
+  "clientLoad": {
+    "kicker": "Planejamento",
+    "title": "Carga por cliente",
+    "subtitle": "Onde cada cliente está pegando a semana.",
+    "weekOf": "Semana de {date}",
+    "client": "Cliente",
+    "total": "Total",
+    "cell": "{hours}h · {count}",
+    "empty": "Nada programado nesta semana.",
+    "ruler": "As horas são referência da etapa, não apontamento — e etapa não liberada aparece sem somar.",
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Próxima semana",
+    "currentWeek": "Semana atual",
+    "teamFilter": "Filtrar por time",
+    "allTeams": "Todos os times"
   }
 }

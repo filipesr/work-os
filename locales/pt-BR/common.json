@@ -48,7 +48,8 @@
     "closeNav": "Fechar navegação",
     "datas": "Datas",
     "cobertura": "Cobertura Semanal",
-    "programacao": "Programação"
+    "programacao": "Programação",
+    "cargaCliente": "Carga por Cliente"
   },
   "buttons": {
     "save": "Salvar",
