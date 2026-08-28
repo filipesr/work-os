@@ -187,5 +187,15 @@
     "quickNeedsSingleStage": "Solo un flujo de una sola etapa puede marcarse como rápido.",
     "quickCannotAddStage": "Un flujo rápido tiene una sola etapa. Desmarca «flujo rápido» para añadir más etapas.",
     "lastStageCannotBeDeleted": "Un flujo necesita al menos una etapa."
+  },
+  "quickTask": {
+    "templateRequired": "Elige el tipo de trabajo.",
+    "templateNotQuick": "Este tipo no es un flujo rápido.",
+    "projectRequired": "Elige el proyecto.",
+    "minutesInvalid": "Indica el tiempo dedicado, en minutos.",
+    "dateInvalid": "Indica una fecha válida.",
+    "dateFuture": "La fecha no puede estar en el futuro: el registro es de trabajo ya hecho.",
+    "dateTooOld": "La fecha supera la ventana de {days} días.",
+    "createFailed": "Error al registrar el trabajo."
   }
 }
