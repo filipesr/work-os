@@ -1,4 +1,4 @@
-# Programação semanal — fatia 1: modelo, projeção e mesa do gestor
+# Programação semanal — fatia 1: modelo, fila do dia e mesa do gestor
 
 **Data:** 2026-08-28 · **Estado:** desenho aprovado em conversa, aguardando revisão da spec
 **Fatia:** 1 de 3 (ver "Fora desta fatia")
@@ -14,23 +14,26 @@ lista de etapas disponíveis e escolhendo por conta.
 
 ## O propósito, que define o que esta ferramenta NÃO é
 
-A finalidade é **liberdade, não controle**: antecipar demanda para que a pessoa se organize, cumpra
-o dia e **use o tempo que sobrar** — estudar, sair mais cedo. O ganho de eficiência é dela.
+A finalidade é **liberdade, não controle**: antecipar demanda para que a pessoa se organize, cumpra o
+dia e **use o tempo que sobrar** — estudar, sair mais cedo. O ganho de eficiência é dela.
 
-Isso não é conversa mole; decide o desenho. O sistema **nunca** compara planejado com realizado, e
-não há indicador de aderência em tela nenhuma. Um percentual de cumprimento transformaria a
-ferramenta no oposto do que ela existe para ser, e colidiria com P1 (informacional, nunca
-motivacional) e P2 (variação é do sistema).
+Isso decide o desenho. O sistema **nunca** compara planejado com realizado, e não há indicador de
+aderência em tela nenhuma. Um percentual de cumprimento transformaria a ferramenta no oposto do que
+ela existe para ser, e colidiria com P1 (informacional, nunca motivacional) e P2 (variação é do
+sistema, não da pessoa).
 
 ### Por que isto não fere o P7
 
 A biblioteca lista "capacidade em horas como ferramenta de planejamento" como anti-feature, e o P7
-proíbe "usar horas como verdade de planejamento". Uma grade de horários — "das 8 às 10 na tarefa A" —
-seria exatamente isso.
+proíbe "usar horas como verdade de planejamento". Uma grade de horários para trabalho criativo —
+"das 8 às 10 na tarefa A" — seria exatamente isso.
 
-O que esta spec faz é diferente: a unidade é uma **fila ordenada**, e a hora é **referência derivada
-da classe** (o percentil observado daquela etapa), que é o P4 aplicado. Quem decide a execução é a
-pessoa. Continua proibido o passo seguinte — virar cobrança.
+Aqui a unidade é uma **fila ordenada**, e a hora é **referência derivada da classe** (o percentil
+observado daquela etapa), que é o P4 aplicado. Quem decide a execução é a pessoa.
+
+A exceção são os itens com **janela fixa** — agendamento de pessoa, lugar ou equipamento. Esses têm
+hora porque a realidade tem: a locação é às 14h. Não é estimativa apresentada como verdade; é
+compromisso.
 
 ## Decisões
 
@@ -39,36 +42,90 @@ pessoa. Continua proibido o passo seguinte — virar cobrança.
 Uma demanda passa por várias mãos; quem executa executa etapas. Programar por demanda seria impreciso
 já no segundo dia.
 
-### O dia não é guardado — é calculado
+### O modelo
 
-Três campos em `TaskActiveStage`:
+Quatro campos em `TaskActiveStage`:
 
-| Campo                   | Significado                                     | Quem escreve                        |
-| ----------------------- | ----------------------------------------------- | ----------------------------------- |
-| `plannedWeek DateTime?` | a segunda-feira da semana a que o item pertence | gestor                              |
-| `plannedOrder Int?`     | posição na sequência **da semana**              | a pessoa (gestor define ao inserir) |
-| `notBefore DateTime?`   | data mínima, para compromisso com hora marcada  | gestor, raramente                   |
+| Campo                      | Significado                         | Quem escreve |
+| -------------------------- | ----------------------------------- | ------------ |
+| `plannedDate DateTime?`    | o dia em que o item deve ser feito  | gestor       |
+| `plannedOrder Int?`        | posição dentro daquele dia          | a pessoa     |
+| `scheduledStart DateTime?` | início da janela fixa (agendamento) | gestor       |
+| `scheduledEnd DateTime?`   | fim da janela fixa                  | gestor       |
 
-Os dias são uma **projeção** da sequência contra a meta diária. Três comportamentos caem disso, sem
-regra extra:
+Os dois primeiros são o caso comum; os dois últimos existem só para o item com compromisso marcado.
 
-- **Não terminou hoje?** O item continua não concluído e continua à frente na fila — reaparece amanhã
-  por consequência, não por rolagem.
-- **Terminou tudo?** O próximo item sobe para hoje. Antecipação automática.
-- **Foi eficiente a semana toda?** O trabalho se acumula no começo e **a folga sobra no fim**.
+**Por que não uma tabela de agenda.** Uma tabela guardaria o histórico do que foi planejado — e
+histórico de plano é o insumo exato do indicador que esta spec proíbe. Sem esse histórico, o sistema
+**não consegue** calcular aderência nem que alguém peça depois. A garantia deixa de depender de
+disciplina e passa a ser estrutural.
 
-### Por que não uma tabela de agenda
+### Rolagem e antecipação são LEITURA, não algoritmo
 
-Uma tabela guardaria o histórico do que foi planejado — e histórico de plano é o insumo exato do
-indicador que esta spec proíbe. Sem esse histórico, o sistema **não consegue** calcular aderência nem
-que alguém peça depois. A garantia deixa de depender de disciplina e passa a ser estrutural.
+A fila de hoje são os itens não concluídos com `plannedDate <= hoje`, na ordem da pessoa.
+
+- **Não terminou ontem?** O item continua não concluído e continua com data no passado — aparece hoje
+  por consequência. Nada roda, nada precisa ser mantido.
+- **Terminou tudo?** A tela puxa os próximos por `(plannedDate, plannedOrder)`, trazendo o de amanhã
+  para cima. Quem foi eficiente ganha o resto do dia.
+- **Foi eficiente a semana toda?** O trabalho se concentra no começo e **a folga sobra no fim**.
+
+O período de planejamento é a **semana**: sobra de um dia é pendência do dia seguinte, não falha.
+
+### Item não é fatiado, mas pode ser interrompido
+
+Se restam 2h no dia e o próximo item consome 5h, ele **é puxado assim mesmo** — começa hoje e
+continua amanhã como pendência. Meia etapa não existe; dividir seria inventar uma execução que
+ninguém consegue seguir.
+
+Interrupção é outra coisa e é permitida: um item com janela fixa **pausa** o que estiver em execução
+no horário dele, e o pausado retoma a posição depois.
+
+### Capacidade: semanal é a referência, diária é só a visualização
+
+A referência real é **semanal** — `User.weeklyCapacityHours`, padrão **45h**. É contra ela que o
+gestor decide se a semana de alguém está cheia.
+
+O dia mostra uma barra de **8h**, para visualização. Não é meta nem trava: serve para dar noção de
+quanto o dia já pegou. Não existe escala cadastrada no workos, então o sistema não sabe quem trabalha
+sábado nem quem faz meio período — **quem distribui é o gestor**, e sábado é coluna normal que recebe
+se ele colocar.
+
+Inventar uma escala que o sistema não tem produziria um mapa de vagos que mente. A barra de 8h é
+assumidamente uma régua visual, e a spec diz isso na própria tela.
+
+### A ordenação
+
+Três casos, e só três:
+
+1. **Item com janela fixa não entra na ordenação.** Ocupa a janela dele, tem prioridade sobre o
+   concorrente, e o concorrente é pausado.
+2. **Item liberado:** a ordem manual da pessoa é respeitada.
+3. **Item não liberado (etapa `INACTIVE`/`BLOCKED`):** aparece na fila **marcado "não liberada"**, não
+   consome capacidade e é **pulado** — a próxima que esteja liberada e sem agendamento assume o lugar.
+   Ele não some: continua visível na posição que a pessoa escolheu, esperando liberar.
+
+A **prioridade da demanda** ordena a sugestão no momento de inserir. Depois disso não sobrepõe a
+escolha da pessoa — senão a ordem manual seria decorativa.
+
+### Etapa agendada e não liberada é CONFLITO, não item pulável
+
+Uma etapa com janela fixa que não está liberada **nunca é pulada**. O equipamento está reservado para
+quinta, a etapa anterior não terminou, e o trabalho não vai acontecer.
+
+Isso é sinalizado como **problema a resolver pelo gestor**, em destaque na semana — não some da tela e
+não é reordenado em silêncio. Remendar sozinho aqui seria esconder justamente o que estraga um dia de
+gravação: quem descobre no dia já perdeu a locação.
+
+O sistema aponta; quem resolve é o gestor — desbloqueando a etapa anterior, remarcando, ou trocando
+o responsável. Não bloqueamos nem decidimos por ele (P1: informa, não impõe).
 
 ### Programar implica atribuir
 
-Pôr uma etapa na semana de alguém define `assigneeId`, inclusive de etapa ainda `INACTIVE` (trabalho
-que ainda não liberou, mas já tem dono). Etapa com dono não é puxável por terceiro; o gestor pode
-remanejar, e ao remanejar o `plannedOrder` anterior é limpo — senão o item apareceria ordenado na
-fila de quem não o tem mais.
+Pôr uma etapa no dia de alguém define `assigneeId`, inclusive de etapa ainda `INACTIVE` — trabalho que
+ainda não liberou, mas já tem dono. Etapa com dono não é puxável por terceiro; o gestor pode
+remanejar, e ao remanejar o `plannedOrder` anterior é limpo, senão o item apareceria ordenado na fila
+de quem não o tem mais.
 
 ### A duração de referência
 
@@ -78,85 +135,40 @@ declarado no template — e a tela **marca** que aquele número é estimativa, n
 Percentil e não média: a biblioteca lista média como anti-feature de duração (P3, distribuição
 enviesada). O relatório de tempo por etapa que existe hoje usa média; esta spec não propaga isso.
 
-### A meta diária
-
-`User.weeklyCapacityHours ÷ 5`. Pessoa sem capacidade preenchida não recebe projeção de dias — a
-fila dela aparece sem divisão, com aviso de que falta cadastrar a capacidade. Inventar um padrão de
-8h produziria um mapa de vagos que mente sobre quem trabalha meio período.
-
-## A projeção — o coração desta fatia
-
-Função pura, sem banco:
-
-```
-projetarSemana(itens, metaDiaria, dias, hoje) → { porDia, naoCabe }
-```
-
-Entrada: itens não concluídos ordenados por `plannedOrder`; `dias` = segunda a sexta da semana.
-
-```
-restante[d] = metaDiaria, para cada dia d
-para cada item, na ordem:
-    piso = max(hoje, item.notBefore ?? -∞, primeiro dia da semana)
-    d = primeiro dia >= piso com restante[d] > 0
-    se não existe tal dia → item vai para `naoCabe`
-    porDia[d].push(item)
-    restante[d] -= referencia(item)      // pode ficar negativo
-```
-
-Três decisões dentro do laço, e o porquê de cada uma:
-
-- **Item nunca é fatiado entre dias.** Meia etapa não existe. Um item de 6h que encontra 2h livres
-  fica ali e o dia passa a mostrar 10h/8h — honesto ("este dia estourou") em vez de uma divisão que
-  ninguém consegue executar.
-- **Dias já passados não recebem item.** O piso começa em `hoje`. É isto que faz a rolagem: o que não
-  foi feito ontem não tem onde ficar a não ser hoje.
-- **`naoCabe` é resultado, não erro.** Semana sobrecarregada aparece no momento de planejar, e não no
-  dia do prazo. É informação para o gestor redistribuir, não bloqueio.
-
-### Semanas passadas não engolem trabalho
-
-Item não concluído cuja `plannedWeek` é anterior à semana corrente **é puxado para a semana atual**,
-à frente da fila. Sem isso, trabalho planejado e não feito desapareceria da tela na virada da
-semana — o pior tipo de perda, porque é silenciosa.
-
-### Sábado
-
-A semana projetada é segunda a sexta, porque a meta diária deriva de uma semana de cinco dias.
-Trabalho nunca cai no sábado — é justamente isso que faz "terminar cedo" virar fim de semana maior.
-Se algum dia for preciso programar sábado, muda a derivação da meta, não a projeção.
-
 ## A tela — mesa do gestor (`/planning/week`)
 
-Linhas = pessoas (filtro por time), colunas = os dias da janela. Cada célula lista os itens do dia e
-mostra a soma de referência contra a meta.
+Linhas = pessoas (filtro por time), colunas = segunda a sábado. Cada célula lista os itens do dia e a
+soma de referência contra a régua visual de 8h. O cabeçalho de cada pessoa mostra o acumulado da
+semana contra a referência dela.
 
-**O mapa de vagos é esta mesma tela.** Se a célula já mostra usado/meta, o espaço livre aparece
-sozinho; uma segunda visão só para isso seria a mesma informação em dois lugares, divergindo na
-primeira mudança.
+**O mapa de vagos é esta mesma tela.** Se a célula já mostra o quanto o dia pegou, o espaço livre
+aparece sozinho; uma segunda visão só para isso seria a mesma informação em dois lugares, divergindo
+na primeira mudança.
+
+**Conflitos em destaque no topo:** a lista de itens agendados que não estão liberados, com o que
+falta em cada um. É a primeira coisa que o gestor vê ao abrir a semana.
 
 À direita, o **poço**: etapas disponíveis e sem dono. Arrastar do poço para uma célula grava
-`plannedWeek` + `plannedOrder` e atribui. Arrastar entre células reordena.
+`plannedDate` + `plannedOrder` e atribui. Arrastar entre células move de dia ou de pessoa.
 
-Soltar "na quarta" grava a **posição** que faz o item cair na quarta com a capacidade atual — quem usa
-pensa em dia, o sistema guarda ordem. Se o que está à frente terminar antes, o item sobe.
-
-**Janela de 1 ou 2 semanas**, na URL, no mesmo padrão do toggle que `/planning/coverage` já usa. As
+**Janela de 1 ou 2 semanas**, na URL, no mesmo padrão de toggle que `/planning/coverage` usa. As
 funções de janela (`weekSlots`, `windowRange`, `mondayOfWeek`) são reaproveitadas; o conjunto de
 opções é próprio, porque o de lá é de 8 e 12 semanas.
 
-**Permissão:** MANAGER+ (a mesa é de coordenação). A tela da pessoa vem na fatia 2.
+**Permissão:** MANAGER+. A tela da pessoa vem na fatia 2.
 
 ## Testes
 
-- **Puro, com teste primeiro: a projeção.** É onde o erro é silencioso. Casos: rolagem (item de ontem
-  cai hoje), antecipação (fila vazia puxa o próximo), `notBefore` respeitado, item que estoura o dia
-  não é fatiado, `naoCabe` quando a semana lota, semana passada puxada para a atual, pessoa sem
-  capacidade cadastrada.
+- **Puro, com teste primeiro — a montagem da fila do dia.** É onde o erro é silencioso: nenhuma tela
+  quebra se a ordem sair errada. Casos: item de ontem não concluído aparece hoje; fila vazia puxa o
+  próximo dia; item não liberado é pulado e a próxima liberada assume; item não liberado continua
+  visível na posição; item agendado nunca é pulado; item agendado e não liberado vira conflito; item
+  que não cabe no dia é puxado assim mesmo.
 - **Referência:** p50 quando há amostra; SLA quando não há; a marca de "estimativa" acompanha.
+- **Capacidade:** o acumulado da semana usa `weeklyCapacityHours`; sem o campo preenchido, cai em 45h
+  e a tela avisa que é o padrão.
 - **Ação:** programar atribui (inclusive etapa `INACTIVE`); remanejar limpa o `plannedOrder` do dono
-  anterior; MEMBER é recusado — nesta fatia a mesa é só de MANAGER+, e a permissão da pessoa entra
-  com a tela dela, na fatia 2.
+  anterior; MEMBER é recusado — nesta fatia a mesa é só de MANAGER+.
 - **i18n:** pt-BR e es-ES, com o guarda de paridade.
 
 ## Fora desta fatia
@@ -168,5 +180,6 @@ opções é próprio, porque o de lá é de 8 e 12 semanas.
 ## Fora do produto, por decisão
 
 - Qualquer comparação entre planejado e realizado, ou indicador de aderência.
-- Grade de horários ("das 8 às 10"). A unidade é ordem; a hora é referência.
+- Grade de horários para trabalho comum. Hora existe só onde há compromisso marcado.
 - Duração de referência **por pessoa** — seria leitura de desempenho individual e colide com P2.
+- Escala de trabalho cadastrada. Se um dia fizer falta, é cadastro novo e muda a régua diária.
