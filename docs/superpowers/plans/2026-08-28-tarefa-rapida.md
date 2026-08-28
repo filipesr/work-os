@@ -403,8 +403,19 @@ export const workflowTemplateSchema = z.object({
 
 - [ ] **Step 5: Guardar `updateWorkflowTemplate`**
 
-Em `lib/actions/template.ts`, dentro de `updateWorkflowTemplate`, trocar o corpo entre o parse e o
-`prisma.workflowTemplate.update`:
+Em `lib/actions/template.ts`, **primeiro** incluir o campo no `safeParse` (sem isto ele nunca chega
+ao schema e a marca jamais é gravada):
+
+```ts
+const parsed = workflowTemplateSchema.safeParse({
+  name: formData.get("name") ?? "",
+  description: formData.get("description") ?? undefined,
+  // Checkbox ausente vem como null; `?? undefined` deixa o default do schema (false) valer.
+  quickEntry: formData.get("quickEntry") ?? undefined,
+});
+```
+
+Depois, trocar o corpo entre o parse e o `prisma.workflowTemplate.update`:
 
 ```ts
   const { name, description, quickEntry } = parsed.data;
@@ -497,27 +508,41 @@ git commit -m "feat(templates): servidor garante a trava rápido↔etapas e o te
 
 - [ ] **Step 1: Chaves de tradução**
 
-Em `locales/pt-BR/admin.json`, dentro de `workflows.detail`:
+⚠️ Os namespaces importam: `TemplateHeader` usa `admin.workflows.header` e `CreateStageForm` usa
+`admin.workflows.createStage`. Chave no lugar errado vira `MISSING_MESSAGE` na tela.
+
+Em `locales/pt-BR/admin.json`, dentro de `workflows.header`:
 
 ```json
 "quickEntry": {
   "label": "Fluxo rápido (registro de trabalho já feito)",
   "help": "Aparece no formulário de registro rápido, para trabalho de etapa única que já aconteceu.",
-  "blockedByStages": "Só um fluxo de etapa única pode ser rápido. Este tem {count} etapas.",
-  "addStageBlocked": "Um fluxo rápido tem etapa única. Desmarque \"fluxo rápido\" para adicionar mais."
+  "blockedByStages": "Só um fluxo de etapa única pode ser rápido. Este tem {count} etapas."
 }
 ```
 
-Em `locales/es-ES/admin.json`, mesmo caminho:
+Em `locales/es-ES/admin.json`, dentro de `workflows.header`:
 
-```json
+````json
 "quickEntry": {
   "label": "Flujo rápido (registro de trabajo ya hecho)",
   "help": "Aparece en el formulario de registro rápido, para trabajo de una sola etapa que ya ocurrió.",
-  "blockedByStages": "Solo un flujo de una sola etapa puede ser rápido. Este tiene {count} etapas.",
-  "addStageBlocked": "Un flujo rápido tiene una sola etapa. Desmarca «flujo rápido» para añadir más."
+  "blockedByStages": "Solo un flujo de una sola etapa puede ser rápido. Este tiene {count} etapas."
 }
+
+E, dentro de `workflows.createStage` (namespace do próprio `CreateStageForm`):
+
+```json
+"blockedByQuick": "Un flujo rápido tiene una sola etapa. Desmarca «flujo rápido» para añadir más."
+````
+
+Em `locales/pt-BR/admin.json`, dentro de `workflows.createStage`:
+
+```json
+"blockedByQuick": "Um fluxo rápido tem etapa única. Desmarque \"fluxo rápido\" para adicionar mais."
 ```
+
+````
 
 - [ ] **Step 2: Passar a contagem e a marca para os componentes**
 
@@ -525,7 +550,7 @@ Em `app/[locale]/(protected)/admin/templates/[templateId]/page.tsx`, trocar as d
 
 ```tsx
 <TemplateHeader template={template} stageCount={template.stages.length} />
-```
+````
 
 ```tsx
 <CreateStageForm
@@ -600,7 +625,8 @@ if (!isOpen) {
 }
 ```
 
-Com `const tDetail = useTranslations("admin.workflows.detail");` junto do `t` já existente.
+O `t` já existente do componente (`admin.workflows.createStage`) resolve a chave — não é preciso um
+segundo tradutor.
 
 - [ ] **Step 5: Conferir tipos e testes**
 
@@ -840,7 +866,7 @@ Em `locales/es-ES/errors.json`:
 Criar `__tests__/lib/actions/quick-task.test.ts`:
 
 ```ts
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next-intl/server", () => ({
@@ -902,7 +928,14 @@ describe("createQuickTask", () => {
       stages: [{ id: "s1" }],
     });
     db.project.findUnique.mockResolvedValue({ id: "p1" });
+    // `setSystemTime` só tem efeito com fake timers ligados; sem isto a data de "hoje" seria a real
+    // e os testes de janela passariam ou falhariam conforme o dia em que a suíte roda.
+    vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-28T15:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("grava a demanda já concluída, com a etapa única concluída", async () => {
