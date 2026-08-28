@@ -25,6 +25,24 @@ describe("buildDayQueue — ordem manual", () => {
     expect(r.slots.every((s) => s.kind === "runnable")).toBe(true);
   });
 
+  it("empate no plannedOrder é desempatado pelo id — a ordem é determinística", () => {
+    // Sem desempate, a ordem entre dois itens de mesmo número seria a ordem em que o banco
+    // devolveu as linhas, que o Postgres não garante: a mesma célula listaria coisas em ordens
+    // diferentes entre dois carregamentos, sem nada ter mudado.
+    const entrada = [
+      item({ id: "b", plannedOrder: 1 }),
+      item({ id: "a", plannedOrder: 1 }),
+      item({ id: "c", plannedOrder: 1 }),
+    ];
+    expect(buildDayQueue(entrada).slots.map((s) => s.item.id)).toEqual(["a", "b", "c"]);
+    // E a ordem de entrada não muda o resultado.
+    expect(buildDayQueue([...entrada].reverse()).slots.map((s) => s.item.id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
+  });
+
   it("soma as horas de referência do que é executável", () => {
     const r = buildDayQueue([
       item({ id: "a", plannedOrder: 1, referenceHours: 2 }),

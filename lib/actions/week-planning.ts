@@ -88,6 +88,10 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
           select: { title: true, project: { select: { client: { select: { name: true } } } } },
         },
       },
+      // Ordem de linha do Postgres não é garantida: sem `orderBy` a mesma célula podia listar os
+      // itens em ordens diferentes entre dois carregamentos. `id` desempata quem tem o mesmo
+      // `plannedOrder` — é o mesmo critério de `buildDayQueue`, e os dois precisam concordar.
+      orderBy: [{ plannedOrder: "asc" }, { id: "asc" }],
     }),
     // O poço: etapas liberadas e sem dono.
     prisma.taskActiveStage.findMany({
@@ -114,6 +118,9 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
           select: { title: true, project: { select: { client: { select: { name: true } } } } },
         },
       },
+      // O `take` corta a lista, então sem ordem definida o corte cairia em itens diferentes a cada
+      // carregamento — some do poço o que ninguém tirou de lá.
+      orderBy: { id: "asc" },
       take: 200,
     }),
   ]);
@@ -296,7 +303,9 @@ export async function moveStageOrder(activeStageId: string, direction: "up" | "d
       scheduledStart: null,
     },
     select: { id: true, plannedOrder: true },
-    orderBy: { plannedOrder: "asc" },
+    // Mesmo desempate da leitura da tela (e de `buildDayQueue`): a seta precisa agir sobre a mesma
+    // ordem que o gestor está vendo.
+    orderBy: [{ plannedOrder: "asc" }, { id: "asc" }],
   });
 
   const i = doDia.findIndex((x) => x.id === activeStageId);
@@ -305,14 +314,32 @@ export async function moveStageOrder(activeStageId: string, direction: "up" | "d
   if (i < 0 || j < 0 || j >= doDia.length) return { success: true as const };
 
   try {
-    await prisma.taskActiveStage.update({
-      where: { id: doDia[i].id },
-      data: { plannedOrder: doDia[j].plannedOrder },
-    });
-    await prisma.taskActiveStage.update({
-      where: { id: doDia[j].id },
-      data: { plannedOrder: doDia[i].plannedOrder },
-    });
+    if (doDia[i].plannedOrder !== doDia[j].plannedOrder) {
+      // Caso normal: números distintos, trocar os dois basta.
+      await prisma.taskActiveStage.update({
+        where: { id: doDia[i].id },
+        data: { plannedOrder: doDia[j].plannedOrder },
+      });
+      await prisma.taskActiveStage.update({
+        where: { id: doDia[j].id },
+        data: { plannedOrder: doDia[i].plannedOrder },
+      });
+    } else {
+      // Empate — dois itens com o MESMO número, ou os dois sem número nenhum. Trocar os valores
+      // escreveria o mesmo número nos dois: o gestor clica na seta e nada muda, sem erro nenhum,
+      // que é o pior desfecho possível para um botão. Empatados, a ordem só existe pelo desempate
+      // por `id`, então não há valor a trocar: o dia é renumerado a partir da ordem que a tela já
+      // mostra, com os dois na posição nova. Custa N escritas, mas só acontece no empate.
+      const nova = [...doDia];
+      [nova[i], nova[j]] = [nova[j], nova[i]];
+      for (const [pos, item] of nova.entries()) {
+        if (item.plannedOrder === pos + 1) continue;
+        await prisma.taskActiveStage.update({
+          where: { id: item.id },
+          data: { plannedOrder: pos + 1 },
+        });
+      }
+    }
   } catch (error) {
     console.error("moveStageOrder error:", error);
     return { error: t("reorderFailed") };

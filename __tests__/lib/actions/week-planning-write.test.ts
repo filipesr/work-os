@@ -167,6 +167,56 @@ describe("moveStageOrder", () => {
     });
   });
 
+  it("mover um de dois EMPATADOS troca as posições de verdade", async () => {
+    // Com o mesmo `plannedOrder` nos dois, trocar os valores escreveria o mesmo número em ambos:
+    // o gestor clicava na seta e nada mudava, sem erro nenhum. No empate o dia é renumerado a
+    // partir da ordem que a tela mostra (desempatada por id), com os dois na posição nova.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as2",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      plannedDate: new Date("2026-08-31T00:00:00Z"),
+      plannedOrder: 1,
+      scheduledStart: null,
+    });
+    db.taskActiveStage.findMany.mockResolvedValue([
+      { id: "as1", plannedOrder: 1 },
+      { id: "as2", plannedOrder: 1 },
+    ]);
+    expect(await moveStageOrder("as2", "up")).toEqual({ success: true });
+
+    // O resultado precisa ser uma ordem em que as2 vem antes de as1 — e com números DISTINTOS,
+    // senão o próximo clique cairia no mesmo empate.
+    const escritas = new Map<string, number>([
+      ["as1", 1],
+      ["as2", 1],
+    ]);
+    for (const [call] of db.taskActiveStage.update.mock.calls as [
+      { where: { id: string }; data: { plannedOrder: number } },
+    ][]) {
+      escritas.set(call.where.id, call.data.plannedOrder);
+    }
+    expect(escritas.get("as2")!).toBeLessThan(escritas.get("as1")!);
+  });
+
+  it("pede a lista do dia já desempatada por id", async () => {
+    // A seta precisa agir sobre a MESMA ordem que o gestor está vendo; a tela desempata por id.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      plannedDate: new Date("2026-08-31T00:00:00Z"),
+      plannedOrder: 1,
+      scheduledStart: null,
+    });
+    db.taskActiveStage.findMany.mockResolvedValue([{ id: "as1", plannedOrder: 1 }]);
+    await moveStageOrder("as1", "up");
+    expect(db.taskActiveStage.findMany.mock.calls[0][0].orderBy).toEqual([
+      { plannedOrder: "asc" },
+      { id: "asc" },
+    ]);
+  });
+
   it("subir o primeiro não faz nada e não é erro", async () => {
     db.taskActiveStage.findUnique.mockResolvedValue({
       id: "as1",

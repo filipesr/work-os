@@ -46,7 +46,12 @@ export function buildDayQueue(items: QueueItemInput[]): {
   nextRunnableId: string | null;
   conflicts: QueueItemInput[];
 } {
-  const ordenados = [...items].sort((a, b) => a.plannedOrder - b.plannedOrder);
+  // `id` desempata. Sem ele, dois itens com o mesmo `plannedOrder` sairiam na ordem em que o banco
+  // devolveu as linhas — que o Postgres não garante — e a mesma célula podia listar coisas em
+  // ordens diferentes entre dois carregamentos, sem nada ter mudado.
+  const ordenados = [...items].sort(
+    (a, b) => a.plannedOrder - b.plannedOrder || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+  );
 
   const slots: QueueSlot[] = ordenados.map((item) => {
     const agendado = item.scheduledStart !== null;

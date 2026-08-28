@@ -142,6 +142,17 @@ describe("getWeekPlanning", () => {
     expect(wherePoco).not.toHaveProperty("plannedDate");
   });
 
+  it("pede a semana já ordenada e desempatada por id", async () => {
+    // Ordem de linha do Postgres não é garantida: sem `orderBy`, a mesma célula podia listar os
+    // itens em ordens diferentes entre dois carregamentos.
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+    await getWeekPlanning("2026-08-31");
+    const daSemana = db.taskActiveStage.findMany.mock.calls
+      .map((c: [{ where?: Record<string, unknown>; orderBy?: unknown }]) => c[0])
+      .find((a: { where?: Record<string, unknown> }) => a.where?.assigneeId !== null);
+    expect(daSemana.orderBy).toEqual([{ plannedOrder: "asc" }, { id: "asc" }]);
+  });
+
   it("recusa quem não é gestor nem admin", async () => {
     // Todos os outros testes mockam MANAGER; sem este, uma regressão que apagasse a chamada a
     // requireManagerOrAdmin passaria batido pela suíte inteira.
