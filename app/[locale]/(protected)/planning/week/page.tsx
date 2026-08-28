@@ -18,6 +18,9 @@ import {
 // O envelhecimento por ETAPA já existe e é consumido daqui, não reimplementado: duas
 // implementações da mesma leitura divergiriam, e a segunda quase certamente viraria a punitiva.
 import { stageAgingRatio } from "@/lib/team-health-format";
+// ...mas alimentado na unidade certa: a referência da etapa é hora de TRABALHO, então o decorrido
+// também precisa ser. Ver lib/planning/working-hours.ts.
+import { workingClockEquivalent } from "@/lib/planning/working-hours";
 import prisma from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
@@ -51,6 +54,9 @@ export default async function WeekPlanningPage({
   ]);
   const pessoas = plan.people.map((p) => ({ id: p.userId, name: p.name }));
   const semanaCorrente = formatISODate(mondayOfWeek(todayInSaoPaulo())) === formatISODate(monday);
+  // Um instante só para a tela inteira: cada célula recalculando `Date.now()` faria dois itens
+  // idênticos imprimirem números diferentes no mesmo render.
+  const agora = Date.now();
 
   // Conflito é a primeira coisa que o gestor precisa ver: agendamento que não vai acontecer só
   // aparece a tempo se estiver no topo. Traz o rótulo (tarefa/etapa) e o motivo (derivado do status
@@ -179,7 +185,15 @@ export default async function WeekPlanningPage({
                               // referência: sem ela a razão não significa nada.
                               const passou =
                                 s.item.activeSince && s.item.referenceHours > 0
-                                  ? stageAgingRatio(s.item.activeSince, s.item.referenceHours)
+                                  ? stageAgingRatio(
+                                      // Hora ÚTIL contra hora útil. Com o relógio cru, uma etapa
+                                      // de 2h ativa desde ontem já acusaria "24h nesta etapa" e o
+                                      // aviso acenderia em quase toda célula — sinal que acende
+                                      // sempre não é sinal.
+                                      workingClockEquivalent(s.item.activeSince, agora),
+                                      s.item.referenceHours,
+                                      agora
+                                    )
                                   : 0;
                               return (
                                 <li
