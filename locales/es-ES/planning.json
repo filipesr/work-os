@@ -179,7 +179,7 @@
   "clientLoad": {
     "kicker": "Planificación",
     "title": "Carga por cliente",
-    "subtitle": "Dónde se lleva la semana cada cliente.",
+    "subtitle": "Cómo ocupa la semana cada cliente.",
     "weekOf": "Semana del {date}",
     "client": "Cliente",
     "total": "Total",

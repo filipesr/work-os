@@ -19,7 +19,7 @@ export const metadata: Metadata = { title: "Carga por cliente" };
 export default async function ClientLoadPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | undefined>>;
+  searchParams: Promise<{ week?: string | string[]; team?: string | string[] }>;
 }) {
   try {
     await requireManagerOrAdmin();
@@ -29,8 +29,11 @@ export default async function ClientLoadPage({
 
   const sp = await searchParams;
   const monday = parseWeekParam(sp.week);
+  // Mesmo tratamento da tela irmã (planning/week): a URL pode repetir `?team=`, e o Next entrega
+  // array nesse caso — sem isto o tipo mentiria e o filtro do Prisma quebraria em runtime.
+  const teamId = Array.isArray(sp.team) ? sp.team[0] : sp.team;
   const t = await getTranslations("planning.clientLoad");
-  const carga = await getClientLoad(formatISODate(monday), sp.team);
+  const carga = await getClientLoad(formatISODate(monday), teamId);
 
   return (
     <div className="mx-auto max-w-[110rem] px-4 py-8 sm:px-6 lg:px-8">
