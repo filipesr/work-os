@@ -44,6 +44,15 @@ describe("applyDayReorder", () => {
     const r = await applyDayReorder("as1", "up");
     expect(r).toEqual({ ok: true });
     expect(prisma.taskActiveStage.update).toHaveBeenCalledTimes(2);
+    const escritas = new Map(
+      vi.mocked(prisma.taskActiveStage.update).mock.calls.map((c) => {
+        const arg = c[0] as { where: { id: string }; data: { plannedOrder: number } };
+        return [arg.where.id, arg.data.plannedOrder];
+      })
+    );
+    // Números DIFERENTES: troca simples — cada um recebe o valor do outro.
+    expect(escritas.get("as0")).toBe(2);
+    expect(escritas.get("as1")).toBe(1);
   });
 
   it("etapa com hora marcada não entra na ordenação", async () => {
@@ -97,6 +106,8 @@ describe("applyDayReorder", () => {
     // as3 desceu para depois de as4 — o que a seta prometeu.
     expect(escritas.get("as4")).toBeLessThan(escritas.get("as3") as number);
     // O agendado continua entre as1 e o par trocado: renumerar só os movíveis o faria saltar.
-    expect(escritas.get("as2") ?? 2).toBe(2);
+    // Sem fallback: se a regressão voltar (renumerar só os movíveis), as2 não é escrito e
+    // `escritas.get("as2")` é `undefined` — o teste tem de falhar nesse caso, não passar por acaso.
+    expect(escritas.get("as2")).toBe(2);
   });
 });
