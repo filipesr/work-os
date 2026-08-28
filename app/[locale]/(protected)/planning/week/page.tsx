@@ -7,10 +7,22 @@ import { getWeekPlanning } from "@/lib/actions/week-planning";
 // Não vêm de `week-planning.ts`: aquele arquivo é `"use server"`, que só pode exportar função
 // assíncrona — um `export const` lá quebra `next build` em runtime. Ver lib/planning/week-capacity.ts.
 import { DAY_VISUAL_HOURS, DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
-import { mondayOfWeek, parseWeekParam, formatISODate, formatDisplayDate } from "@/lib/dates";
+import {
+  mondayOfWeek,
+  parseWeekParam,
+  formatISODate,
+  formatDisplayDate,
+  formatDisplayTime,
+  todayInSaoPaulo,
+} from "@/lib/dates";
+// O envelhecimento por ETAPA já existe e é consumido daqui, não reimplementado: duas
+// implementações da mesma leitura divergiriam, e a segunda quase certamente viraria a punitiva.
+import { stageAgingRatio } from "@/lib/team-health-format";
+import prisma from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { ScheduleDialog } from "./ScheduleDialog";
+import { WeekControls } from "./WeekControls";
 import { OrderControls } from "./OrderControls";
 
 export const metadata: Metadata = { title: "Programação da semana" };
@@ -33,8 +45,12 @@ export default async function WeekPlanningPage({
   const monday = mondayOfWeek(parseWeekParam(sp.week));
   const teamId = Array.isArray(sp.team) ? sp.team[0] : sp.team;
 
-  const plan = await getWeekPlanning(formatISODate(monday), teamId);
+  const [plan, teams] = await Promise.all([
+    getWeekPlanning(formatISODate(monday), teamId),
+    prisma.team.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+  ]);
   const pessoas = plan.people.map((p) => ({ id: p.userId, name: p.name }));
+  const semanaCorrente = formatISODate(mondayOfWeek(todayInSaoPaulo())) === formatISODate(monday);
 
   // Conflito é a primeira coisa que o gestor precisa ver: agendamento que não vai acontecer só
   // aparece a tempo se estiver no topo. Traz o rótulo (tarefa/etapa) e o motivo (derivado do status
@@ -53,6 +69,9 @@ export default async function WeekPlanningPage({
           id: s.item.id,
           taskTitle: s.item.taskTitle,
           stageName: s.item.stageName,
+          // A HORA é o que se precisa para remarcar: "quinta" não diz se dá para trocar com o que
+          // está antes. É a razão de o item ser fixo, então é a informação que resolve o conflito.
+          time: s.item.scheduledStart ? formatDisplayTime(s.item.scheduledStart) : null,
           // Status fora de INACTIVE/BLOCKED não deveria existir num conflito (agendado + não
           // liberado só nasce de um desses dois) — se acontecer, a linha aparece sem motivo em vez
           // de inventar um.
@@ -67,6 +86,14 @@ export default async function WeekPlanningPage({
         kicker={t("kicker")}
         title={t("title")}
         subtitle={`${t("subtitle")} · ${t("weekOf", { date: formatDisplayDate(monday) })}`}
+        actions={
+          <WeekControls
+            monday={monday}
+            isCurrentWeek={semanaCorrente}
+            teams={teams}
+            teamId={teamId}
+          />
+        }
       />
 
       {conflitos.length > 0 && (
@@ -81,6 +108,7 @@ export default async function WeekPlanningPage({
                   <li key={c.id}>
                     <span className="font-medium">{c.taskTitle}</span>
                     {c.stageName && ` · ${c.stageName}`} · {c.person} · {c.day}
+                    {c.time && ` ${c.time}`}
                     {c.reason && <span className="text-foreground/70"> — {c.reason}</span>}
                   </li>
                 ))}
@@ -143,36 +171,71 @@ export default async function WeekPlanningPage({
                             {dia.usedHours.toFixed(1)}h / {DAY_VISUAL_HOURS}h
                           </p>
                           <ul className="space-y-1">
-                            {dia.slots.map((s) => (
-                              <li
-                                key={s.item.id}
-                                className={`rounded border px-2 py-1 text-xs ${
-                                  s.kind === "conflict"
-                                    ? "border-danger/40 bg-danger-subtle text-danger"
-                                    : s.kind === "waiting"
-                                      ? "border-border bg-muted/40 text-muted-foreground"
-                                      : "border-border bg-card text-foreground"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <span>
-                                    {s.kind === "waiting" && `(${t("waiting")}) `}
-                                    {s.kind === "scheduled" && `(${t("scheduled")}) `}
-                                    {s.item.referenceHours.toFixed(1)}h
-                                    {/* `referenceSource === "declared"` cobre tanto o SLA cadastrado
-                                      quanto o caso sem amostra NEM SLA (hours: 0) — os dois são
-                                      estimativa, nunca "etapa de graça". Ver stage-reference.ts. */}
-                                    {s.item.referenceSource === "declared" && (
-                                      <span className="italic text-muted-foreground">
-                                        {" "}
-                                        ({t("estimated")})
-                                      </span>
-                                    )}
-                                  </span>
-                                  <OrderControls activeStageId={s.item.id} />
-                                </div>
-                              </li>
-                            ))}
+                            {dia.slots.map((s) => {
+                              // Envelhecimento DESTA etapa contra a referência da classe — leitura
+                              // sobre o TRABALHO, nunca nota da pessoa: aparece no item, com a
+                              // referência ao lado, como convite a olhar. Só quando passa da
+                              // referência (senão seria ruído em toda célula) e só quando existe
+                              // referência: sem ela a razão não significa nada.
+                              const passou =
+                                s.item.activeSince && s.item.referenceHours > 0
+                                  ? stageAgingRatio(s.item.activeSince, s.item.referenceHours)
+                                  : 0;
+                              return (
+                                <li
+                                  key={s.item.id}
+                                  className={`rounded border px-2 py-1 text-xs ${
+                                    s.kind === "conflict"
+                                      ? "border-danger/40 bg-danger-subtle text-danger"
+                                      : s.kind === "waiting"
+                                        ? "border-border bg-muted/40 text-muted-foreground"
+                                        : "border-border bg-card text-foreground"
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      {/* QUE trabalho é. Sem isto a célula era um chip anônimo de
+                                        "2.0h" — e distribuir semana olhando para horas sem nome é
+                                        decidir no escuro. Os dois rótulos já viajam no item. */}
+                                      <p className="truncate font-medium">{s.item.taskTitle}</p>
+                                      {s.item.stageName && (
+                                        <p className="truncate opacity-80">{s.item.stageName}</p>
+                                      )}
+                                      <p>
+                                        {s.kind === "waiting" && `(${t("waiting")}) `}
+                                        {/* A HORA vem junto do rótulo "agendada": é a razão de o
+                                          item ser fixo. Também no conflito, que é agendado e não
+                                          liberado — ali ela é o que o gestor precisa para remarcar. */}
+                                        {s.item.scheduledStart &&
+                                          `(${t("scheduled")} ${formatDisplayTime(s.item.scheduledStart)}) `}
+                                        {s.item.referenceHours.toFixed(1)}h
+                                        {/* `referenceSource === "declared"` cobre tanto o SLA
+                                          cadastrado quanto o caso sem amostra NEM SLA (hours: 0) —
+                                          os dois são estimativa, nunca "etapa de graça". */}
+                                        {s.item.referenceSource === "declared" && (
+                                          <span className="italic opacity-80">
+                                            {" "}
+                                            ({t("estimated")})
+                                          </span>
+                                        )}
+                                      </p>
+                                      {passou > 1 && (
+                                        // Cor de ATENÇÃO, nunca de erro: a causa de uma etapa
+                                        // travada costuma ser do sistema (dependência, retrabalho,
+                                        // briefing ruim), não de quem a executa.
+                                        <p className="text-warning">
+                                          {t("aging", {
+                                            elapsed: (passou * s.item.referenceHours).toFixed(1),
+                                            reference: s.item.referenceHours.toFixed(1),
+                                          })}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <OrderControls activeStageId={s.item.id} />
+                                  </div>
+                                </li>
+                              );
+                            })}
                           </ul>
                         </td>
                       );

@@ -206,6 +206,20 @@ export function formatDisplayDateTime(
   });
 }
 
+/** HH:mm de São Paulo. Existe para a hora do COMPROMISSO marcado (a locação é às 14h): ler esse
+ *  horário no fuso do servidor — que em produção não é o do escritório — seria remarcar em cima de
+ *  um número errado. `formatDisplayDateTime` é anterior a esta preocupação e ficou como está. */
+export function formatDisplayTime(date: Date | string | null | undefined, fallback = "-"): string {
+  if (!date) return fallback;
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return fallback;
+  return d.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Sao_Paulo",
+  });
+}
+
 export type DueState = "overdue" | "dueSoon" | "none";
 
 /**
