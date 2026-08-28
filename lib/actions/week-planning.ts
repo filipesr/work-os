@@ -89,12 +89,17 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
         },
       },
     }),
-    // O poço: etapas liberadas, sem dono e ainda não programadas.
+    // O poço: etapas liberadas e sem dono.
     prisma.taskActiveStage.findMany({
       where: {
         assigneeId: null,
         status: "ACTIVE",
-        plannedDate: null,
+        // Sem filtro por `plannedDate`: uma etapa liberada e sem dono é do poço, tendo ou não data
+        // velha. O resto do app desatribui etapa (o próprio responsável larga, uma reversão, uma
+        // troca de time) e nem sempre sabe da programação — se o poço exigisse `plannedDate: null`,
+        // a linha com data e sem dono não apareceria nem aqui nem na grade (que descarta item sem
+        // responsável) e o trabalho sumiria da mesa sem volta.
+        //
         // Sem `teamId`, o poço continua trazendo tudo, como hoje. Com a mesa filtrada por time,
         // restringe ao time EFETIVO (`stageTeamWhere`) — não a `teamId` puro, porque uma etapa
         // coringa (`teamId: null`) herda `stage.defaultTeamId`; filtrar só por `teamId` deixaria

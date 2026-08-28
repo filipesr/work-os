@@ -116,6 +116,32 @@ describe("getWeekPlanning", () => {
     expect(r.pool.map((p) => p.id)).toEqual(["livre"]);
   });
 
+  it("item com dia e SEM responsável continua alcançável: cai no poço", async () => {
+    // A invariante "plannedDate e assigneeId andam juntos" é respeitada pelas ações desta feature,
+    // mas o resto do app desatribui etapa sem saber que ela existe (o próprio responsável larga,
+    // uma reversão, uma troca de time em massa). Se o poço exigisse `plannedDate: null`, a linha
+    // resultante ficaria fora da grade (que descarta item sem responsável) E fora do poço: o
+    // trabalho desapareceria da mesa sem volta. Este teste guarda a saída.
+    db.taskActiveStage.findMany.mockImplementation((args: { where?: Record<string, unknown> }) =>
+      args.where?.assigneeId === null
+        ? Promise.resolve([
+            stageRow({
+              id: "orfa",
+              assigneeId: null,
+              plannedDate: new Date("2026-08-24T00:00:00Z"),
+            }),
+          ])
+        : Promise.resolve([])
+    );
+    const r = await getWeekPlanning("2026-08-31");
+    expect(r.pool.map((p) => p.id)).toEqual(["orfa"]);
+    // E o filtro que a causaria não pode voltar por descuido.
+    const wherePoco = db.taskActiveStage.findMany.mock.calls
+      .map((c: [{ where?: Record<string, unknown> }]) => c[0].where)
+      .find((w: Record<string, unknown> | undefined) => w?.assigneeId === null);
+    expect(wherePoco).not.toHaveProperty("plannedDate");
+  });
+
   it("recusa quem não é gestor nem admin", async () => {
     // Todos os outros testes mockam MANAGER; sem este, uma regressão que apagasse a chamada a
     // requireManagerOrAdmin passaria batido pela suíte inteira.

@@ -43,7 +43,11 @@ export async function updateUserRoleAndTeams(formData: FormData) {
         assigneeId: id,
         status: "ACTIVE",
       },
-      data: { assigneeId: null }, // ✅ Desatribui etapas ativas automaticamente
+      // Desatribui etapas ativas automaticamente. `plannedDate`/`plannedOrder` saem junto: são
+      // posição na fila de UMA pessoa, e sem dono o item ficaria ordenado na fila de quem não o
+      // tem mais — a mesa semanal só monta o dia de quem tem responsável, então ele sumiria da
+      // grade. Zerados, os itens voltam para o poço e o gestor os redistribui no novo time.
+      data: { assigneeId: null, plannedDate: null, plannedOrder: null },
     });
 
     // Also update task status if needed

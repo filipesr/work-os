@@ -1444,7 +1444,11 @@ export async function unassignActiveStage(taskId: string, stageId: string) {
 
     await prisma.taskActiveStage.update({
       where: { id: activeStage.id },
-      data: { assigneeId: null },
+      // A programação semanal sai JUNTO com o responsável: `plannedDate`/`plannedOrder` são
+      // posição na fila de UMA pessoa, e sem dono o item ficaria ordenado na fila de quem não o
+      // tem mais — invisível na grade (que só monta dia de quem tem responsável) e fora do poço se
+      // este filtrasse por data. Limpando aqui, a etapa volta inteira para o poço.
+      data: { assigneeId: null, plannedDate: null, plannedOrder: null },
     });
 
     // Update Task status if no more active assigned stages
@@ -1749,9 +1753,18 @@ export async function revertTaskStage(
       const sourceAssigneeId = targetInstance?.assigneeId ?? null;
 
       // 4c. Reativar a etapa-alvo (volta ao backlog: assignee preservado pode confundir → limpa).
+      // A programação semanal sai junto com o assignee: dia e ordem são posição na fila de UMA
+      // pessoa: mantê-los sem dono deixaria o item ordenado na fila de quem não o tem mais, e sem
+      // responsável ele não é montado em célula nenhuma da mesa semanal.
       await tx.taskActiveStage.update({
         where: { taskId_stageId: { taskId, stageId: revertToStageId } },
-        data: { status: "ACTIVE", assigneeId: null, completedAt: null },
+        data: {
+          status: "ACTIVE",
+          assigneeId: null,
+          plannedDate: null,
+          plannedOrder: null,
+          completedAt: null,
+        },
       });
       await recordStageTransition(tx, taskId, revertToStageId, "ACTIVE");
 
