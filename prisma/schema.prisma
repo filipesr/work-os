@@ -251,6 +251,17 @@ model WorkflowTemplate {
   name        String          @unique
   description String?
   createdAt   DateTime        @default(now())
+  /// Fluxo de ENTRADA RÁPIDA: registro de trabalho de etapa única que já aconteceu
+  /// (ver docs/superpowers/specs/2026-08-28-tarefa-rapida-design.md).
+  ///
+  /// Só templates com esta marca aparecem no formulário rápido. A marca é o que separa a CLASSE:
+  /// uma tarefa rápida nasce e morre no mesmo instante (lead time ≈ 0) e, misturada às demandas
+  /// normais, puxaria o p50/p85 do tipo para baixo — justamente os percentis que alimentam a
+  /// checagem de viabilidade na criação de demanda. Como a previsão é por classe (P4), separar o
+  /// template já resolve.
+  ///
+  /// Invariante: template com `quickEntry` tem EXATAMENTE uma etapa (ver lib/template-invariants.ts).
+  quickEntry  Boolean         @default(false)
   stages      TemplateStage[]
   tasks       Task[]
 }
