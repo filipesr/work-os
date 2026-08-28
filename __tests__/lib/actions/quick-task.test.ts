@@ -120,6 +120,16 @@ describe("createQuickTask", () => {
     expect(tx.task.create).not.toHaveBeenCalled();
   });
 
+  it("recusa data mal formada, sem repassar para a janela retroativa", async () => {
+    // `validateQuickTaskDate` (lib/quick-task.ts) compara `dateISO` contra "hoje" LEXICOGRAFICAMENTE.
+    // "2026-8-5" sem zero à esquerda ordena, como string, ANTES de "2026-08-28" — passaria pela
+    // janela em silêncio (nem "future" nem "tooOld") se o regex de formato não barrasse antes.
+    // Este teste é o que impede alguém de remover o regex por parecer supérfluo.
+    expect(await createQuickTask(form({ date: "2026-8-5" }))).toEqual({ error: "dateInvalid" });
+    expect(await createQuickTask(form({ date: "lixo" }))).toEqual({ error: "dateInvalid" });
+    expect(tx.task.create).not.toHaveBeenCalled();
+  });
+
   it("recusa tempo ausente ou zero", async () => {
     expect(await createQuickTask(form({ minutes: "0" }))).toEqual({ error: "minutesInvalid" });
   });
