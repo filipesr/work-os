@@ -450,7 +450,12 @@ model TaskActiveStage {
   @@index([assigneeId])
   @@index([status])
   @@index([teamId])
-  @@index([assigneeId, plannedDate])
+  // `plannedDate` na FRENTE: a consulta da mesa semanal filtra a faixa de dias SEM `assigneeId`
+  // (a grade monta a semana de todo mundo de uma vez), e um índice composto não é usado quando a
+  // primeira coluna não está no filtro. Nesta ordem ele serve à consulta da tela e continua
+  // servindo aos acessos por pessoa+dia (o `aggregate` de scheduleStage, o `findMany` de
+  // moveStageOrder), que dão `plannedDate` e `assigneeId` juntos.
+  @@index([plannedDate, assigneeId])
 }
 
 model TaskComment {
