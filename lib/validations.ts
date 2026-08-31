@@ -49,11 +49,22 @@ export const createTaskSchema = z.object({
   projectId: z.string().min(1, "Project is required"),
   templateId: z.string().min(1, "Workflow template is required"),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).default("MEDIUM"),
-  dueDate: z.string().optional().default(""),
-  // A caixa "esta demanda não tem prazo" — o navegador manda "on" quando marcada, e nada quando
-  // não. A REGRA (prazo obrigatório, a menos que marcada) mora em `lib/task-due-date.ts`, não
-  // aqui: a mensagem precisa vir do dicionário, e schema Zod carrega string fixa.
-  noDueDate: z.string().optional().default(""),
+  // `formData.get()` devolve NULL para campo ausente, e os dois campos abaixo somem do envio o
+  // tempo todo: a caixa de seleção não é enviada quando desmarcada, e o input de data não é
+  // enviado quando está desabilitado (que é o estado dele com a caixa marcada). `.optional()` do
+  // Zod cobre `undefined`, não `null` — daí `.nullish()`, senão a criação quebra com
+  // "expected string, received null" no caminho MAIS comum, que é o da caixa desmarcada.
+  dueDate: z
+    .string()
+    .nullish()
+    .transform((v) => v ?? ""),
+  // A caixa "esta demanda não tem prazo" — o navegador manda "on" quando marcada. A REGRA (prazo
+  // obrigatório, a menos que marcada) mora em `lib/task-due-date.ts`, não aqui: a mensagem
+  // precisa vir do dicionário, e schema Zod carrega string fixa.
+  noDueDate: z
+    .string()
+    .nullish()
+    .transform((v) => v ?? ""),
 });
 
 export const createClientSchema = z.object({

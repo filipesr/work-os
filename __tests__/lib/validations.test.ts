@@ -34,6 +34,25 @@ describe("createTaskSchema", () => {
     }
   });
 
+  it("aceita null nos campos de prazo — é o que FormData devolve para campo ausente", () => {
+    // `formData.get()` devolve null quando o campo NÃO FOI ENVIADO: caixa de seleção desmarcada,
+    // ou input desabilitado. `.optional()` do Zod cobre `undefined`, não `null` — sem tolerar os
+    // dois, criar demanda com a caixa "sem prazo" desmarcada quebrava com
+    // "expected string, received null".
+    const result = createTaskSchema.safeParse({
+      title: "Task",
+      projectId: "proj-123",
+      templateId: "tmpl-456",
+      dueDate: null,
+      noDueDate: null,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.dueDate).toBe("");
+      expect(result.data.noDueDate).toBe("");
+    }
+  });
+
   it("rejects empty title", () => {
     const result = createTaskSchema.safeParse({
       title: "",
