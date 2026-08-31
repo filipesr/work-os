@@ -60,7 +60,9 @@
     "artifactUrlRequired": "Indica la URL del artefacto.",
     "taskIdRequired": "No se indicó la tarea.",
     "hoursMustBePositive": "Las horas deben ser mayores que cero.",
-    "logDateRequired": "Indica la fecha del registro."
+    "logDateRequired": "Indica la fecha del registro.",
+    "dueDateRequired": "Indica la fecha de vencimiento o marca que esta demanda no tiene plazo.",
+    "invalidDueDate": "La fecha de vencimiento no es válida."
   },
   "user": {
     "notFound": "Usuario no encontrado",

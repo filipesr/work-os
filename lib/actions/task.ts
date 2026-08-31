@@ -9,6 +9,7 @@ import { Prisma, type ActiveStageStatus, type ReworkKind } from "@prisma/client"
 import { auth } from "@/auth";
 import { requireMemberOrHigher, requireManagerOrAdmin, getSessionUser } from "@/lib/permissions";
 import { createTaskSchema } from "@/lib/validations";
+import { resolveDueDate } from "@/lib/task-due-date";
 import { availableStageWhere } from "@/lib/task-availability";
 import { stageTeamWhere, stageTeamInclude, effectiveStageTeam } from "@/lib/stage-team";
 import {
@@ -68,16 +69,32 @@ export async function createTask(formData: FormData) {
     templateId: formData.get("templateId"),
     priority: formData.get("priority"),
     dueDate: formData.get("dueDate"),
+    noDueDate: formData.get("noDueDate"),
   });
 
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0].message);
   }
 
-  const { title, description, projectId, templateId, priority, dueDate: dueDateStr } = parsed.data;
+  const {
+    title,
+    description,
+    projectId,
+    templateId,
+    priority,
+    dueDate: dueDateStr,
+    noDueDate,
+  } = parsed.data;
 
-  // Convert dueDate string to Date if provided
-  const dueDate = dueDateStr ? new Date(dueDateStr) : null;
+  // Prazo é obrigatório, a menos que a pessoa tenha MARCADO que esta demanda não tem. A tela
+  // explica e bloqueia; esta checagem é a que vale — requisição fora da tela não passa por lá.
+  // Ver `lib/task-due-date.ts` para o porquê de uma demanda sem prazo ser trabalho invisível.
+  const prazo = resolveDueDate(dueDateStr, noDueDate === "on");
+  if ("problem" in prazo) {
+    const tTask = await getTranslations("errors.task");
+    throw new Error(tTask(prazo.problem === "required" ? "dueDateRequired" : "invalidDueDate"));
+  }
+  const dueDate = prazo.date;
 
   const assignments = parseStageAssignments(formData);
   const selectedStageIds = parseSelectedStages(formData);

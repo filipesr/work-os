@@ -50,6 +50,10 @@ export const createTaskSchema = z.object({
   templateId: z.string().min(1, "Workflow template is required"),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).default("MEDIUM"),
   dueDate: z.string().optional().default(""),
+  // A caixa "esta demanda não tem prazo" — o navegador manda "on" quando marcada, e nada quando
+  // não. A REGRA (prazo obrigatório, a menos que marcada) mora em `lib/task-due-date.ts`, não
+  // aqui: a mensagem precisa vir do dicionário, e schema Zod carrega string fixa.
+  noDueDate: z.string().optional().default(""),
 });
 
 export const createClientSchema = z.object({

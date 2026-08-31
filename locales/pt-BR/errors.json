@@ -60,7 +60,9 @@
     "artifactUrlRequired": "Informe a URL do artefato.",
     "taskIdRequired": "Tarefa não informada.",
     "hoursMustBePositive": "As horas precisam ser maiores que zero.",
-    "logDateRequired": "Informe a data do apontamento."
+    "logDateRequired": "Informe a data do apontamento.",
+    "dueDateRequired": "Informe a data de vencimento — ou marque que esta demanda não tem prazo.",
+    "invalidDueDate": "Data de vencimento inválida."
   },
   "user": {
     "notFound": "Usuário não encontrado",

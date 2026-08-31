@@ -93,6 +93,9 @@ export function CreateTaskForm({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [priority, setPriority] = useState<string>("MEDIUM");
   const [dueDate, setDueDate] = useState<string>("");
+  // Demanda sem prazo é caso real (trabalho contínuo), mas precisa ser DECLARADA: sem esta marca,
+  // esquecer a data criava trabalho que o acompanhamento inteiro não enxerga.
+  const [noDueDate, setNoDueDate] = useState(false);
   const [forecast, setForecast] = useState<{
     p50: number;
     p85: number;
@@ -347,16 +350,37 @@ export function CreateTaskForm({
 
             {/* Due Date */}
             <div>
-              <FieldLabel htmlFor="dueDate" required>
+              <FieldLabel htmlFor="dueDate" required={!noDueDate}>
                 {t("create.labels.dueDate")}
               </FieldLabel>
               <Input
                 type="date"
                 id="dueDate"
                 name="dueDate"
-                value={dueDate}
+                required={!noDueDate}
+                disabled={noDueDate}
+                value={noDueDate ? "" : dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
               />
+              {/* A saída para a demanda que REALMENTE não tem prazo — trabalho contínuo, apoio.
+                  Existe para que a ausência seja uma escolha marcada, e não um campo esquecido:
+                  o sistema precisa saber a diferença entre as duas, porque demanda sem prazo
+                  desaparece do acompanhamento inteiro (ver lib/task-due-date.ts). */}
+              <label className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
+                <input
+                  type="checkbox"
+                  name="noDueDate"
+                  checked={noDueDate}
+                  onChange={(e) => setNoDueDate(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-input-border text-primary"
+                />
+                <span>
+                  {t("create.labels.noDueDate")}
+                  <span className="block text-xs text-muted-foreground/80">
+                    {t("create.labels.noDueDateHelp")}
+                  </span>
+                </span>
+              </label>
             </div>
           </div>
         </section>

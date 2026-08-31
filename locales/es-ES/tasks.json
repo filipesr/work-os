@@ -475,7 +475,9 @@
       "project": "Proyecto",
       "template": "Tipo / plantilla",
       "priority": "Prioridad",
-      "dueDate": "Vencimiento"
+      "dueDate": "Vencimiento",
+      "noDueDate": "Esta demanda no tiene plazo",
+      "noDueDateHelp": "Sin plazo, no entra en la cobertura por cliente ni en la tasa de entrega, y nunca aparece como atrasada."
     },
     "waitingTemplateTitle": "Elige una plantilla",
     "waitingTemplateDesc": "La vista previa de las etapas aparecerá aquí para que ajustes la demanda antes de crear.",
