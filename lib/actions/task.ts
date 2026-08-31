@@ -2167,7 +2167,10 @@ export async function markTaskObsolete(taskId: string) {
  * O que deliberadamente NÃO viaja é o responsável: sem ele a cópia nasce em BACKLOG com
  * `startedAt` nulo — virgem — e por isso continua dentro da janela de correção
  * (ver lib/task-virgin.ts). Copiar o responsável travaria a cópia no mesmo instante. */
-export async function duplicateTask(taskId: string) {
+export async function duplicateTask(
+  taskId: string,
+  prazoInformado?: { dueDate: string; noDueDate: boolean }
+) {
   const user = await requireManagerOrAdmin();
   const userId = user.id as string;
   const tTask = await getTranslations("errors.task");
@@ -2182,6 +2185,7 @@ export async function duplicateTask(taskId: string) {
         description: true,
         priority: true,
         projectId: true,
+        dueDate: true,
         activeStages: {
           select: {
             stageId: true,
@@ -2194,6 +2198,19 @@ export async function duplicateTask(taskId: string) {
     });
     if (!original) return { error: tCommon("taskNotFound") };
     if (original.activeStages.length === 0) return { error: tTask("noStagesToDuplicate") };
+
+    // A cópia é uma DEMANDA NOVA, e demanda nova decide o próprio prazo. Herdar o do original em
+    // silêncio faria a cópia nascer quase sempre vencida — duplica-se justamente para refazer o
+    // que não deu certo. E deixar sem prazo era a porta dos fundos da regra de criação: como
+    // demanda não se edita neste sistema, a cópia ficaria invisível para cobertura, taxa de
+    // entrega e atraso, sem conserto a não ser marcá-la obsoleta e recomeçar.
+    // A tela abre com a data do original preenchida; quem duplica confirma ou troca.
+    const prazo = resolveDueDate(prazoInformado?.dueDate ?? "", prazoInformado?.noDueDate ?? false);
+    if ("problem" in prazo) {
+      return {
+        error: tTask(prazo.problem === "required" ? "dueDateRequired" : "invalidDueDate"),
+      };
+    }
 
     const templateId = original.activeStages[0].stage.templateId;
     const selectedStageIds = new Set(original.activeStages.map((s) => s.stageId));
@@ -2215,6 +2232,7 @@ export async function duplicateTask(taskId: string) {
           status: "BACKLOG",
           projectId: original.projectId,
           assigneeId: null,
+          dueDate: prazo.date,
           workflowTemplateId: templateId,
         },
       });

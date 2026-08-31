@@ -19,7 +19,7 @@ import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
 import { getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
-import { formatDisplayDate, formatDisplayDateTime } from "@/lib/dates";
+import { formatDisplayDate, formatDisplayDateTime, formatISODate } from "@/lib/dates";
 import { effectiveStageTeam } from "@/lib/stage-team";
 import { taskVirginBlocker } from "@/lib/task-virgin";
 import { getTeamsWithMembers } from "@/lib/actions/team";
@@ -156,7 +156,11 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
           {/* Lifecycle + meta */}
           <SectionCard>
             <div className="mb-4">
-              <TaskLifecycleActions taskId={task.id} taskStatus={task.status} />
+              <TaskLifecycleActions
+                taskId={task.id}
+                taskStatus={task.status}
+                dueDate={task.dueDate ? formatISODate(task.dueDate) : null}
+              />
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-border pt-4">

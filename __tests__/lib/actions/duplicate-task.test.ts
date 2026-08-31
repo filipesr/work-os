@@ -68,7 +68,7 @@ describe("duplicateTask", () => {
       ],
     });
 
-    await duplicateTask("t1");
+    await duplicateTask("t1", { dueDate: "2026-09-30", noDueDate: false });
 
     const args = createTaskStages.mock.calls[0][1];
     expect([...args.selectedStageIds].sort()).toEqual(["s1", "s2"]);
@@ -87,7 +87,7 @@ describe("duplicateTask", () => {
       ],
     });
 
-    await duplicateTask("t1");
+    await duplicateTask("t1", { dueDate: "2026-09-30", noDueDate: false });
 
     // Sem assignments a etapa de entrada nasce sem dono → task fica em BACKLOG
     // com startedAt nulo, dentro da janela de lib/task-virgin.ts.
@@ -108,5 +108,62 @@ describe("duplicateTask", () => {
     expect(await duplicateTask("t1")).toEqual(
       expect.objectContaining({ error: expect.any(String) })
     );
+  });
+
+  it("grava o prazo informado — duplicar decide o prazo, não herda em silêncio", async () => {
+    db.task.findUnique.mockResolvedValue({
+      title: "Vídeo demo",
+      description: null,
+      priority: "MEDIUM",
+      projectId: "p1",
+      dueDate: new Date("2026-01-10T00:00:00.000Z"),
+      activeStages: [
+        { stageId: "s1", teamId: null, instructions: null, stage: { templateId: "tpl" } },
+      ],
+    });
+
+    await duplicateTask("t1", { dueDate: "2026-09-30", noDueDate: false });
+
+    expect(tx.task.create.mock.calls[0][0].data.dueDate).toEqual(
+      new Date("2026-09-30T00:00:00.000Z")
+    );
+  });
+
+  it("recusa duplicar sem prazo e sem a marca — a cópia é uma demanda nova", async () => {
+    // Sem isto, duplicar era a porta dos fundos da regra de criação: a cópia nascia sem prazo,
+    // invisível para cobertura, taxa de entrega e atraso — e como demanda não se edita, sem
+    // conserto possível a não ser marcar obsoleta e recomeçar.
+    db.task.findUnique.mockResolvedValue({
+      title: "Vídeo demo",
+      description: null,
+      priority: "MEDIUM",
+      projectId: "p1",
+      dueDate: null,
+      activeStages: [
+        { stageId: "s1", teamId: null, instructions: null, stage: { templateId: "tpl" } },
+      ],
+    });
+
+    expect(await duplicateTask("t1", { dueDate: "", noDueDate: false })).toEqual({
+      error: "dueDateRequired",
+    });
+    expect(tx.task.create).not.toHaveBeenCalled();
+  });
+
+  it("com a marca, a cópia nasce sem prazo de propósito", async () => {
+    db.task.findUnique.mockResolvedValue({
+      title: "Vídeo demo",
+      description: null,
+      priority: "MEDIUM",
+      projectId: "p1",
+      dueDate: new Date("2026-01-10T00:00:00.000Z"),
+      activeStages: [
+        { stageId: "s1", teamId: null, instructions: null, stage: { templateId: "tpl" } },
+      ],
+    });
+
+    await duplicateTask("t1", { dueDate: "", noDueDate: true });
+
+    expect(tx.task.create.mock.calls[0][0].data.dueDate).toBeNull();
   });
 });

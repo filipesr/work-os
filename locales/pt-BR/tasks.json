@@ -395,7 +395,13 @@
       "success": "Etapa desatribuída com sucesso",
       "currentAssigneeLabel": "Responsável atual:",
       "infoComment": "Um comentário será adicionado indicando que a etapa foi desatribuída."
-    }
+    },
+    "duplicateTitle": "Duplicar demanda",
+    "duplicateHelp": "A cópia nasce sem responsável e sem histórico, com o mesmo desenho de etapas. Confirme o prazo dela — vem preenchido com o do original.",
+    "duplicateDueDate": "Data de vencimento da cópia",
+    "duplicateNoDueDate": "Esta cópia não tem prazo",
+    "duplicateSubmit": "Duplicar",
+    "duplicateCancel": "Cancelar"
   },
   "create": {
     "titleLabel": "Título da Tarefa *",

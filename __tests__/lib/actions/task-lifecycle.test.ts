@@ -90,7 +90,9 @@ describe("duplicateTask", () => {
     });
 
     const { duplicateTask } = await import("@/lib/actions/task");
-    await duplicateTask("t1");
+    // Duplicar passou a exigir a decisão de prazo: a cópia é uma demanda nova, e demanda nova
+    // decide o próprio prazo (ver lib/task-due-date.ts).
+    await duplicateTask("t1", { dueDate: "2026-09-30", noDueDate: false });
 
     // nova tarefa com "(cópia)"
     const created = txTask.create.mock.calls.at(-1)?.[0].data;
