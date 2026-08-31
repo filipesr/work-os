@@ -789,7 +789,12 @@ export async function activateNextStages(taskId: string, completedStageId: strin
       select: {
         id: true,
         name: true,
-        dependencies: { select: { dependsOnStageId: true } },
+        // `dependents`, não `dependencies`: no schema, o campo com nome intuitivo é a relação
+        // INVERSA (quem depende desta etapa). Os PRÉ-REQUISITOS estão em `dependents` — as linhas
+        // em que esta etapa é a dependente. Ler o campo errado devolvia o próprio id da etapa,
+        // então toda etapa parecia depender de si mesma e a ÚLTIMA da cadeia parecia não depender
+        // de nada: concluir a primeira ativava a última, pulando o meio.
+        dependents: { select: { dependsOnStageId: true } },
         defaultTeam: { select: { id: true, name: true, members: { select: { id: true } } } },
       },
     });
@@ -799,7 +804,7 @@ export async function activateNextStages(taskId: string, completedStageId: strin
     const transitions = computeStageReadiness({
       stages: templateStages.map((s) => ({
         id: s.id,
-        dependsOnIds: s.dependencies.map((d) => d.dependsOnStageId),
+        dependsOnIds: s.dependents.map((d) => d.dependsOnStageId),
       })),
       includedStageIds,
       completedStageIds,

@@ -60,7 +60,10 @@ export async function previewNextStages(
         order: true,
         defaultTeamId: true,
         defaultTeam: { select: { id: true, name: true } },
-        dependencies: { select: { dependsOnStageId: true } },
+        // Ver o comentário em `activateNextStages`: os pré-requisitos vivem em `dependents`.
+        // O preview e a execução PRECISAM ler o mesmo lado, senão a tela promete um caminho e o
+        // sistema anda por outro.
+        dependents: { select: { dependsOnStageId: true } },
       },
     }),
     // As linhas da tarefa são a lista de etapas INCLUÍDAS: etapa de template sem
@@ -91,7 +94,7 @@ export async function previewNextStages(
   const transitions = computeStageReadiness({
     stages: templateStages.map((st) => ({
       id: st.id,
-      dependsOnIds: st.dependencies.map((d) => d.dependsOnStageId),
+      dependsOnIds: st.dependents.map((d) => d.dependsOnStageId),
     })),
     includedStageIds,
     completedStageIds,

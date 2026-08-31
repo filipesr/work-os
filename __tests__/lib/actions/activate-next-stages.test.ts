@@ -35,7 +35,11 @@ function graph(nodes: Node[]) {
   return nodes.map((n) => ({
     id: n.id,
     name: n.name ?? n.id,
-    dependencies: (n.dependsOn ?? []).map((d) => ({ dependsOnStageId: d })),
+    // ATENÇÃO ao nome: em `TemplateStage`, os PRÉ-REQUISITOS da etapa vivem em `dependents`
+    // (as linhas em que ela é a dependente). `dependencies` é a relação INVERSA — quem depende
+    // dela. O mock antigo montava `dependencies` com o sentido intuitivo, então reproduzia o
+    // engano do código de produção e os testes passavam com o fluxo quebrado.
+    dependents: (n.dependsOn ?? []).map((d) => ({ dependsOnStageId: d })),
     defaultTeam: null,
   }));
 }

@@ -291,6 +291,15 @@ model TemplateStage {
   optional Boolean @default(false)
 
   // Relations
+  // CUIDADO: os dois nomes abaixo são o oposto do que parecem, e o oposto já custou um bug de
+  // produção (concluir a 1ª etapa ativava a última, pulando o meio). Quem quiser os PRÉ-REQUISITOS
+  // de uma etapa precisa de `dependents`.
+  //
+  //   dependencies -> as linhas em que esta etapa é o PRÉ-REQUISITO de outra (quem depende dela)
+  //   dependents   -> as linhas em que esta etapa é a DEPENDENTE (os pré-requisitos dela)
+  //
+  // Renomear resolveria de vez, mas viraria a leitura de todo consumidor de uma vez só; o comentário
+  // é a trava barata até que alguém faça a troca com calma.
   dependencies     StageDependency[] @relation("DependsOn")
   dependents       StageDependency[] @relation("Stage")
   activeTasks      TaskActiveStage[] @relation("ActiveTasks")

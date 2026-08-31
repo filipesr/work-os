@@ -32,7 +32,9 @@ function graph(nodes: Node[]) {
     order: n.order,
     defaultTeamId: n.team?.id ?? null,
     defaultTeam: n.team ?? null,
-    dependencies: (n.dependsOn ?? []).map((d) => ({ dependsOnStageId: d })),
+    // Pré-requisitos vivem em `dependents` (ver o comentário em activateNextStages). O mock
+    // antigo usava `dependencies`, reproduzindo o engano do código e escondendo o defeito.
+    dependents: (n.dependsOn ?? []).map((d) => ({ dependsOnStageId: d })),
   }));
 }
 

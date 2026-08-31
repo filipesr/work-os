@@ -61,11 +61,13 @@ function setup(prisma: any, donoAtualDeS2: string | null) {
   prisma.templateStage.findMany.mockImplementation((args: { where: Record<string, unknown> }) =>
     args.where.templateId
       ? Promise.resolve([
-          { id: "s1", name: "Roteiro", dependencies: [], defaultTeam: equipe },
+          // Pré-requisitos vivem em `dependents` — em `TemplateStage`, o campo `dependencies` é a
+          // relação INVERSA (quem depende desta etapa). Ver o comentário no schema.
+          { id: "s1", name: "Roteiro", dependents: [], defaultTeam: equipe },
           {
             id: "s2",
             name: "Edição",
-            dependencies: [{ dependsOnStageId: "s1" }],
+            dependents: [{ dependsOnStageId: "s1" }],
             defaultTeam: equipe,
           },
         ])
