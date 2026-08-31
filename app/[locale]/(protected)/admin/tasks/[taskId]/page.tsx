@@ -159,6 +159,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
               <TaskLifecycleActions
                 taskId={task.id}
                 taskStatus={task.status}
+                title={task.title}
                 dueDate={task.dueDate ? formatISODate(task.dueDate) : null}
               />
             </div>

@@ -13,10 +13,14 @@ import { duplicateTask, markTaskObsolete } from "@/lib/actions/task";
 export function TaskLifecycleActions({
   taskId,
   taskStatus,
+  title,
   dueDate,
 }: {
   taskId: string;
   taskStatus: string;
+  /** Título do ORIGINAL. Preenche o diálogo: duplicar tanto refaz uma demanda travada (mesmo
+   *  título) quanto roda o mesmo desenho para outro ciclo (título novo). */
+  title: string;
   /** Prazo do ORIGINAL, em YYYY-MM-DD. Preenche o diálogo — quem duplica confirma ou troca. */
   dueDate: string | null;
 }) {
@@ -28,6 +32,7 @@ export function TaskLifecycleActions({
   // não deu certo), e criar sem prazo era a porta dos fundos da regra de criação — pior aqui,
   // porque demanda não se edita neste sistema.
   const [open, setOpen] = useState(false);
+  const [tituloCopia, setTituloCopia] = useState(title);
   const [dueDateCopia, setDueDateCopia] = useState(dueDate ?? "");
   const [semPrazo, setSemPrazo] = useState(false);
 
@@ -35,6 +40,7 @@ export function TaskLifecycleActions({
     startTransition(async () => {
       // duplicateTask redireciona para a nova tarefa em caso de sucesso.
       const res = await duplicateTask(taskId, {
+        title: tituloCopia,
         dueDate: semPrazo ? "" : dueDateCopia,
         noDueDate: semPrazo,
       });
@@ -83,6 +89,20 @@ export function TaskLifecycleActions({
             handleDuplicate();
           }}
         >
+          <div>
+            <FieldLabel htmlFor="dup-title" required>
+              {t("duplicateTitleField")}
+            </FieldLabel>
+            <input
+              type="text"
+              id="dup-title"
+              required
+              maxLength={200}
+              value={tituloCopia}
+              onChange={(e) => setTituloCopia(e.target.value)}
+              className="h-10 w-full rounded-md border border-input-border bg-input px-3 text-sm text-foreground"
+            />
+          </div>
           <div>
             <FieldLabel htmlFor="dup-due" required={!semPrazo}>
               {t("duplicateDueDate")}

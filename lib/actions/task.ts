@@ -2169,7 +2169,7 @@ export async function markTaskObsolete(taskId: string) {
  * (ver lib/task-virgin.ts). Copiar o responsável travaria a cópia no mesmo instante. */
 export async function duplicateTask(
   taskId: string,
-  prazoInformado?: { dueDate: string; noDueDate: boolean }
+  entrada?: { title?: string; dueDate: string; noDueDate: boolean }
 ) {
   const user = await requireManagerOrAdmin();
   const userId = user.id as string;
@@ -2205,7 +2205,14 @@ export async function duplicateTask(
     // demanda não se edita neste sistema, a cópia ficaria invisível para cobertura, taxa de
     // entrega e atraso, sem conserto a não ser marcá-la obsoleta e recomeçar.
     // A tela abre com a data do original preenchida; quem duplica confirma ou troca.
-    const prazo = resolveDueDate(prazoInformado?.dueDate ?? "", prazoInformado?.noDueDate ?? false);
+    // Título editável porque duplicar serve a DOIS usos: corrigir uma demanda que travou (aí o
+    // título é o mesmo, e a original já saiu das listas por estar obsoleta) e rodar o mesmo
+    // desenho outra vez, para outro ciclo — e aí o título é outro. O sufixo "(cópia)" só
+    // descrevia o primeiro caso, e atrapalhava o segundo.
+    const titulo = (entrada?.title ?? original.title).trim();
+    if (!titulo) return { error: tTask("titleRequired") };
+
+    const prazo = resolveDueDate(entrada?.dueDate ?? "", entrada?.noDueDate ?? false);
     if ("problem" in prazo) {
       return {
         error: tTask(prazo.problem === "required" ? "dueDateRequired" : "invalidDueDate"),
@@ -2226,7 +2233,7 @@ export async function duplicateTask(
     const created = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const t = await tx.task.create({
         data: {
-          title: `${original.title} (cópia)`,
+          title: titulo,
           description: original.description,
           priority: original.priority,
           status: "BACKLOG",

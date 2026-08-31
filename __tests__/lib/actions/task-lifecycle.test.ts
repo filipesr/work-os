@@ -92,12 +92,18 @@ describe("duplicateTask", () => {
     const { duplicateTask } = await import("@/lib/actions/task");
     // Duplicar passou a exigir a decisão de prazo: a cópia é uma demanda nova, e demanda nova
     // decide o próprio prazo (ver lib/task-due-date.ts).
-    await duplicateTask("t1", { dueDate: "2026-09-30", noDueDate: false });
+    await duplicateTask("t1", {
+      title: "Campanha X — outubro",
+      dueDate: "2026-09-30",
+      noDueDate: false,
+    });
 
-    // nova tarefa com "(cópia)"
+    // O título vem do diálogo. Antes a ação anexava "(cópia)" sozinha, o que só descrevia um dos
+    // dois usos de duplicar — o de corrigir; para repetir o mesmo desenho noutro ciclo, o título
+    // é outro.
     const created = txTask.create.mock.calls.at(-1)?.[0].data;
     expect(created).toMatchObject({
-      title: "Campanha X (cópia)",
+      title: "Campanha X — outubro",
       description: "desc",
       priority: "HIGH",
       status: "BACKLOG",

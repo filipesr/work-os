@@ -166,4 +166,45 @@ describe("duplicateTask", () => {
 
     expect(tx.task.create.mock.calls[0][0].data.dueDate).toBeNull();
   });
+
+  it("usa o título informado — duplicar também serve para rodar o mesmo modelo de novo", async () => {
+    // O sufixo "(cópia)" só descrevia um dos dois usos: corrigir uma demanda travada. O outro é
+    // repetir o mesmo desenho para outro ciclo, e aí o título é outro.
+    db.task.findUnique.mockResolvedValue({
+      title: "Landing setembro",
+      description: null,
+      priority: "MEDIUM",
+      projectId: "p1",
+      dueDate: null,
+      activeStages: [
+        { stageId: "s1", teamId: null, instructions: null, stage: { templateId: "tpl" } },
+      ],
+    });
+
+    await duplicateTask("t1", {
+      title: "Landing outubro",
+      dueDate: "2026-10-31",
+      noDueDate: false,
+    });
+
+    expect(tx.task.create.mock.calls[0][0].data.title).toBe("Landing outubro");
+  });
+
+  it("recusa título vazio", async () => {
+    db.task.findUnique.mockResolvedValue({
+      title: "Landing setembro",
+      description: null,
+      priority: "MEDIUM",
+      projectId: "p1",
+      dueDate: null,
+      activeStages: [
+        { stageId: "s1", teamId: null, instructions: null, stage: { templateId: "tpl" } },
+      ],
+    });
+
+    expect(
+      await duplicateTask("t1", { title: "   ", dueDate: "2026-10-31", noDueDate: false })
+    ).toEqual({ error: "titleRequired" });
+    expect(tx.task.create).not.toHaveBeenCalled();
+  });
 });

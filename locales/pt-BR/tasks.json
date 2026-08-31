@@ -397,11 +397,12 @@
       "infoComment": "Um comentário será adicionado indicando que a etapa foi desatribuída."
     },
     "duplicateTitle": "Duplicar demanda",
-    "duplicateHelp": "A cópia nasce sem responsável e sem histórico, com o mesmo desenho de etapas. Confirme o prazo dela — vem preenchido com o do original.",
+    "duplicateHelp": "A cópia nasce sem responsável e sem histórico, com o mesmo desenho de etapas. Confirme o título e o prazo dela — os dois vêm preenchidos com os do original.",
     "duplicateDueDate": "Data de vencimento da cópia",
     "duplicateNoDueDate": "Esta cópia não tem prazo",
     "duplicateSubmit": "Duplicar",
-    "duplicateCancel": "Cancelar"
+    "duplicateCancel": "Cancelar",
+    "duplicateTitleField": "Título da cópia"
   },
   "create": {
     "titleLabel": "Título da Tarefa *",

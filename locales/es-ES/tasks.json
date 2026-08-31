@@ -397,11 +397,12 @@
       "infoComment": "Se agregará un comentario indicando que la etapa fue desasignada."
     },
     "duplicateTitle": "Duplicar demanda",
-    "duplicateHelp": "La copia nace sin responsable y sin historial, con el mismo diseño de etapas. Confirma su fecha de vencimiento: viene con la del original.",
+    "duplicateHelp": "La copia nace sin responsable y sin historial, con el mismo diseño de etapas. Confirma su título y su fecha de vencimiento: los dos vienen con los del original.",
     "duplicateDueDate": "Fecha de vencimiento de la copia",
     "duplicateNoDueDate": "Esta copia no tiene plazo",
     "duplicateSubmit": "Duplicar",
-    "duplicateCancel": "Cancelar"
+    "duplicateCancel": "Cancelar",
+    "duplicateTitleField": "Título de la copia"
   },
   "create": {
     "titleLabel": "Título de la Tarea *",
