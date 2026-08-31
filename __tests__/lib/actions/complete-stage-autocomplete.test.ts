@@ -27,7 +27,11 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn().mockResolvedValue({ templateId: "tpl" }),
       findMany: vi.fn().mockResolvedValue([]),
     },
-    taskStageLog: { findFirst: vi.fn().mockResolvedValue(null), update: vi.fn() },
+    taskStageLog: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      update: vi.fn(),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
     taskComment: { create: vi.fn().mockResolvedValue({}) },
     stageTransition: {
       create: vi.fn().mockResolvedValue({}),
@@ -108,5 +112,21 @@ describe("completeStageAndAdvance auto-completes the task", () => {
       /CONCLU[IÍ]DA AUTOMATICAMENTE/i.test(c?.[0]?.data?.content ?? "")
     );
     expect(autoComment).toBeUndefined();
+  });
+
+  it("fecha TODOS os logs abertos da etapa, não só o primeiro", async () => {
+    // Defesa em profundidade: a causa do log órfão (reivindicar abria um segundo) foi corrigida na
+    // origem, mas demanda que JÁ tem sobra precisa se resolver ao concluir. Fechar por `findFirst`
+    // deixava a segunda linha aberta para sempre, e nada na tela denunciava.
+    const prisma = (await import("@/lib/prisma")).default as any;
+    setupActiveStage(prisma);
+    prisma.taskActiveStage.count.mockResolvedValue(1);
+
+    const { completeStageAndAdvance } = await import("@/lib/actions/task");
+    await completeStageAndAdvance("task1", "s1");
+
+    const chamada = prisma.taskStageLog.updateMany.mock.calls.at(-1)?.[0];
+    expect(chamada?.where).toEqual({ taskId: "task1", stageId: "s1", exitedAt: null });
+    expect(chamada?.data?.status).toBe("COMPLETED");
   });
 });

@@ -917,24 +917,17 @@ export async function completeStageAndAdvance(
       }
     }
 
-    // 4. Close current stage log
-    const currentLog = await prisma.taskStageLog.findFirst({
-      where: {
-        taskId,
-        stageId,
-        exitedAt: null,
-      },
+    // 4. Fecha TODO log aberto desta etapa — não só o primeiro.
+    //
+    // Um `findFirst` fechava uma linha e deixava as outras abertas para sempre. A causa de haver
+    // mais de uma foi corrigida na origem (reivindicar a etapa de entrada abria um segundo log
+    // além do que a criação já tinha aberto), mas demanda que JÁ carrega a sobra precisa se
+    // resolver ao concluir: log aberto para sempre contamina o tempo por etapa dos relatórios de
+    // gargalo, e nada na tela denuncia.
+    await prisma.taskStageLog.updateMany({
+      where: { taskId, stageId, exitedAt: null },
+      data: { exitedAt: new Date(), status: "COMPLETED" },
     });
-
-    if (currentLog) {
-      await prisma.taskStageLog.update({
-        where: { id: currentLog.id },
-        data: {
-          exitedAt: new Date(),
-          status: "COMPLETED",
-        },
-      });
-    }
 
     // 5. Activate next stages (fork/join logic)
     const { activated, blocked } = await activateNextStages(taskId, stageId);
@@ -1435,15 +1428,24 @@ export async function claimActiveStage(taskId: string, stageId: string) {
       },
     });
 
-    // Create stage log
-    await prisma.taskStageLog.create({
-      data: {
-        taskId,
-        stageId,
-        userId: currentUserId,
-        enteredAt: new Date(),
-      },
+    // Log de etapa só se ainda NÃO houver um aberto. A etapa de entrada já nasce com log aberto
+    // em `createTaskStages` (ela começa ACTIVE na criação), então reivindicá-la abria um segundo:
+    // o fechamento em `completeStageAndAdvance` fecha um, e o outro ficava aberto para sempre —
+    // tempo por etapa contaminado nos relatórios de gargalo, sem nada na tela denunciando.
+    const logAberto = await prisma.taskStageLog.findFirst({
+      where: { taskId, stageId, exitedAt: null },
+      select: { id: true },
     });
+    if (!logAberto) {
+      await prisma.taskStageLog.create({
+        data: {
+          taskId,
+          stageId,
+          userId: currentUserId,
+          enteredAt: new Date(),
+        },
+      });
+    }
 
     revalidatePath("/dashboard");
     revalidatePath(`/tasks/${taskId}`);

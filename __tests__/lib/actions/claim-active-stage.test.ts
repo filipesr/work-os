@@ -27,7 +27,10 @@ vi.mock("@/lib/prisma", () => ({
       count: vi.fn().mockResolvedValue(0),
     },
     taskComment: { create: vi.fn().mockResolvedValue({}) },
-    taskStageLog: { create: vi.fn().mockResolvedValue({}) },
+    taskStageLog: {
+      create: vi.fn().mockResolvedValue({}),
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
   },
   prisma: {},
 }));
@@ -110,5 +113,24 @@ describe("claimActiveStage", () => {
 
     expect(await claimActiveStage("t1", "s1")).toEqual({ error: "wipLimitReached" });
     expect(prisma.taskActiveStage.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("não abre um SEGUNDO log quando a etapa já tem um aberto", async () => {
+    // A etapa de entrada já nasce com log aberto em `createTaskStages`. Sem esta guarda,
+    // reivindicá-la abria outro, e o fechamento (`findFirst`) só fecha UM — o outro ficava aberto
+    // para sempre, contaminando o tempo por etapa dos relatórios de gargalo.
+    vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue({
+      id: "as1",
+      status: "ACTIVE",
+      assigneeId: null,
+      stage: { id: "s1", name: "Briefing", wipLimit: null },
+    } as never);
+    vi.mocked(prisma.taskActiveStage.updateMany).mockResolvedValue({ count: 1 } as never);
+    vi.mocked(prisma.taskStageLog.findFirst).mockResolvedValue({ id: "log-aberto" } as never);
+
+    const r = await claimActiveStage("t1", "s1");
+
+    expect(r).toEqual({ success: true });
+    expect(prisma.taskStageLog.create).not.toHaveBeenCalled();
   });
 });
