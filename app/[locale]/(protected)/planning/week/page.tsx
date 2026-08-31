@@ -217,6 +217,10 @@ export default async function WeekPlanningPage({
                                       )}
                                       <p>
                                         {s.kind === "waiting" && `(${t("waiting")}) `}
+                                        {/* Distingue o que o gestor programou do que a pessoa
+                                            puxou por conta: os dois ocupam o dia, mas só um foi
+                                            decisão dele. */}
+                                        {s.item.semDia && `(${t("queued")}) `}
                                         {/* A HORA vem junto do rótulo "agendada": é a razão de o
                                           item ser fixo. Também no conflito, que é agendado e não
                                           liberado — ali ela é o que o gestor precisa para remarcar. */}

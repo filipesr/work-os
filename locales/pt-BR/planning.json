@@ -141,7 +141,8 @@
     "dialogSubmit": "Programar",
     "scheduled_toast": "Etapa programada.",
     "unscheduled_toast": "Etapa devolvida ao poço.",
-    "noCapacity": "Sem capacidade semanal cadastrada — usando o padrão de {hours}h."
+    "noCapacity": "Sem capacidade semanal cadastrada — usando o padrão de {hours}h.",
+    "queued": "sem dia · na fila"
   },
   "myWeek": {
     "kicker": "Meu trabalho",
@@ -174,7 +175,8 @@
     "currentWeek": "Semana atual",
     "conflictsTitle": "Agendamentos em risco",
     "conflictsHelp": "Estas etapas têm hora marcada e ainda não foram liberadas. Fale com seu gestor.",
-    "noCapacity": "Sem capacidade semanal cadastrada — usando o padrão de {hours}h."
+    "noCapacity": "Sem capacidade semanal cadastrada — usando o padrão de {hours}h.",
+    "queued": "sem dia · na fila"
   },
   "clientLoad": {
     "kicker": "Planejamento",

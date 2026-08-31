@@ -10,7 +10,7 @@ import { getStageReferences } from "@/lib/planning/stage-reference";
 import { stageTeamWhere } from "@/lib/stage-team";
 import { DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
 import { weekDays } from "@/lib/planning/week-days";
-import { notDiscardedStageWhere } from "@/lib/task-availability";
+import { availableStageWhere, notDiscardedStageWhere } from "@/lib/task-availability";
 import { applyDayReorder } from "@/lib/planning/reorder";
 
 /**
@@ -82,11 +82,18 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
         // Na semana corrente, `lte: fim` sem piso: o item planejado para ANTES dela e não concluído
         // continua aparecendo (é realocado para o primeiro dia visível, logo abaixo). Numa semana
         // futura entra o piso — ver o comentário em `inicio`.
-        plannedDate: { not: null, lte: fim, ...(inicio ? { gte: inicio } : {}) },
         status: { not: "COMPLETED" },
         // Demanda descartada não ocupa dia de ninguém — ver lib/task-availability.ts.
         ...notDiscardedStageWhere(),
         ...(teamId ? { assignee: { teams: { some: { id: teamId } } } } : {}),
+        OR: [
+          { plannedDate: { not: null, lte: fim, ...(inicio ? { gte: inicio } : {}) } },
+          // Reivindicada e SEM dia: entra na fila de HOJE por leitura, sem gravar nada. Sem isto,
+          // o gestor via a semana da pessoa mais vazia do que a realidade — o trabalho puxado pelo
+          // painel não estava na grade (que lê por dia) nem no poço (que exige etapa sem dono).
+          // Só LIBERADA entra: etapa atribuída e ainda INACTIVE espera a anterior fechar.
+          { plannedDate: null, status: "ACTIVE", ...availableStageWhere() },
+        ],
       },
       select: {
         id: true,
@@ -96,6 +103,7 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
         plannedDate: true,
         plannedOrder: true,
         scheduledStart: true,
+        assignedAt: true,
         stage: { select: { name: true } },
         task: {
           select: {
@@ -158,9 +166,15 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
 
   const porPessoaEDia = new Map<string, Map<string, QueueItemInput[]>>();
   const primeiroDia = days[0];
+  const hojeISO = formatISODate(todayInSaoPaulo());
+  const hojeNaSemana = days.includes(hojeISO) ? hojeISO : null;
   for (const row of programados) {
-    if (!row.assigneeId || !row.plannedDate) continue;
-    const planejado = formatISODate(row.plannedDate);
+    if (!row.assigneeId) continue;
+    // Ver o comentário no `where`: sem dia é trabalho reivindicado, e o lugar dele é a fila de
+    // HOJE — só quando hoje está na semana em tela.
+    const semDia = row.plannedDate === null;
+    if (semDia && !hojeNaSemana) continue;
+    const planejado = semDia ? (hojeNaSemana as string) : formatISODate(row.plannedDate as Date);
     // Atrasado de semanas anteriores entra no primeiro dia visível. É a rolagem da spec aplicada à
     // mesa do gestor: o item não some, aparece onde ainda dá para agir sobre ele.
     const dia = planejado < primeiroDia ? primeiroDia : planejado;
@@ -170,6 +184,8 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
       id: row.id,
       // Programar NÃO libera: só a etapa ACTIVE pode ser executada.
       available: row.status === "ACTIVE",
+      semDia,
+      claimedAt: row.assignedAt,
       plannedOrder: row.plannedOrder ?? 0,
       referenceHours: horasDe(row.stageId),
       referenceSource: sourceDe(row.stageId),

@@ -23,6 +23,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import prisma from "@/lib/prisma";
+import { formatISODate, mondayOfWeek, todayInSaoPaulo } from "@/lib/dates";
 import { getMyWeek } from "@/lib/actions/my-week";
 
 const SEGUNDA = "2026-09-07";
@@ -289,6 +290,37 @@ describe("getMyWeek: fim do dia e convite", () => {
     return getMyWeek(SEGUNDA).then(() => {
       const where = (chamadas()[0] as never as { where: { task?: { status?: unknown } } }).where;
       expect(where.task?.status).toEqual({ notIn: ["OBSOLETE", "CANCELLED"] });
+    });
+  });
+
+  it("etapa reivindicada e sem dia entra na fila de hoje, sem gravar data", () => {
+    // O caso que trouxe esta regra: a pessoa pega uma etapa pelo painel e ela some da programação
+    // — não está na grade (que lê por dia) nem no poço (que exige etapa sem dono).
+    const hoje = formatISODate(todayInSaoPaulo());
+    const segunda = formatISODate(mondayOfWeek(todayInSaoPaulo()));
+
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        stageRow({ plannedDate: null, assignedAt: new Date("2026-09-01T09:00:00Z") }),
+      ] as never)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never);
+
+    return getMyWeek(segunda).then((semana) => {
+      expect(semana.byDay[hoje].slots).toHaveLength(1);
+      expect(semana.byDay[hoje].slots[0].item.semDia).toBe(true);
+      // Consome capacidade: é trabalho de verdade acontecendo.
+      expect(semana.byDay[hoje].usedHours).toBe(2);
+    });
+  });
+
+  it("a consulta busca o sem dia apenas LIBERADO", () => {
+    // Etapa atribuída e ainda INACTIVE tem dono desde a criação e espera a anterior fechar. Se
+    // entrasse, a fila de hoje nasceria com todas as etapas futuras de todas as demandas.
+    return getMyWeek(SEGUNDA).then(() => {
+      const or = (chamadas()[0] as never as { where: { OR: Record<string, unknown>[] } }).where.OR;
+      const semDia = or.find((r) => r.plannedDate === null) as { status?: string };
+      expect(semDia?.status).toBe("ACTIVE");
     });
   });
 });

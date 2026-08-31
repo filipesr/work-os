@@ -141,7 +141,8 @@
     "dialogSubmit": "Programar",
     "scheduled_toast": "Etapa programada.",
     "unscheduled_toast": "Etapa devuelta a la reserva.",
-    "noCapacity": "Sin capacidad semanal registrada: se usa el valor por defecto de {hours}h."
+    "noCapacity": "Sin capacidad semanal registrada: se usa el valor por defecto de {hours}h.",
+    "queued": "sin día · en la cola"
   },
   "myWeek": {
     "kicker": "Mi trabajo",
@@ -174,7 +175,8 @@
     "currentWeek": "Semana actual",
     "conflictsTitle": "Citas en riesgo",
     "conflictsHelp": "Estas etapas tienen hora fijada y todavía no se han liberado. Habla con tu responsable.",
-    "noCapacity": "Sin capacidad semanal registrada: se usa el valor por defecto de {hours}h."
+    "noCapacity": "Sin capacidad semanal registrada: se usa el valor por defecto de {hours}h.",
+    "queued": "sin día · en la cola"
   },
   "clientLoad": {
     "kicker": "Planificación",

@@ -102,10 +102,21 @@ export async function getMyWeek(mondayISO: string): Promise<MyWeek> {
     prisma.taskActiveStage.findMany({
       where: {
         assigneeId: me.id,
-        plannedDate: { not: null, lte: fim, ...(inicio ? { gte: inicio } : {}) },
         status: { not: "COMPLETED" },
         // Demanda descartada não ocupa dia de ninguém — ver lib/task-availability.ts.
         ...notDiscardedStageWhere(),
+        OR: [
+          { plannedDate: { not: null, lte: fim, ...(inicio ? { gte: inicio } : {}) } },
+          // Reivindicada e SEM dia: entra na fila de HOJE por leitura — nada é gravado, o
+          // `plannedDate` continua vazio. Pegar uma etapa é dizer "estou fazendo isto agora", e
+          // sem esta condição o trabalho puxado pelo painel ficava invisível na programação: nem
+          // na grade (que lê por dia) nem no poço (que exige etapa sem dono).
+          //
+          // Só LIBERADA entra. Etapa atribuída e ainda INACTIVE tem dono desde a criação e espera
+          // a anterior fechar — se entrasse, a fila de hoje nasceria com todas as etapas futuras
+          // de todas as demandas da pessoa, que é o oposto do que a fila responde.
+          { plannedDate: null, status: "ACTIVE", ...availableStageWhere() },
+        ],
       },
       select: {
         id: true,
@@ -114,6 +125,7 @@ export async function getMyWeek(mondayISO: string): Promise<MyWeek> {
         plannedDate: true,
         plannedOrder: true,
         scheduledStart: true,
+        assignedAt: true,
         stage: { select: { name: true } },
         task: {
           select: {
@@ -170,13 +182,20 @@ export async function getMyWeek(mondayISO: string): Promise<MyWeek> {
   const porDia = new Map<string, QueueItemInput[]>();
   const primeiroDia = days[0];
   for (const row of programados) {
-    if (!row.plannedDate) continue;
-    const planejado = formatISODate(row.plannedDate);
+    // Sem dia = reivindicada e ainda não programada. O lugar dela é a fila de HOJE, e só quando
+    // hoje está na semana em tela: navegar para a semana que vem não pode arrastar o que está
+    // sendo feito agora. Fora dessa janela ela simplesmente não aparece — nada é gravado, então
+    // nada precisa ser desfeito depois.
+    const semDia = row.plannedDate === null;
+    if (semDia && !todayISO) continue;
+    const planejado = semDia ? (todayISO as string) : formatISODate(row.plannedDate as Date);
     const dia = planejado < primeiroDia ? primeiroDia : planejado;
     const doDia = porDia.get(dia) ?? [];
     doDia.push({
       id: row.id,
       available: row.status === "ACTIVE",
+      semDia,
+      claimedAt: row.assignedAt,
       plannedOrder: row.plannedOrder ?? 0,
       referenceHours: horasDe(row.stageId),
       referenceSource: sourceDe(row.stageId),

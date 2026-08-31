@@ -147,4 +147,43 @@ describe("buildDayQueue — dia vazio", () => {
     const r = buildDayQueue([]);
     expect(r).toEqual({ slots: [], usedHours: 0, nextRunnableId: null, conflicts: [] });
   });
+
+  it("item reivindicado e sem dia entra DEPOIS do que tem dia", () => {
+    // Reivindicar põe o trabalho na fila de agora sem inventar uma data: ele entra no fim, atrás
+    // do que o gestor programou para hoje. Sem isto, quem pega uma etapa fura a ordem que a
+    // pessoa já montou para o dia.
+    const fila = buildDayQueue([
+      item({
+        id: "semDia",
+        plannedOrder: 0,
+        semDia: true,
+        claimedAt: new Date("2026-09-01T09:00:00Z"),
+      }),
+      item({ id: "comDia", plannedOrder: 5 }),
+    ]);
+    expect(fila.slots.map((s) => s.item.id)).toEqual(["comDia", "semDia"]);
+  });
+
+  it("entre os sem dia, vale a ordem em que foram reivindicados", () => {
+    const fila = buildDayQueue([
+      item({ id: "b", semDia: true, claimedAt: new Date("2026-09-01T15:00:00Z") }),
+      item({ id: "a", semDia: true, claimedAt: new Date("2026-09-01T09:00:00Z") }),
+    ]);
+    expect(fila.slots.map((s) => s.item.id)).toEqual(["a", "b"]);
+  });
+
+  it("o sem dia consome capacidade — é trabalho de verdade acontecendo", () => {
+    // Se não somasse, a régua do dia e o total da semana mentiriam justamente sobre quem está
+    // ocupado: a pessoa que puxou trabalho apareceria com o dia mais vazio que o de quem não puxou.
+    const fila = buildDayQueue([
+      item({
+        id: "x",
+        referenceHours: 3,
+        semDia: true,
+        claimedAt: new Date("2026-09-01T09:00:00Z"),
+      }),
+    ]);
+    expect(fila.usedHours).toBe(3);
+    expect(fila.slots[0].kind).toBe("runnable");
+  });
 });

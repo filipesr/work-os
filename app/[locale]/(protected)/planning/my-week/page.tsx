@@ -156,6 +156,9 @@ export default async function MyWeekPage({
                             {s.item.referenceHours.toFixed(1)}h
                             {s.item.referenceSource === "declared" && ` · ${t("estimated")}`}
                             {s.kind === "waiting" && ` · ${t("waiting")}`}
+                            {/* Reivindicada e ainda sem dia: está na fila de hoje porque alguém a
+                                pegou, não porque foi programada. */}
+                            {s.item.semDia && ` · ${t("queued")}`}
                             {s.kind === "scheduled" &&
                               s.item.scheduledStart &&
                               ` · ${t("scheduled")} ${formatDisplayTime(s.item.scheduledStart)}`}

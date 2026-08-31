@@ -34,6 +34,13 @@ export type QueueItemInput = {
    *  rótulos: a tela usa para mostrar o envelhecimento DESTA etapa ao lado da referência quando
    *  passa dela. Nunca agregado por pessoa — ver a spec. */
   activeSince?: Date | null;
+  /** Etapa REIVINDICADA e sem dia marcado. Ela entra na fila de agora sem que nada seja gravado —
+   *  `plannedDate` continua vazio. É a mesma escolha da rolagem: leitura, não algoritmo. Vem
+   *  sempre DEPOIS do que tem dia, porque quem chega depois não fura a ordem já montada. */
+  semDia?: boolean;
+  /** Quando a etapa foi reivindicada (`assignedAt`). Ordena os `semDia` entre si: quem pegou
+   *  primeiro faz primeiro. */
+  claimedAt?: Date | null;
 };
 
 export type QueueKind =
@@ -50,12 +57,23 @@ export function buildDayQueue(items: QueueItemInput[]): {
   nextRunnableId: string | null;
   conflicts: QueueItemInput[];
 } {
-  // `id` desempata. Sem ele, dois itens com o mesmo `plannedOrder` sairiam na ordem em que o banco
-  // devolveu as linhas — que o Postgres não garante — e a mesma célula podia listar coisas em
-  // ordens diferentes entre dois carregamentos, sem nada ter mudado.
-  const ordenados = [...items].sort(
-    (a, b) => a.plannedOrder - b.plannedOrder || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
-  );
+  // Três camadas de prioridade no dia, nesta ordem:
+  //   1. o que tem DIA — compromisso marcado e programação do gestor, na ordem manual da pessoa;
+  //   2. o que foi REIVINDICADO sem dia, na ordem em que foi pego.
+  //
+  // `id` desempata as duas. Sem ele, dois itens com o mesmo `plannedOrder` sairiam na ordem em que
+  // o banco devolveu as linhas — que o Postgres não garante — e a mesma célula podia listar coisas
+  // em ordens diferentes entre dois carregamentos, sem nada ter mudado.
+  const porId = (a: QueueItemInput, b: QueueItemInput) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  const ordenados = [...items].sort((a, b) => {
+    if (!!a.semDia !== !!b.semDia) return a.semDia ? 1 : -1;
+    if (a.semDia) {
+      const ta = a.claimedAt?.getTime() ?? 0;
+      const tb = b.claimedAt?.getTime() ?? 0;
+      return ta - tb || porId(a, b);
+    }
+    return a.plannedOrder - b.plannedOrder || porId(a, b);
+  });
 
   const slots: QueueSlot[] = ordenados.map((item) => {
     const agendado = item.scheduledStart !== null;

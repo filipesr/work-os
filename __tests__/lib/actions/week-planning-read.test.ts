@@ -164,7 +164,9 @@ describe("getWeekPlanning", () => {
   it("a semana CORRENTE não tem piso: o atrasado das semanas anteriores continua vindo", async () => {
     db.taskActiveStage.findMany.mockResolvedValue([]);
     await getWeekPlanning(formatISODate(mondayOfWeek(todayInSaoPaulo())));
-    expect(argsDaSemana().where.plannedDate).not.toHaveProperty("gte");
+    // A consulta virou um OR: o primeiro ramo é o que tem dia; o segundo, o reivindicado sem dia.
+    const comDia = (argsDaSemana().where.OR as { plannedDate: Record<string, unknown> }[])[0];
+    expect(comDia.plannedDate).not.toHaveProperty("gte");
   });
 
   it("a semana FUTURA tem piso na própria segunda", async () => {
@@ -174,7 +176,8 @@ describe("getWeekPlanning", () => {
     db.taskActiveStage.findMany.mockResolvedValue([]);
     const proxima = new Date(mondayOfWeek(todayInSaoPaulo()).getTime() + 7 * 86_400_000);
     await getWeekPlanning(formatISODate(proxima));
-    const plannedDate = argsDaSemana().where.plannedDate as { gte: Date };
+    const comDia = (argsDaSemana().where.OR as { plannedDate: { gte: Date } }[])[0];
+    const plannedDate = comDia.plannedDate;
     expect(plannedDate.gte.toISOString()).toBe(`${formatISODate(proxima)}T00:00:00.000Z`);
   });
 

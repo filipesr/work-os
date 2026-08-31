@@ -6,7 +6,7 @@ import { formatISODate, mondayOfWeek, todayInSaoPaulo } from "@/lib/dates";
 import { buildDayQueue, type QueueItemInput } from "@/lib/planning/day-queue";
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { weekDays } from "@/lib/planning/week-days";
-import { notDiscardedStageWhere } from "@/lib/task-availability";
+import { availableStageWhere, notDiscardedStageWhere } from "@/lib/task-availability";
 
 /**
  * A mesma semana da mesa, pelo eixo do cliente.
@@ -41,11 +41,22 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
 
   const programados = await prisma.taskActiveStage.findMany({
     where: {
-      plannedDate: { not: null, lte: fim, ...(inicio ? { gte: inicio } : {}) },
       status: { not: "COMPLETED" },
       // Demanda descartada não ocupa dia de ninguém — ver lib/task-availability.ts.
       ...notDiscardedStageWhere(),
       ...(teamId ? { assignee: { teams: { some: { id: teamId } } } } : {}),
+      OR: [
+        { plannedDate: { not: null, lte: fim, ...(inicio ? { gte: inicio } : {}) } },
+        // Reivindicada e SEM dia entra na fila de HOJE, como na mesa e na tela da pessoa — senão
+        // a carga do cliente mostraria menos do que ele está de fato consumindo esta semana.
+        // `assigneeId` não nulo porque sem dono não é trabalho reivindicado, é fila.
+        {
+          plannedDate: null,
+          status: "ACTIVE",
+          assigneeId: { not: null },
+          ...availableStageWhere(),
+        },
+      ],
     },
     select: {
       id: true,
@@ -54,6 +65,7 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
       plannedDate: true,
       plannedOrder: true,
       scheduledStart: true,
+      assignedAt: true,
       task: { select: { project: { select: { client: { select: { id: true, name: true } } } } } },
     },
     orderBy: [{ plannedOrder: "asc" }, { id: "asc" }],
@@ -66,10 +78,13 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
   // seria a pior perda, porque é silenciosa.
   const porCliente = new Map<string, { name: string; dias: Map<string, QueueItemInput[]> }>();
   const primeiroDia = days[0];
+  const hojeISO = formatISODate(todayInSaoPaulo());
+  const hojeNaSemana = days.includes(hojeISO) ? hojeISO : null;
   for (const row of programados) {
-    if (!row.plannedDate) continue;
+    const semDia = row.plannedDate === null;
+    if (semDia && !hojeNaSemana) continue;
     const cliente = row.task.project.client;
-    const planejado = formatISODate(row.plannedDate);
+    const planejado = semDia ? (hojeNaSemana as string) : formatISODate(row.plannedDate as Date);
     const dia = planejado < primeiroDia ? primeiroDia : planejado;
     const entrada = porCliente.get(cliente.id) ?? {
       name: cliente.name,
@@ -79,6 +94,8 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
     doDia.push({
       id: row.id,
       available: row.status === "ACTIVE",
+      semDia,
+      claimedAt: row.assignedAt,
       plannedOrder: row.plannedOrder ?? 0,
       referenceHours: horasDe(row.stageId),
       scheduledStart: row.scheduledStart,
