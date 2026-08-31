@@ -55,13 +55,16 @@ export function QuickTaskForm({
   // e um setState não teria efeito a tempo dentro do mesmo ciclo de evento.
   const repetirRef = useRef(false);
 
-  const tipo = templates.find((x) => x.id === templateId)?.name ?? "";
   const projeto = projects.find((p) => p.id === projectId);
   // Título sugerido: ninguém precisa inventar nome para o quinto story do dia.
-  const tituloSugerido =
-    tipo && projeto
-      ? `${tipo} · ${projeto.client.name} · ${date.slice(8, 10)}/${date.slice(5, 7)}`
-      : "";
+  //
+  // Cliente · projeto · dia. O TIPO do trabalho saiu da sugestão de propósito: ele já é o
+  // template escolhido logo acima, aparece como coluna nos relatórios, e repetido no título
+  // roubava o espaço do que de fato distingue um registro do outro — para quem lê a lista de
+  // uma agência, "de quem é" e "de que trabalho é" respondem mais que "que tipo é".
+  const tituloSugerido = projeto
+    ? `${projeto.client.name} · ${projeto.name} · ${date.slice(8, 10)}/${date.slice(5, 7)}`
+    : "";
 
   // A mensagem depende de qual botão foi clicado, então o toast sai aqui e não pelo
   // `successMessage` do hook — que é lido na renderização e não enxergaria a ref.
