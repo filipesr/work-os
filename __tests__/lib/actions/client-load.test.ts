@@ -112,4 +112,17 @@ describe("getClientLoad", () => {
     ).where;
     expect(where.assignee).toBeDefined();
   });
+
+  it("demanda descartada não ocupa dia na carga do cliente", () => {
+    // "Marcar obsoleta" promete que a demanda sai dos pendentes. Sem esta condição a grade
+    // continuava reservando espaço para trabalho que ninguém vai fazer.
+    return getClientLoad(SEGUNDA).then(() => {
+      const where = (
+        vi.mocked(prisma.taskActiveStage.findMany).mock.calls[0][0] as never as {
+          where: { task?: { status?: unknown } };
+        }
+      ).where;
+      expect(where.task?.status).toEqual({ notIn: ["OBSOLETE", "CANCELLED"] });
+    });
+  });
 });

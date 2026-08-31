@@ -40,17 +40,27 @@ describe("isAvailableForExecution", () => {
 });
 
 describe("fragmentos de where", () => {
-  it("aceita nulo OU início já alcançado", () => {
+  it("aceita nulo OU início já alcançado, e exclui demanda descartada", () => {
     const w = availableTaskWhere(AGORA);
     expect(w).toEqual({
+      status: { notIn: ["OBSOLETE", "CANCELLED"] },
       OR: [{ plannedStartAt: null }, { plannedStartAt: { lte: AGORA } }],
     });
+  });
+
+  it("demanda obsoleta ou cancelada não é trabalho de ninguém", () => {
+    // O botão "marcar obsoleta" promete que a demanda sai dos pendentes. Antes disto, só a
+    // cobertura semanal cumpria: as etapas continuavam ACTIVE e com dono, e a demanda seguia
+    // aparecendo no painel de quem a pegou como se fosse trabalho vivo.
+    expect(availableTaskWhere(AGORA).status).toEqual({ notIn: ["OBSOLETE", "CANCELLED"] });
   });
 
   it("não impõe limite superior", () => {
     // Guarda estrutural contra a regressão mais provável: alguém "melhorar" o
     // filtro para uma janela e reintroduzir o sumiço do atrasado.
-    const cond = availableTaskWhere(AGORA).OR[1].plannedStartAt as Record<string, unknown>;
+    // O tipo agora é `Prisma.TaskWhereInput`, em que `OR` é opcional — daí o cast.
+    const or = availableTaskWhere(AGORA).OR as { plannedStartAt: Record<string, unknown> }[];
+    const cond = or[1].plannedStartAt;
     expect(cond).not.toHaveProperty("gte");
     expect(cond).not.toHaveProperty("gt");
   });

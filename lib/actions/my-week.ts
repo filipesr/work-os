@@ -15,6 +15,7 @@ import {
 import { buildDayQueue, type QueueItemInput } from "@/lib/planning/day-queue";
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { weekDays } from "@/lib/planning/week-days";
+import { notDiscardedStageWhere } from "@/lib/task-availability";
 import { isAboveOwnPace, PACE_HISTORY_WEEKS } from "@/lib/planning/own-pace";
 import { stageTeamWhere } from "@/lib/stage-team";
 import { DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
@@ -103,6 +104,8 @@ export async function getMyWeek(mondayISO: string): Promise<MyWeek> {
         assigneeId: me.id,
         plannedDate: { not: null, lte: fim, ...(inicio ? { gte: inicio } : {}) },
         status: { not: "COMPLETED" },
+        // Demanda descartada não ocupa dia de ninguém — ver lib/task-availability.ts.
+        ...notDiscardedStageWhere(),
       },
       select: {
         id: true,

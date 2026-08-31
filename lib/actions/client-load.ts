@@ -6,6 +6,7 @@ import { formatISODate, mondayOfWeek, todayInSaoPaulo } from "@/lib/dates";
 import { buildDayQueue, type QueueItemInput } from "@/lib/planning/day-queue";
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { weekDays } from "@/lib/planning/week-days";
+import { notDiscardedStageWhere } from "@/lib/task-availability";
 
 /**
  * A mesma semana da mesa, pelo eixo do cliente.
@@ -42,6 +43,8 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
     where: {
       plannedDate: { not: null, lte: fim, ...(inicio ? { gte: inicio } : {}) },
       status: { not: "COMPLETED" },
+      // Demanda descartada não ocupa dia de ninguém — ver lib/task-availability.ts.
+      ...notDiscardedStageWhere(),
       ...(teamId ? { assignee: { teams: { some: { id: teamId } } } } : {}),
     },
     select: {

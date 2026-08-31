@@ -284,4 +284,11 @@ describe("getMyWeek: fim do dia e convite", () => {
     expect(semana.nextUp?.id).toBe("atrasada");
     expect(semana.nextUp?.dayISO).toBe("2026-09-09");
   });
+
+  it("demanda descartada não ocupa dia na minha semana", () => {
+    return getMyWeek(SEGUNDA).then(() => {
+      const where = (chamadas()[0] as never as { where: { task?: { status?: unknown } } }).where;
+      expect(where.task?.status).toEqual({ notIn: ["OBSOLETE", "CANCELLED"] });
+    });
+  });
 });

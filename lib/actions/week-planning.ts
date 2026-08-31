@@ -10,6 +10,7 @@ import { getStageReferences } from "@/lib/planning/stage-reference";
 import { stageTeamWhere } from "@/lib/stage-team";
 import { DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
 import { weekDays } from "@/lib/planning/week-days";
+import { notDiscardedStageWhere } from "@/lib/task-availability";
 import { applyDayReorder } from "@/lib/planning/reorder";
 
 /**
@@ -83,6 +84,8 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
         // futura entra o piso — ver o comentário em `inicio`.
         plannedDate: { not: null, lte: fim, ...(inicio ? { gte: inicio } : {}) },
         status: { not: "COMPLETED" },
+        // Demanda descartada não ocupa dia de ninguém — ver lib/task-availability.ts.
+        ...notDiscardedStageWhere(),
         ...(teamId ? { assignee: { teams: { some: { id: teamId } } } } : {}),
       },
       select: {

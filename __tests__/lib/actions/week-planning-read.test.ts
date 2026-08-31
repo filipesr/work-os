@@ -237,4 +237,16 @@ describe("getWeekPlanning", () => {
     const r = await getWeekPlanning("2026-08-31");
     expect(r.people[0].byDay["2026-08-31"].slots[0].kind).toBe("scheduled");
   });
+
+  it("demanda descartada não ocupa dia na mesa", () => {
+    // Mesma regra da tela da pessoa e da carga por cliente, na mesma fonte compartilhada.
+    return getWeekPlanning("2026-08-31").then(() => {
+      const where = (
+        vi.mocked(prisma.taskActiveStage.findMany).mock.calls[0][0] as never as {
+          where: { task?: { status?: unknown } };
+        }
+      ).where;
+      expect(where.task?.status).toEqual({ notIn: ["OBSOLETE", "CANCELLED"] });
+    });
+  });
 });
