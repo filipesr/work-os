@@ -108,7 +108,7 @@
       "hoursLabel": "Horas en esta etapa",
       "loadingContext": "Cargando lo que ya se ha imputado…",
       "hoursFromTimer": "{hours}h ya imputadas por el cronómetro.",
-      "hoursHint": "Suma lo que falte imputar. No se puede reducir lo que el cronómetro ya registró.",
+      "hoursHint": "Nadie ha imputado horas en esta etapa. Indica cuánto tiempo ha llevado el trabajo.",
       "reasonLabel": "¿Qué ha pasado en esta etapa?",
       "reasonHelp": "El tiempo ha quedado fuera de la referencia ({reference}h). Esto suele ser del proceso, no de quien trabajó: registrarlo ayuda a encontrar el patrón.",
       "notePlaceholder": "Detalla, si quieres",
