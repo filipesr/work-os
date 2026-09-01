@@ -184,6 +184,54 @@ describe("getProjectTimeline", () => {
     });
   });
 
+  it("descartada sem apontamento nenhum não aparece — nem como coluna, nem como dia", () => {
+    // Uma coluna de 12rem que só mostra o dia em que a demanda nasceu é ruído num eixo horizontal
+    // escasso. Pior: a criação dela marcaria movimento e poderia partir uma faixa de vão ao meio,
+    // fazendo a tela dizer que houve trabalho num dia em que não houve.
+    vi.mocked(prisma.task.findMany).mockResolvedValue([
+      demanda({ id: "viva" }),
+      demanda({ id: "obsoleta", status: "OBSOLETE", createdAt: diasAtras(30) }),
+      demanda({ id: "cancelada", status: "CANCELLED", createdAt: diasAtras(30) }),
+    ] as never);
+    // A liberação da etapa dela também não pode criar linha: a demanda inteira sumiu.
+    vi.mocked(prisma.stageTransition.findMany).mockResolvedValue([
+      { taskId: "obsoleta", stageId: "s1", at: diasAtras(30) },
+    ] as never);
+
+    return getProjectTimeline("p1").then((linha) => {
+      expect(linha.demands.map((d) => d.taskId)).toEqual(["viva"]);
+      const diaSumido = formatISODate(nowInSaoPaulo(diasAtras(30)));
+      expect(linha.byDay[diaSumido]).toBeUndefined();
+      expect(linha.rows.some((r) => r.kind === "day" && r.dayISO === diaSumido)).toBe(false);
+    });
+  });
+
+  it("descartada COM apontamento fica, marcada, e com a história intacta", () => {
+    // As horas foram gastas de verdade. Apagá-las da tela seria reescrever o passado — e some do
+    // total do projeto trabalho que alguém fez.
+    vi.mocked(prisma.task.findMany).mockResolvedValue([
+      demanda({ id: "obsoleta", status: "OBSOLETE" }),
+    ] as never);
+    vi.mocked(prisma.timeLog.findMany).mockResolvedValue([
+      { taskId: "obsoleta", stageId: "s1", hoursSpent: 3, logDate: diasAtras(2) },
+    ] as never);
+
+    return getProjectTimeline("p1").then((linha) => {
+      expect(linha.demands.map((d) => d.taskId)).toEqual(["obsoleta"]);
+      expect(linha.demands[0].discarded).toBe(true);
+      const dia = formatISODate(nowInSaoPaulo(diasAtras(2)));
+      expect(linha.byDay[dia]["obsoleta"].doneHours).toBe(3);
+    });
+  });
+
+  it("demanda viva não é marcada como descartada", () => {
+    vi.mocked(prisma.task.findMany).mockResolvedValue([demanda()] as never);
+
+    return getProjectTimeline("p1").then((linha) => {
+      expect(linha.demands[0].discarded).toBe(false);
+    });
+  });
+
   it("nenhuma leitura agrega por pessoa — o eixo é a demanda", () => {
     // Uma linha do tempo por pessoa seria vigilância ("o que fulano fez em cada dia"), que é o que a
     // biblioteca proíbe (P1, P2). O guarda é de código-fonte porque a proibição é fácil de esquecer:
@@ -303,6 +351,11 @@ describe("getProjectTimeline", () => {
         createdAt: diasAtras(10),
         activeStages: [etapa({ stageId: "s1", status: "ACTIVE" })],
       }),
+    ] as never);
+    // Precisa de apontamento para continuar na tela: descartada que ninguém trabalhou some inteira.
+    // O que este teste guarda é outra coisa — que a descartada VISÍVEL não ganha futuro.
+    vi.mocked(prisma.timeLog.findMany).mockResolvedValue([
+      { taskId: "descartada", stageId: "s1", hoursSpent: 1, logDate: diasAtras(9) },
     ] as never);
 
     return getProjectTimeline("p1").then((linha) => {

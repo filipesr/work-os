@@ -51,6 +51,8 @@ export type TimelineDemand = {
   taskId: string;
   title: string;
   open: boolean;
+  /** Descartada — CANCELLED ou OBSOLETE. Fica marcada na tela; só chega aqui se tiver apontamento. */
+  discarded: boolean;
   dueDateISO: string | null;
   overdue: boolean;
 };
@@ -86,7 +88,7 @@ export async function getProjectTimeline(
       ? (filters.priority as TaskPriority)
       : undefined;
 
-  const tarefas = await prisma.task.findMany({
+  const todasAsTarefas = await prisma.task.findMany({
     where: {
       projectId,
       ...(prioridadeValida ? { priority: prioridadeValida } : {}),
@@ -140,7 +142,7 @@ export async function getProjectTimeline(
     },
   });
 
-  const idsDasTarefas = tarefas.map((t) => t.id);
+  const idsDasTarefas = todasAsTarefas.map((t) => t.id);
   const apontamentos = idsDasTarefas.length
     ? await prisma.timeLog.findMany({
         where: { taskId: { in: idsDasTarefas } },
@@ -148,13 +150,27 @@ export async function getProjectTimeline(
       })
     : [];
 
+  const descartadaStatus = (status: string) => status === "CANCELLED" || status === "OBSOLETE";
+  const comApontamento = new Set(apontamentos.map((a) => a.taskId));
+
+  // Descartada que ninguém chegou a trabalhar não entra na tela. Uma coluna de 12rem mostrando só o
+  // dia em que a demanda nasceu é ruído num eixo horizontal escasso — e pior: a criação dela marca
+  // movimento, então ela partiria uma faixa de vão ao meio e a tela diria que houve trabalho num dia
+  // em que não houve. Descartada COM apontamento continua: as horas foram gastas de verdade, e
+  // apagá-las seria reescrever o passado.
+  const tarefas = todasAsTarefas.filter(
+    (t) => !descartadaStatus(t.status) || comApontamento.has(t.id)
+  );
+  const idsVisiveis = tarefas.map((t) => t.id);
+  const visivel = new Set(idsVisiveis);
+
   // O dia real em que cada etapa foi LIBERADA (ficou ACTIVE) — `TaskActiveStage.activatedAt` é
   // `@default(now())` e nada no código o atualiza, então ele é sempre o dia de CRIAÇÃO da linha
   // (já coberto por `createdAt`), nunca o da liberação de verdade. Quem grava a liberação de
   // verdade é `lib/stage-transitions.ts`, em `StageTransition` — uma consulta a mais, em lote.
-  const liberacoes = idsDasTarefas.length
+  const liberacoes = idsVisiveis.length
     ? await prisma.stageTransition.findMany({
-        where: { taskId: { in: idsDasTarefas }, status: "ACTIVE" },
+        where: { taskId: { in: idsVisiveis }, status: "ACTIVE" },
         select: { taskId: true, stageId: true, at: true },
       })
     : [];
@@ -220,6 +236,10 @@ export async function getProjectTimeline(
   // Liberação de etapa é movimento real, do mesmo jeito que apontamento e conclusão — mas não
   // depende de percorrer `activeStages` de novo: já veio pronta da consulta em lote.
   for (const lib of liberacoes) {
+    // O guarda repete o recorte da consulta de propósito: `movedDays` é global à grade, então uma
+    // transição de demanda escondida criaria uma linha de dia sem nenhuma célula — a tela dizendo
+    // que houve trabalho num dia em que, para quem olha, não houve nada.
+    if (!visivel.has(lib.taskId)) continue;
     marcarMovimento(formatISODate(nowInSaoPaulo(lib.at)), lib.taskId, { real: true });
   }
 
@@ -250,7 +270,7 @@ export async function getProjectTimeline(
     // Demanda descartada: a HISTÓRIA continua (apontamentos e conclusões acima já valem), mas o
     // FUTURO dela não — cancelar não deveria continuar prometendo trabalho que ninguém vai fazer
     // (item 4 do ledger).
-    const descartada = t.status === "CANCELLED" || t.status === "OBSOLETE";
+    const descartada = descartadaStatus(t.status);
 
     const projecao = projectDemandDays({
       stages: t.activeStages.map(
@@ -354,12 +374,13 @@ export async function getProjectTimeline(
   const demands: TimelineDemand[] = tarefas
     .map((t) => {
       const vencimento = t.dueDate ? formatISODate(t.dueDate) : null;
-      const aberta =
-        t.status !== "COMPLETED" && t.status !== "CANCELLED" && t.status !== "OBSOLETE";
+      const descartada = descartadaStatus(t.status);
+      const aberta = t.status !== "COMPLETED" && !descartada;
       return {
         taskId: t.id,
         title: t.title,
         open: aberta,
+        discarded: descartada,
         dueDateISO: vencimento,
         overdue: !!vencimento && vencimento < hojeISO && aberta,
       };

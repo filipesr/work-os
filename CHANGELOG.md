@@ -153,6 +153,11 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - **A célula vazia usa `—` e nunca `·`**, porque `·` já significa "etapa não liberada" nesta
   gramática — um glyfo com dois significados é como um vocabulário compartilhado deixa de ser
   compartilhado.
+- **Demanda descartada aparece riscada — e só se alguém a trabalhou.** Obsoleta ou cancelada que
+  ninguém chegou a apontar some da tela: uma coluna inteira mostrando só o dia em que a demanda
+  nasceu é ruído num eixo horizontal escasso, e a criação dela ainda partiria uma faixa de vão ao
+  meio, fazendo a tela dizer que houve trabalho num dia em que não houve. Com apontamento, ela fica:
+  as horas foram gastas de verdade, e apagá-las seria reescrever o passado.
 - **Corrigido de passagem:** os filtros "minhas demandas" e "por responsável" do kanban filtravam
   por `Task.assigneeId`, campo que nenhum caminho do fluxo escreve — devolviam sempre vazio. Agora
   filtram pelo responsável da etapa.

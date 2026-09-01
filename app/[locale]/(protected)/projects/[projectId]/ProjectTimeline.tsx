@@ -57,11 +57,19 @@ export async function ProjectTimeline({ data }: { data: Timeline }) {
                       apagar o TaskCard do kanban é o mesmo erro que a spec proíbe pros filtros. */}
                   <Link
                     href={`/tasks/${d.taskId}`}
-                    className="block truncate hover:underline"
+                    className={`block truncate hover:underline ${
+                      d.discarded ? "text-muted-foreground line-through" : ""
+                    }`}
                     title={d.title}
                   >
                     {d.title}
                   </Link>
+                  {/* Descartada continua na tela porque as horas dela foram gastas de verdade — mas
+                      riscada, para ninguém somar ao que ainda vai acontecer. O cinza é o mesmo tom
+                      que `lib/status-styles.ts` já dá a OBSOLETE. */}
+                  {d.discarded && (
+                    <span className="mr-1 text-muted-foreground">{t("discarded")}</span>
+                  )}
                   {d.dueDateISO && (
                     <span className={d.overdue ? "text-danger" : "text-muted-foreground"}>
                       {t(d.overdue ? "overdue" : "dueOn", { date: ddmm(d.dueDateISO) })}

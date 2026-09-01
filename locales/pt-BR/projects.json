@@ -37,6 +37,7 @@
       "allAssignees": "Qualquer responsável",
       "allTeams": "Qualquer equipe",
       "allPriorities": "Qualquer prioridade"
-    }
+    },
+    "discarded": "obsoleta"
   }
 }
