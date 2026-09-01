@@ -1,17 +1,26 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
-import { KanbanBoard } from "@/components/projects/KanbanBoard";
+import { getProjectTimeline } from "@/lib/actions/project-timeline";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { SectionCard } from "@/components/ui/SectionCard";
 import { auth } from "@/lib/auth";
+import { TimelineFilters } from "./TimelineFilters";
+import { ProjectTimeline } from "./ProjectTimeline";
 
 interface ProjectPageProps {
   params: Promise<{
     projectId: string;
   }>;
+  searchParams: Promise<{
+    mine?: string | string[];
+    assignee?: string | string[];
+    team?: string | string[];
+    priority?: string | string[];
+  }>;
 }
 
-export default async function ProjectPage({ params }: ProjectPageProps) {
+export default async function ProjectPage({ params, searchParams }: ProjectPageProps) {
   const session = await auth();
   if (!session?.user) {
     return null;
@@ -19,136 +28,57 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   const { projectId } = await params;
 
-  // Fetch project with all related data
-  const projectData = await prisma.project.findUnique({
+  // Só o necessário para o cabeçalho — o resto do que a página buscava (stagesMap, allStagesMap,
+  // templates, currentStage por tarefa) existia só para alimentar as colunas do kanban, que saiu.
+  const project = await prisma.project.findUnique({
     where: { id: projectId },
-    include: {
-      client: true,
-      tasks: {
-        include: {
-          assignee: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-            },
-          },
-          activeStages: {
-            where: {
-              status: { in: ["ACTIVE", "BLOCKED"] },
-            },
-            include: {
-              stage: {
-                include: {
-                  defaultTeam: true,
-                  template: true,
-                },
-              },
-            },
-            orderBy: {
-              stage: { order: "asc" },
-            },
-          },
-          project: {
-            include: {
-              client: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      },
-    },
+    select: { name: true, client: { select: { name: true } } },
   });
 
-  if (!projectData) {
+  if (!project) {
     notFound();
   }
 
-  const currentUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { teams: { select: { id: true } } },
-  });
-  const currentUserTeamIds = currentUser?.teams.map((team) => team.id) ?? [];
-
-  // Add computed properties for backward compatibility
-  const project = {
-    ...projectData,
-    tasks: projectData.tasks.map((task) => {
-      const currentActiveStage = task.activeStages.find((as) => as.status === "ACTIVE");
-      return {
-        ...task,
-        currentStage: currentActiveStage ? currentActiveStage.stage : null,
-        currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
-      };
-    }),
+  const sp = await searchParams;
+  const filtros = {
+    mine: sp.mine === "1",
+    assigneeId: typeof sp.assignee === "string" ? sp.assignee : undefined,
+    teamId: typeof sp.team === "string" ? sp.team : undefined,
+    priority: typeof sp.priority === "string" ? sp.priority : undefined,
   };
 
-  // Collect all unique stages from the tasks
-  // This gives us the columns for the Kanban board
-  const stagesMap = new Map();
+  // As opções dos filtros de responsável/equipe vêm só de quem de fato aparece nas etapas deste
+  // projeto — listar a empresa inteira faria o dropdown crescer com o número de funcionários, não
+  // com o tamanho do projeto.
+  const etapasDoProjeto = await prisma.taskActiveStage.findMany({
+    where: { task: { projectId } },
+    select: {
+      assignee: { select: { id: true, name: true, email: true } },
+      team: { select: { id: true, name: true } },
+      stage: { select: { defaultTeam: { select: { id: true, name: true } } } },
+    },
+  });
 
-  project.tasks.forEach((task) => {
-    if (task.currentStage) {
-      const stage = task.currentStage;
-      if (!stagesMap.has(stage.id)) {
-        stagesMap.set(stage.id, {
-          id: stage.id,
-          name: stage.name,
-          order: stage.order,
-          templateId: stage.templateId,
-          templateName: stage.template.name,
-          defaultTeam: stage.defaultTeam,
-        });
-      }
+  const pessoasMap = new Map<string, string>();
+  const timesMap = new Map<string, string>();
+  for (const e of etapasDoProjeto) {
+    if (e.assignee) {
+      pessoasMap.set(e.assignee.id, e.assignee.name ?? e.assignee.email ?? e.assignee.id);
     }
-  });
+    const time = e.team ?? e.stage.defaultTeam;
+    if (time) timesMap.set(time.id, time.name);
+  }
+  const people = [...pessoasMap]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const teams = [...timesMap]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Convert to array and sort by order
-  const stages = Array.from(stagesMap.values()).sort((a, b) => a.order - b.order);
-
-  // Get all unique workflow templates used in this project
-  const templateIds = Array.from(
-    new Set(project.tasks.map((t) => t.currentStage?.templateId).filter(Boolean))
-  );
-
-  const templates = await prisma.workflowTemplate.findMany({
-    where: {
-      id: { in: templateIds as string[] },
-    },
-    include: {
-      stages: {
-        orderBy: { order: "asc" },
-        include: {
-          defaultTeam: true,
-        },
-      },
-    },
-  });
-
-  // Collect ALL stages from templates (not just the ones with tasks)
-  // This ensures we show empty columns too
-  const allStagesMap = new Map();
-  templates.forEach((template) => {
-    template.stages.forEach((stage) => {
-      if (!allStagesMap.has(stage.id)) {
-        allStagesMap.set(stage.id, {
-          id: stage.id,
-          name: stage.name,
-          order: stage.order,
-          templateId: stage.templateId,
-          templateName: template.name,
-          defaultTeam: stage.defaultTeam,
-        });
-      }
-    });
-  });
-
-  const allStages = Array.from(allStagesMap.values()).sort((a, b) => a.order - b.order);
-
-  const tp = await getTranslations("projects");
+  const [data, tp] = await Promise.all([
+    getProjectTimeline(projectId, filtros),
+    getTranslations("projects"),
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -160,13 +90,20 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         backLabel={tp("backToProjects")}
       />
 
-      <KanbanBoard
-        project={project}
-        tasks={project.tasks}
-        stages={allStages}
-        currentUserId={session.user.id!}
-        currentUserTeamIds={currentUserTeamIds}
-      />
+      <div className="mb-4">
+        <TimelineFilters
+          mine={filtros.mine}
+          assigneeId={filtros.assigneeId}
+          teamId={filtros.teamId}
+          priority={filtros.priority}
+          people={people}
+          teams={teams}
+        />
+      </div>
+
+      <SectionCard bodyClassName="p-0">
+        <ProjectTimeline data={data} />
+      </SectionCard>
     </div>
   );
 }
