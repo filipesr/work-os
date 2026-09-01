@@ -39,6 +39,11 @@ export type StageLine = {
   stageName: string;
   assigneeName: string | null;
   hours: number;
+  /** Horas APONTADAS desta etapa no dia da célula. Zero quando ninguém apontou — o passado não é
+   *  preenchido com estimativa. */
+  doneHours: number;
+  /** A referência é estimativa (SLA declarado), não medição. A tela avisa. */
+  estimated: boolean;
   /** `done` = concluída; `pending` = ativa ou na fila; `waiting` = ainda não liberada (não soma). */
   state: "done" | "pending" | "waiting";
 };
@@ -160,10 +165,59 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
       })
     : [];
 
+  // O REALIZADO: horas apontadas na janela, por etapa e por dia. `logDate` é instante real (o
+  // fechamento do cronômetro grava `endedAt`), então a janela usa `realInstant` — a mesma conta de
+  // `completedAt`. Comparar com a representação SP-local erraria em três horas e sumiria com o que
+  // foi trabalhado à noite.
+  const apontamentos = idsEmTela.length
+    ? await prisma.timeLog.findMany({
+        where: { taskId: { in: idsEmTela }, logDate: { gte: inicioReal, lte: fimReal } },
+        select: { taskId: true, stageId: true, hoursSpent: true, logDate: true },
+      })
+    : [];
+
+  // (taskId, stageId, dia) → horas trabalhadas. O dia é o do calendário de São Paulo, senão o
+  // apontamento da noite cairia no dia seguinte.
+  const realizadoPorEtapaDia = new Map<string, number>();
+  // (taskId, stageId) → total trabalhado na janela, para descontar da referência.
+  const realizadoPorEtapa = new Map<string, number>();
+  const chave = (taskId: string, stageId: string, dia?: string) =>
+    dia ? `${taskId}:${stageId}:${dia}` : `${taskId}:${stageId}`;
+
+  // taskId → clientId: para creditar o apontamento ao cliente certo mesmo quando o dia em que se
+  // trabalhou não é o dia em que a etapa está POSICIONADA na célula (etapa concluída/planejada num
+  // dia, mas trabalhada em outro).
+  const clienteDaTarefa = new Map<string, string>();
+  for (const l of linhas) clienteDaTarefa.set(l.task.id, l.task.project.client.id);
+
+  // (clientId, dia) → total apontado. É a fonte de `ClientDay.doneHours`: o realizado do dia é o
+  // que foi de fato trabalhado NAQUELE dia, direto do apontamento — não a soma das etapas que a
+  // célula desse dia por acaso está exibindo.
+  const doneHorasPorClienteDia = new Map<string, number>();
+
+  for (const a of apontamentos) {
+    if (!a.stageId) continue; // hora lançada na demanda inteira, sem etapa: não é de ninguém aqui
+    const dia = formatISODate(nowInSaoPaulo(a.logDate));
+    const kDia = chave(a.taskId, a.stageId, dia);
+    realizadoPorEtapaDia.set(kDia, (realizadoPorEtapaDia.get(kDia) ?? 0) + a.hoursSpent);
+    const kEtapa = chave(a.taskId, a.stageId);
+    realizadoPorEtapa.set(kEtapa, (realizadoPorEtapa.get(kEtapa) ?? 0) + a.hoursSpent);
+
+    const clientId = clienteDaTarefa.get(a.taskId);
+    if (clientId && days.includes(dia)) {
+      const kCliente = `${clientId}:${dia}`;
+      doneHorasPorClienteDia.set(
+        kCliente,
+        (doneHorasPorClienteDia.get(kCliente) ?? 0) + a.hoursSpent
+      );
+    }
+  }
+
   const referencias = await getStageReferences([
     ...new Set([...linhas, ...restantes].map((l) => l.stageId)),
   ]);
   const horasDe = (stageId: string) => referencias.get(stageId)?.hours ?? 0;
+  const sourceDe = (stageId: string) => referencias.get(stageId)?.source ?? "declared";
 
   const primeiroDia = days[0];
   const hojeISO = formatISODate(todayInSaoPaulo());
@@ -192,12 +246,23 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
       stages: [],
     };
 
-    const horas = horasDe(row.stageId);
+    const referencia = horasDe(row.stageId);
+    const kEtapa = chave(row.task.id, row.stageId);
+    // Feito NO DIA desta célula: o apontamento se divide sozinho pelos dias em que a pessoa
+    // trabalhou. É isto que responde "1h num dia, 1h no outro, até fechar".
+    const feitoNoDia = realizadoPorEtapaDia.get(chave(row.task.id, row.stageId, dia)) ?? 0;
+    // Pendente é o que falta da referência, descontado tudo que já foi apontado na janela. Nunca
+    // negativo: quem passou da referência não devolve horas ao cliente.
+    const pendente = Math.max(0, referencia - (realizadoPorEtapa.get(kEtapa) ?? 0));
+
     // Não liberada aparece e NÃO soma: trabalho que ninguém pode começar não é carga de ninguém.
     const state: StageLine["state"] =
       row.status === "COMPLETED" ? "done" : row.status === "ACTIVE" ? "pending" : "waiting";
-    if (state === "done") bloco.doneHours += horas;
-    else if (state === "pending") bloco.pendingHours += horas;
+    bloco.doneHours += feitoNoDia;
+    // Cada linha é encaixada em exatamente um dia (a etapa aparecer em mais de um dia é da Task 3),
+    // então o pendente vale sem condição — só quem está "pending" carrega pendente; a não liberada
+    // continua fora da soma, como sempre.
+    if (state === "pending") bloco.pendingHours += pendente;
 
     bloco.stages.push({
       id: row.id,
@@ -212,7 +277,11 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
         row.team?.name ??
         row.stage.defaultTeam?.name ??
         null,
-      hours: horas,
+      hours: state === "done" ? feitoNoDia : pendente,
+      doneHours: feitoNoDia,
+      // A referência é estimativa quando não há amostra observada — a tela avisa, para o número
+      // não passar por medição.
+      estimated: sourceDe(row.stageId) === "declared",
       state,
     });
 
@@ -259,7 +328,10 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
     let totalPending = 0;
     for (const dia of days) {
       const blocos = [...(acc.dias.get(dia)?.values() ?? [])];
-      const doneHours = blocos.reduce((n, b) => n + b.doneHours, 0);
+      // O feito do dia vem direto do apontamento daquele dia — não da soma dos blocos exibidos
+      // nele. Uma etapa concluída num dia mas trabalhada em outro credita o dia em que a pessoa
+      // de fato trabalhou, mesmo sem um bloco seu posicionado ali.
+      const doneHours = doneHorasPorClienteDia.get(`${clientId}:${dia}`) ?? 0;
       const pendingHours = blocos.reduce((n, b) => n + b.pendingHours, 0);
       byDay[dia] = { doneHours, pendingHours, tasks: blocos };
       totalDone += doneHours;

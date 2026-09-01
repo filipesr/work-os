@@ -16,7 +16,7 @@ vi.mock("@/lib/planning/stage-reference", () => ({
   ),
 }));
 vi.mock("@/lib/prisma", () => ({
-  default: { taskActiveStage: { findMany: vi.fn() } },
+  default: { taskActiveStage: { findMany: vi.fn() }, timeLog: { findMany: vi.fn() } },
 }));
 
 import prisma from "@/lib/prisma";
@@ -48,6 +48,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   // Duas consultas agora: as linhas da semana e as etapas restantes das demandas em tela.
   vi.mocked(prisma.taskActiveStage.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.timeLog.findMany).mockResolvedValue([] as never);
 });
 
 describe("getClientLoad", () => {
@@ -99,6 +100,11 @@ describe("getClientLoad", () => {
         }),
       ] as never)
       .mockResolvedValueOnce([] as never);
+    // O realizado agora vem do apontamento, não da referência — ver a suíte de "o realizado vem
+    // do apontamento" logo abaixo. Aqui a pessoa apontou exatamente a referência (2h).
+    vi.mocked(prisma.timeLog.findMany).mockResolvedValue([
+      { taskId: "t1", stageId: "s1", hoursSpent: 2, logDate: new Date("2026-09-09T13:00:00Z") },
+    ] as never);
 
     return getClientLoad(SEGUNDA).then((carga) => {
       const a = carga.clients[0];
@@ -244,8 +250,7 @@ describe("getClientLoad", () => {
           team: null,
           stage: { name: "Aprovação", order: 3, defaultTeam: { name: "Atendimento" } },
         }),
-      ] as never)
-      .mockResolvedValueOnce([] as never);
+      ] as never);
 
     return getClientLoad(SEGUNDA).then((carga) => {
       const bloco = carga.clients[0].byDay["2026-09-08"].tasks[0];
@@ -255,6 +260,74 @@ describe("getClientLoad", () => {
       expect(restante.assigneeName).toBe("Atendimento");
       // Não liberada não soma, aqui como em toda tela.
       expect(bloco.pendingHours).toBe(2);
+    });
+  });
+
+  it("o realizado do dia vem do APONTAMENTO, não da referência", () => {
+    // A etapa vale 2h de referência, mas só 1,5h foram trabalhadas naquele dia. A célula mostra o
+    // que aconteceu, não o que se esperava.
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        row({
+          status: "COMPLETED",
+          plannedDate: null,
+          completedAt: new Date("2026-09-09T13:00:00Z"),
+        }),
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.timeLog.findMany).mockResolvedValue([
+      { taskId: "t1", stageId: "s1", hoursSpent: 1.5, logDate: new Date("2026-09-09T16:00:00Z") },
+    ] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      expect(carga.clients[0].byDay["2026-09-09"].doneHours).toBe(1.5);
+    });
+  });
+
+  it("etapa concluída SEM apontamento conta zero — não se preenche o passado com estimativa", () => {
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        row({
+          status: "COMPLETED",
+          plannedDate: null,
+          completedAt: new Date("2026-09-09T13:00:00Z"),
+        }),
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.timeLog.findMany).mockResolvedValue([] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      expect(carga.clients[0].byDay["2026-09-09"].doneHours).toBe(0);
+      expect(carga.clients[0].totalDone).toBe(0);
+    });
+  });
+
+  it("apontamento aparece no dia em que foi trabalhado, mesmo em etapa não concluída", () => {
+    // "Trabalhei 2h ontem e não terminei": as 2h ficam em ontem, e o que falta segue adiante.
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([row({ plannedDate: new Date("2026-09-09T00:00:00Z") })] as never)
+      .mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.timeLog.findMany).mockResolvedValue([
+      { taskId: "t1", stageId: "s1", hoursSpent: 0.5, logDate: new Date("2026-09-08T16:00:00Z") },
+    ] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      expect(carga.clients[0].byDay["2026-09-08"].doneHours).toBe(0.5);
+      // O pendente é o que falta da referência (2h): 1,5h.
+      expect(carga.clients[0].byDay["2026-09-09"].pendingHours).toBe(1.5);
+    });
+  });
+
+  it("apontamento maior que a referência não vira pendente negativo", () => {
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([row({ plannedDate: new Date("2026-09-09T00:00:00Z") })] as never)
+      .mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.timeLog.findMany).mockResolvedValue([
+      { taskId: "t1", stageId: "s1", hoursSpent: 9, logDate: new Date("2026-09-08T16:00:00Z") },
+    ] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      expect(carga.clients[0].byDay["2026-09-09"].pendingHours).toBe(0);
     });
   });
 });
