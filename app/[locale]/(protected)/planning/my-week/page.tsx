@@ -113,155 +113,173 @@ export default async function MyWeekPage({
         </div>
       )}
 
-      {/* A régua é VISUAL e a tela diz isso: número em barra vira meta na cabeça de quem olha,
-          mesmo sem ninguém ter decidido isso. */}
-      <p className="mb-2 text-xs text-muted-foreground">
-        {t("dayRuler", { hours: DAY_VISUAL_HOURS })}
-      </p>
+      {/* Duas colunas no computador — semana à esquerda, disponíveis à direita —, empilhado no
+          celular. Não é trocar uma forma pela outra: é a mesma leitura em duas, escolhida pelo
+          tamanho da tela. Os DIAS seguem em lista vertical de propósito: esta é a tela que mais se
+          abre do celular, e o cartão do dia precisa de largura para o título da demanda e os
+          controles de mover. Quem some no `lg` é a rolagem até o fim para ver o que dá para puxar.
+          `items-start` para a coluna da direita não esticar — sem ele o `sticky` não gruda. */}
+      <div className="gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        <div>
+          {/* A régua é VISUAL e a tela diz isso: número em barra vira meta na cabeça de quem olha,
+              mesmo sem ninguém ter decidido isso. */}
+          <p className="mb-2 text-xs text-muted-foreground">
+            {t("dayRuler", { hours: DAY_VISUAL_HOURS })}
+          </p>
 
-      <div className="space-y-4">
-        {semana.days.map((d) => {
-          const dia = semana.byDay[d];
-          const hoje = d === semana.todayISO;
-          return (
-            <SectionCard
-              key={d}
-              title={`${d.slice(8, 10)}/${d.slice(5, 7)}`}
-              // A célula diz só o que ela tem: dia futuro não tem feito, dia entregue não tem
-              // previsto. "0.0h" nos dois seria ruído com aparência de informação.
-              subtitle={[
-                dia.doneHours > 0 ? t("doneHours", { hours: dia.doneHours.toFixed(1) }) : null,
-                dia.usedHours > 0 || dia.doneHours === 0
-                  ? `${dia.usedHours.toFixed(1)}h / ${DAY_VISUAL_HOURS}h`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-              className={hoje ? "border-primary/40" : undefined}
-            >
-              <DayDone done={dia.done} />
-              {dia.slots.length === 0 ? (
-                // Dia sem nada por fazer E sem nada feito é dia vazio; com o feito acima, "nada
-                // programado" viraria contradição na mesma célula.
-                dia.done.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("empty")}</p>
-                )
-              ) : (
-                <ul className="space-y-2">
-                  {dia.slots.map((s) => {
-                    // Envelhecimento DESTA etapa contra a referência da classe — leitura sobre o
-                    // TRABALHO, nunca nota da pessoa. Em hora ÚTIL, para o aviso não acender em
-                    // tudo: um sinal que acende sempre não é sinal.
-                    const passou =
-                      s.item.activeSince && s.item.referenceHours > 0
-                        ? stageAgingRatio(
-                            workingClockEquivalent(s.item.activeSince, agora),
-                            s.item.referenceHours,
-                            agora
-                          )
-                        : 0;
-                    return (
-                      <li
-                        key={s.item.id}
-                        className={`flex flex-wrap items-center justify-between gap-2 rounded border px-3 py-2 text-sm ${
-                          s.kind === "conflict"
-                            ? "border-danger/40 bg-danger-subtle text-danger"
-                            : s.kind === "waiting"
-                              ? "border-border bg-muted/40 text-muted-foreground"
-                              : "border-border bg-card text-foreground"
-                        }`}
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate font-medium">
-                            {s.item.taskTitle} · {s.item.stageName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {s.item.referenceHours.toFixed(1)}h
-                            {s.item.referenceSource === "declared" && ` · ${t("estimated")}`}
-                            {s.kind === "waiting" && ` · ${t("waiting")}`}
-                            {/* Reivindicada e ainda sem dia: está na fila de hoje porque alguém a
+          <div className="space-y-4">
+            {semana.days.map((d) => {
+              const dia = semana.byDay[d];
+              const hoje = d === semana.todayISO;
+              return (
+                <SectionCard
+                  key={d}
+                  title={`${d.slice(8, 10)}/${d.slice(5, 7)}`}
+                  // A célula diz só o que ela tem: dia futuro não tem feito, dia entregue não tem
+                  // previsto. "0.0h" nos dois seria ruído com aparência de informação.
+                  subtitle={[
+                    dia.doneHours > 0 ? t("doneHours", { hours: dia.doneHours.toFixed(1) }) : null,
+                    dia.usedHours > 0 || dia.doneHours === 0
+                      ? `${dia.usedHours.toFixed(1)}h / ${DAY_VISUAL_HOURS}h`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  className={hoje ? "border-primary/40" : undefined}
+                >
+                  <DayDone done={dia.done} />
+                  {dia.slots.length === 0 ? (
+                    // Dia sem nada por fazer E sem nada feito é dia vazio; com o feito acima, "nada
+                    // programado" viraria contradição na mesma célula.
+                    dia.done.length === 0 && (
+                      <p className="text-sm text-muted-foreground">{t("empty")}</p>
+                    )
+                  ) : (
+                    <ul className="space-y-2">
+                      {dia.slots.map((s) => {
+                        // Envelhecimento DESTA etapa contra a referência da classe — leitura sobre o
+                        // TRABALHO, nunca nota da pessoa. Em hora ÚTIL, para o aviso não acender em
+                        // tudo: um sinal que acende sempre não é sinal.
+                        const passou =
+                          s.item.activeSince && s.item.referenceHours > 0
+                            ? stageAgingRatio(
+                                workingClockEquivalent(s.item.activeSince, agora),
+                                s.item.referenceHours,
+                                agora
+                              )
+                            : 0;
+                        return (
+                          <li
+                            key={s.item.id}
+                            className={`flex flex-wrap items-center justify-between gap-2 rounded border px-3 py-2 text-sm ${
+                              s.kind === "conflict"
+                                ? "border-danger/40 bg-danger-subtle text-danger"
+                                : s.kind === "waiting"
+                                  ? "border-border bg-muted/40 text-muted-foreground"
+                                  : "border-border bg-card text-foreground"
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate font-medium">
+                                {s.item.taskTitle} · {s.item.stageName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {s.item.referenceHours.toFixed(1)}h
+                                {s.item.referenceSource === "declared" && ` · ${t("estimated")}`}
+                                {s.kind === "waiting" && ` · ${t("waiting")}`}
+                                {/* Reivindicada e ainda sem dia: está na fila de hoje porque alguém a
                                 pegou, não porque foi programada. */}
-                            {s.item.semDia && ` · ${t("queued")}`}
-                            {s.kind === "scheduled" &&
-                              s.item.scheduledStart &&
-                              ` · ${t("scheduled")} ${formatDisplayTime(s.item.scheduledStart)}`}
-                          </p>
-                          {passou > 1 && s.item.activeSince && (
-                            <p className="text-xs text-warning">
-                              {t("aging", {
-                                elapsed: (passou * s.item.referenceHours).toFixed(1),
-                                reference: s.item.referenceHours.toFixed(1),
-                              })}
-                            </p>
-                          )}
-                        </div>
-                        {/* Compromisso marcado não é reordenado nem movido: ele acontece na hora
+                                {s.item.semDia && ` · ${t("queued")}`}
+                                {s.kind === "scheduled" &&
+                                  s.item.scheduledStart &&
+                                  ` · ${t("scheduled")} ${formatDisplayTime(s.item.scheduledStart)}`}
+                              </p>
+                              {passou > 1 && s.item.activeSince && (
+                                <p className="text-xs text-warning">
+                                  {t("aging", {
+                                    elapsed: (passou * s.item.referenceHours).toFixed(1),
+                                    reference: s.item.referenceHours.toFixed(1),
+                                  })}
+                                </p>
+                              )}
+                            </div>
+                            {/* Compromisso marcado não é reordenado nem movido: ele acontece na hora
                             dele. Sem controles, a regra fica óbvia na tela. */}
-                        {!s.item.scheduledStart && (
-                          <MyDayControls
-                            activeStageId={s.item.id}
-                            days={semana.days}
-                            currentDay={d}
-                          />
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
+                            {!s.item.scheduledStart && (
+                              <MyDayControls
+                                activeStageId={s.item.id}
+                                days={semana.days}
+                                currentDay={d}
+                              />
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
 
-              {/* O fim do dia: cumprido, e o próximo já visível como convite — não como cobrança.
+                  {/* O fim do dia: cumprido, e o próximo já visível como convite — não como cobrança.
                   `dayDone` já exige que o dia TENHA tido itens: dizer "dia cumprido" numa quinta
                   vazia, logo abaixo de "Nada programado neste dia", era a tela se contradizendo. */}
-              {hoje && semana.dayDone && (
-                <p className="mt-3 text-sm text-success">
-                  {t("dayDone")}
-                  {semana.nextUp && (
-                    <span className="ml-1 text-foreground">
-                      {t("nextUp", {
-                        task: semana.nextUp.taskTitle,
-                        stage: semana.nextUp.stageName,
-                        day: `${semana.nextUp.dayISO.slice(8, 10)}/${semana.nextUp.dayISO.slice(5, 7)}`,
-                      })}
-                    </span>
+                  {hoje && semana.dayDone && (
+                    <p className="mt-3 text-sm text-success">
+                      {t("dayDone")}
+                      {semana.nextUp && (
+                        <span className="ml-1 text-foreground">
+                          {t("nextUp", {
+                            task: semana.nextUp.taskTitle,
+                            stage: semana.nextUp.stageName,
+                            day: `${semana.nextUp.dayISO.slice(8, 10)}/${semana.nextUp.dayISO.slice(5, 7)}`,
+                          })}
+                        </span>
+                      )}
+                    </p>
                   )}
-                </p>
-              )}
-            </SectionCard>
-          );
-        })}
-      </div>
+                </SectionCard>
+              );
+            })}
+          </div>
+        </div>
 
-      <SectionCard title={t("poolTitle")} className="mt-6">
-        {semana.pool.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("poolEmpty")}</p>
-        ) : (
-          <ul className="space-y-2">
-            {semana.pool.map((p) => (
-              <li
-                key={p.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded border border-border px-3 py-2 text-sm"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-foreground">
-                    {p.taskTitle} · {p.stageName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {p.clientName} · {p.referenceHours.toFixed(1)}h
-                    {p.referenceSource === "declared" && ` · ${t("estimated")}`}
-                  </p>
-                </div>
-                <PullDialog
-                  activeStageId={p.id}
-                  label={`${p.taskTitle} · ${p.stageName}`}
-                  days={semana.days}
-                  defaultDay={semana.todayISO ?? semana.days[0]}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </SectionCard>
+        {/* Fixo ao rolar: é enquanto a pessoa percorre a semana que ela decide puxar algo, e um
+            poço que some ao rolar chega tarde. O teto de altura é o par obrigatório do `sticky` —
+            sem ele um poço longo passa da tela e o fim dele fica inalcançável. */}
+        <div className="mt-6 lg:sticky lg:top-24 lg:mt-0">
+          <SectionCard
+            title={t("poolTitle")}
+            bodyClassName="p-6 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto"
+          >
+            {semana.pool.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("poolEmpty")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {semana.pool.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded border border-border px-3 py-2 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-foreground">
+                        {p.taskTitle} · {p.stageName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {p.clientName} · {p.referenceHours.toFixed(1)}h
+                        {p.referenceSource === "declared" && ` · ${t("estimated")}`}
+                      </p>
+                    </div>
+                    <PullDialog
+                      activeStageId={p.id}
+                      label={`${p.taskTitle} · ${p.stageName}`}
+                      days={semana.days}
+                      defaultDay={semana.todayISO ?? semana.days[0]}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+        </div>
+      </div>
     </div>
   );
 }

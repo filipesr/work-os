@@ -7,23 +7,7 @@ Item resolvido sai daqui e vira commit; item que virar feature grande vira spec 
 
 ---
 
-## 1. `/planning/my-week` — visão lado a lado no computador
-
-**O que é:** a tela da pessoa foi construída como **lista vertical de dias**, decisão registrada no
-plano da fatia 2: ela é a que mais será aberta do celular, e uma grade de seis colunas some numa
-tela estreita.
-
-**O que se quer:** no computador, o padrão da mesa do gestor — semana à esquerda, disponíveis à
-direita. **A prioridade é o PC**, mas sem regredir no celular.
-
-**Direção provável:** grade a partir de uma largura mínima, lista abaixo dela. Não é trocar uma
-pela outra: é a mesma leitura em duas formas, escolhida pelo tamanho da tela.
-
-**Não é defeito** — é troca de desenho.
-
----
-
-## 2. `Task.assigneeId` está no schema e ninguém escreve — **decisão pendente**
+## 1. `Task.assigneeId` está no schema e ninguém escreve — **decisão pendente**
 
 **O que é:** o campo de responsável no nível da DEMANDA existe na tabela e **nenhum caminho do
 fluxo o preenche**. Conferido no banco: zero demandas com ele. A atribuição neste sistema é por
@@ -43,7 +27,7 @@ responsável da etapa (`stageAssignee?.name ?? task.assignee?.name`). O fallback
 
 ---
 
-## 3. `/planning/client-load` — falta a demanda que ninguém pegou nem marcou
+## 2. `/planning/client-load` — falta a demanda que ninguém pegou nem marcou
 
 **Já resolvido:** a tela conta as etapas concluídas, o realizado vem do apontamento por dia, e o
 pendente é projetado pela cadeia de etapas até a véspera do vencimento. A célula fecha a demanda
@@ -61,7 +45,7 @@ tela deveria gritar — e hoje ela cala.
 
 ---
 
-## 4. Linha do tempo do projeto — arestas deixadas de propósito
+## 3. Linha do tempo do projeto — arestas deixadas de propósito
 
 **O que é:** a revisão final da linha do tempo (`/projects/{id}`) levantou quinze pontos. Os nove que
 mudavam comportamento foram corrigidos na entrega; estes quatro ficaram, cada um com o motivo.

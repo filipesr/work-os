@@ -164,6 +164,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### 🐛 Corrigido
 
+#### `/planning/my-week` ganhou a coluna de disponíveis no computador
+
+- **Semana à esquerda, disponíveis à direita**, como na mesa do gestor — e o poço fica fixo ao
+  rolar, porque é enquanto a pessoa percorre a semana que ela decide puxar algo.
+- **Os dias seguem em lista vertical, de propósito.** Esta é a tela que mais se abre do celular, e
+  o cartão do dia precisa de largura para o título da demanda e os controles de mover. O que some
+  no computador é a rolagem até o fim para descobrir o que dá para puxar.
+
 #### As duas telas de semana escondiam o que já tinha sido feito
 
 - **Concluir uma etapa a apagava do dia.** A mesa (`/planning/week`) e a semana da pessoa
