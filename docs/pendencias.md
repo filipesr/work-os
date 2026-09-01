@@ -87,6 +87,27 @@ tela deveria gritar — e hoje ela cala.
 
 ---
 
+## 5. Linha do tempo do projeto — arestas deixadas de propósito
+
+**O que é:** a revisão final da linha do tempo (`/projects/{id}`) levantou quinze pontos. Os nove que
+mudavam comportamento foram corrigidos na entrega; estes quatro ficaram, cada um com o motivo.
+
+- **Tooltip vazio na linha "sem etapa".** Quando alguém aponta hora fora de qualquer etapa, a célula
+  mostra a hora com o rótulo certo, mas o `title` do item vira `" · "`. Cosmético.
+- **O helper `diasAtras` dos testes ancora no dia UTC**, não no dia de São Paulo: entre 00h e 03h UTC
+  ele desloca um dia. Nenhuma asserção existente inverte com isso — foram conferidas uma a uma —, mas
+  um teste novo escrito em cima dele pode piscar.
+- **O dicionário `projects` guarda chaves mortas** herdadas do kanban (`filters.*`, `priority.*`,
+  `noTasks`, `noStages`, `unassigned`, `team`…). As sete que a entrega criou ou deixou órfãs foram
+  apagadas; a limpeza do resto é varredura própria, e o guarda de paridade não pega chave sem
+  consumidor.
+- **`stageTransition.findMany` cresce com a história do projeto**, não com a janela desenhada: é
+  consulta em lote (não é N+1), mas num projeto muito antigo traz uma linha por transição só para
+  extrair o dia em que cada etapa foi liberada. Vira problema junto com o teto de tamanho da grade,
+  que a spec adiou de propósito.
+
+---
+
 ## Limitações conhecidas, registradas em outro lugar
 
 Não são pendências desta lista, mas quem lê aqui costuma precisar delas:
