@@ -164,6 +164,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### 🐛 Corrigido
 
+#### `/planning/coverage` mostrava "sem responsável" para toda demanda
+
+- **Não era caso de borda: era sempre.** A cobertura semanal lia `Task.assignee` — o responsável no
+  nível da DEMANDA, campo que nenhum caminho do fluxo escreve. Passa a ler quem responde pelas
+  etapas **em curso**, com a mesma cadeia das telas vizinhas (pessoa, equipe da etapa, equipe padrão
+  do modelo).
+- **Duas etapas ativas, dois nomes.** A demanda é das duas, e escolher uma esconderia metade do
+  trabalho. A mesma pessoa em duas etapas aparece uma vez só, e "sem responsável" agora quer dizer
+  isso de verdade.
+
 - **Preview de avanço divergia da execução:** `previewNextStages` olhava apenas as etapas que
   dependem **diretamente** da etapa concluída. Com uma **etapa opcional excluída no meio do fluxo**,
   ele anunciava a própria etapa excluída como "próxima" e escondia a que de fato abre. Passou a

@@ -83,7 +83,11 @@ export function DemandSummaryDialog({
             <span className="text-sm tabular-nums text-foreground">{due ?? t("noDueDate")}</span>
           </Row>
           <Row label={t("assignee")}>
-            <span className="text-sm text-foreground">{task.assigneeName ?? t("unassigned")}</span>
+            {/* Duas etapas em curso, dois nomes: a demanda é das duas, e escolher uma esconderia
+                metade do trabalho. Vazio agora quer dizer "sem responsável" de verdade. */}
+            <span className="text-sm text-foreground">
+              {task.assigneeNames.length > 0 ? task.assigneeNames.join(" · ") : t("unassigned")}
+            </span>
           </Row>
         </dl>
 

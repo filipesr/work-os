@@ -18,7 +18,7 @@ function tarefa(state: DemandState, over: Partial<OccurrenceTask> = {}): Occurre
     projectName: "Social",
     status: "IN_PROGRESS",
     dueDateIso: "2026-12-08",
-    assigneeName: "Ana",
+    assigneeNames: ["Ana"],
     state,
     ...over,
   };

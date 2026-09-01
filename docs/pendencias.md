@@ -23,29 +23,23 @@ pela outra: é a mesma leitura em duas formas, escolhida pelo tamanho da tela.
 
 ---
 
-## 2. `/planning/coverage` mostra "sem responsável" para toda demanda — **defeito**
+## 2. `Task.assigneeId` está no schema e ninguém escreve — **decisão pendente**
 
-**O que acontece:** o diálogo de resumo da demanda mostra "sem responsável" mesmo quando a etapa
-atual tem responsável definido.
+**O que é:** o campo de responsável no nível da DEMANDA existe na tabela e **nenhum caminho do
+fluxo o preenche**. Conferido no banco: zero demandas com ele. A atribuição neste sistema é por
+etapa (`TaskActiveStage.assigneeId`).
 
-**Causa:** `lib/actions/weekly-coverage.ts` lê **`Task.assignee`** — o responsável no nível da
-DEMANDA. Neste sistema a atribuição é **por etapa** (`TaskActiveStage.assigneeId`); o campo da
-demanda não é escrito por caminho nenhum do fluxo. Conferido no banco: zero demandas com esse
-campo preenchido.
+**O estrago que ele já fez:** três telas o leram achando que era a fonte, e as três mostravam
+informação que nunca esteve certa — os filtros do kanban (devolviam sempre vazio), a cobertura
+semanal (dizia "sem responsável" para toda demanda) e, por pouco, a linha do tempo. As três já
+foram corrigidas. O campo continua lá, convidando a próxima.
 
-**Efeito:** o campo mostra "sem responsável" **sempre**, para qualquer demanda. É informação que
-nunca esteve certa, não um caso de borda.
+**A decisão:** remover a coluna, ou assumir uma intenção de uso. Enquanto ficar, é uma armadilha
+com aparência de API — o nome é exatamente o que alguém procuraria.
 
-**Direção:** ler o responsável da etapa em curso (a `TaskActiveStage` ACTIVE da demanda). Decidir
-o que mostrar quando há mais de uma etapa ativa — provavelmente todas, porque a demanda é de
-todas elas.
-
-**Pergunta aberta:** `Task.assigneeId` continua no schema sem ser escrito por ninguém. Vale
-remover, ou existe intenção de usá-lo?
-
-**Atualização (linha do tempo do projeto):** o mesmo defeito existia nos filtros do kanban e foi
-corrigido lá — eles passaram a olhar `TaskActiveStage.assigneeId`. A cobertura semanal continua
-lendo `Task.assignee`; o conserto é o mesmo, noutro arquivo.
+**Cuidado ao remover:** `lib/actions/reporting.ts` ainda o usa como _fallback_ depois do
+responsável da etapa (`stageAssignee?.name ?? task.assignee?.name`). O fallback é inofensivo hoje
+(sempre nulo), mas some junto.
 
 ---
 

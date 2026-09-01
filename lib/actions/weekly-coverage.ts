@@ -21,7 +21,10 @@ export interface OccurrenceTask {
   projectName: string;
   status: TaskStatus;
   dueDateIso: string | null;
-  assigneeName: string | null;
+  /** Quem responde pelas etapas EM CURSO. Lista porque a demanda pode ter mais de uma etapa ativa,
+   *  e nesse caso ela é das duas — escolher uma seria esconder metade do trabalho. Vazia quando não
+   *  há etapa ativa; é a tela que decide como dizer isso. */
+  assigneeNames: string[];
   /** Posição em relação ao PLANO (entregue / atrasada / em risco / …). Diferente
    *  de `status`, que diz onde a demanda está no fluxo. É esta leitura que faz a
    *  demanda concluída aparecer como boa notícia em vez de sumir. */
@@ -110,7 +113,15 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
         startedAt: true,
         completedAt: true,
         calendarOccurrenceId: true,
-        assignee: { select: { name: true, email: true } },
+        activeStages: {
+          where: { status: "ACTIVE" },
+          orderBy: { stage: { order: "asc" } },
+          select: {
+            assignee: { select: { name: true, email: true } },
+            team: { select: { name: true } },
+            stage: { select: { defaultTeam: { select: { name: true } } } },
+          },
+        },
         project: { select: { name: true, clientId: true, client: { select: { name: true } } } },
       },
     }),
@@ -134,7 +145,15 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
             plannedStartAt: true,
             startedAt: true,
             completedAt: true,
-            assignee: { select: { name: true, email: true } },
+            activeStages: {
+              where: { status: "ACTIVE" },
+              orderBy: { stage: { order: "asc" } },
+              select: {
+                assignee: { select: { name: true, email: true } },
+                team: { select: { name: true } },
+                stage: { select: { defaultTeam: { select: { name: true } } } },
+              },
+            },
             project: {
               select: { name: true, clientId: true, client: { select: { name: true } } },
             },
@@ -143,6 +162,33 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
       },
     }),
   ]);
+
+  /**
+   * Quem responde pela demanda: o dono de cada etapa EM CURSO.
+   *
+   * Antes daqui esta tela lia `Task.assignee` — o responsável no nível da DEMANDA. Neste sistema a
+   * atribuição é por ETAPA, e o campo da demanda não é escrito por caminho nenhum do fluxo: a tela
+   * dizia "sem responsável" para toda demanda que existe, sempre. Não era caso de borda, era
+   * informação que nunca esteve certa.
+   *
+   * A cadeia de recurso é a mesma da carga por cliente e da linha do tempo — pessoa, equipe da
+   * etapa, equipe padrão do modelo —, porque quando ninguém pegou a etapa quem responde por ela
+   * ainda é alguém: a equipe. Sem os dois, a lista vem vazia e a tela diz "sem responsável" com
+   * razão pela primeira vez.
+   */
+  const responsaveis = (t: {
+    activeStages: {
+      assignee: { name: string | null; email: string | null } | null;
+      team: { name: string } | null;
+      stage: { defaultTeam: { name: string } | null };
+    }[];
+  }): string[] => {
+    const nomes = t.activeStages.map(
+      (a) => a.assignee?.name ?? a.assignee?.email ?? a.team?.name ?? a.stage.defaultTeam?.name
+    );
+    // A mesma pessoa em duas etapas ativas é uma pessoa só na leitura.
+    return [...new Set(nomes.filter((n): n is string => !!n))];
+  };
 
   // clientes com demanda, por índice de semana + as demandas sem vínculo
   const byWeek: Set<string>[] = slots.map(() => new Set<string>());
@@ -159,7 +205,7 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
       title: t.title,
       status: t.status,
       dueDateIso: formatISODate(t.dueDate),
-      assigneeName: t.assignee?.name ?? t.assignee?.email ?? null,
+      assigneeNames: responsaveis(t),
       clientName: t.project.client.name,
       projectName: t.project.name,
       state: demandState(t, agora),
@@ -183,7 +229,7 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
         title: t.title,
         status: t.status,
         dueDateIso: t.dueDate ? formatISODate(t.dueDate) : null,
-        assigneeName: t.assignee?.name ?? t.assignee?.email ?? null,
+        assigneeNames: responsaveis(t),
         clientName: t.project.client.name,
         projectName: t.project.name,
         state: demandState(t, agora),
