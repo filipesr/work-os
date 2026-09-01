@@ -34,6 +34,16 @@ const db = prisma as unknown as {
   };
 };
 
+/** Etapa cujo time efetivo tem `userId` como membro — o caso normal, que o `where` da mesa já
+ *  garante ao listar só quem pertence ao time. */
+function timeDe(userId: string) {
+  return {
+    teamId: null,
+    team: null,
+    stage: { defaultTeam: { id: "video", name: "Vídeo", members: [{ id: userId }] } },
+  };
+}
+
 describe("scheduleStage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -45,6 +55,7 @@ describe("scheduleStage", () => {
       id: "as1",
       assigneeId: null,
       status: "ACTIVE",
+      ...timeDe("u1"),
     });
     const r = await scheduleStage({ activeStageId: "as1", userId: "u1", dateISO: "2026-08-31" });
     expect(r).toEqual({ success: true });
@@ -59,6 +70,7 @@ describe("scheduleStage", () => {
       id: "as1",
       assigneeId: null,
       status: "INACTIVE",
+      ...timeDe("u1"),
     });
     expect(
       await scheduleStage({ activeStageId: "as1", userId: "u1", dateISO: "2026-08-31" })
@@ -79,6 +91,49 @@ describe("scheduleStage", () => {
       error: "completedStage",
     });
     expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("recusa programar para quem não é do time da etapa", async () => {
+    // A mesa era a ÚNICA porta que não validava time: dava para programar trabalho de vídeo para
+    // alguém de tráfego, e nada reclamava. O roteamento por time efetivo e a conclusão já validam.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: null,
+      status: "ACTIVE",
+      ...timeDe("ana"),
+    });
+    expect(
+      await scheduleStage({ activeStageId: "as1", userId: "bruno", dateISO: "2026-08-31" })
+    ).toEqual({ error: "notInTeam" });
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("o roteamento da demanda manda: vale o time roteado, não o padrão do modelo", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: null,
+      status: "ACTIVE",
+      teamId: "trafego",
+      team: { id: "trafego", name: "Tráfego", members: [{ id: "bruno" }] },
+      stage: { defaultTeam: { id: "video", name: "Vídeo", members: [{ id: "ana" }] } },
+    });
+    expect(
+      await scheduleStage({ activeStageId: "as1", userId: "bruno", dateISO: "2026-08-31" })
+    ).toEqual({ success: true });
+  });
+
+  it("etapa coringa sem time roteado aceita qualquer pessoa — não há regra a violar", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: null,
+      status: "ACTIVE",
+      teamId: null,
+      team: null,
+      stage: { defaultTeam: null },
+    });
+    expect(
+      await scheduleStage({ activeStageId: "as1", userId: "qualquer", dateISO: "2026-08-31" })
+    ).toEqual({ success: true });
   });
 
   it("recusa puxar etapa que já é de outra pessoa", async () => {

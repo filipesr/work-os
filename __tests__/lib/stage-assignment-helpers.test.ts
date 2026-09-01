@@ -6,6 +6,7 @@ import {
   parseStageInstructions,
   createTaskStages,
   computeStageReadiness,
+  isEffectiveTeamMember,
 } from "@/lib/stage-assignment-helpers";
 
 describe("parseSelectedStages", () => {
@@ -266,5 +267,35 @@ describe("createTaskStages — roteamento de etapa coringa", () => {
       teams: { s2: "fantasma" },
     });
     expect(dataFor("s2")!.teamId).toBeUndefined();
+  });
+});
+
+describe("isEffectiveTeamMember — elegibilidade pelo time efetivo", () => {
+  const video = { id: "video", members: [{ id: "ana" }] };
+  const trafego = { id: "trafego", members: [{ id: "bruno" }] };
+
+  it("aceita quem é do time padrão do modelo", () => {
+    const etapa = { teamId: null, team: null, stage: { defaultTeam: video } };
+    expect(isEffectiveTeamMember(etapa, "ana")).toBe(true);
+    expect(isEffectiveTeamMember(etapa, "bruno")).toBe(false);
+  });
+
+  it("o roteamento da demanda SUBSTITUI o padrão do modelo", () => {
+    // Etapa coringa roteada para Tráfego: quem vale agora é Tráfego, não o padrão do template.
+    // `isValidStageAssignee` erraria aqui — olha só o `defaultTeam` — e é por isso que existem duas.
+    const roteada = { teamId: "trafego", team: trafego, stage: { defaultTeam: video } };
+    expect(isEffectiveTeamMember(roteada, "bruno")).toBe(true);
+    expect(isEffectiveTeamMember(roteada, "ana")).toBe(false);
+  });
+
+  it("etapa sem time efetivo aceita qualquer pessoa — não há regra a violar", () => {
+    // Coringa que ninguém direcionou. Recusar tiraria da mesa a única porta que programa essas.
+    const solta = { teamId: null, team: null, stage: { defaultTeam: null } };
+    expect(isEffectiveTeamMember(solta, "quem-quer-que-seja")).toBe(true);
+  });
+
+  it("time efetivo sem membro nenhum não aceita ninguém", () => {
+    const vazio = { teamId: null, team: null, stage: { defaultTeam: { id: "x", members: [] } } };
+    expect(isEffectiveTeamMember(vazio, "ana")).toBe(false);
   });
 });

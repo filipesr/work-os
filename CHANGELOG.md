@@ -164,6 +164,17 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### 🐛 Corrigido
 
+#### A mesa semanal programava trabalho para fora da equipe
+
+- **Era a única porta do sistema que não validava.** Dava para programar trabalho de vídeo para
+  alguém de tráfego, e nada reclamava — enquanto o roteamento por equipe e o caminho de conclusão já
+  validavam. Agora o servidor recusa, dizendo de qual equipe a etapa é.
+- **A tela explica antes de o servidor recusar:** o diálogo mostra a equipe da etapa e lista só quem
+  pertence a ela. Uma lista de opções não é uma regra — por isso as duas coisas, e não só a lista.
+- **A equipe que vale é a EFETIVA:** o roteamento da demanda substitui o padrão do modelo, então uma
+  etapa coringa roteada para outra equipe aceita quem é dela. Etapa coringa que ninguém roteou não
+  tem regra a violar e continua aceitando qualquer pessoa.
+
 #### `/planning/coverage` mostrava "sem responsável" para toda demanda
 
 - **Não era caso de borda: era sempre.** A cobertura semanal lia `Task.assignee` — o responsável no

@@ -206,6 +206,7 @@
   "weekPlanning": {
     "stageNotFound": "Etapa no encontrada.",
     "alreadyAssigned": "Esta etapa ya tiene responsable. Reasígnala desde la propia etapa.",
+    "notInTeam": "Esta etapa es del equipo {team}. Prográmala a alguien de ese equipo, o enrútala antes.",
     "completedStage": "Una etapa cerrada no entra en la programación.",
     "invalidDate": "Introduce una fecha válida.",
     "scheduleFailed": "Error al programar la etapa.",

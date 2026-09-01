@@ -137,6 +137,8 @@
     "moveDown": "Descer",
     "dialogTitle": "Programar etapa",
     "dialogPerson": "Pessoa",
+    "dialogTeam": "Etapa da equipe {team} — só quem é dela aparece na lista.",
+    "dialogNoOneInTeam": "Nenhuma pessoa ativa nesta equipe. Roteie a etapa ou ajuste a equipe antes de programar.",
     "dialogDay": "Dia",
     "dialogSubmit": "Programar",
     "scheduled_toast": "Etapa programada.",

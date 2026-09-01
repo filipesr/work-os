@@ -7,7 +7,8 @@ import { requireManagerOrAdmin } from "@/lib/permissions";
 import { formatISODate, mondayOfWeek, todayInSaoPaulo } from "@/lib/dates";
 import { buildDayQueue, type QueueItemInput, type QueueSlot } from "@/lib/planning/day-queue";
 import { getStageReferences } from "@/lib/planning/stage-reference";
-import { stageTeamWhere } from "@/lib/stage-team";
+import { effectiveStageTeam, stageTeamWhere } from "@/lib/stage-team";
+import { isEffectiveTeamMember } from "@/lib/stage-assignment-helpers";
 import { DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
 import { weekDays } from "@/lib/planning/week-days";
 import { availableStageWhere, notDiscardedStageWhere } from "@/lib/task-availability";
@@ -48,7 +49,22 @@ export type PoolItem = {
   referenceSource: "observed" | "declared";
 };
 
-export type WeekPlanning = { days: string[]; people: PersonWeek[]; pool: PoolItem[] };
+/**
+ * O item do poço na MESA, que é onde se programa para outra pessoa — e por isso precisa saber de
+ * quem é o trabalho e quem pode recebê-lo. A tela da própria pessoa (`my-week`) usa o `PoolItem`
+ * sem estes campos: lá ninguém escolhe responsável, a pessoa pega para si.
+ */
+export type SchedulablePoolItem = PoolItem & {
+  /** A equipe EFETIVA da etapa — nula na coringa que ninguém roteou. A tela mostra de quem é o
+   *  trabalho antes de perguntar para quem vai. */
+  teamName: string | null;
+  /** Quem pode receber esta etapa. Vem daqui e não da lista geral de pessoas porque programar para
+   *  fora da equipe é o defeito que esta leitura existe para não repetir. Vazia quando a etapa não
+   *  tem equipe efetiva — aí a tela cai na lista geral, porque não há regra a violar. */
+  eligible: { id: string; name: string }[];
+};
+
+export type WeekPlanning = { days: string[]; people: PersonWeek[]; pool: SchedulablePoolItem[] };
 
 export async function getWeekPlanning(mondayISO: string, teamId?: string): Promise<WeekPlanning> {
   await requireManagerOrAdmin();
@@ -142,7 +158,32 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
       select: {
         id: true,
         stageId: true,
-        stage: { select: { name: true } },
+        teamId: true,
+        team: {
+          select: {
+            id: true,
+            name: true,
+            members: {
+              where: { role: { not: "CLIENT" }, disabledAt: null },
+              select: { id: true, name: true, email: true },
+            },
+          },
+        },
+        stage: {
+          select: {
+            name: true,
+            defaultTeam: {
+              select: {
+                id: true,
+                name: true,
+                members: {
+                  where: { role: { not: "CLIENT" }, disabledAt: null },
+                  select: { id: true, name: true, email: true },
+                },
+              },
+            },
+          },
+        },
         task: {
           select: { title: true, project: { select: { client: { select: { name: true } } } } },
         },
@@ -230,14 +271,26 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
   return {
     days,
     people: peopleOut,
-    pool: livres.map((l) => ({
-      id: l.id,
-      taskTitle: l.task.title,
-      stageName: l.stage.name,
-      clientName: l.task.project.client.name,
-      referenceHours: horasDe(l.stageId),
-      referenceSource: sourceDe(l.stageId),
-    })),
+    pool: livres.map((l) => {
+      // Roteamento da demanda substitui o padrão do modelo — a mesma regra de `lib/stage-team.ts`,
+      // aqui com os membros junto para a tela poder listar só quem pode receber.
+      const time = l.team ?? l.stage.defaultTeam ?? null;
+      return {
+        id: l.id,
+        taskTitle: l.task.title,
+        stageName: l.stage.name,
+        clientName: l.task.project.client.name,
+        teamName: time?.name ?? null,
+        eligible: (time?.members ?? []).map((m) => ({
+          id: m.id,
+          // `name ?? email ?? id`, a convenção do projeto: conta sem nome não pode virar opção em
+          // branco num select.
+          name: m.name ?? m.email ?? m.id,
+        })),
+        referenceHours: horasDe(l.stageId),
+        referenceSource: sourceDe(l.stageId),
+      };
+    }),
   };
 }
 
@@ -258,11 +311,31 @@ export async function scheduleStage(input: {
 
   const row = await prisma.taskActiveStage.findUnique({
     where: { id: input.activeStageId },
-    select: { id: true, assigneeId: true, status: true },
+    select: {
+      id: true,
+      assigneeId: true,
+      status: true,
+      // O time EFETIVO e seus membros, para a validação abaixo. `teamId` é o roteamento da demanda
+      // e SUBSTITUI o padrão do modelo — ver `lib/stage-team.ts`.
+      teamId: true,
+      team: { select: { id: true, name: true, members: { select: { id: true } } } },
+      stage: {
+        select: {
+          defaultTeam: { select: { id: true, name: true, members: { select: { id: true } } } },
+        },
+      },
+    },
   });
   if (!row) return { error: t("stageNotFound") };
   if (row.status === "COMPLETED") return { error: t("completedStage") };
   if (row.assigneeId && row.assigneeId !== input.userId) return { error: t("alreadyAssigned") };
+  // A mesa era a ÚNICA porta do sistema que não validava time: dava para programar trabalho de
+  // vídeo para alguém de tráfego, e nada reclamava — enquanto o roteamento por time efetivo e o
+  // caminho de conclusão já validavam. A tela explica (mostra o time e lista só quem pertence a
+  // ele); esta linha garante, que é o que a tela sozinha não faz.
+  if (!isEffectiveTeamMember(row, input.userId)) {
+    return { error: t("notInTeam", { team: effectiveStageTeam(row)?.name ?? "" }) };
+  }
 
   const plannedDate = new Date(`${input.dateISO}T00:00:00Z`);
 

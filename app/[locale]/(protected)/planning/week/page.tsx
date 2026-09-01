@@ -282,7 +282,10 @@ export default async function WeekPlanningPage({
                   <ScheduleDialog
                     activeStageId={item.id}
                     label={`${item.taskTitle} · ${item.stageName}`}
-                    people={pessoas}
+                    teamName={item.teamName}
+                    // Só quem é da equipe da etapa. A etapa coringa que ninguém roteou não tem
+                    // equipe, e aí vale a lista inteira — não há regra a violar.
+                    people={item.eligible.length > 0 ? item.eligible : pessoas}
                     days={plan.days}
                   />
                 </div>

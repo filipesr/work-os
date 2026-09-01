@@ -18,11 +18,16 @@ import { useServerAction } from "@/lib/hooks/useServerAction";
 export function ScheduleDialog({
   activeStageId,
   label,
+  teamName,
   people,
   days,
 }: {
   activeStageId: string;
   label: string;
+  /** A equipe efetiva da etapa; nula na coringa que ninguém roteou. */
+  teamName: string | null;
+  /** Quem pode receber a etapa — já recortado pela equipe. A tela explica, o servidor garante:
+   *  `scheduleStage` recusa de novo, porque uma lista de opções não é uma regra. */
   people: { id: string; name: string }[];
   days: string[];
 }) {
@@ -68,6 +73,16 @@ export function ScheduleDialog({
           <FieldLabel htmlFor="sd-person" required>
             {t("dialogPerson")}
           </FieldLabel>
+          {/* De quem é o trabalho, dito antes de perguntar para quem vai. Sem isto, a lista curta
+              parecia arbitrária: o gestor não via POR QUE aquelas pessoas e não as outras. */}
+          {teamName && (
+            <p className="mb-1 text-xs text-muted-foreground">
+              {t("dialogTeam", { team: teamName })}
+            </p>
+          )}
+          {people.length === 0 && (
+            <p className="mb-1 text-xs text-danger">{t("dialogNoOneInTeam")}</p>
+          )}
           <select
             id="sd-person"
             value={userId}

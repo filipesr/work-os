@@ -20,6 +20,32 @@ export function isValidStageAssignee(stage: StageWithTeam, assigneeId: string): 
   return stage.defaultTeam.members.some((m) => m.id === assigneeId);
 }
 
+/** Formato mínimo para resolver a elegibilidade pelo time EFETIVO. */
+export type StageWithEffectiveTeam = {
+  teamId?: string | null;
+  team?: { id: string; members: { id: string }[] } | null;
+  stage?: { defaultTeam?: { id: string; members: { id: string }[] } | null } | null;
+};
+
+/**
+ * Quem pode receber a etapa: membro do time EFETIVO — o roteamento da demanda, senão o padrão do
+ * modelo (a regra de `lib/stage-team.ts`).
+ *
+ * Diferente de `isValidStageAssignee`, que olha só `defaultTeam` e por isso RECUSARIA a pessoa
+ * certa numa etapa coringa roteada para outro time. As duas convivem porque respondem a perguntas
+ * de momentos diferentes: aquela valida o desenho da demanda na criação, esta valida a atribuição
+ * de uma etapa que já existe e já pode ter sido roteada.
+ *
+ * Etapa SEM time efetivo — coringa que ninguém direcionou — não tem regra a violar: qualquer pessoa
+ * serve. Recusar aqui tiraria da mesa a única porta que hoje programa essas etapas, e por uma regra
+ * que não existe.
+ */
+export function isEffectiveTeamMember(row: StageWithEffectiveTeam, userId: string): boolean {
+  const time = row.team ?? row.stage?.defaultTeam ?? null;
+  if (!time) return true;
+  return time.members.some((m) => m.id === userId);
+}
+
 /**
  * Shared predicate for "is this stage ready to activate?": true when every
  * prerequisite stage id is present in `completedStageIds`. No prerequisites

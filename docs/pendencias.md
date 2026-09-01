@@ -43,27 +43,7 @@ responsável da etapa (`stageAssignee?.name ?? task.assignee?.name`). O fallback
 
 ---
 
-## 3. `/planning/week` atribui sem validar equipe — **defeito**
-
-**O que acontece:** o diálogo de programar lista todas as pessoas ativas, sem dizer de que equipe
-a etapa é. Dá para programar trabalho de vídeo para alguém de tráfego, e nada reclama.
-
-**Causa:** `scheduleStage` (`lib/actions/week-planning.ts`) valida três coisas — etapa existe, não
-está concluída, não tem outro dono — e **não valida time**. O resto do sistema valida: o
-roteamento por time efetivo (`teamId ?? stage.defaultTeamId`, ver `lib/stage-team.ts`) e
-`isValidStageAssignee` no caminho de conclusão. A mesa é a única porta que não valida.
-
-**Histórico:** apareceu como achado _Important_ na revisão final da fatia 1. Metade foi corrigida
-na época (contas de cliente e usuários desativados saíram da lista); a validação de time ficou
-registrada e adiada. Este é o registro.
-
-**Direção:** validar no servidor contra o time efetivo da etapa, e mostrar o time no diálogo — a
-tela explica, o servidor garante. Decidir se o gestor pode furar a regra deliberadamente (com
-aviso) ou se a recusa é dura.
-
----
-
-## 4. `/planning/client-load` — falta a demanda que ninguém pegou nem marcou
+## 3. `/planning/client-load` — falta a demanda que ninguém pegou nem marcou
 
 **Já resolvido:** a tela conta as etapas concluídas, o realizado vem do apontamento por dia, e o
 pendente é projetado pela cadeia de etapas até a véspera do vencimento. A célula fecha a demanda
@@ -81,7 +61,7 @@ tela deveria gritar — e hoje ela cala.
 
 ---
 
-## 5. Linha do tempo do projeto — arestas deixadas de propósito
+## 4. Linha do tempo do projeto — arestas deixadas de propósito
 
 **O que é:** a revisão final da linha do tempo (`/projects/{id}`) levantou quinze pontos. Os nove que
 mudavam comportamento foram corrigidos na entrega; estes quatro ficaram, cada um com o motivo.
