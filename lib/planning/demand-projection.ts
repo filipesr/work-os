@@ -98,7 +98,11 @@ export function projectDemandDays(input: {
     }
 
     let dia: string;
-    if (s.plannedDate) {
+
+    // Concluída: devolve o completedDay se conhecido, ou âncora se não há data (sem restrição).
+    if (s.status === "COMPLETED") {
+      dia = s.completedDay ?? ancora;
+    } else if (s.plannedDate) {
       // Decisão humana manda: inventar por cima dela seria a tela discordando de quem a usa.
       dia = s.plannedDate;
     } else {
@@ -110,8 +114,9 @@ export function projectDemandDays(input: {
 
         // Pré-requisito não está na demanda: nenhuma restrição.
         if (!dep) continue;
-        // Pré-requisito concluído sem data conhecida (ou pendente que não foi resolvido):
-        // não há restrição porque já está no mapa ou não há como restringir.
+        // Pré-requisito concluído sem data conhecida: concluída sem data não empurra ninguém.
+        if (dep.status === "COMPLETED" && !diaDep) continue;
+        // Pré-requisito pendente sem posição resolvida: não há como restringir.
         if (!diaDep) continue;
 
         // Anterior concluída libera o mesmo dia — quem terminou de manhã não impede a seguinte de

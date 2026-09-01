@@ -219,4 +219,29 @@ describe("projectDemandDays", () => {
     expect(r.get("a")).toBe("2026-09-07");
     expect(r.get("b")).toBe("2026-09-07");
   });
+
+  it("ordem 1 dependendo de ordem 5 COMPLETED cai no dia da conclusão", () => {
+    // Dependência para trás sobre concluída: b (order 1) depende de a (order 5, COMPLETED).
+    // Quando b chama obterDia("a") via recursão, a ainda não foi processada no laço externo,
+    // mas obterDia deve reconhecê-la como COMPLETED e devolver completedDay, não fabricar data.
+    const r = projectDemandDays({
+      stages: [
+        etapa({
+          id: "a",
+          order: 5,
+          status: "COMPLETED",
+          completedDay: "2026-09-09",
+          pendingHours: 0,
+        }),
+        etapa({ id: "b", order: 1, dependsOnIds: ["a"] }),
+      ],
+      days: DIAS,
+      todayISO: "2026-09-07",
+      dueDateISO: null,
+    });
+    // a é concluída, não aparece no resultado.
+    expect(r.get("a")).toBeNull();
+    // b depende da conclusão de a; libera o mesmo dia da conclusão.
+    expect(r.get("b")).toBe("2026-09-09");
+  });
 });
