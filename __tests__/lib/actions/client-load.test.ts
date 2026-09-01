@@ -31,9 +31,14 @@ function row(over: Record<string, unknown> = {}) {
     stageId: "s1",
     status: "ACTIVE",
     plannedDate: new Date("2026-09-08T00:00:00Z"),
-    plannedOrder: 1,
-    scheduledStart: null,
-    task: { project: { client: { id: "c1", name: "Cliente A" } } },
+    completedAt: null,
+    task: {
+      id: "t1",
+      title: "Vídeo institucional",
+      project: { name: "Institucional", client: { id: "c1", name: "Cliente A" } },
+    },
+    stage: { name: "Roteiro", order: 1 },
+    assignee: { name: "Filipe Salvarez Rezende", email: null },
     ...over,
   };
 }
@@ -49,58 +54,112 @@ describe("getClientLoad", () => {
     await expect(getClientLoad(SEGUNDA)).rejects.toThrow(/Access Denied/i);
   });
 
-  it("agrupa por cliente e por dia", async () => {
+  it("agrupa por cliente, por dia e por demanda", () => {
     vi.mocked(prisma.taskActiveStage.findMany).mockResolvedValue([
       row(),
-      row({ id: "as2", stageId: "s2" }),
+      row({ id: "as2", stageId: "s2", stage: { name: "Edição", order: 2 } }),
       row({
         id: "as3",
         plannedDate: new Date("2026-09-09T00:00:00Z"),
-        task: { project: { client: { id: "c2", name: "Cliente B" } } },
+        task: {
+          id: "t2",
+          title: "Campanha",
+          project: { name: "Setembro", client: { id: "c2", name: "Cliente B" } },
+        },
       }),
     ] as never);
 
-    const carga = await getClientLoad(SEGUNDA);
-    const a = carga.clients.find((c) => c.clientId === "c1")!;
-    expect(a.byDay["2026-09-08"]).toEqual({ hours: 5, count: 2 });
-    expect(a.totalHours).toBe(5);
-    expect(a.totalCount).toBe(2);
-    const b = carga.clients.find((c) => c.clientId === "c2")!;
-    expect(b.byDay["2026-09-09"].count).toBe(1);
+    return getClientLoad(SEGUNDA).then((carga) => {
+      const a = carga.clients.find((c) => c.clientId === "c1")!;
+      const dia = a.byDay["2026-09-08"];
+      // Uma demanda só, com as duas etapas dentro dela.
+      expect(dia.tasks).toHaveLength(1);
+      expect(dia.tasks[0].taskTitle).toBe("Vídeo institucional");
+      expect(dia.tasks[0].stages.map((e) => e.stageName)).toEqual(["Roteiro", "Edição"]);
+      expect(dia.pendingHours).toBe(5);
+      expect(a.totalPending).toBe(5);
+      const b = carga.clients.find((c) => c.clientId === "c2")!;
+      expect(b.byDay["2026-09-09"].tasks).toHaveLength(1);
+    });
   });
 
-  it("o total do cliente é a soma das células dele", async () => {
+  it("etapa concluída conta como FEITO, no dia em que fechou", () => {
+    // Sem isto a carga do cliente ENCOLHE conforme a semana avança: sexta mostra menos que
+    // segunda, e quem mais entregou aparece como quem menos ocupou.
+    vi.mocked(prisma.taskActiveStage.findMany).mockResolvedValue([
+      row({
+        status: "COMPLETED",
+        plannedDate: null,
+        completedAt: new Date("2026-09-09T13:00:00Z"),
+      }),
+    ] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      const a = carga.clients[0];
+      expect(a.byDay["2026-09-09"].doneHours).toBe(2);
+      expect(a.byDay["2026-09-09"].tasks[0].stages[0].state).toBe("done");
+      expect(a.totalDone).toBe(2);
+      expect(a.totalPending).toBe(0);
+    });
+  });
+
+  it("a consulta busca também as concluídas da semana", () => {
+    return getClientLoad(SEGUNDA).then(() => {
+      const or = (
+        vi.mocked(prisma.taskActiveStage.findMany).mock.calls[0][0] as never as {
+          where: { OR: Record<string, unknown>[] };
+        }
+      ).where.OR;
+      expect(or.some((r) => r.status === "COMPLETED" && r.completedAt)).toBe(true);
+    });
+  });
+
+  it("o total do cliente é a soma das células dele", () => {
     vi.mocked(prisma.taskActiveStage.findMany).mockResolvedValue([
       row(),
       row({ id: "as2", plannedDate: new Date("2026-09-10T00:00:00Z") }),
     ] as never);
 
-    const carga = await getClientLoad(SEGUNDA);
-    const a = carga.clients[0];
-    const somaDasCelulas = carga.days.reduce((acc, d) => acc + (a.byDay[d]?.hours ?? 0), 0);
-    expect(a.totalHours).toBe(somaDasCelulas);
+    return getClientLoad(SEGUNDA).then((carga) => {
+      const a = carga.clients[0];
+      const soma = carga.days.reduce(
+        (acc, d) => acc + a.byDay[d].doneHours + a.byDay[d].pendingHours,
+        0
+      );
+      expect(a.totalDone + a.totalPending).toBe(soma);
+    });
   });
 
-  it("etapa não liberada não soma horas — a mesma regra da mesa", async () => {
-    // `buildDayQueue` classifica INACTIVE como "waiting": visível, mas sem consumir capacidade.
-    // Se somasse aqui, o mesmo cliente teria números diferentes nas duas telas.
+  it("etapa não liberada aparece na lista mas não soma — a mesma regra da mesa", () => {
     vi.mocked(prisma.taskActiveStage.findMany).mockResolvedValue([
       row({ status: "INACTIVE" }),
     ] as never);
 
-    const carga = await getClientLoad(SEGUNDA);
-    expect(carga.clients[0].totalHours).toBe(0);
-    expect(carga.clients[0].totalCount).toBe(1);
+    return getClientLoad(SEGUNDA).then((carga) => {
+      const dia = carga.clients[0].byDay["2026-09-08"];
+      expect(dia.tasks[0].stages[0].state).toBe("waiting");
+      expect(dia.pendingHours).toBe(0);
+      expect(dia.doneHours).toBe(0);
+    });
   });
 
-  it("clientes vêm ordenados do que mais pega a semana para o que menos", async () => {
+  it("clientes vêm ordenados do que mais pega a semana para o que menos", () => {
     vi.mocked(prisma.taskActiveStage.findMany).mockResolvedValue([
-      row({ id: "as1", stageId: "s1", task: { project: { client: { id: "c1", name: "A" } } } }),
-      row({ id: "as2", stageId: "s2", task: { project: { client: { id: "c2", name: "B" } } } }),
+      row({ id: "as1", stageId: "s1" }),
+      row({
+        id: "as2",
+        stageId: "s2",
+        task: {
+          id: "t2",
+          title: "B",
+          project: { name: "P", client: { id: "c2", name: "B" } },
+        },
+      }),
     ] as never);
 
-    const carga = await getClientLoad(SEGUNDA);
-    expect(carga.clients.map((c) => c.clientId)).toEqual(["c2", "c1"]);
+    return getClientLoad(SEGUNDA).then((carga) => {
+      expect(carga.clients.map((c) => c.clientId)).toEqual(["c2", "c1"]);
+    });
   });
 
   it("o filtro de time entra na consulta quando informado", async () => {

@@ -65,25 +65,21 @@ aviso) ou se a recusa é dura.
 
 ---
 
-## 4. `/planning/client-load` — o que não está programado precisa aparecer
+## 4. `/planning/client-load` — falta o que não tem dono nem dia
 
-**O que acontece:** a tela lê etapas **com dia marcado**. Demanda que ninguém programou não tem
-dia, então não tem célula onde aparecer — some da leitura por cliente inteira.
+**Já resolvido desta pendência:** a tela passou a contar as etapas **concluídas** na semana (antes
+a carga do cliente encolhia conforme a semana avançava — sexta mostrava menos que segunda, e quem
+mais entregou aparecia como quem menos ocupou), e a etapa **reivindicada sem dia** entra na fila
+de hoje, então trabalho em curso deixou de sumir. A célula virou uma lista por demanda, com as
+etapas na ordem do fluxo, cada uma com feito/por fazer.
 
-**O que se quer:**
-
-- Mostrar **todos os agendados**, posicionados pelo **prazo da demanda** (`Task.dueDate`).
-- Mostrar também o que **não tem equipe nem prazo definidos**, no espaço disponível da tela, com
-  identificação clara de que é demanda **sem prazo definido**.
-
-**Por que importa:** saber que um cliente tem cinco demandas paradas, sem dia e sem dono, é
-exatamente o que a tela deveria gritar — e hoje ela cala. Um total que esconde o que não se
-encaixa é um total que não fecha.
+**O que continua faltando:** demanda que não tem dono **nem** dia não aparece em lugar nenhum
+desta tela. Saber que um cliente tem cinco demandas paradas, sem ninguém e sem data, é justamente
+o que a tela deveria gritar.
 
 **Perguntas a resolver no desenho:**
 
 - Coluna própria ("sem dia") ao lado dos seis dias, ou faixa separada abaixo da grade?
-- Demanda sem prazo entra na mesma linha do cliente, ou numa área à parte?
 - O que conta como "carga" dela, já que não tem dia nem, possivelmente, referência de duração?
 - Vale distinguir "sem prazo" de "sem equipe"? São dois problemas diferentes, e o segundo tem
   dono óbvio (o gestor roteia); o primeiro agora é uma escolha declarada na criação.

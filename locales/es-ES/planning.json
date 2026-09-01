@@ -185,13 +185,14 @@
     "weekOf": "Semana del {date}",
     "client": "Cliente",
     "total": "Total",
-    "cell": "{hours}h · {count}",
-    "empty": "No hay nada programado esta semana.",
-    "ruler": "Las horas son la referencia de la etapa, no el tiempo imputado; una etapa no liberada aparece sin sumar.",
+    "empty": "No hay nada programado ni terminado esta semana.",
+    "ruler": "Horas de referencia de la etapa, no el tiempo imputado. Cada celda trae lo hecho y lo que falta ese día; una etapa aún no liberada aparece sin sumar.",
     "previousWeek": "Semana anterior",
     "nextWeek": "Semana siguiente",
     "currentWeek": "Semana actual",
     "teamFilter": "Filtrar por equipo",
-    "allTeams": "Todos los equipos"
+    "allTeams": "Todos los equipos",
+    "legend": "hecho / por hacer",
+    "waiting": "no liberada"
   }
 }
