@@ -25,6 +25,16 @@ import { getClientLoad } from "@/lib/actions/client-load";
 
 const SEGUNDA = "2026-09-07";
 
+function tarefa(over: Record<string, unknown> = {}) {
+  return {
+    id: "t1",
+    title: "Vídeo institucional",
+    dueDate: null,
+    project: { name: "Institucional", client: { id: "c1", name: "Cliente A" } },
+    ...over,
+  };
+}
+
 function row(over: Record<string, unknown> = {}) {
   return {
     id: "as1",
@@ -32,12 +42,8 @@ function row(over: Record<string, unknown> = {}) {
     status: "ACTIVE",
     plannedDate: new Date("2026-09-08T00:00:00Z"),
     completedAt: null,
-    task: {
-      id: "t1",
-      title: "Vídeo institucional",
-      project: { name: "Institucional", client: { id: "c1", name: "Cliente A" } },
-    },
-    stage: { name: "Roteiro", order: 1, defaultTeam: null },
+    task: tarefa(),
+    stage: { name: "Roteiro", order: 1, defaultTeam: null, dependents: [] },
     team: null,
     assignee: { name: "Filipe Salvarez Rezende", email: null },
     ...over,
@@ -61,7 +67,7 @@ describe("getClientLoad", () => {
     vi.mocked(prisma.taskActiveStage.findMany)
       .mockResolvedValueOnce([
         row(),
-        row({ id: "as2", stageId: "s2", stage: { name: "Edição", order: 2 } }),
+        row({ id: "as2", stageId: "s2", stage: { name: "Edição", order: 2, dependents: [] } }),
         row({
           id: "as3",
           plannedDate: new Date("2026-09-09T00:00:00Z"),
@@ -208,7 +214,7 @@ describe("getClientLoad", () => {
         row({
           assignee: null,
           team: { name: "Vídeo" },
-          stage: { name: "Roteiro", order: 1, defaultTeam: null },
+          stage: { name: "Roteiro", order: 1, defaultTeam: null, dependents: [] },
         }),
       ] as never)
       .mockResolvedValueOnce([] as never);
@@ -224,7 +230,7 @@ describe("getClientLoad", () => {
         row({
           assignee: null,
           team: null,
-          stage: { name: "Roteiro", order: 1, defaultTeam: null },
+          stage: { name: "Roteiro", order: 1, defaultTeam: null, dependents: [] },
         }),
       ] as never)
       .mockResolvedValueOnce([] as never);
@@ -235,9 +241,11 @@ describe("getClientLoad", () => {
     });
   });
 
-  it("traz as etapas restantes da demanda, ancoradas no primeiro dia dela", () => {
+  it("traz as etapas restantes da demanda, mesmo sem depender da que já tem dia", () => {
     // Fechar a demanda inteira na célula: sem isto, a leitura mostrava só o pedaço com dia e o
-    // gestor não via o tamanho do que ainda vem pela frente.
+    // gestor não via o tamanho do que ainda vem pela frente. Antes da Task 3 as restantes se
+    // ancoravam no primeiro dia da demanda; agora quem não depende de nada projeta pela âncora
+    // (hoje, ou o primeiro dia visível), então pode cair num dia diferente do de "Roteiro".
     vi.mocked(prisma.taskActiveStage.findMany)
       .mockResolvedValueOnce([row()] as never)
       .mockResolvedValueOnce([
@@ -248,18 +256,28 @@ describe("getClientLoad", () => {
           plannedDate: null,
           assignee: null,
           team: null,
-          stage: { name: "Aprovação", order: 3, defaultTeam: { name: "Atendimento" } },
+          stage: {
+            name: "Aprovação",
+            order: 3,
+            defaultTeam: { name: "Atendimento" },
+            dependents: [],
+          },
         }),
       ] as never);
 
     return getClientLoad(SEGUNDA).then((carga) => {
-      const bloco = carga.clients[0].byDay["2026-09-08"].tasks[0];
-      expect(bloco.stages.map((e) => e.stageName)).toEqual(["Roteiro", "Aprovação"]);
-      const restante = bloco.stages[1];
+      const dias = carga.clients[0].byDay;
+      // "Roteiro" tem dia planejado (segunda-feira da linha de base é 2026-09-08); "Aprovação" não
+      // depende dela, então projeta pela âncora — o primeiro dia visível da semana, já que hoje
+      // está fora dela.
+      expect(dias["2026-09-08"].tasks[0].stages.map((e) => e.stageName)).toEqual(["Roteiro"]);
+      const restante = dias["2026-09-07"].tasks[0].stages[0];
+      expect(restante.stageName).toBe("Aprovação");
       expect(restante.state).toBe("waiting");
       expect(restante.assigneeName).toBe("Atendimento");
       // Não liberada não soma, aqui como em toda tela.
-      expect(bloco.pendingHours).toBe(2);
+      expect(dias["2026-09-07"].tasks[0].pendingHours).toBe(0);
+      expect(dias["2026-09-08"].tasks[0].pendingHours).toBe(2);
     });
   });
 
@@ -336,7 +354,7 @@ describe("getClientLoad", () => {
     vi.mocked(prisma.taskActiveStage.findMany)
       .mockResolvedValueOnce([
         row({ id: "as1", stageId: "s1" }),
-        row({ id: "as2", stageId: "s2", stage: { name: "Edição", order: 2 } }),
+        row({ id: "as2", stageId: "s2", stage: { name: "Edição", order: 2, dependents: [] } }),
       ] as never)
       .mockResolvedValueOnce([] as never);
 
@@ -344,6 +362,67 @@ describe("getClientLoad", () => {
       const stages = carga.clients[0].byDay["2026-09-08"].tasks[0].stages;
       expect(stages.find((e) => e.id === "as1")?.estimated).toBe(false);
       expect(stages.find((e) => e.id === "as2")?.estimated).toBe(true);
+    });
+  });
+
+  it("a segunda etapa cai no dia seguinte, não junto da primeira", () => {
+    // Era a âncora antiga: tudo no primeiro dia da demanda, como se as etapas fossem simultâneas.
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        row({ id: "as1", stageId: "s1", plannedDate: new Date("2026-09-08T00:00:00Z") }),
+      ] as never)
+      .mockResolvedValueOnce([
+        row({
+          id: "as2",
+          stageId: "s2",
+          status: "INACTIVE",
+          plannedDate: null,
+          stage: {
+            name: "Edição",
+            order: 2,
+            defaultTeam: null,
+            dependents: [{ dependsOnStageId: "s1" }],
+          },
+        }),
+      ] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      const dias = carga.clients[0].byDay;
+      expect(dias["2026-09-08"].tasks[0].stages.map((e) => e.id)).toEqual(["as1"]);
+      expect(dias["2026-09-09"].tasks[0].stages.map((e) => e.id)).toEqual(["as2"]);
+    });
+  });
+
+  it("a demanda NÃO aparece em dia sem nada", () => {
+    // Era o defeito da âncora antiga por outro ângulo: a demanda ocupando dias em que não há nem
+    // trabalho registrado nem trabalho projetado.
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([row({ plannedDate: new Date("2026-09-09T00:00:00Z") })] as never)
+      .mockResolvedValueOnce([] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      const dias = carga.clients[0].byDay;
+      expect(dias["2026-09-09"].tasks).toHaveLength(1);
+      for (const outro of ["2026-09-07", "2026-09-08", "2026-09-10", "2026-09-11", "2026-09-12"]) {
+        expect(dias[outro].tasks).toHaveLength(0);
+      }
+    });
+  });
+
+  it("o vencimento vem no bloco, para explicar o empilhamento", () => {
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        row({
+          plannedDate: new Date("2026-09-08T00:00:00Z"),
+          task: tarefa({ dueDate: new Date("2026-09-10T00:00:00Z") }),
+        }),
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      const bloco = carga.clients[0].byDay["2026-09-08"].tasks[0];
+      expect(bloco.dueDateISO).toBe("2026-09-10");
+      expect(bloco.overdue).toBe(false);
     });
   });
 });

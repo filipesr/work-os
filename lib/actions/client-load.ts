@@ -10,6 +10,7 @@ import {
   todayInSaoPaulo,
 } from "@/lib/dates";
 import { getStageReferences } from "@/lib/planning/stage-reference";
+import { projectDemandDays } from "@/lib/planning/demand-projection";
 import { weekDays } from "@/lib/planning/week-days";
 import { availableStageWhere, notDiscardedStageWhere } from "@/lib/task-availability";
 
@@ -61,10 +62,15 @@ export type TaskBlock = {
   taskId: string;
   projectName: string;
   taskTitle: string;
+  /** Prazo da demanda, para explicar o empilhamento — `null` quando não há vencimento definido. */
+  dueDateISO: string | null;
+  /** O prazo já passou e a demanda não fechou. Justifica etapas empilhadas em hoje. */
+  overdue: boolean;
   /** Soma do `doneHours` das etapas DESTE bloco — o apontamento que caiu no dia em que o bloco
-   *  está posicionado. Não é a mesma conta de `ClientDay.doneHours`: uma etapa apontada num dia
-   *  diferente daquele em que está posicionada (concluída/planejada) credita o cliente naquele
-   *  outro dia, não aqui. */
+   *  está posicionado. Desde a Task 3 a etapa aparece também nos dias em que foi trabalhada (não só
+   *  no dia projetado ou concluído), então esta soma tende a bater com `ClientDay.doneHours` do
+   *  mesmo dia — mas ainda não é literalmente a mesma conta: aqui só entra o apontamento de etapas
+   *  que este bloco encaixou, enquanto `ClientDay.doneHours` soma o `TimeLog` inteiro do cliente. */
   doneHours: number;
   pendingHours: number;
   stages: StageLine[];
@@ -72,9 +78,9 @@ export type TaskBlock = {
 
 export type ClientDay = {
   /** Apontamento do CLIENTE inteiro neste dia, somado direto do `TimeLog` — não a soma dos
-   *  `TaskBlock.doneHours` dos blocos exibidos aqui. Por isso pode incluir horas de etapas cujo
-   *  bloco está posicionado (e visível) em outro dia da semana; é estado transitório até a Task 3,
-   *  que passa a exibir a etapa também no dia em que foi trabalhada. */
+   *  `TaskBlock.doneHours` dos blocos exibidos aqui. Desde a Task 3 a etapa passa a aparecer também
+   *  no dia em que foi trabalhada (além do dia projetado/concluído), e por isso os dois números
+   *  voltam a bater na prática. */
   doneHours: number;
   pendingHours: number;
   tasks: TaskBlock[];
@@ -137,10 +143,21 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
         select: {
           id: true,
           title: true,
+          dueDate: true,
           project: { select: { name: true, client: { select: { id: true, name: true } } } },
         },
       },
-      stage: { select: { name: true, order: true, defaultTeam: { select: { name: true } } } },
+      stage: {
+        select: {
+          name: true,
+          order: true,
+          defaultTeam: { select: { name: true } },
+          // Os PRÉ-REQUISITOS da etapa vivem em `dependents` — em `TemplateStage`, o campo com nome
+          // intuitivo (`dependencies`) é a relação INVERSA. Ver o comentário no schema: ler o lado
+          // errado já custou um bug em que concluir a primeira etapa ativava a última.
+          dependents: { select: { dependsOnStageId: true } },
+        },
+      },
       team: { select: { name: true } },
       assignee: { select: { name: true, email: true } },
     },
@@ -174,10 +191,20 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
             select: {
               id: true,
               title: true,
+              dueDate: true,
               project: { select: { name: true, client: { select: { id: true, name: true } } } },
             },
           },
-          stage: { select: { name: true, order: true, defaultTeam: { select: { name: true } } } },
+          stage: {
+            select: {
+              name: true,
+              order: true,
+              defaultTeam: { select: { name: true } },
+              // Ver o comentário equivalente na primeira consulta acima: `dependents` é o lado
+              // certo da relação para os PRÉ-REQUISITOS da etapa.
+              dependents: { select: { dependsOnStageId: true } },
+            },
+          },
           team: { select: { name: true } },
           assignee: { select: { name: true, email: true } },
         },
@@ -239,7 +266,6 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
   const horasDe = (stageId: string) => referencias.get(stageId)?.hours ?? 0;
   const sourceDe = (stageId: string) => referencias.get(stageId)?.source ?? "declared";
 
-  const primeiroDia = days[0];
   const hojeISO = formatISODate(todayInSaoPaulo());
   const hojeNaSemana = days.includes(hojeISO) ? hojeISO : null;
 
@@ -248,19 +274,24 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
   type Acc = { name: string; dias: Map<string, Map<string, TaskBlock>> };
   const porCliente = new Map<string, Acc>();
 
-  // Onde cada demanda apareceu primeiro na semana. As etapas restantes (sem dia) se ancoram aí:
-  // repeti-las em cada dia em que a demanda aparece contaria a mesma etapa várias vezes, e o total
-  // do dia deixaria de bater com as linhas que ele mostra.
-  const primeiroDiaDaTarefa = new Map<string, string>();
+  // As duas consultas têm o mesmo `select`, mas nascem de chamadas Prisma diferentes — o TypeScript
+  // não unifica os dois tipos automaticamente. `LinhaProjetavel` é o tipo comum que `encaixar` e a
+  // projeção usam.
+  type LinhaProjetavel = (typeof linhas)[number] | (typeof restantes)[number];
 
-  const encaixar = (row: (typeof linhas)[number], dia: string) => {
+  const encaixar = (row: LinhaProjetavel, dia: string, contaPendente = true) => {
     const cliente = row.task.project.client;
     const acc = porCliente.get(cliente.id) ?? { name: cliente.name, dias: new Map() };
     const doDia = acc.dias.get(dia) ?? new Map<string, TaskBlock>();
+    const vencimento = row.task.dueDate ? formatISODate(row.task.dueDate) : null;
     const bloco = doDia.get(row.task.id) ?? {
       taskId: row.task.id,
       projectName: row.task.project.name,
       taskTitle: row.task.title,
+      dueDateISO: vencimento,
+      // Vencida = o prazo já passou e a demanda não fechou. É o que justifica o empilhamento em
+      // hoje, e a tela precisa dizer isso em vez de mostrar um amontoado sem causa.
+      overdue: !!vencimento && vencimento < formatISODate(todayInSaoPaulo()),
       doneHours: 0,
       pendingHours: 0,
       stages: [],
@@ -279,10 +310,11 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
     const state: StageLine["state"] =
       row.status === "COMPLETED" ? "done" : row.status === "ACTIVE" ? "pending" : "waiting";
     bloco.doneHours += feitoNoDia;
-    // Cada linha é encaixada em exatamente um dia (a etapa aparecer em mais de um dia é da Task 3),
-    // então o pendente vale sem condição — só quem está "pending" carrega pendente; a não liberada
-    // continua fora da soma, como sempre.
-    if (state === "pending") bloco.pendingHours += pendente;
+    // Desde a Task 3 a mesma etapa pode ser encaixada em mais de um dia: o dia PROJETADO (ou o dia
+    // em que fechou) e, além dele, cada dia em que houve apontamento. Só o dia projetado carrega o
+    // pendente — `contaPendente` é falso nos demais — senão a mesma hora pendente seria somada uma
+    // vez por dia em que a etapa aparece, inflando o total da semana.
+    if (state === "pending" && contaPendente) bloco.pendingHours += pendente;
 
     bloco.stages.push({
       id: row.id,
@@ -311,35 +343,62 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
     doDia.set(row.task.id, bloco);
     acc.dias.set(dia, doDia);
     porCliente.set(cliente.id, acc);
-    const anterior = primeiroDiaDaTarefa.get(row.task.id);
-    if (!anterior || dia < anterior) primeiroDiaDaTarefa.set(row.task.id, dia);
   };
 
-  for (const row of linhas) {
-    const concluida = row.status === "COMPLETED";
-    const semDia = !concluida && row.plannedDate === null;
-    if (semDia && !hojeNaSemana) continue;
+  // Uma projeção por demanda: a cadeia é da demanda, e misturar demandas na mesma conta faria uma
+  // empurrar a outra sem nenhuma relação entre elas.
+  const linhasPorTarefa = new Map<string, LinhaProjetavel[]>();
+  for (const row of [...linhas, ...restantes]) {
+    const lista = linhasPorTarefa.get(row.task.id) ?? [];
+    lista.push(row);
+    linhasPorTarefa.set(row.task.id, lista);
+  }
 
-    // Concluída vale pelo dia em que fechou; o resto, pelo dia planejado — e o atrasado cai no
-    // primeiro dia visível, como na mesa: sumir da tela seria a pior perda, porque é silenciosa.
-    const dataBase = concluida
+  const diaProjetado = new Map<string, string | null>();
+  for (const [, rows] of linhasPorTarefa) {
+    const projecao = projectDemandDays({
+      stages: rows.map((r) => ({
+        id: r.id,
+        stageId: r.stageId,
+        order: r.stage.order,
+        dependsOnIds: r.stage.dependents.map((d) => d.dependsOnStageId),
+        status: r.status,
+        plannedDate: r.plannedDate ? formatISODate(r.plannedDate) : null,
+        completedDay: r.completedAt ? formatISODate(nowInSaoPaulo(r.completedAt)) : null,
+        pendingHours: Math.max(
+          0,
+          horasDe(r.stageId) - (realizadoPorEtapa.get(chave(r.task.id, r.stageId)) ?? 0)
+        ),
+      })),
+      days,
+      todayISO: hojeNaSemana,
+      dueDateISO: rows[0].task.dueDate ? formatISODate(rows[0].task.dueDate) : null,
+    });
+    for (const [id, dia] of projecao) diaProjetado.set(id, dia);
+  }
+
+  for (const row of [...linhas, ...restantes]) {
+    const concluida = row.status === "COMPLETED";
+    // Concluída vale pelo dia em que fechou; o resto, pelo dia PROJETADO. `null` quer dizer que a
+    // etapa não cabe nesta semana — e uma etapa que não cabe não aparece, em vez de empilhar no
+    // sábado um trabalho que não é dele.
+    const dia = concluida
       ? row.completedAt
         ? formatISODate(nowInSaoPaulo(row.completedAt))
         : null
-      : semDia
-        ? (hojeNaSemana as string)
-        : formatISODate(row.plannedDate as Date);
-    if (!dataBase) continue;
-    const dia = dataBase < primeiroDia ? primeiroDia : dataBase;
-    if (!days.includes(dia)) continue;
-
+      : (diaProjetado.get(row.id) ?? null);
+    if (!dia || !days.includes(dia)) continue;
     encaixar(row, dia);
-  }
 
-  // Só depois de saber onde cada demanda aparece: as restantes vão para o primeiro dia dela.
-  for (const row of restantes) {
-    const dia = primeiroDiaDaTarefa.get(row.task.id);
-    if (dia) encaixar(row, dia);
+    // O apontamento do passado também põe a etapa nos dias em que ela foi trabalhada, mesmo que a
+    // projeção a coloque adiante. É o "trabalhei 2h ontem e não terminei" da spec. `contaPendente`
+    // falso: o pendente desta etapa já foi contado no dia projetado acima.
+    for (const outroDia of days) {
+      if (outroDia === dia) continue;
+      if ((realizadoPorEtapaDia.get(chave(row.task.id, row.stageId, outroDia)) ?? 0) > 0) {
+        encaixar(row, outroDia, false);
+      }
+    }
   }
 
   const clients: ClientWeek[] = [...porCliente.entries()].map(([clientId, acc]) => {
