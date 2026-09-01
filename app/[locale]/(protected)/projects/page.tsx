@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
-import { PanelTop, ChevronRight, LayoutGrid } from "lucide-react";
+import { PanelTop, ChevronRight, GanttChart } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -32,8 +32,8 @@ export default async function ProjectsPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  // MANAGER+ como as demais telas de gestão de entregas. O Kanban do projeto
-  // (`/projects/[id]`) segue aberto a quem executa — é o índice que é de gestão.
+  // MANAGER+ como as demais telas de gestão de entregas. A linha do tempo do projeto
+  // (`/projects/[id]`) segue aberta a quem executa — é o índice que é de gestão.
   try {
     await requireManagerOrAdmin();
   } catch {
@@ -142,8 +142,8 @@ export default async function ProjectsPage({
                   href={`/projects/${p.id}`}
                   className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
                 >
-                  <LayoutGrid className="h-4 w-4" aria-hidden="true" />
-                  {t("openKanban")}
+                  <GanttChart className="h-4 w-4" aria-hidden="true" />
+                  {t("openTimeline")}
                 </Link>
               </div>
             );

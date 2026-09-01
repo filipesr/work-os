@@ -266,7 +266,7 @@
       "projectName": "Nombre",
       "taskCount": "Tareas",
       "projectActions": "Acciones",
-      "viewKanban": "Ver Kanban",
+      "viewTimeline": "Ver línea de tiempo",
       "noProjects": "Ningún proyecto asociado a este cliente.",
       "createProjectTitle": "Agregar proyecto",
       "projectNamePlaceholder": "Nombre del proyecto",
@@ -298,7 +298,6 @@
       "tasks": "Tareas",
       "actions": "Acciones"
     },
-    "kanban": "Kanban del Proyecto",
     "detail": {
       "backToProjects": "Volver a Proyectos",
       "editButton": "Editar",
@@ -314,7 +313,7 @@
       "clientLabel": "Cliente",
       "selectClient": "Seleccionar Cliente",
       "noDescription": "Sin descripción",
-      "viewKanban": "Ver Kanban",
+      "viewTimeline": "Ver línea de tiempo",
       "client": "Cliente",
       "completion": "Finalización",
       "completionState": {
@@ -366,7 +365,7 @@
         "MEDIUM": "Media",
         "LOW": "Baja"
       },
-      "openKanban": "Abrir Kanban"
+      "openTimeline": "Abrir línea de tiempo"
     }
   },
   "workflows": {

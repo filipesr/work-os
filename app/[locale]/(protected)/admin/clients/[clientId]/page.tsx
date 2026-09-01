@@ -206,7 +206,7 @@ export default async function ClientDetailPage({
                           href={`/projects/${project.id}`}
                           className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
                         >
-                          {t("viewKanban")}
+                          {t("viewTimeline")}
                         </Link>
                         <form action={setProjectStatus}>
                           <input type="hidden" name="id" value={project.id} />

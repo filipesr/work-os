@@ -131,7 +131,7 @@ export function EditProjectHeader({
             href={`/projects/${project.id}`}
             className="px-5 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 transition-all"
           >
-            {t("viewKanban")}
+            {t("viewTimeline")}
           </Link>
           <button
             onClick={() => setIsEditing(true)}

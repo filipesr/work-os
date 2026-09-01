@@ -155,7 +155,7 @@
     "noResults": "Nenhum projeto corresponde aos filtros.",
     "tasksCount": "{count} tarefas",
     "completionPct": "{pct}% concluído",
-    "openKanban": "Abrir Kanban",
+    "openTimeline": "Abrir linha do tempo",
     "status": {
       "ACTIVE": "Ativo",
       "INACTIVE": "Inativo"
