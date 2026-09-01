@@ -190,4 +190,33 @@ describe("projectDemandDays", () => {
     });
     expect(r.get("b")).toBe("2026-09-07");
   });
+
+  it("ordem 1 dependendo de ordem 5 é posicionada DEPOIS da 5", () => {
+    // A order não é topológica: o sistema permite dependências para trás.
+    // O algoritmo deve resolvê-las em profundidade, não por order.
+    const r = projectDemandDays({
+      stages: [etapa({ id: "a", order: 5 }), etapa({ id: "b", order: 1, dependsOnIds: ["a"] })],
+      days: DIAS,
+      todayISO: "2026-09-07",
+      dueDateISO: null,
+    });
+    expect(r.get("a")).toBe("2026-09-07");
+    expect(r.get("b")).toBe("2026-09-08");
+  });
+
+  it("ciclo entre duas etapas não trava a função", () => {
+    // A → B → A: a segunda visita a A detecta o ciclo, posiciona em âncora e sai.
+    const r = projectDemandDays({
+      stages: [
+        etapa({ id: "a", order: 1, dependsOnIds: ["b"] }),
+        etapa({ id: "b", order: 2, dependsOnIds: ["a"] }),
+      ],
+      days: DIAS,
+      todayISO: "2026-09-07",
+      dueDateISO: null,
+    });
+    // Ambas em ciclo caem na âncora.
+    expect(r.get("a")).toBe("2026-09-07");
+    expect(r.get("b")).toBe("2026-09-07");
+  });
 });

@@ -60,6 +60,8 @@ export function projectDemandDays(input: {
 
   // A parede do vencimento. O prazo é a data de ENTREGA, então o trabalho precisa estar pronto na
   // VÉSPERA. Demanda vencida (ou que vence hoje) não tem para onde adiar: o último dia é hoje.
+  // A parede nunca é anterior ao primeiro dia visível (pois é max(vespera, ancora)),
+  // então a ordem dos dois clamps é segura: primeiro reposiciona atrasado, depois aplica parede.
   const parede = (() => {
     if (!dueDateISO) return null;
     const vespera = diaAnterior(dueDateISO);
@@ -69,16 +71,30 @@ export function projectDemandDays(input: {
   const porStageId = new Map(stages.map((s) => [s.stageId, s]));
   const diaDe = new Map<string, string>();
   const resultado = new Map<string, string | null>();
+  const visitando = new Set<string>(); // Detecta ciclos na travessia
+  const emCiclo = new Set<string>(); // Marca etapas que têm ciclo
 
-  // A ordem do fluxo já é topológica nesta base: uma etapa nunca depende de outra de ordem maior.
-  // Percorrer por `order` garante que os pré-requisitos já foram posicionados quando chega a vez.
-  for (const s of [...stages].sort((a, b) => a.order - b.order)) {
-    if (s.status === "COMPLETED") {
-      // Concluída não tem pendente para posicionar — ela aparece no dia em que fechou, e quem a
-      // coloca lá é quem lê o apontamento.
-      resultado.set(s.id, null);
-      if (s.completedDay) diaDe.set(s.stageId, s.completedDay);
-      continue;
+  // Função auxiliar que posiciona uma etapa resolvendo suas dependências em profundidade.
+  // Protege-se contra ciclos posicionando em falha na âncora.
+  function obterDia(stageId: string, parentStageId: string | null = null): string {
+    // Se já foi posicionado, retorna em cache.
+    if (diaDe.has(stageId)) return diaDe.get(stageId)!;
+
+    // Se está sendo visitado agora, há ciclo: posiciona na âncora e marca ambas como cíclicas.
+    if (visitando.has(stageId)) {
+      diaDe.set(stageId, ancora);
+      emCiclo.add(stageId);
+      if (parentStageId) emCiclo.add(parentStageId);
+      return ancora;
+    }
+
+    visitando.add(stageId);
+
+    const s = porStageId.get(stageId);
+    if (!s) {
+      // Dependência não está na demanda: nenhuma restrição — é como se não existisse.
+      visitando.delete(stageId);
+      return ancora;
     }
 
     let dia: string;
@@ -88,12 +104,16 @@ export function projectDemandDays(input: {
     } else {
       let base = ancora;
       for (const depId of s.dependsOnIds) {
+        // Resolve a dependência primeiro (recursão); se houver ciclo, retorna a âncora.
+        const diaDep = obterDia(depId, stageId);
         const dep = porStageId.get(depId);
-        // Etapa desmarcada na criação não tem linha na demanda: tratá-la como pendência travaria
-        // a cadeia inteira num pré-requisito que não existe.
+
+        // Pré-requisito não está na demanda: nenhuma restrição.
         if (!dep) continue;
-        const diaDep = dep.status === "COMPLETED" ? dep.completedDay : diaDe.get(depId);
+        // Pré-requisito concluído sem data conhecida (ou pendente que não foi resolvido):
+        // não há restrição porque já está no mapa ou não há como restringir.
         if (!diaDep) continue;
+
         // Anterior concluída libera o mesmo dia — quem terminou de manhã não impede a seguinte de
         // acontecer à tarde. Anterior ainda pendente ocupa o dia dela, e a seguinte vai para o
         // próximo; a de 0h é a exceção, porque sem duração conhecida ela não consome dia nenhum.
@@ -106,12 +126,43 @@ export function projectDemandDays(input: {
 
     // Atrasado entra no primeiro dia visível, como em toda tela deste sistema.
     if (dia < primeiro) dia = primeiro;
+    // Parede do vencimento limita o quanto se pode adiar.
     if (parede && dia > parede) dia = parede;
 
-    diaDe.set(s.stageId, dia);
+    diaDe.set(stageId, dia);
+    visitando.delete(stageId);
+    return dia;
+  }
+
+  // Processa cada etapa. A ordem por `order` é desempate entre etapas independentes,
+  // garantindo resultados estáveis; obterDia() garante que dependências são resolvidas primeiro.
+  for (const s of [...stages].sort((a, b) => a.order - b.order)) {
+    if (s.status === "COMPLETED") {
+      // Concluída não tem pendente para posicionar — ela aparece no dia em que fechou, e quem a
+      // coloca lá é quem lê o apontamento.
+      resultado.set(s.id, null);
+      if (s.completedDay) diaDe.set(s.stageId, s.completedDay);
+      continue;
+    }
+
+    const dia = obterDia(s.stageId);
     // Fora da janela (sem parede que a segure) a etapa não aparece nesta semana: empilhar no
     // sábado o trabalho que não é dele mentiria sobre a carga do dia.
     resultado.set(s.id, days.includes(dia) ? dia : null);
+  }
+
+  // Etapas em ciclo devem ser posicionadas na âncora: o ciclo é problema do modelo,
+  // e mostrá-las amontoadas na âncora é melhor que deixá-las em silêncio.
+  for (const stageId of emCiclo) {
+    diaDe.set(stageId, ancora);
+  }
+
+  // Atualiza o resultado com as posições finais das etapas cíclicas.
+  for (const s of stages) {
+    if (emCiclo.has(s.stageId) && s.status !== "COMPLETED") {
+      const dia = diaDe.get(s.stageId)!;
+      resultado.set(s.id, days.includes(dia) ? dia : null);
+    }
   }
 
   return resultado;
