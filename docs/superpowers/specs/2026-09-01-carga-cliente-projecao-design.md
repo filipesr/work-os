@@ -38,14 +38,17 @@ O apontamento nasce ao **parar o cronômetro** (`stopWorkOnTask` → `closeActiv
 
 ### Etapa concluída sem apontamento nenhum
 
-Conta a **referência** como realizado, marcada como estimativa.
+**Conta zero.** O realizado é o que foi apontado, e ponto.
 
-É a decisão mais discutível desta spec, e o motivo é que a alternativa é pior: o apontamento é
-voluntário — depende de alguém ter usado o cronômetro —, e uma etapa fechada sem cronômetro
-apareceria como "0h feitas". A tela diria que nada foi feito num trabalho que foi feito, e a
-percepção do executado, que é o ponto, se perderia justamente onde a disciplina de apontar falhou.
+Esta spec nasceu dizendo o contrário — que a etapa fechada sem cronômetro contaria a referência,
+marcada como estimativa — porque o apontamento era voluntário e a tela ficaria vazia. A decisão
+mudou junto com a causa: o apontamento passou a ser
+[obrigatório para concluir](2026-09-01-apontamento-obrigatorio-design.md), então a etapa fechada
+sem hora deixa de existir daqui para frente.
 
-A marca de estimativa é obrigatória: sem ela, o número passa por medição.
+Fica o passado: etapas concluídas antes daquela regra aparecem com 0h de realizado. É a verdade
+sobre o que foi medido, e preenchê-las com a referência seria fabricar histórico — a mesma coisa
+que este projeto recusou ao não fazer backfill de `plannedDate`.
 
 ## Onde cada etapa aparece
 
