@@ -118,6 +118,19 @@ export default async function ClientLoadPage({
                                   >
                                     {tarefa.projectName} · {tarefa.taskTitle}
                                   </span>
+                                  {tarefa.dueDateISO && (
+                                    // Explica o empilhamento: quatro etapas na terça, sem dizer
+                                    // que a entrega é quarta, é um amontoado sem causa visível.
+                                    <span
+                                      className={`shrink-0 whitespace-nowrap text-[11px] ${
+                                        tarefa.overdue ? "text-danger" : "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {t(tarefa.overdue ? "overdue" : "dueOn", {
+                                        date: `${tarefa.dueDateISO.slice(8, 10)}/${tarefa.dueDateISO.slice(5, 7)}`,
+                                      })}
+                                    </span>
+                                  )}
                                   <span className="shrink-0 whitespace-nowrap tabular-nums">
                                     <span className="text-success">{fmtH(tarefa.doneHours)}</span>
                                     <span className="text-muted-foreground">/</span>
@@ -154,6 +167,14 @@ export default async function ClientLoadPage({
                                           <span title={t("waiting")}>· </span>
                                         )}
                                         {fmtH(etapa.hours)}
+                                        {etapa.estimated && (
+                                          <span
+                                            className="ml-1 text-[10px] text-muted-foreground"
+                                            title={t("estimatedMark")}
+                                          >
+                                            ~
+                                          </span>
+                                        )}
                                       </span>
                                     </li>
                                   ))}
