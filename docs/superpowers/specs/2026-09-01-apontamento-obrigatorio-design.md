@@ -30,8 +30,15 @@ metade "realizado" de todas as telas de tempo é um campo em branco com cara de 
 
 ## O que a tela de concluir pede
 
-1. **Horas nesta etapa** — já preenchido com o que o cronômetro registrou, e editável.
-2. **Motivo**, só quando o número cai num dos extremos (abaixo).
+1. **Horas nesta etapa** — o campo vem preenchido com o que o cronômetro já registrou, e é
+   editável. **Só é obrigatório quando não há apontamento nenhum.** Quem usou o cronômetro já
+   apontou: pedir de novo seria cobrar duas vezes o mesmo gesto, e é assim que um campo obrigatório
+   vira um número digitado no automático.
+2. **Motivo**, só quando o número cai num dos extremos (abaixo). Dentro da faixa, concluir é um
+   clique — como sempre foi.
+
+O atrito é proporcional ao que falta: quem trabalhou com o cronômetro ligado e ficou dentro da
+referência não vê nada de novo.
 
 ### O cronômetro aberto fecha junto
 
