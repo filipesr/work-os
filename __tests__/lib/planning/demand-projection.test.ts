@@ -269,4 +269,47 @@ describe("projectDemandDays", () => {
     // Sem data humana, cascata caiu na parede.
     expect(r.get("a")).toBe("2026-09-07");
   });
+
+  it("a parede comprime a cascata, mas não empurra a dependente para antes da dependência", () => {
+    // a tem plannedDate além da parede — fica onde o gestor pôs (regra já coberta acima).
+    // b depende de a e não tem data: a cascata a posicionaria depois de a (09-12); a parede
+    // (vencimento em 09-10, véspera 09-09) tentaria puxá-la para 09-09 — antes de a. O piso que
+    // a depende ela impõe (o próprio dia de a, 09-11) impede essa inversão: a parede comprime até
+    // aí e para, porque comprimir não é inverter.
+    const r = projectDemandDays({
+      stages: [
+        etapa({ id: "a", order: 1, plannedDate: "2026-09-11" }),
+        etapa({ id: "b", order: 2, dependsOnIds: ["a"] }),
+      ],
+      days: DIAS,
+      todayISO: "2026-09-07",
+      dueDateISO: "2026-09-10",
+    });
+    expect(r.get("a")).toBe("2026-09-11");
+    // b não fica antes de a — na pior compressão, fica ao lado dela, nunca antes.
+    expect(r.get("b")).toBe("2026-09-11");
+    expect(r.get("b")! >= r.get("a")!).toBe(true);
+  });
+
+  it("a parede continua comprimindo a cadeia pura, sem nenhuma data humana envolvida", () => {
+    // Mesmo caso da cadeia pura já coberto acima ("o vencimento é a parede..."), reafirmado aqui
+    // como salvaguarda direta do defeito: a correção do piso não pode reintroduzir a régua antiga
+    // (tudo empatando na véspera) nem parar de comprimir quando não há decisão humana no meio.
+    const r = projectDemandDays({
+      stages: [
+        etapa({ id: "a", order: 1 }),
+        etapa({ id: "b", order: 2, dependsOnIds: ["a"] }),
+        etapa({ id: "c", order: 3, dependsOnIds: ["b"] }),
+        etapa({ id: "d", order: 4, dependsOnIds: ["c"] }),
+      ],
+      days: DIAS,
+      todayISO: "2026-09-07",
+      dueDateISO: "2026-09-10",
+    });
+    expect(r.get("a")).toBe("2026-09-07");
+    expect(r.get("b")).toBe("2026-09-08");
+    expect(r.get("c")).toBe("2026-09-09");
+    // A cascata pura levaria d a 09-11; a parede (véspera 09-09) comprime até lá.
+    expect(r.get("d")).toBe("2026-09-09");
+  });
 });

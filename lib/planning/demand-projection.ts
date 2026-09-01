@@ -99,6 +99,11 @@ export function projectDemandDays(input: {
 
     let dia: string;
     let fromPlannedDate = false;
+    // O piso: o dia mais tardio que alguma dependência já ocupa. A parede pode comprimir a
+    // cadeia até aqui, nunca além — comprimir não é inverter uma etapa para antes daquilo de que
+    // ela depende. Só a cascata (abaixo) o eleva; nos outros ramos fica na âncora, que a parede
+    // sempre alcança ou ultrapassa, então não muda o comportamento deles.
+    let piso = ancora;
 
     // Concluída: devolve o completedDay se conhecido, ou âncora se não há data (sem restrição).
     if (s.status === "COMPLETED") {
@@ -121,6 +126,10 @@ export function projectDemandDays(input: {
         // Pré-requisito pendente sem posição resolvida: não há como restringir.
         if (!diaDep) continue;
 
+        // A dependência nunca acontece depois de quem depende dela — nem quando a parede
+        // comprime a cascata. Este é o piso que o clamp abaixo respeita.
+        if (diaDep > piso) piso = diaDep;
+
         // Anterior concluída libera o mesmo dia — quem terminou de manhã não impede a seguinte de
         // acontecer à tarde. Anterior ainda pendente ocupa o dia dela, e a seguinte vai para o
         // próximo; a de 0h é a exceção, porque sem duração conhecida ela não consome dia nenhum.
@@ -133,8 +142,12 @@ export function projectDemandDays(input: {
 
     // Atrasado entra no primeiro dia visível, como em toda tela deste sistema.
     if (dia < primeiro) dia = primeiro;
-    // Parede do vencimento limita o quanto a cascata pode adiar — mas não desfaz decisão humana.
-    if (!fromPlannedDate && parede && dia > parede) dia = parede;
+    // Parede do vencimento limita o quanto a cascata pode adiar — mas não desfaz decisão humana,
+    // e comprime sem inverter: nunca baixa a etapa abaixo do piso que suas dependências impuseram.
+    // Quando o piso já está além da parede (uma dependência cuja própria data humana passa do
+    // prazo, por exemplo), a parede simplesmente não alcança — a etapa fica ao lado de quem ela
+    // depende, não antes.
+    if (!fromPlannedDate && parede && dia > parede) dia = piso > parede ? piso : parede;
 
     diaDe.set(stageId, dia);
     visitando.delete(stageId);
