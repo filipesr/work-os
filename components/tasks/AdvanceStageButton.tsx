@@ -56,6 +56,9 @@ export function AdvanceStageButton({
   const [horas, setHoras] = useState("");
   const [motivo, setMotivo] = useState<StageNoteReasonValue | "">("");
   const [nota, setNota] = useState("");
+  // Releitura do contexto no clique de confirmar (veja `handleComplete`): o cronômetro corre
+  // enquanto o diálogo fica aberto, e a régua da tela envelhece junto.
+  const [revalidando, setRevalidando] = useState(false);
 
   useEffect(() => {
     if (!showConfirm || !currentStageId) return;
@@ -64,6 +67,12 @@ export function AdvanceStageButton({
     // componente montado) mostraria por um instante o contexto da etapa anterior — e liberaria o
     // botão com base em uma régua que não é mais a de agora.
     setContexto(null);
+    // Motivo e nota também: eles são a resposta a UMA conclusão, não uma preferência da pessoa.
+    // Sem esta limpeza, quem concluiu a etapa A com "Retrabalho" e um texto reabria o diálogo na
+    // etapa B — outra régua, outro trabalho — e encontrava o bloco já preenchido. Um clique e a
+    // categoria errada ia para a tabela cujo propósito é justamente deixar o padrão visível.
+    setMotivo("");
+    setNota("");
     getStageCompletionContext(taskId, currentStageId).then((c) => {
       if (!vivo) return;
       setContexto(c);
@@ -80,9 +89,16 @@ export function AdvanceStageButton({
   // qualquer JS rodar, e "2,5" viraria "25".
   const horasNum = parseHours(horas);
   const horasValidas = Number.isFinite(horasNum) && horasNum > 0;
-  // A MESMA regra do servidor (lib/stage-completion-note.ts). Duas cópias divergiriam, e a
-  // divergência apareceria como um diálogo que não pede nada e uma ação que recusa.
-  const pedeMotivo = !!contexto && horasValidas && needsReason(horasNum, contexto.referenceHours);
+  // A MESMA regra do servidor (lib/stage-completion-note.ts) E a mesma ENTRADA: o servidor decide
+  // sobre `max(informado, jaApontado)`, porque o informado é piso e o período em aberto vai virar
+  // TimeLog de qualquer jeito. Passar só `horasNum` aqui fazia a tela decidir sobre um número
+  // menor que o do servidor — e com o diálogo aberto por vinte minutos e o cronômetro correndo, o
+  // servidor pedia motivo, o toast aparecia e o select não, porque a tela ainda achava que estava
+  // dentro da faixa. Beco sem saída: clicar de novo repetia o erro.
+  const pedeMotivo =
+    !!contexto &&
+    horasValidas &&
+    needsReason(Math.max(horasNum, contexto.loggedHours), contexto.referenceHours);
   // Sem contexto ainda não há régua contra a qual decidir `pedeMotivo` — deixar concluir aqui
   // arriscaria um `reasonRequired` que a tela já sabia prever, só não tinha carregado a tempo.
   const podeConcluir = !!contexto && horasValidas && (!pedeMotivo || motivo !== "");
@@ -134,10 +150,34 @@ export function AdvanceStageButton({
     );
   }
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    // Relê o contexto ANTES de enviar. O diálogo pode ter ficado aberto vinte minutos com o
+    // cronômetro correndo: o que era "dentro da referência" na abertura já pode estar acima dela
+    // agora, e o servidor decide com o número de AGORA. Sem esta releitura, a recusa chegava como
+    // um toast sem campo nenhum aparecendo — e clicar de novo só repetia o toast.
+    setRevalidando(true);
+    let atual = contexto;
+    try {
+      atual = await getStageCompletionContext(taskId, currentStageId);
+      setContexto(atual);
+    } catch {
+      // Releitura falhou: segue com o contexto da abertura. O servidor continua sendo a autoridade
+      // — perder a rede não pode virar um botão que não faz nada.
+    } finally {
+      setRevalidando(false);
+    }
+
+    const exigeMotivo =
+      !!atual &&
+      horasValidas &&
+      needsReason(Math.max(horasNum, atual.loggedHours), atual.referenceHours);
+    // Passou a exigir motivo entre abrir e confirmar: revela o campo (o `setContexto` acima já o
+    // fez aparecer) em vez de mandar um envio que o servidor vai recusar.
+    if (exigeMotivo && motivo === "") return;
+
     run(taskId, currentStageId, Object.keys(assignments).length > 0 ? assignments : undefined, {
       hours: horasNum,
-      reason: pedeMotivo ? (motivo as StageNoteReasonValue) : undefined,
+      reason: exigeMotivo ? (motivo as StageNoteReasonValue) : undefined,
       note: nota.trim() || undefined,
     });
   };
@@ -361,10 +401,10 @@ export function AdvanceStageButton({
               </button>
               <button
                 onClick={handleComplete}
-                disabled={isPending || !podeConcluir}
+                disabled={isPending || revalidando || !podeConcluir}
                 className="px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50 font-medium flex items-center gap-2"
               >
-                {isPending ? (
+                {isPending || revalidando ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     {t("completing")}
