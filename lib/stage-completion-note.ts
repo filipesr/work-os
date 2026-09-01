@@ -39,3 +39,16 @@ export function needsReason(hoursLogged: number, referenceHours: number): boolea
   if (hoursLogged > referenceHours) return true;
   return hoursLogged <= referenceHours * LOW_LOG_RATIO;
 }
+
+/**
+ * Converte o texto do campo de horas num número, aceitando vírgula OU ponto como separador
+ * decimal.
+ *
+ * Existe porque `<input type="number">` descarta a vírgula no próprio navegador — quem digita
+ * "2,5" termina com "25" no campo, e a etapa fecharia apontando dez vezes mais do que a pessoa
+ * quis. Por isso o campo é `type="text"` com `inputMode="decimal"`, e este parse manual é quem
+ * decide o número de verdade. Texto inválido vira `NaN`; quem chama trata isso como inválido.
+ */
+export function parseHours(texto: string): number {
+  return Number(texto.trim().replace(",", "."));
+}

@@ -843,12 +843,20 @@ export async function activateNextStages(taskId: string, completedStageId: strin
  *  que pedir; a ação recalcula por conta, porque o que a tela mandou não é confiável. */
 export async function getStageCompletionContext(taskId: string, stageId: string) {
   await getCurrentUser();
-  const [agregado, referencias] = await Promise.all([
+  const [agregado, referencias, aberto] = await Promise.all([
     prisma.timeLog.aggregate({ where: { taskId, stageId }, _sum: { hoursSpent: true } }),
     getStageReferences([stageId]),
+    prisma.activityLog.findFirst({
+      where: { taskId, stageId, endedAt: null },
+      select: { startedAt: true },
+    }),
   ]);
+  // O cronômetro em aberto ainda não é TimeLog, mas já é trabalho feito. Sem somar aqui, a tela
+  // mostra menos hora do que `completeStageAndAdvance` vai considerar ao validar — e o
+  // pré-preenchido nasceria defasado antes mesmo de o diálogo abrir.
+  const horasAbertas = aberto ? hoursBetween(aberto.startedAt, new Date()) : 0;
   return {
-    loggedHours: agregado._sum.hoursSpent ?? 0,
+    loggedHours: (agregado._sum.hoursSpent ?? 0) + horasAbertas,
     referenceHours: referencias.get(stageId)?.hours ?? 0,
   };
 }
@@ -965,13 +973,20 @@ export async function completeStageAndAdvance(
     if (jaApontado <= 0 && (informado === undefined || informado <= 0)) {
       return { error: tTask("hoursRequired") };
     }
-    // Reduzir hora já apontada por um campo de texto seria apagar período real, com início e fim.
-    // Corrigir apontamento errado é outro ato, e precisa ser deliberado.
-    if (informado !== undefined && informado < jaApontado) {
+    // Reduzir hora já GRAVADA por um campo de texto seria apagar período real, com início e fim.
+    // A comparação é com `jaGravado`, não com `jaApontado`: o período em aberto segue correndo
+    // entre a leitura do contexto (quando o diálogo abriu) e este instante (quando o servidor
+    // valida), então qualquer número capturado na abertura já nasce um pouco defasado. Recusar por
+    // essa defasagem recusaria o caminho mais comum do produto: aceitar o valor pré-preenchido com
+    // o cronômetro ainda ligado.
+    if (informado !== undefined && informado < jaGravado) {
       return { error: tTask("hoursBelowLogged") };
     }
 
-    const totalHoras = informado !== undefined ? informado : jaApontado;
+    // O informado é PISO, não teto: o período em aberto vai virar TimeLog de qualquer jeito quando
+    // fechar, poucas linhas abaixo. Aceitar um total menor que `jaApontado` seria uma mentira que o
+    // próprio sistema desmente um segundo depois — por isso o total é o maior dos dois.
+    const totalHoras = informado !== undefined ? Math.max(informado, jaApontado) : jaApontado;
     const referencias = await getStageReferences([stageId]);
     const referenceHours = referencias.get(stageId)?.hours ?? 0;
 

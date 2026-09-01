@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { completeStageAndAdvance, getStageCompletionContext } from "@/lib/actions/task";
 import {
   needsReason,
+  parseHours,
   STAGE_NOTE_REASONS,
   type StageNoteReasonValue,
 } from "@/lib/stage-completion-note";
@@ -59,6 +60,10 @@ export function AdvanceStageButton({
   useEffect(() => {
     if (!showConfirm || !currentStageId) return;
     let vivo = true;
+    // Limpa o contexto anterior ao reabrir: sem isto, um segundo "concluir" (outra etapa, mesmo
+    // componente montado) mostraria por um instante o contexto da etapa anterior — e liberaria o
+    // botão com base em uma régua que não é mais a de agora.
+    setContexto(null);
     getStageCompletionContext(taskId, currentStageId).then((c) => {
       if (!vivo) return;
       setContexto(c);
@@ -70,12 +75,17 @@ export function AdvanceStageButton({
     };
   }, [showConfirm, taskId, currentStageId]);
 
-  const horasNum = Number(horas.replace(",", "."));
+  // Parse manual, não `Number()` direto: o campo é `type="text"` (veja o input abaixo) justamente
+  // para aceitar vírgula — um `<input type="number">` a descartaria no próprio navegador antes de
+  // qualquer JS rodar, e "2,5" viraria "25".
+  const horasNum = parseHours(horas);
   const horasValidas = Number.isFinite(horasNum) && horasNum > 0;
   // A MESMA regra do servidor (lib/stage-completion-note.ts). Duas cópias divergiriam, e a
   // divergência apareceria como um diálogo que não pede nada e uma ação que recusa.
   const pedeMotivo = !!contexto && horasValidas && needsReason(horasNum, contexto.referenceHours);
-  const podeConcluir = horasValidas && (!pedeMotivo || motivo !== "");
+  // Sem contexto ainda não há régua contra a qual decidir `pedeMotivo` — deixar concluir aqui
+  // arriscaria um `reasonRequired` que a tela já sabia prever, só não tinha carregado a tempo.
+  const podeConcluir = !!contexto && horasValidas && (!pedeMotivo || motivo !== "");
 
   const { run, isPending } = useServerAction(completeStageAndAdvance, {
     onSuccess: (result) => {
@@ -292,17 +302,18 @@ export function AdvanceStageButton({
                 </FieldLabel>
                 <input
                   id="completion-hours"
-                  type="number"
-                  min="0"
-                  step="0.25"
+                  type="text"
+                  inputMode="decimal"
                   value={horas}
                   onChange={(e) => setHoras(e.target.value)}
                   className="h-10 w-full rounded-md border border-input-border bg-input px-3 text-sm text-foreground"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {contexto && contexto.loggedHours > 0
-                    ? t("completion.hoursFromTimer", { hours: contexto.loggedHours })
-                    : t("completion.hoursHint")}
+                  {!contexto
+                    ? t("completion.loadingContext")
+                    : contexto.loggedHours > 0
+                      ? t("completion.hoursFromTimer", { hours: contexto.loggedHours })
+                      : t("completion.hoursHint")}
                 </p>
               </div>
 

@@ -106,6 +106,7 @@
     },
     "completion": {
       "hoursLabel": "Horas nesta etapa",
+      "loadingContext": "Carregando o que já foi apontado…",
       "hoursFromTimer": "{hours}h já apontadas pelo cronômetro.",
       "hoursHint": "Some o que faltou apontar. Não dá para reduzir o que o cronômetro já registrou.",
       "reasonLabel": "O que aconteceu nesta etapa?",

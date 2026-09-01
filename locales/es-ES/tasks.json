@@ -106,6 +106,7 @@
     },
     "completion": {
       "hoursLabel": "Horas en esta etapa",
+      "loadingContext": "Cargando lo que ya se ha imputado…",
       "hoursFromTimer": "{hours}h ya imputadas por el cronómetro.",
       "hoursHint": "Suma lo que falte imputar. No se puede reducir lo que el cronómetro ya registró.",
       "reasonLabel": "¿Qué ha pasado en esta etapa?",

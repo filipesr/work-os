@@ -130,6 +130,44 @@ describe("completeStageAndAdvance — apontamento", () => {
     expect(prisma.stageCompletionNote.create).not.toHaveBeenCalled();
   });
 
+  it("informado igual ao pré-preenchido, com o cronômetro tendo corrido mais um pouco, conclui em vez de recusar", async () => {
+    // O contexto foi lido quando o diálogo abriu; o cronômetro seguiu correndo até o envio. O
+    // valor informado (o que a tela mostrou) fica menor que o `jaApontado` recalculado agora —
+    // isso NÃO pode recusar, porque é o caminho mais comum do produto: aceitar o pré-preenchido
+    // com o cronômetro ligado.
+    cenario(1);
+    vi.mocked(prisma.activityLog.findFirst).mockResolvedValue({
+      id: "log1",
+      userId: "ana",
+      taskId: "t1",
+      stageId: "s1",
+      startedAt: new Date(Date.now() - 2 * 3_600_000), // 2h de período aberto
+    } as never);
+    // Informado = jaGravado (1) + o que a tela viu de período aberto na abertura do diálogo (1.5),
+    // menor que as ~2h que o cronômetro já vale agora — é exatamente a defasagem entre abrir e
+    // enviar.
+    const r = await completeStageAndAdvance("t1", "s1", undefined, { hours: 2.5 });
+    expect(r).toMatchObject({ success: true });
+    // O período aberto foi fechado (virou TimeLog) — não ignorado.
+    expect(prisma.activityLog.update).toHaveBeenCalled();
+  });
+
+  it("informado abaixo do que já está GRAVADO continua recusando, mesmo com cronômetro aberto por cima", async () => {
+    // A tolerância é só para o período em aberto (ainda não é TimeLog). O que já está gravado
+    // continua intocável: reduzi-lo seria apagar período real, com início e fim.
+    cenario(3);
+    vi.mocked(prisma.activityLog.findFirst).mockResolvedValue({
+      id: "log1",
+      userId: "ana",
+      taskId: "t1",
+      stageId: "s1",
+      startedAt: new Date(Date.now() - 1 * 3_600_000),
+    } as never);
+    const r = await completeStageAndAdvance("t1", "s1", undefined, { hours: 2 });
+    expect(r).toEqual({ error: "hoursBelowLogged" });
+    expect(prisma.activityLog.update).not.toHaveBeenCalled();
+  });
+
   it("cronômetro aberto e motivo faltando: recusa e não fecha o cronômetro", async () => {
     // Fechar é escrita. Uma recusa — por hora ou por motivo — não pode ter gravado nada no
     // caminho: nem o TimeLog complementar, nem o fechamento do período em aberto.

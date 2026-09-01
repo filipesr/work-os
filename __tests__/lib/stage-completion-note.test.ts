@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { needsReason, LOW_LOG_RATIO, STAGE_NOTE_REASONS } from "@/lib/stage-completion-note";
+import {
+  needsReason,
+  LOW_LOG_RATIO,
+  STAGE_NOTE_REASONS,
+  parseHours,
+} from "@/lib/stage-completion-note";
 
 describe("needsReason", () => {
   it("acima da referência pede motivo", () => {
@@ -71,5 +76,36 @@ describe("needsReason", () => {
       "TIMER_FORGOTTEN",
       "OTHER",
     ]);
+  });
+});
+
+describe("parseHours", () => {
+  // `<input type="number">` descarta a vírgula no próprio navegador — teste nenhum alcança isso.
+  // O que dá para garantir é que o parse manual, usado por trás de um `type="text"`, trata os dois
+  // separadores decimais como o mesmo número.
+  it("aceita vírgula como separador decimal", () => {
+    expect(parseHours("2,5")).toBe(2.5);
+  });
+
+  it("aceita ponto como separador decimal", () => {
+    expect(parseHours("2.5")).toBe(2.5);
+  });
+
+  it("aceita número inteiro sem separador", () => {
+    expect(parseHours("3")).toBe(3);
+  });
+
+  it("ignora espaços nas pontas", () => {
+    expect(parseHours("  4,25  ")).toBe(4.25);
+  });
+
+  it("texto inválido vira NaN, não um número disfarçado", () => {
+    expect(Number.isNaN(parseHours("abc"))).toBe(true);
+  });
+
+  it("texto vazio vira 0 — inválido pela mesma checagem que já rejeita zero", () => {
+    // `Number("")` é 0, não NaN. Não é um problema à parte: quem chama já exige `> 0` para
+    // considerar o valor válido, e 0 falha essa checagem tanto quanto NaN falharia.
+    expect(parseHours("")).toBe(0);
   });
 });
