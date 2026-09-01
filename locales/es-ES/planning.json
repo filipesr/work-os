@@ -203,7 +203,16 @@
     "allTeams": "Todos los equipos",
     "legend": "hecho / por hacer",
     "waiting": "no liberada",
-    "unassigned": "sin asignar"
+    "unassigned": "sin asignar",
+    "stalledHeader": "Parado",
+    "stalledSummary": "{count} demandas · {hours}h",
+    "stalledEmpty": "—",
+    "stalledNoTeam": "sin equipo",
+    "stalledNoDueDate": "sin plazo",
+    "stalledOverdue": "venció el {date}",
+    "stalledDueOn": "vence el {date}",
+    "stalledIdle": "parado hace {days} días",
+    "stalledHelp": "Demandas cuya siguiente etapa no tiene responsable ni día. Las horas no entran en el total de la semana: todavía no han ocupado a nadie."
   },
   "done": {
     "noHours": "sin registro de horas"

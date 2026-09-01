@@ -59,6 +59,8 @@ export default async function ClientLoadPage({
           leitura vira cobrança de tempo. */}
       <p className="mb-2 text-xs text-muted-foreground">{t("ruler")}</p>
 
+      <p className="mb-2 text-xs text-muted-foreground">{t("stalledHelp")}</p>
+
       <p className="mb-3 text-xs text-muted-foreground">
         <span className="text-success">✓</span> {t("legend").split(" / ")[0]} ·{" "}
         <span className="text-primary">▶</span> {t("legend").split(" / ")[1]}
@@ -84,6 +86,12 @@ export default async function ClientLoadPage({
                 ))}
                 <th className="w-28 px-3 py-2 text-left text-xs font-bold uppercase text-foreground">
                   {t("total")}
+                </th>
+                {/* A coluna vem DEPOIS do total, e não entre os dias e ele: o total fecha a
+                    leitura da semana e precisa ficar colado nos dias que soma. A borda à esquerda
+                    diz que dali para a direita a pergunta é outra. */}
+                <th className="w-56 border-l-2 border-border px-3 py-2 text-left text-xs font-bold uppercase text-foreground">
+                  {t("stalledHeader")}
                 </th>
               </tr>
             </thead>
@@ -190,6 +198,50 @@ export default async function ClientLoadPage({
                     <span className="text-success">{fmtH(c.totalDone)}</span>
                     <span className="text-muted-foreground">/</span>
                     <span className="text-primary">{fmtH(c.totalPending)}</span>
+                  </td>
+                  <td className="border-l-2 border-border px-3 py-2 align-top text-xs">
+                    {c.stalled.length === 0 ? (
+                      <span className="text-muted-foreground">{t("stalledEmpty")}</span>
+                    ) : (
+                      <>
+                        {/* O tamanho do que está parado, sem entrar no total da semana: aquele
+                            número responde "quanto este cliente ocupou", e parado não ocupou. */}
+                        <p className="mb-1 font-semibold text-foreground">
+                          {t("stalledSummary", {
+                            count: c.stalled.length,
+                            hours: c.stalledHours.toFixed(1),
+                          })}
+                        </p>
+                        <ul className="space-y-1.5">
+                          {c.stalled.map((s) => (
+                            <li key={s.taskId}>
+                              <p className="truncate" title={`${s.projectName} · ${s.taskTitle}`}>
+                                {/* ⚠ só na vencida — a mesma gramática do resto da tela. */}
+                                {s.overdue ? (
+                                  <span className="text-danger">⚠ </span>
+                                ) : (
+                                  <span className="text-muted-foreground">· </span>
+                                )}
+                                {s.taskTitle}
+                              </p>
+                              <p className="text-muted-foreground">
+                                <span className={s.overdue ? "text-danger" : undefined}>
+                                  {s.dueDateISO
+                                    ? t(s.overdue ? "stalledOverdue" : "stalledDueOn", {
+                                        date: `${s.dueDateISO.slice(8, 10)}/${s.dueDateISO.slice(5, 7)}`,
+                                      })
+                                    : t("stalledNoDueDate")}
+                                </span>
+                                {/* Zero dia não vira texto: uma etapa liberada hoje não está
+                                    parada, está começando. */}
+                                {s.idleDays > 0 && ` · ${t("stalledIdle", { days: s.idleDays })}`}
+                                {s.noTeam && ` · ${t("stalledNoTeam")}`}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
