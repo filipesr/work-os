@@ -135,11 +135,13 @@ export default async function ClientLoadPage({
                                       <span
                                         className="truncate"
                                         title={`${etapa.stageOrder}. ${etapa.stageName} · ${
-                                          etapa.assigneeName ?? ""
+                                          etapa.assigneeName ?? t("unassigned")
                                         }`}
                                       >
-                                        {etapa.stageOrder}. {etapa.stageName}
-                                        {etapa.assigneeName && ` · ${curto(etapa.assigneeName)}`}
+                                        {etapa.stageOrder}. {etapa.stageName} ·{" "}
+                                        {etapa.assigneeName
+                                          ? curto(etapa.assigneeName)
+                                          : t("unassigned")}
                                       </span>
                                       <span className="shrink-0 whitespace-nowrap tabular-nums">
                                         {etapa.state === "done" && (

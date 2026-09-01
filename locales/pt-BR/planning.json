@@ -193,6 +193,7 @@
     "teamFilter": "Filtrar por time",
     "allTeams": "Todos os times",
     "legend": "feito / por fazer",
-    "waiting": "não liberada"
+    "waiting": "não liberada",
+    "unassigned": "não atribuído"
   }
 }

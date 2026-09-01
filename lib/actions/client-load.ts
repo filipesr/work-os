@@ -115,14 +115,54 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
           project: { select: { name: true, client: { select: { id: true, name: true } } } },
         },
       },
-      stage: { select: { name: true, order: true } },
+      stage: { select: { name: true, order: true, defaultTeam: { select: { name: true } } } },
+      team: { select: { name: true } },
       assignee: { select: { name: true, email: true } },
     },
     // A ordem das ETAPAS dentro do bloco é a do fluxo: quem lê a célula lê a demanda andando.
     orderBy: [{ stage: { order: "asc" } }, { id: "asc" }],
   });
 
-  const referencias = await getStageReferences([...new Set(linhas.map((l) => l.stageId))]);
+  // As ETAPAS QUE FALTAM das demandas já em tela: sem dia, não concluídas, e portanto fora dos
+  // três ramos acima. Sem elas a célula mostra só o pedaço que tem data e o gestor não vê o
+  // tamanho do que ainda vem — a leitura fecha a demanda inteira ou não fecha nada.
+  //
+  // Consulta separada porque ela depende das demandas que a primeira encontrou: fundir as duas
+  // exigiria um OR com subconsulta, mais caro de ler e de manter que uma ida a mais ao banco.
+  const idsEmTela = [...new Set(linhas.map((l) => l.task.id))];
+  const restantes = idsEmTela.length
+    ? await prisma.taskActiveStage.findMany({
+        where: {
+          taskId: { in: idsEmTela },
+          status: { notIn: ["COMPLETED"] },
+          plannedDate: null,
+          // As reivindicadas sem dia já vieram no ramo 2; aqui é o que ninguém pegou.
+          NOT: { status: "ACTIVE", assigneeId: { not: null } },
+        },
+        select: {
+          id: true,
+          stageId: true,
+          status: true,
+          plannedDate: true,
+          completedAt: true,
+          task: {
+            select: {
+              id: true,
+              title: true,
+              project: { select: { name: true, client: { select: { id: true, name: true } } } },
+            },
+          },
+          stage: { select: { name: true, order: true, defaultTeam: { select: { name: true } } } },
+          team: { select: { name: true } },
+          assignee: { select: { name: true, email: true } },
+        },
+        orderBy: [{ stage: { order: "asc" } }, { id: "asc" }],
+      })
+    : [];
+
+  const referencias = await getStageReferences([
+    ...new Set([...linhas, ...restantes].map((l) => l.stageId)),
+  ]);
   const horasDe = (stageId: string) => referencias.get(stageId)?.hours ?? 0;
 
   const primeiroDia = days[0];
@@ -133,6 +173,58 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
   // dia é a coluna, e dentro dela a demanda agrupa as etapas.
   type Acc = { name: string; dias: Map<string, Map<string, TaskBlock>> };
   const porCliente = new Map<string, Acc>();
+
+  // Onde cada demanda apareceu primeiro na semana. As etapas restantes (sem dia) se ancoram aí:
+  // repeti-las em cada dia em que a demanda aparece contaria a mesma etapa várias vezes, e o total
+  // do dia deixaria de bater com as linhas que ele mostra.
+  const primeiroDiaDaTarefa = new Map<string, string>();
+
+  const encaixar = (row: (typeof linhas)[number], dia: string) => {
+    const cliente = row.task.project.client;
+    const acc = porCliente.get(cliente.id) ?? { name: cliente.name, dias: new Map() };
+    const doDia = acc.dias.get(dia) ?? new Map<string, TaskBlock>();
+    const bloco = doDia.get(row.task.id) ?? {
+      taskId: row.task.id,
+      projectName: row.task.project.name,
+      taskTitle: row.task.title,
+      doneHours: 0,
+      pendingHours: 0,
+      stages: [],
+    };
+
+    const horas = horasDe(row.stageId);
+    // Não liberada aparece e NÃO soma: trabalho que ninguém pode começar não é carga de ninguém.
+    const state: StageLine["state"] =
+      row.status === "COMPLETED" ? "done" : row.status === "ACTIVE" ? "pending" : "waiting";
+    if (state === "done") bloco.doneHours += horas;
+    else if (state === "pending") bloco.pendingHours += horas;
+
+    bloco.stages.push({
+      id: row.id,
+      stageOrder: row.stage.order,
+      stageName: row.stage.name,
+      // Responsável, senão a EQUIPE efetiva (`teamId` da linha, senão o time padrão do modelo —
+      // ver lib/stage-team.ts), senão nada: quem escreve "não atribuído" é a tela, no idioma de
+      // quem lê. Sem esta queda, etapa sem dono aparecia sem nenhuma pista de quem a faria.
+      assigneeName:
+        row.assignee?.name ??
+        row.assignee?.email ??
+        row.team?.name ??
+        row.stage.defaultTeam?.name ??
+        null,
+      hours: horas,
+      state,
+    });
+
+    bloco.stages.sort(
+      (x: StageLine, y: StageLine) => x.stageOrder - y.stageOrder || (x.id < y.id ? -1 : 1)
+    );
+    doDia.set(row.task.id, bloco);
+    acc.dias.set(dia, doDia);
+    porCliente.set(cliente.id, acc);
+    const anterior = primeiroDiaDaTarefa.get(row.task.id);
+    if (!anterior || dia < anterior) primeiroDiaDaTarefa.set(row.task.id, dia);
+  };
 
   for (const row of linhas) {
     const concluida = row.status === "COMPLETED";
@@ -152,40 +244,13 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
     const dia = dataBase < primeiroDia ? primeiroDia : dataBase;
     if (!days.includes(dia)) continue;
 
-    const cliente = row.task.project.client;
-    const acc = porCliente.get(cliente.id) ?? { name: cliente.name, dias: new Map() };
-    const doDia = acc.dias.get(dia) ?? new Map<string, TaskBlock>();
-    const bloco = doDia.get(row.task.id) ?? {
-      taskId: row.task.id,
-      projectName: row.task.project.name,
-      taskTitle: row.task.title,
-      doneHours: 0,
-      pendingHours: 0,
-      stages: [],
-    };
+    encaixar(row, dia);
+  }
 
-    const horas = horasDe(row.stageId);
-    // Não liberada aparece e NÃO soma: trabalho que ninguém pode começar não é carga de ninguém.
-    const state: StageLine["state"] = concluida
-      ? "done"
-      : row.status === "ACTIVE"
-        ? "pending"
-        : "waiting";
-    if (state === "done") bloco.doneHours += horas;
-    else if (state === "pending") bloco.pendingHours += horas;
-
-    bloco.stages.push({
-      id: row.id,
-      stageOrder: row.stage.order,
-      stageName: row.stage.name,
-      assigneeName: row.assignee?.name ?? row.assignee?.email ?? null,
-      hours: horas,
-      state,
-    });
-
-    doDia.set(row.task.id, bloco);
-    acc.dias.set(dia, doDia);
-    porCliente.set(cliente.id, acc);
+  // Só depois de saber onde cada demanda aparece: as restantes vão para o primeiro dia dela.
+  for (const row of restantes) {
+    const dia = primeiroDiaDaTarefa.get(row.task.id);
+    if (dia) encaixar(row, dia);
   }
 
   const clients: ClientWeek[] = [...porCliente.entries()].map(([clientId, acc]) => {
