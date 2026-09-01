@@ -109,6 +109,16 @@ enum ActiveStageStatus {
   COMPLETED // Work finished on this stage
 }
 
+/// Por que uma etapa fechou fora da referência. Causa DECLARADA, nunca penalidade: nada no
+/// sistema muda de comportamento por causa dela.
+enum StageNoteReason {
+  EXTERNAL_INTERRUPTION // prioridade que chegou por fora do sistema
+  REWORK // qualidade a montante: briefing, aprovação
+  SCOPE_LARGER // a demanda não era o que o template descreve
+  TIMER_FORGOTTEN // o processo pede um gesto que as pessoas não fazem
+  OTHER
+}
+
 enum ProjectStatus {
   ACTIVE // Project is active and can receive new demands
   INACTIVE // Project is deactivated (archived)
@@ -183,13 +193,14 @@ model User {
   weeklyCapacityHours Int?
 
   // Relations
-  assignedTasks Task[]            @relation("Assignee")
-  activeStages  TaskActiveStage[] @relation("StageAssignee")
-  comments      TaskComment[]
-  artifacts     TaskArtifact[]    @relation("ArtifactCreator")
-  timeLogs      TimeLog[]
-  stageLogs     TaskStageLog[]
-  activityLogs  ActivityLog[]
+  assignedTasks       Task[]            @relation("Assignee")
+  activeStages        TaskActiveStage[] @relation("StageAssignee")
+  comments            TaskComment[]
+  stageCompletionNotes StageCompletionNote[]
+  artifacts           TaskArtifact[]    @relation("ArtifactCreator")
+  timeLogs            TimeLog[]
+  stageLogs           TaskStageLog[]
+  activityLogs        ActivityLog[]
 
   // Artifact / NAS relations
   uploadedArtifacts TaskArtifact[]      @relation("ArtifactUploader")
@@ -300,15 +311,16 @@ model TemplateStage {
   //
   // Renomear resolveria de vez, mas viraria a leitura de todo consumidor de uma vez só; o comentário
   // é a trava barata até que alguém faça a troca com calma.
-  dependencies     StageDependency[] @relation("DependsOn")
-  dependents       StageDependency[] @relation("Stage")
-  activeTasks      TaskActiveStage[] @relation("ActiveTasks")
-  stageLogs        TaskStageLog[]
-  timeLogs         TimeLog[]
-  activityLogs     ActivityLog[]
-  stageArtifacts   TaskArtifact[]
-  stageTransitions StageTransition[]
-  reworkEvents     ReworkEvent[]     @relation("ReworkSource")
+  dependencies         StageDependency[] @relation("DependsOn")
+  dependents           StageDependency[] @relation("Stage")
+  activeTasks          TaskActiveStage[] @relation("ActiveTasks")
+  stageLogs            TaskStageLog[]
+  timeLogs             TimeLog[]
+  activityLogs         ActivityLog[]
+  stageArtifacts       TaskArtifact[]
+  stageTransitions     StageTransition[]
+  reworkEvents         ReworkEvent[]     @relation("ReworkSource")
+  stageCompletionNotes StageCompletionNote[]
 }
 
 // This table defines the dependencies: "Stage A must be complete before Stage B"
@@ -360,14 +372,15 @@ model Task {
   assignee   User?   @relation("Assignee", fields: [assigneeId], references: [id], onUpdate: NoAction, onDelete: SetNull)
 
   // Task History (all in separate tables)
-  activeStages     TaskActiveStage[]
-  comments         TaskComment[]
-  artifacts        TaskArtifact[]
-  stageLogs        TaskStageLog[]
-  timeLogs         TimeLog[]
-  activityLogs     ActivityLog[]
-  stageTransitions StageTransition[]
-  reworkEvents     ReworkEvent[]
+  activeStages         TaskActiveStage[]
+  comments             TaskComment[]
+  artifacts            TaskArtifact[]
+  stageLogs            TaskStageLog[]
+  timeLogs             TimeLog[]
+  activityLogs         ActivityLog[]
+  stageTransitions     StageTransition[]
+  reworkEvents         ReworkEvent[]
+  stageCompletionNotes StageCompletionNote[]
 
   // Tipo de trabalho: o template que a tarefa instancia. Denormalizado (fixo na
   // criação) p/ agregação/segmentação por tipo (reference-class forecasting).
@@ -820,4 +833,34 @@ model CalendarOccurrence {
 
   @@index([date])
   @@index([seriesKey])
+}
+
+/// Justificativa de conclusão fora da referência.
+///
+/// Tabela e não campo em `TaskActiveStage` porque uma etapa pode ser concluída mais de uma vez
+/// (reversão e refazimento): o registro é do EVENTO, e sobrescrever perderia a história que a
+/// justificativa existe para contar.
+///
+/// `referenceHours` é gravado junto de propósito: a referência é um p50 que se move com o tempo, e
+/// sem o valor da época ninguém consegue reconstruir por que aquela justificativa foi pedida.
+model StageCompletionNote {
+  id             String          @id @default(cuid())
+  reason         StageNoteReason
+  note           String?         @db.Text
+  hoursLogged    Float
+  referenceHours Float
+  createdAt      DateTime        @default(now())
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  stageId String
+  stage   TemplateStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  /// Quem concluiu. NUNCA agregado por pessoa em leitura nenhuma — ver a spec.
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stageId, createdAt])
+  @@index([taskId])
 }
