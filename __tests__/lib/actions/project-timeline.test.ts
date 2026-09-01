@@ -13,7 +13,11 @@ vi.mock("@/lib/planning/stage-reference", () => ({
     .mockResolvedValue(new Map([["s1", { hours: 2, source: "observed" }]])),
 }));
 vi.mock("@/lib/prisma", () => ({
-  default: { task: { findMany: vi.fn() }, timeLog: { findMany: vi.fn() } },
+  default: {
+    task: { findMany: vi.fn() },
+    timeLog: { findMany: vi.fn() },
+    stageTransition: { findMany: vi.fn() },
+  },
 }));
 // A projeção REAL roda; o espião só prova que é ela que roda, e não uma cópia local.
 vi.mock("@/lib/planning/demand-projection", async (importOriginal) => {
@@ -23,10 +27,19 @@ vi.mock("@/lib/planning/demand-projection", async (importOriginal) => {
 
 import prisma from "@/lib/prisma";
 import { projectDemandDays } from "@/lib/planning/demand-projection";
+import { getStageReferences } from "@/lib/planning/stage-reference";
 import { getProjectTimeline } from "@/lib/actions/project-timeline";
-import { formatISODate, todayInSaoPaulo } from "@/lib/dates";
+import { formatISODate, nowInSaoPaulo, todayInSaoPaulo } from "@/lib/dates";
 
 const HOJE = formatISODate(todayInSaoPaulo());
+
+/** N dias atrás, como instante REAL (não SP-local): meio-dia em São Paulo (15h UTC), longe da
+ *  virada de dia, para o cálculo de "dia" não depender de que horas são agora quando o teste roda. */
+function diasAtras(n: number): Date {
+  const hoje = new Date();
+  hoje.setUTCHours(15, 0, 0, 0);
+  return new Date(hoje.getTime() - n * 86_400_000);
+}
 
 function etapa(over: Record<string, unknown> = {}) {
   return {
@@ -62,6 +75,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(prisma.task.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.timeLog.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.stageTransition.findMany).mockResolvedValue([] as never);
 });
 
 describe("getProjectTimeline", () => {
@@ -106,7 +120,15 @@ describe("getProjectTimeline", () => {
   });
 
   it("o pendente do futuro é posicionado pela projeção, não por data inventada", () => {
-    // A segunda etapa não acontece junto da primeira: acontece depois dela.
+    // A segunda etapa não acontece junto da primeira: acontece depois dela. Precisa de referência
+    // cadastrada (item 5 do ledger): sem `pendingHours > 0` a etapa não emite célula nenhuma, e o
+    // teste não teria segunda etapa pra comparar.
+    vi.mocked(getStageReferences).mockResolvedValueOnce(
+      new Map([
+        ["s1", { hours: 2, source: "observed" as const }],
+        ["s2", { hours: 2, source: "observed" as const }],
+      ])
+    );
     vi.mocked(prisma.task.findMany).mockResolvedValue([
       demanda({
         activeStages: [
@@ -175,6 +197,170 @@ describe("getProjectTimeline", () => {
     return getProjectTimeline("p1").then((linha) => {
       expect(linha.demands).toEqual([]);
       expect(linha.rows).toEqual([{ kind: "day", dayISO: HOJE }]);
+    });
+  });
+
+  it("demanda vencida trabalhada ontem vem antes de demanda antiga parada, mesmo a antiga projetando mais longe no futuro (item 1)", () => {
+    // A projetada (`movedDays`/posição no futuro) não deve alimentar a ORDENAÇÃO — só movimento
+    // real deveria. Sem a separação do item 1, a demanda parada projeta em hoje+4 (cadeia de 5
+    // etapas) e essa data-fantasma vence a "ontem" real da demanda vencida.
+    vi.mocked(getStageReferences).mockResolvedValueOnce(
+      new Map([
+        ["s1", { hours: 2, source: "observed" as const }],
+        ["s2", { hours: 2, source: "observed" as const }],
+        ["s3", { hours: 2, source: "observed" as const }],
+        ["s4", { hours: 2, source: "observed" as const }],
+        ["s5", { hours: 2, source: "observed" as const }],
+      ])
+    );
+
+    const cadeia = (id: string, ordem: number, dependeDe: string | null) =>
+      etapa({
+        id: `as-parada-${id}`,
+        stageId: id,
+        status: ordem === 1 ? "ACTIVE" : "INACTIVE",
+        stage: {
+          name: id,
+          order: ordem,
+          defaultTeam: null,
+          dependents: dependeDe ? [{ dependsOnStageId: dependeDe }] : [],
+        },
+      });
+
+    const parada = demanda({
+      id: "parada",
+      createdAt: diasAtras(180),
+      dueDate: null,
+      activeStages: [
+        cadeia("s1", 1, null),
+        cadeia("s2", 2, "s1"),
+        cadeia("s3", 3, "s2"),
+        cadeia("s4", 4, "s3"),
+        cadeia("s5", 5, "s4"),
+      ],
+    });
+
+    const vencida = demanda({
+      id: "vencida",
+      createdAt: diasAtras(30),
+      dueDate: diasAtras(5),
+      activeStages: [etapa({ id: "as-vencida", stageId: "s1", status: "ACTIVE" })],
+    });
+
+    vi.mocked(prisma.task.findMany).mockResolvedValue([parada, vencida] as never);
+    vi.mocked(prisma.timeLog.findMany).mockResolvedValue([
+      { taskId: "vencida", stageId: "s1", hoursSpent: 1, logDate: diasAtras(1) },
+    ] as never);
+
+    return getProjectTimeline("p1").then((linha) => {
+      expect(linha.demands.map((d) => d.taskId)).toEqual(["vencida", "parada"]);
+    });
+  });
+
+  it("projeto com tudo concluído há meses ainda devolve a linha de hoje, e um vão até lá (item 2)", () => {
+    vi.mocked(prisma.task.findMany).mockResolvedValue([
+      demanda({
+        id: "fechada-ha-meses",
+        status: "COMPLETED",
+        createdAt: diasAtras(200),
+        completedAt: diasAtras(190),
+        activeStages: [etapa({ status: "COMPLETED", completedAt: diasAtras(190) })],
+      }),
+    ] as never);
+
+    return getProjectTimeline("p1").then((linha) => {
+      expect(linha.rows.some((r) => r.kind === "day" && r.dayISO === HOJE)).toBe(true);
+      expect(linha.rows.some((r) => r.kind === "gap" && r.days >= 2)).toBe(true);
+    });
+  });
+
+  it("apontamento sem etapa (stageId null) aparece na célula do dia e o dia vira linha (item 3)", () => {
+    const dia = diasAtras(3);
+    vi.mocked(prisma.task.findMany).mockResolvedValue([
+      demanda({ id: "bloqueada-sem-etapa", activeStages: [etapa({ status: "BLOCKED" })] }),
+    ] as never);
+    vi.mocked(prisma.timeLog.findMany).mockResolvedValue([
+      { taskId: "bloqueada-sem-etapa", stageId: null, hoursSpent: 2, logDate: dia },
+    ] as never);
+
+    return getProjectTimeline("p1").then((linha) => {
+      const diaISO = formatISODate(nowInSaoPaulo(dia));
+      const cel = linha.byDay[diaISO]?.["bloqueada-sem-etapa"];
+      expect(cel?.doneHours).toBe(2);
+      expect(cel?.lines.some((l) => l.stageOrder === 0 && l.hours === 2)).toBe(true);
+      expect(linha.rows.some((r) => r.kind === "day" && r.dayISO === diaISO)).toBe(true);
+    });
+  });
+
+  it("demanda OBSOLETE com etapa ACTIVE não ganha célula futura, mas mantém o passado (item 4)", () => {
+    vi.mocked(getStageReferences).mockResolvedValueOnce(
+      new Map([["s1", { hours: 6, source: "declared" as const }]])
+    );
+    vi.mocked(prisma.task.findMany).mockResolvedValue([
+      demanda({
+        id: "descartada",
+        status: "OBSOLETE",
+        createdAt: diasAtras(10),
+        activeStages: [etapa({ stageId: "s1", status: "ACTIVE" })],
+      }),
+    ] as never);
+
+    return getProjectTimeline("p1").then((linha) => {
+      expect(linha.demands.map((d) => d.taskId)).toContain("descartada");
+      const temCelulaFutura = Object.keys(linha.byDay).some(
+        (dia) => dia >= HOJE && linha.byDay[dia]["descartada"]
+      );
+      expect(temCelulaFutura).toBe(false);
+    });
+  });
+
+  it("etapa sem referência (0h) não emite linha nem cria dia (item 5)", () => {
+    vi.mocked(getStageReferences).mockResolvedValueOnce(new Map());
+    vi.mocked(prisma.task.findMany).mockResolvedValue([
+      demanda({
+        id: "sem-referencia",
+        createdAt: diasAtras(50),
+        activeStages: [etapa({ stageId: "s-sem-ref", status: "ACTIVE" })],
+      }),
+    ] as never);
+
+    return getProjectTimeline("p1").then((linha) => {
+      const temCelula = Object.keys(linha.byDay).some((dia) => linha.byDay[dia]["sem-referencia"]);
+      expect(temCelula).toBe(false);
+    });
+  });
+
+  it("etapa bloqueada 20 dias e liberada no dia 14 vira linha, sem a faixa engolir os 20 dias (item 6)", () => {
+    vi.mocked(prisma.task.findMany).mockResolvedValue([
+      demanda({
+        id: "liberada-tardia",
+        createdAt: diasAtras(20),
+        activeStages: [etapa({ stageId: "s1", status: "ACTIVE" })],
+      }),
+    ] as never);
+    vi.mocked(prisma.stageTransition.findMany).mockResolvedValue([
+      { taskId: "liberada-tardia", stageId: "s1", at: diasAtras(6) },
+    ] as never);
+
+    return getProjectTimeline("p1").then((linha) => {
+      const diaLiberacao = formatISODate(nowInSaoPaulo(diasAtras(6)));
+      expect(linha.rows.some((r) => r.kind === "day" && r.dayISO === diaLiberacao)).toBe(true);
+      const maiorVao = Math.max(
+        0,
+        ...linha.rows.filter((r) => r.kind === "gap").map((r) => r.days)
+      );
+      expect(maiorVao).toBeLessThan(20);
+    });
+  });
+
+  it("prioridade inválida não vai para o `where` do Prisma (item 8)", () => {
+    return getProjectTimeline("p1", { priority: "FOO" }).then(() => {
+      const where = (
+        vi.mocked(prisma.task.findMany).mock.calls[0][0] as never as {
+          where: Record<string, unknown>;
+        }
+      ).where;
+      expect(where).not.toHaveProperty("priority");
     });
   });
 });

@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import Link from "next/link";
 import type { ProjectTimeline as Timeline } from "@/lib/actions/project-timeline";
 
 /** "3h", "2.5h" — sem o `.0` que só ocupa espaço numa célula cheia de números. */
@@ -37,21 +38,30 @@ export async function ProjectTimeline({ data }: { data: Timeline }) {
         <span className="text-primary">▶</span> {legendPending} · <span>·</span> {legendWaiting} ·{" "}
         <span className="text-muted-foreground">~</span> {legendReference}
       </p>
+      {/* Ao lado da legenda, não abaixo da tabela: lá embaixo "esta linha" não tinha antecedente
+          (item 9 do ledger) — aqui ela aponta pra régua de hoje que está bem acima. */}
+      <p className="mb-2 text-xs text-muted-foreground">{t("futureHint")}</p>
       <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
         <table className="min-w-full table-fixed border-separate border-spacing-0 text-xs">
           <thead>
             <tr>
               <th className="sticky left-0 z-10 w-20 bg-card px-2 py-2 text-left font-bold uppercase text-foreground">
-                {t("today")}
+                {t("dateColumn")}
               </th>
               {data.demands.map((d) => (
                 <th
                   key={d.taskId}
                   className="min-w-[12rem] px-2 py-2 text-left font-bold text-foreground"
                 >
-                  <span className="block truncate" title={d.title}>
+                  {/* A demanda tem que continuar clicável — tirar essa capacidade em silêncio ao
+                      apagar o TaskCard do kanban é o mesmo erro que a spec proíbe pros filtros. */}
+                  <Link
+                    href={`/tasks/${d.taskId}`}
+                    className="block truncate hover:underline"
+                    title={d.title}
+                  >
                     {d.title}
-                  </span>
+                  </Link>
                   {d.dueDateISO && (
                     <span className={d.overdue ? "text-danger" : "text-muted-foreground"}>
                       {t(d.overdue ? "overdue" : "dueOn", { date: ddmm(d.dueDateISO) })}
@@ -114,7 +124,11 @@ export async function ProjectTimeline({ data }: { data: Timeline }) {
                                     <span className="text-primary">▶ </span>
                                   )}
                                   {l.state === "waiting" && <span title={t("waiting")}>· </span>}
-                                  {l.stageOrder}. {l.stageName}
+                                  {/* Hora apontada na demanda inteira, sem etapa (item 3 do
+                                      ledger): a leitura não traduz, a tela decide o rótulo. */}
+                                  {l.stageOrder === 0
+                                    ? t("noStage")
+                                    : `${l.stageOrder}. ${l.stageName}`}
                                   {l.assigneeName && ` · ${curto(l.assigneeName)}`}
                                 </span>
                                 <span className="shrink-0 whitespace-nowrap tabular-nums">
@@ -141,7 +155,6 @@ export async function ProjectTimeline({ data }: { data: Timeline }) {
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">{t("futureHint")}</p>
     </>
   );
 }

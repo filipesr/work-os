@@ -1,8 +1,9 @@
 "use server";
 
+import type { TaskPriority } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { getSessionUser } from "@/lib/permissions";
-import { formatISODate, nowInSaoPaulo, realInstant, todayInSaoPaulo } from "@/lib/dates";
+import { formatISODate, nowInSaoPaulo, todayInSaoPaulo } from "@/lib/dates";
 import { buildTimelineRows, type TimelineRow } from "@/lib/planning/timeline-rows";
 import { projectDemandDays, type ProjectionStage } from "@/lib/planning/demand-projection";
 import { getStageReferences } from "@/lib/planning/stage-reference";
@@ -27,6 +28,11 @@ import { getStageReferences } from "@/lib/planning/stage-reference";
  *  NÃO exportar: arquivo `"use server"` só pode exportar função async. Um `export const` aqui passa
  *  no tsc E na suíte de testes, e quebra `next build` em runtime — já aconteceu neste projeto. */
 const FUTURE_HORIZON_DAYS = 56;
+
+/** As únicas quatro prioridades válidas. `?priority=` chega do query string como string crua — sem
+ *  este filtro, um valor qualquer (`?priority=FOO`) ia direto pro Prisma com `as never` e estourava
+ *  `PrismaClientValidationError` de dentro do Server Component (item 8 do ledger). */
+const PRIORIDADES_VALIDAS = new Set<TaskPriority>(["LOW", "MEDIUM", "HIGH", "URGENT"]);
 
 export type TimelineLine = {
   stageId: string;
@@ -75,11 +81,15 @@ export async function getProjectTimeline(
   // schema e NENHUM caminho do fluxo o escreve — filtrar por ele devolveria sempre vazio, que é
   // como o filtro do kanban antigo estava quebrado sem ninguém perceber.
   const donoProcurado = filters?.mine ? me.id : filters?.assigneeId;
+  const prioridadeValida =
+    filters?.priority && PRIORIDADES_VALIDAS.has(filters.priority as TaskPriority)
+      ? (filters.priority as TaskPriority)
+      : undefined;
 
   const tarefas = await prisma.task.findMany({
     where: {
       projectId,
-      ...(filters?.priority ? { priority: filters.priority as never } : {}),
+      ...(prioridadeValida ? { priority: prioridadeValida } : {}),
       ...(donoProcurado || filters?.teamId
         ? {
             activeStages: {
@@ -112,7 +122,6 @@ export async function getProjectTimeline(
           status: true,
           plannedDate: true,
           completedAt: true,
-          activatedAt: true,
           assignee: { select: { name: true, email: true } },
           team: { select: { name: true } },
           stage: {
@@ -139,11 +148,21 @@ export async function getProjectTimeline(
       })
     : [];
 
+  // O dia real em que cada etapa foi LIBERADA (ficou ACTIVE) — `TaskActiveStage.activatedAt` é
+  // `@default(now())` e nada no código o atualiza, então ele é sempre o dia de CRIAÇÃO da linha
+  // (já coberto por `createdAt`), nunca o da liberação de verdade. Quem grava a liberação de
+  // verdade é `lib/stage-transitions.ts`, em `StageTransition` — uma consulta a mais, em lote.
+  const liberacoes = idsDasTarefas.length
+    ? await prisma.stageTransition.findMany({
+        where: { taskId: { in: idsDasTarefas }, status: "ACTIVE" },
+        select: { taskId: true, stageId: true, at: true },
+      })
+    : [];
+
   const referencias = await getStageReferences([
     ...new Set(tarefas.flatMap((t) => t.activeStages.map((a) => a.stageId))),
   ]);
   const horasDe = (stageId: string) => referencias.get(stageId)?.hours ?? 0;
-  const sourceDe = (stageId: string) => referencias.get(stageId)?.source ?? "declared";
 
   // (tarefa, etapa) → dia → horas, e (tarefa, etapa) → total para descontar da referência. Mapa
   // aninhado, e não chave concatenada: cada etapa lê só os SEUS dias, em vez de varrer a lista
@@ -151,10 +170,20 @@ export async function getProjectTimeline(
   const chave = (taskId: string, stageId: string) => `${taskId}::${stageId}`;
   const feitoPorDia = new Map<string, Map<string, number>>();
   const feitoPorEtapa = new Map<string, number>();
+  // Hora apontada na demanda inteira, sem etapa (`stageId: null` — alcançável por `logTime` quando
+  // a etapa ativa some do `activeStages[0]`, ou pelo "Apontar tempo" fora do guarda de etapa
+  // corrente). Não é de etapa nenhuma, mas é hora de verdade: some na demanda (item 3 do ledger),
+  // por dia, do mesmo jeito que as horas de etapa somam.
+  const semEtapaPorDia = new Map<string, Map<string, number>>();
   for (const a of apontamentos) {
-    if (!a.stageId) continue; // hora lançada na demanda inteira: não é de etapa nenhuma
-    const k = chave(a.taskId, a.stageId);
     const dia = formatISODate(nowInSaoPaulo(a.logDate));
+    if (!a.stageId) {
+      const porDia = semEtapaPorDia.get(a.taskId) ?? new Map<string, number>();
+      porDia.set(dia, (porDia.get(dia) ?? 0) + a.hoursSpent);
+      semEtapaPorDia.set(a.taskId, porDia);
+      continue;
+    }
+    const k = chave(a.taskId, a.stageId);
     const porDia = feitoPorDia.get(k) ?? new Map<string, number>();
     porDia.set(dia, (porDia.get(dia) ?? 0) + a.hoursSpent);
     feitoPorDia.set(k, porDia);
@@ -176,16 +205,52 @@ export async function getProjectTimeline(
     byDay[dia][taskId] ??= { doneHours: 0, pendingHours: 0, lines: [] };
     return byDay[dia][taskId];
   };
-  const marcarMovimento = (dia: string, taskId: string) => {
+  // `movedDays` decide que dias viram LINHA na grade — o projetado entra aí também, senão o futuro
+  // some da tela. `ultimoMovimento` decide a ORDENAÇÃO das demandas, e essa é mais estreita: só
+  // movimento REAL entra. Misturar os dois fazia o dia projetado (que pode cair semanas à frente)
+  // vencer o "ontem" de verdade de uma demanda vencida — a metade da regra de ordenação sem teste
+  // (item 1 do ledger). `real: false` é o único caso hoje: o ramo do futuro.
+  const marcarMovimento = (dia: string, taskId: string, opts: { real: boolean }) => {
     movedDays.add(dia);
+    if (!opts.real) return;
     const anterior = ultimoMovimento.get(taskId);
     if (!anterior || dia > anterior) ultimoMovimento.set(taskId, dia);
   };
 
+  // Liberação de etapa é movimento real, do mesmo jeito que apontamento e conclusão — mas não
+  // depende de percorrer `activeStages` de novo: já veio pronta da consulta em lote.
+  for (const lib of liberacoes) {
+    marcarMovimento(formatISODate(nowInSaoPaulo(lib.at)), lib.taskId, { real: true });
+  }
+
   for (const t of tarefas) {
     // Criação e conclusão da demanda são movimento: é onde a história começa e termina.
-    marcarMovimento(formatISODate(nowInSaoPaulo(t.createdAt)), t.id);
-    if (t.completedAt) marcarMovimento(formatISODate(nowInSaoPaulo(t.completedAt)), t.id);
+    marcarMovimento(formatISODate(nowInSaoPaulo(t.createdAt)), t.id, { real: true });
+    if (t.completedAt) {
+      marcarMovimento(formatISODate(nowInSaoPaulo(t.completedAt)), t.id, { real: true });
+    }
+
+    // Hora apontada na demanda inteira, sem etapa (item 3 do ledger): ainda é hora de verdade,
+    // ainda é movimento real, só não tem pra qual etapa ir.
+    for (const [dia, horas] of semEtapaPorDia.get(t.id) ?? []) {
+      const c = celula(dia, t.id);
+      c.doneHours += horas;
+      c.lines.push({
+        stageId: "",
+        stageOrder: 0,
+        stageName: "",
+        assigneeName: null,
+        hours: horas,
+        estimated: false,
+        state: "done",
+      });
+      marcarMovimento(dia, t.id, { real: true });
+    }
+
+    // Demanda descartada: a HISTÓRIA continua (apontamentos e conclusões acima já valem), mas o
+    // FUTURO dela não — cancelar não deveria continuar prometendo trabalho que ninguém vai fazer
+    // (item 4 do ledger).
+    const descartada = t.status === "CANCELLED" || t.status === "OBSOLETE";
 
     const projecao = projectDemandDays({
       stages: t.activeStages.map(
@@ -214,10 +279,6 @@ export async function getProjectTimeline(
       const referencia = horasDe(a.stageId);
       const pendente = Math.max(0, referencia - (feitoPorEtapa.get(chave(t.id, a.stageId)) ?? 0));
 
-      // Liberar a etapa é movimento: é o dia em que o trabalho passou a ser possível. Sem isso, uma
-      // demanda que andou pela cadeia sem ninguém apontar hora ficaria invisível na história.
-      if (a.activatedAt) marcarMovimento(formatISODate(nowInSaoPaulo(a.activatedAt)), t.id);
-
       // PASSADO: cada dia em que houve hora apontada nesta etapa.
       const diasDaEtapa = feitoPorDia.get(chave(t.id, a.stageId)) ?? new Map<string, number>();
       for (const [dia, horas] of diasDaEtapa) {
@@ -232,7 +293,7 @@ export async function getProjectTimeline(
           estimated: false, // medido
           state: a.status === "COMPLETED" ? "done" : "pending",
         });
-        marcarMovimento(dia, t.id);
+        marcarMovimento(dia, t.id, { real: true });
       }
 
       // A etapa concluída aparece no dia em que fechou, mesmo sem apontamento — é um fato do
@@ -250,9 +311,14 @@ export async function getProjectTimeline(
             state: "done",
           });
         }
-        marcarMovimento(dia, t.id);
+        marcarMovimento(dia, t.id, { real: true });
         continue;
       }
+
+      // Descartada: sem futuro (item 4). Sem pendente: zero é a etapa sem referência cadastrada,
+      // ou já coberta pelo apontamento — nenhum dos dois justifica um bloco sozinho, e um bloco de
+      // 0h vira ruído (linha duplicada com o "~0h" ao lado do apontamento real) (item 5).
+      if (descartada || pendente <= 0) continue;
 
       // FUTURO (e hoje): o pendente, no dia que a projeção deu.
       const diaProjetado = projecao.get(a.id);
@@ -265,17 +331,25 @@ export async function getProjectTimeline(
         stageName: a.stage.name,
         assigneeName: nome,
         hours: pendente,
-        // O futuro é sempre referência, nunca medição.
-        estimated: sourceDe(a.stageId) === "declared" || diaProjetado >= hojeISO,
+        // `diasFuturos` começa em hoje, então todo dia projetado é >= hoje: o futuro é SEMPRE
+        // referência, nunca medição.
+        estimated: true,
         state: a.status === "ACTIVE" ? "pending" : "waiting",
       });
-      marcarMovimento(diaProjetado, t.id);
+      // Projeção, não fato: entra em `movedDays` (a régua tem que mostrar onde o trabalho cai),
+      // mas não em `ultimoMovimento` — ordenar por isso foi o defeito do item 1.
+      marcarMovimento(diaProjetado, t.id, { real: false });
     }
   }
 
+  // Hoje é sempre a borda da janela — nunca só o que sobra dela. Num projeto todo concluído, todo
+  // movimento é passado e `diasComAlgo` para bem antes de hoje: sem o piso/teto aqui, a régua do
+  // meio nunca aparece, e junto some a informação de que o projeto está parado há N dias (item 2).
   const diasComAlgo = [...movedDays].sort();
-  const firstISO = diasComAlgo[0] ?? hojeISO;
-  const lastISO = diasComAlgo[diasComAlgo.length - 1] ?? hojeISO;
+  const menorDia = diasComAlgo[0] ?? hojeISO;
+  const maiorDia = diasComAlgo[diasComAlgo.length - 1] ?? hojeISO;
+  const firstISO = menorDia < hojeISO ? menorDia : hojeISO;
+  const lastISO = maiorDia > hojeISO ? maiorDia : hojeISO;
 
   const demands: TimelineDemand[] = tarefas
     .map((t) => {

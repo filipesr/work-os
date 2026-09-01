@@ -9,13 +9,8 @@
   "noStages": "Nenhuma etapa encontrada. Crie tarefas para este projeto.",
   "filters": {
     "title": "Filtros:",
-    "myTasks": "Minhas Tarefas",
-    "myTeam": "Meu Time",
-    "byAssignee": "Por responsável",
     "allAssignees": "Todos os responsáveis",
-    "byPriority": "Por prioridade",
-    "allPriorities": "Todas as prioridades",
-    "clearFilters": "Limpar filtros"
+    "allPriorities": "Todas as prioridades"
   },
   "priority": {
     "LOW": "Baixa",
@@ -25,13 +20,13 @@
   },
   "unassigned": "Não atribuído",
   "timeline": {
-    "title": "Linha do tempo",
-    "subtitle": "O que já foi feito, o que está em curso e o que vem — por demanda e por dia.",
     "today": "hoje",
+    "dateColumn": "dia",
     "future": "projeção",
     "futureHint": "Acima desta linha é projeção, não promessa: os dias vêm da ordem das etapas e do prazo da demanda.",
     "gap": "{days} dias sem movimento",
     "noDemands": "Nenhuma demanda com esses filtros.",
+    "noStage": "sem etapa",
     "dueOn": "vence {date}",
     "overdue": "venceu {date}",
     "legend": "feito / em curso / não liberada / referência",
