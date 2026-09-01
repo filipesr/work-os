@@ -631,6 +631,14 @@ model TimeLog {
   stage   TemplateStage? @relation(fields: [stageId], references: [id], onUpdate: NoAction, onDelete: SetNull)
   userId  String
   user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // A referência de duração (`getStageReferences`) varre 180 dias desta tabela a CADA conclusão de
+  // etapa — e o apontamento obrigatório faz a tabela crescer justamente a cada conclusão. Sem
+  // índice era varredura completa numa tabela que só cresce.
+  @@index([stageId, logDate])
+  // O apontamento soma o já gravado da etapa da demanda (`aggregate` por taskId+stageId), duas
+  // vezes por conclusão: ao abrir o diálogo e ao validar no envio.
+  @@index([taskId, stageId])
 }
 
 // Log for "Stage Transitions" (Bottleneck Reports)

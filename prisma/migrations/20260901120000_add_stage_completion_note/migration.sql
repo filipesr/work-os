@@ -26,3 +26,9 @@ CREATE INDEX "StageCompletionNote_taskId_idx" ON "StageCompletionNote"("taskId")
 ALTER TABLE "StageCompletionNote" ADD CONSTRAINT "StageCompletionNote_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "StageCompletionNote" ADD CONSTRAINT "StageCompletionNote_stageId_fkey" FOREIGN KEY ("stageId") REFERENCES "TemplateStage"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "StageCompletionNote" ADD CONSTRAINT "StageCompletionNote_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- `TimeLog` não tinha índice nenhum, e é a tabela que esta feature faz crescer a cada conclusão de
+-- etapa. `getStageReferences` varre 180 dias dela por conclusão (por etapa e data), e o apontamento
+-- soma o já gravado da etapa da demanda duas vezes por conclusão (ao abrir o diálogo e ao validar).
+CREATE INDEX "TimeLog_stageId_logDate_idx" ON "TimeLog"("stageId", "logDate");
+CREATE INDEX "TimeLog_taskId_stageId_idx" ON "TimeLog"("taskId", "stageId");
