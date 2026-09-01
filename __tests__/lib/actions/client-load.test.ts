@@ -241,19 +241,20 @@ describe("getClientLoad", () => {
     });
   });
 
-  it("traz as etapas restantes da demanda, mesmo sem depender da que já tem dia", () => {
-    // Fechar a demanda inteira na célula: sem isto, a leitura mostrava só o pedaço com dia e o
-    // gestor não via o tamanho do que ainda vem pela frente. Antes da Task 3 as restantes se
-    // ancoravam no primeiro dia da demanda; agora quem não depende de nada projeta pela âncora
-    // (hoje, ou o primeiro dia visível), então pode cair num dia diferente do de "Roteiro".
+  it("a etapa que não contribui sozinha entra no bloco que a demanda já tem no dia", () => {
+    // Fechar a demanda inteira na célula continua sendo o objetivo — mas quem não contribui (não
+    // fechou, não tem apontamento, não carrega pendente > 0 no dia projetado — aqui porque a
+    // referência de "Aprovação" não está cadastrada, então pendente é zero) só entra se já houver
+    // bloco da demanda naquele dia; não cria um bloco vazio sozinha, e também não some da demanda
+    // que já apareceu.
     vi.mocked(prisma.taskActiveStage.findMany)
-      .mockResolvedValueOnce([row()] as never)
       .mockResolvedValueOnce([
+        row(),
         row({
           id: "as9",
           stageId: "s9",
           status: "INACTIVE",
-          plannedDate: null,
+          plannedDate: new Date("2026-09-08T00:00:00Z"),
           assignee: null,
           team: null,
           stage: {
@@ -263,21 +264,17 @@ describe("getClientLoad", () => {
             dependents: [],
           },
         }),
-      ] as never);
+      ] as never)
+      .mockResolvedValueOnce([] as never);
 
     return getClientLoad(SEGUNDA).then((carga) => {
-      const dias = carga.clients[0].byDay;
-      // "Roteiro" tem dia planejado (segunda-feira da linha de base é 2026-09-08); "Aprovação" não
-      // depende dela, então projeta pela âncora — o primeiro dia visível da semana, já que hoje
-      // está fora dela.
-      expect(dias["2026-09-08"].tasks[0].stages.map((e) => e.stageName)).toEqual(["Roteiro"]);
-      const restante = dias["2026-09-07"].tasks[0].stages[0];
-      expect(restante.stageName).toBe("Aprovação");
+      const bloco = carga.clients[0].byDay["2026-09-08"].tasks[0];
+      expect(bloco.stages.map((e) => e.stageName)).toEqual(["Roteiro", "Aprovação"]);
+      const restante = bloco.stages[1];
       expect(restante.state).toBe("waiting");
       expect(restante.assigneeName).toBe("Atendimento");
-      // Não liberada não soma, aqui como em toda tela.
-      expect(dias["2026-09-07"].tasks[0].pendingHours).toBe(0);
-      expect(dias["2026-09-08"].tasks[0].pendingHours).toBe(2);
+      // "Aprovação" não soma (não liberada, e sem referência cadastrada); só "Roteiro" pesa.
+      expect(bloco.pendingHours).toBe(2);
     });
   });
 
@@ -395,10 +392,21 @@ describe("getClientLoad", () => {
 
   it("a demanda NÃO aparece em dia sem nada", () => {
     // Era o defeito da âncora antiga por outro ângulo: a demanda ocupando dias em que não há nem
-    // trabalho registrado nem trabalho projetado.
+    // trabalho registrado nem trabalho projetado. Aqui a segunda etapa da MESMA demanda ("s9", sem
+    // referência cadastrada — pendente zero) não fecha, não aponta e não carrega pendente no seu
+    // próprio dia projetado (2026-09-07): sozinha, ela não pode abrir um bloco vazio lá, e como não
+    // há bloco algum nesse dia (a outra etapa está em 2026-09-09), ela simplesmente não aparece.
     vi.mocked(prisma.taskActiveStage.findMany)
       .mockResolvedValueOnce([row({ plannedDate: new Date("2026-09-09T00:00:00Z") })] as never)
-      .mockResolvedValueOnce([] as never);
+      .mockResolvedValueOnce([
+        row({
+          id: "as9",
+          stageId: "s9",
+          status: "INACTIVE",
+          plannedDate: null,
+          stage: { name: "Aprovação", order: 2, defaultTeam: null, dependents: [] },
+        }),
+      ] as never);
 
     return getClientLoad(SEGUNDA).then((carga) => {
       const dias = carga.clients[0].byDay;
@@ -423,6 +431,27 @@ describe("getClientLoad", () => {
       const bloco = carga.clients[0].byDay["2026-09-08"].tasks[0];
       expect(bloco.dueDateISO).toBe("2026-09-10");
       expect(bloco.overdue).toBe(false);
+    });
+  });
+
+  it("vencimento passado marca a demanda como vencida", () => {
+    // Sem este caso, uma regressão que devolvesse `overdue: false` sempre passaria despercebida.
+    // O vencimento de 2020 é a parede: mesmo com `plannedDate` humano em 2026-09-08, a projeção
+    // clampa para a âncora (o primeiro dia visível, já que hoje está fora desta semana) — vencida
+    // não tem para onde adiar.
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        row({
+          plannedDate: new Date("2026-09-08T00:00:00Z"),
+          task: tarefa({ dueDate: new Date("2020-01-01T00:00:00Z") }),
+        }),
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      const bloco = carga.clients[0].byDay["2026-09-07"].tasks[0];
+      expect(bloco.dueDateISO).toBe("2020-01-01");
+      expect(bloco.overdue).toBe(true);
     });
   });
 });

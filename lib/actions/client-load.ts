@@ -79,8 +79,11 @@ export type TaskBlock = {
 export type ClientDay = {
   /** Apontamento do CLIENTE inteiro neste dia, somado direto do `TimeLog` — não a soma dos
    *  `TaskBlock.doneHours` dos blocos exibidos aqui. Desde a Task 3 a etapa passa a aparecer também
-   *  no dia em que foi trabalhada (além do dia projetado/concluído), e por isso os dois números
-   *  voltam a bater na prática. */
+   *  no dia em que foi trabalhada (além do dia projetado/concluído, e mesmo quando o dia projetado
+   *  cai fora da semana em exibição), e por isso os dois números batem no caso comum. A exceção que
+   *  sobra: um apontamento cuja etapa não aparece em NENHUMA das duas consultas desta semana (ex.:
+   *  ficou de fora dos filtros que trazem `linhas`/`restantes`) ainda soma aqui sem ter bloco para
+   *  mostrá-lo — não há linha para encaixar o que não foi buscado. */
   doneHours: number;
   pendingHours: number;
   tasks: TaskBlock[];
@@ -279,12 +282,25 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
   // projeção usam.
   type LinhaProjetavel = (typeof linhas)[number] | (typeof restantes)[number];
 
-  const encaixar = (row: LinhaProjetavel, dia: string, contaPendente = true) => {
+  const encaixar = (
+    row: LinhaProjetavel,
+    dia: string,
+    opcoes: { contaPendente?: boolean; apenasSeExistir?: boolean } = {}
+  ) => {
+    const { contaPendente = true, apenasSeExistir = false } = opcoes;
     const cliente = row.task.project.client;
-    const acc = porCliente.get(cliente.id) ?? { name: cliente.name, dias: new Map() };
-    const doDia = acc.dias.get(dia) ?? new Map<string, TaskBlock>();
+    const accExistente = porCliente.get(cliente.id);
+    const diaExistente = accExistente?.dias.get(dia);
+    const blocoExistente = diaExistente?.get(row.task.id);
+    // Quem não contribui nada só entra se a demanda já tiver bloco neste dia — a célula continua
+    // fechando a demanda inteira, mas sem inventar um bloco vazio para quem não fechou, não apontou
+    // e não carrega pendente aqui.
+    if (apenasSeExistir && !blocoExistente) return;
+
+    const acc = accExistente ?? { name: cliente.name, dias: new Map() };
+    const doDia = diaExistente ?? new Map<string, TaskBlock>();
     const vencimento = row.task.dueDate ? formatISODate(row.task.dueDate) : null;
-    const bloco = doDia.get(row.task.id) ?? {
+    const bloco = blocoExistente ?? {
       taskId: row.task.id,
       projectName: row.task.project.name,
       taskTitle: row.task.title,
@@ -377,6 +393,33 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
     for (const [id, dia] of projecao) diaProjetado.set(id, dia);
   }
 
+  // Três motivos, e só três, para a demanda aparecer num dia: a etapa FECHOU ali, houve
+  // APONTAMENTO ali, ou a projeção põe PENDENTE ali (no dia projetado dela, maior que zero — zero é
+  // o caso da etapa sem referência cadastrada, ou já coberta pelo apontamento: nenhum dos dois
+  // justifica sozinho um bloco). Quem não contribui por nenhum destes três motivos não cria bloco —
+  // ela só entra se a demanda já tiver um, na segunda passagem abaixo.
+  const contribuiNoDia = (row: LinhaProjetavel, dia: string): boolean => {
+    if (row.status === "COMPLETED") return true; // fechou — só é avaliada no dia em que fechou
+    const feitoNoDia = realizadoPorEtapaDia.get(chave(row.task.id, row.stageId, dia)) ?? 0;
+    if (feitoNoDia > 0) return true; // apontamento ali
+    if (diaProjetado.get(row.id) !== dia) return false; // não é o dia em que a projeção a colocaria
+    const referencia = horasDe(row.stageId);
+    const pendente = Math.max(
+      0,
+      referencia - (realizadoPorEtapa.get(chave(row.task.id, row.stageId)) ?? 0)
+    );
+    return pendente > 0; // pendente ali
+  };
+
+  // Primeira passagem: cria bloco só quem contribui. Precisa ser uma passagem própria — decidir
+  // "cria ou só entra" olhando pra uma única linha por vez deixaria o resultado à mercê da ORDEM em
+  // que as linhas chegam (a de quem não contribui podendo processar antes da que abre o bloco).
+  //
+  // Para cada linha, guarda-se também o par (linha, dia principal) para a segunda passagem — os
+  // dias extras por apontamento (`outroDia` abaixo) sempre contribuem por construção (o laço só os
+  // visita quando há apontamento ali), então não precisam de segunda chance.
+  const encaixesPrincipais: { row: LinhaProjetavel; dia: string }[] = [];
+
   for (const row of [...linhas, ...restantes]) {
     const concluida = row.status === "COMPLETED";
     // Concluída vale pelo dia em que fechou; o resto, pelo dia PROJETADO. `null` quer dizer que a
@@ -387,18 +430,30 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
         ? formatISODate(nowInSaoPaulo(row.completedAt))
         : null
       : (diaProjetado.get(row.id) ?? null);
-    if (!dia || !days.includes(dia)) continue;
-    encaixar(row, dia);
+
+    if (dia && days.includes(dia)) {
+      encaixesPrincipais.push({ row, dia });
+      if (contribuiNoDia(row, dia)) encaixar(row, dia);
+    }
 
     // O apontamento do passado também põe a etapa nos dias em que ela foi trabalhada, mesmo que a
-    // projeção a coloque adiante. É o "trabalhei 2h ontem e não terminei" da spec. `contaPendente`
-    // falso: o pendente desta etapa já foi contado no dia projetado acima.
+    // projeção a coloque adiante — e MESMO que o dia projetado tenha caído fora da semana (`dia`
+    // null ou fora de `days`): senão as horas continuam somando em `ClientDay.doneHours` sem
+    // nenhum bloco mostrá-las, o buraco que esta task existe para tapar. É o "trabalhei 2h ontem e
+    // não terminei" da spec. `contaPendente` falso: o pendente desta etapa, se houver, já foi
+    // contado no dia projetado acima (ou não cabe na semana, e então não há onde contá-lo).
     for (const outroDia of days) {
       if (outroDia === dia) continue;
       if ((realizadoPorEtapaDia.get(chave(row.task.id, row.stageId, outroDia)) ?? 0) > 0) {
-        encaixar(row, outroDia, false);
+        encaixar(row, outroDia, { contaPendente: false });
       }
     }
+  }
+
+  // Segunda passagem: quem não contribuiu sozinho no dia principal só entra se a demanda já tiver
+  // bloco lá — fechando a demanda inteira na célula, sem inventar uma aparição vazia.
+  for (const { row, dia } of encaixesPrincipais) {
+    if (!contribuiNoDia(row, dia)) encaixar(row, dia, { apenasSeExistir: true });
   }
 
   const clients: ClientWeek[] = [...porCliente.entries()].map(([clientId, acc]) => {
