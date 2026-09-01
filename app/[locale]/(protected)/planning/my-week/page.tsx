@@ -5,6 +5,7 @@ import { AlertTriangle, PartyPopper } from "lucide-react";
 import { getSessionUser } from "@/lib/permissions";
 import { getMyWeek } from "@/lib/actions/my-week";
 import { DAY_VISUAL_HOURS, DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
+import { DayDone } from "@/components/planning/DayDone";
 import {
   mondayOfWeek,
   parseWeekParam,
@@ -64,7 +65,15 @@ export default async function MyWeekPage({
       />
 
       <p className="mb-4 text-sm text-muted-foreground">
-        {t("capacity", { used: semana.usedHours.toFixed(1), total: semana.weeklyHours })}
+        {/* Só o que a semana TEM: sem nada apontado, o número segue o de sempre. Feito e previsto
+            nunca se somam — um é medição, o outro estimativa. */}
+        {semana.doneHours > 0
+          ? t("capacityWithDone", {
+              done: semana.doneHours.toFixed(1),
+              used: semana.usedHours.toFixed(1),
+              total: semana.weeklyHours,
+            })
+          : t("capacity", { used: semana.usedHours.toFixed(1), total: semana.weeklyHours })}
         {semana.weeklyHours === DEFAULT_WEEKLY_HOURS && (
           <span className="ml-2 text-warning">
             {t("noCapacity", { hours: DEFAULT_WEEKLY_HOURS })}
@@ -118,11 +127,25 @@ export default async function MyWeekPage({
             <SectionCard
               key={d}
               title={`${d.slice(8, 10)}/${d.slice(5, 7)}`}
-              subtitle={`${dia.usedHours.toFixed(1)}h / ${DAY_VISUAL_HOURS}h`}
+              // A célula diz só o que ela tem: dia futuro não tem feito, dia entregue não tem
+              // previsto. "0.0h" nos dois seria ruído com aparência de informação.
+              subtitle={[
+                dia.doneHours > 0 ? t("doneHours", { hours: dia.doneHours.toFixed(1) }) : null,
+                dia.usedHours > 0 || dia.doneHours === 0
+                  ? `${dia.usedHours.toFixed(1)}h / ${DAY_VISUAL_HOURS}h`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
               className={hoje ? "border-primary/40" : undefined}
             >
+              <DayDone done={dia.done} />
               {dia.slots.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("empty")}</p>
+                // Dia sem nada por fazer E sem nada feito é dia vazio; com o feito acima, "nada
+                // programado" viraria contradição na mesma célula.
+                dia.done.length === 0 && (
+                  <p className="text-sm text-muted-foreground">{t("empty")}</p>
+                )
               ) : (
                 <ul className="space-y-2">
                   {dia.slots.map((s) => {

@@ -125,6 +125,8 @@
     "teamFilter": "Equipo",
     "allTeams": "Todos los equipos",
     "capacity": "{used}h de {total}h",
+    "doneHours": "hecho {hours}h",
+    "capacityWithDone": "hecho {done}h · previsto {used}h / {total}h",
     "dayRuler": "regla de {hours}h: referencia visual, no objetivo",
     "estimated": "estimación",
     "conflictReasonInactive": "la etapa anterior todavía no ha terminado",
@@ -152,6 +154,8 @@
     "subtitle": "Lo que tienes hoy, en el orden que tú elijas.",
     "weekOf": "Semana del {date}",
     "capacity": "{used}h de {total}h",
+    "doneHours": "hecho {hours}h",
+    "capacityWithDone": "hecho {done}h · previsto {used}h / {total}h",
     "dayRuler": "regla de {hours}h: referencia visual, no objetivo",
     "estimated": "estimación",
     "waiting": "no liberada",
@@ -200,5 +204,8 @@
     "legend": "hecho / por hacer",
     "waiting": "no liberada",
     "unassigned": "sin asignar"
+  },
+  "done": {
+    "noHours": "sin registro de horas"
   }
 }

@@ -7,6 +7,7 @@ import { requireManagerOrAdmin } from "@/lib/permissions";
 import { formatISODate, mondayOfWeek, todayInSaoPaulo } from "@/lib/dates";
 import { buildDayQueue, type QueueItemInput, type QueueSlot } from "@/lib/planning/day-queue";
 import { getStageReferences } from "@/lib/planning/stage-reference";
+import { getWeekDone, type DoneLine } from "@/lib/planning/week-done";
 import { effectiveStageTeam, stageTeamWhere } from "@/lib/stage-team";
 import { isEffectiveTeamMember } from "@/lib/stage-assignment-helpers";
 import { DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
@@ -29,13 +30,26 @@ import { applyDayReorder } from "@/lib/planning/reorder";
 // batido. Os dois valores vivem em `lib/planning/week-capacity.ts`; quem precisa deles importa de
 // lá diretamente, não daqui.
 
-export type DayView = { slots: QueueSlot[]; usedHours: number; nextRunnableId: string | null };
+export type DayView = {
+  slots: QueueSlot[];
+  usedHours: number;
+  nextRunnableId: string | null;
+  /** O que já foi FEITO no dia: horas apontadas nele e etapas que fecharam nele. Separado dos
+   *  `slots` porque são grandezas diferentes — uma é medição, a outra estimativa —, e porque o
+   *  feito não se reordena: já aconteceu. */
+  done: DoneLine[];
+  /** Total apontado no dia, inclusive a hora sem etapa (que não cabe na lista por etapa). */
+  doneHours: number;
+};
 
 export type PersonWeek = {
   userId: string;
   name: string;
   weeklyHours: number;
   usedHours: number;
+  /** Horas APONTADAS na semana. Ao lado de `usedHours` e nunca somada a ela: uma é o que aconteceu,
+   *  a outra o que se espera que aconteça. Um número só esconderia qual metade é chute. */
+  doneHours: number;
   byDay: Record<string, DayView>;
 };
 
@@ -195,6 +209,14 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
     }),
   ]);
 
+  // O feito da semana. Sem isto a grade só mostrava o que FALTA: concluir uma etapa a apagava do
+  // dia, e a carga da pessoa encolhia conforme ela entregava — quem terminou tudo na segunda
+  // aparecia com a segunda vazia, e virava o candidato óbvio a receber mais.
+  const feito = await getWeekDone(
+    people.map((u) => u.id),
+    days
+  );
+
   const referencias = await getStageReferences([
     ...new Set([...programados.map((p) => p.stageId), ...livres.map((l) => l.stageId)]),
   ]);
@@ -247,15 +269,20 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
   const peopleOut: PersonWeek[] = people.map((u) => {
     const byDay: Record<string, DayView> = {};
     let usedHours = 0;
+    let doneHours = 0;
     for (const dia of days) {
       const itens = porPessoaEDia.get(u.id)?.get(dia) ?? [];
       const fila = buildDayQueue(itens);
+      const feitoNoDia = feito.hours.get(u.id)?.get(dia) ?? 0;
       byDay[dia] = {
         slots: fila.slots,
         usedHours: fila.usedHours,
         nextRunnableId: fila.nextRunnableId,
+        done: feito.lines.get(u.id)?.get(dia) ?? [],
+        doneHours: feitoNoDia,
       };
       usedHours += fila.usedHours;
+      doneHours += feitoNoDia;
     }
     return {
       userId: u.id,
@@ -264,6 +291,7 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
       name: u.name ?? u.email ?? u.id,
       weeklyHours: u.weeklyCapacityHours ?? DEFAULT_WEEKLY_HOURS,
       usedHours,
+      doneHours,
       byDay,
     };
   });

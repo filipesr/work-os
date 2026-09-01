@@ -11,6 +11,11 @@ vi.mock("@/lib/planning/stage-reference", () => ({
   getStageReferences: vi.fn().mockResolvedValue(new Map()),
 }));
 
+vi.mock("@/lib/planning/week-done", () => ({
+  // O feito da semana tem leitura e testes próprios (`__tests__/lib/planning/week-done.test.ts`);
+  // aqui ele só não pode ir ao banco. Cada caso que precisa dele sobrescreve.
+  getWeekDone: vi.fn().mockResolvedValue({ lines: new Map(), hours: new Map() }),
+}));
 vi.mock("@/lib/prisma", () => ({
   default: {
     user: { findMany: vi.fn() },
@@ -23,6 +28,7 @@ import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { getWeekPlanning } from "@/lib/actions/week-planning";
+import { getWeekDone } from "@/lib/planning/week-done";
 // `DEFAULT_WEEKLY_HOURS` não é mais exportado por `week-planning.ts`: um arquivo `"use server"` só
 // pode exportar função assíncrona, e mesmo o re-export do valor quebrava `next build` em runtime.
 // Ver lib/planning/week-capacity.ts.
@@ -251,5 +257,39 @@ describe("getWeekPlanning", () => {
       ).where;
       expect(where.task?.status).toEqual({ notIn: ["OBSOLETE", "CANCELLED"] });
     });
+  });
+
+  it("a grade mostra o feito do dia — a carga não encolhe quando a pessoa entrega", async () => {
+    // O defeito: `status: not COMPLETED` apagava a etapa concluída do dia, então quem terminou tudo
+    // na segunda aparecia com a segunda vazia e virava o candidato óbvio a receber mais.
+    vi.mocked(getWeekDone).mockResolvedValueOnce({
+      lines: new Map([
+        [
+          "u1",
+          new Map([
+            [
+              "2026-08-31",
+              [
+                {
+                  stageId: "s1",
+                  taskId: "t1",
+                  taskTitle: "Vídeo institucional",
+                  stageName: "Roteiro",
+                  hours: 2.5,
+                  completed: true,
+                },
+              ],
+            ],
+          ]),
+        ],
+      ]),
+      hours: new Map([["u1", new Map([["2026-08-31", 2.5]])]]),
+    });
+
+    const r = await getWeekPlanning("2026-08-31");
+    const pessoa = r.people.find((p) => p.userId === "u1");
+    expect(pessoa?.byDay["2026-08-31"].done[0]).toMatchObject({ stageName: "Roteiro", hours: 2.5 });
+    expect(pessoa?.byDay["2026-08-31"].doneHours).toBe(2.5);
+    expect(pessoa?.doneHours).toBe(2.5);
   });
 });

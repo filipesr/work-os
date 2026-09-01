@@ -15,6 +15,11 @@ vi.mock("@/lib/planning/stage-reference", () => ({
     .fn()
     .mockResolvedValue(new Map([["s1", { hours: 2, source: "observed" }]])),
 }));
+vi.mock("@/lib/planning/week-done", () => ({
+  // O feito da semana tem leitura e testes próprios (`__tests__/lib/planning/week-done.test.ts`);
+  // aqui ele só não pode ir ao banco. Cada caso que precisa dele sobrescreve.
+  getWeekDone: vi.fn().mockResolvedValue({ lines: new Map(), hours: new Map() }),
+}));
 vi.mock("@/lib/prisma", () => ({
   default: {
     user: { findUnique: vi.fn() },
@@ -25,6 +30,7 @@ vi.mock("@/lib/prisma", () => ({
 import prisma from "@/lib/prisma";
 import { formatISODate, mondayOfWeek, todayInSaoPaulo } from "@/lib/dates";
 import { getMyWeek } from "@/lib/actions/my-week";
+import { getWeekDone } from "@/lib/planning/week-done";
 
 const SEGUNDA = "2026-09-07";
 
@@ -322,5 +328,42 @@ describe("getMyWeek: fim do dia e convite", () => {
       const semDia = or.find((r) => r.plannedDate === null) as { status?: string };
       expect(semDia?.status).toBe("ACTIVE");
     });
+  });
+
+  it("mostra o que já foi FEITO no dia — concluir não pode apagar do dia", async () => {
+    // Antes daqui a leitura filtrava `status: not COMPLETED`: concluir a etapa a apagava, e a
+    // semana da pessoa esvaziava conforme ela entregava. O feito é medido (apontamento), o
+    // previsto é referência, e os dois ficam lado a lado sem se somar.
+    vi.mocked(getWeekDone).mockResolvedValueOnce({
+      lines: new Map([
+        [
+          "ana",
+          new Map([
+            [
+              SEGUNDA,
+              [
+                {
+                  stageId: "s1",
+                  taskId: "t1",
+                  taskTitle: "Vídeo institucional",
+                  stageName: "Roteiro",
+                  hours: 2.5,
+                  completed: true,
+                },
+              ],
+            ],
+          ]),
+        ],
+      ]),
+      hours: new Map([["ana", new Map([[SEGUNDA, 2.5]])]]),
+    });
+
+    const semana = await getMyWeek(SEGUNDA);
+    expect(semana.byDay[SEGUNDA].done).toHaveLength(1);
+    expect(semana.byDay[SEGUNDA].done[0]).toMatchObject({ stageName: "Roteiro", completed: true });
+    expect(semana.byDay[SEGUNDA].doneHours).toBe(2.5);
+    // O total da semana soma os dias, e NÃO entra em `usedHours` — as duas grandezas são
+    // diferentes, e um número só esconderia qual metade é estimativa.
+    expect(semana.doneHours).toBe(2.5);
   });
 });

@@ -25,6 +25,7 @@ import prisma from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { ScheduleDialog } from "./ScheduleDialog";
+import { DayDone } from "@/components/planning/DayDone";
 import { WeekControls } from "./WeekControls";
 import { OrderControls } from "./OrderControls";
 
@@ -156,7 +157,18 @@ export default async function WeekPlanningPage({
                     <td className="whitespace-nowrap px-4 py-3">
                       <p className="text-sm font-semibold text-foreground">{p.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {t("capacity", { used: p.usedHours.toFixed(1), total: p.weeklyHours })}
+                        {/* Só o que a linha TEM: sem nada apontado, o número segue o de sempre.
+                            Feito e previsto nunca se somam — um é medição, o outro estimativa. */}
+                        {p.doneHours > 0
+                          ? t("capacityWithDone", {
+                              done: p.doneHours.toFixed(1),
+                              used: p.usedHours.toFixed(1),
+                              total: p.weeklyHours,
+                            })
+                          : t("capacity", {
+                              used: p.usedHours.toFixed(1),
+                              total: p.weeklyHours,
+                            })}
                       </p>
                       {p.weeklyHours === DEFAULT_WEEKLY_HOURS && (
                         <p className="text-xs text-warning">
@@ -170,12 +182,24 @@ export default async function WeekPlanningPage({
                         <td key={d} className="px-4 py-3">
                           {/* A régua de 8h é VISUAL e a tela diz isso — número em barra vira meta na
                             cabeça de quem olha, mesmo sem ninguém ter decidido isso. */}
+                          {/* A célula diz só o que ela tem. Dia futuro não tem feito; dia passado
+                              e entregue não tem previsto — mostrar "0.0h" nos dois casos seria
+                              ruído com aparência de informação. A régua de 8h acompanha o
+                              PREVISTO, que é o que ela mede. */}
                           <p
                             className="mb-1 text-xs text-muted-foreground"
                             title={t("dayRuler", { hours: DAY_VISUAL_HOURS })}
                           >
-                            {dia.usedHours.toFixed(1)}h / {DAY_VISUAL_HOURS}h
+                            {dia.doneHours > 0 && (
+                              <span className="text-success">
+                                {t("doneHours", { hours: dia.doneHours.toFixed(1) })}
+                              </span>
+                            )}
+                            {dia.doneHours > 0 && dia.usedHours > 0 && " · "}
+                            {(dia.usedHours > 0 || dia.doneHours === 0) &&
+                              `${dia.usedHours.toFixed(1)}h / ${DAY_VISUAL_HOURS}h`}
                           </p>
+                          <DayDone done={dia.done} />
                           <ul className="space-y-1">
                             {dia.slots.map((s) => {
                               // Envelhecimento DESTA etapa contra a referência da classe — leitura

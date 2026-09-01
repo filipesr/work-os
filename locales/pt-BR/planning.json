@@ -125,6 +125,8 @@
     "teamFilter": "Time",
     "allTeams": "Todos os times",
     "capacity": "{used}h de {total}h",
+    "doneHours": "feito {hours}h",
+    "capacityWithDone": "feito {done}h · previsto {used}h / {total}h",
     "dayRuler": "régua de {hours}h — referência visual, não meta",
     "estimated": "estimativa",
     "conflictReasonInactive": "a etapa anterior ainda não terminou",
@@ -152,6 +154,8 @@
     "subtitle": "O que está no seu dia, na ordem que você escolher.",
     "weekOf": "Semana de {date}",
     "capacity": "{used}h de {total}h",
+    "doneHours": "feito {hours}h",
+    "capacityWithDone": "feito {done}h · previsto {used}h / {total}h",
     "dayRuler": "régua de {hours}h — referência visual, não meta",
     "estimated": "estimativa",
     "waiting": "não liberada",
@@ -200,5 +204,8 @@
     "legend": "feito / por fazer",
     "waiting": "não liberada",
     "unassigned": "não atribuído"
+  },
+  "done": {
+    "noHours": "sem apontamento"
   }
 }

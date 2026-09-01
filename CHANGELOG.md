@@ -164,6 +164,23 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### 🐛 Corrigido
 
+#### As duas telas de semana escondiam o que já tinha sido feito
+
+- **Concluir uma etapa a apagava do dia.** A mesa (`/planning/week`) e a semana da pessoa
+  (`/planning/my-week`) filtravam `status: not COMPLETED`, então a carga ENCOLHIA conforme a pessoa
+  entregava: quem terminou tudo na segunda aparecia com a segunda vazia — e virava o candidato
+  óbvio a receber mais. Era o mesmo defeito que a carga por cliente já tinha corrigido, justamente
+  nas duas telas onde a distribuição acontece.
+- **A regra de qual dia é a mesma das outras telas:** a hora cai no dia em que foi apontada, e o `✓`
+  no dia em que a etapa fechou. Etapa programada para segunda e concluída na quarta some da segunda
+  — e é isso mesmo: a segunda passa a mostrar "previsto 6h" sem nenhum feito, que denuncia o atraso
+  melhor do que arrastar o cartão de lugar.
+- **Feito e previsto nunca se somam.** Um é medição (apontamento), o outro é estimativa
+  (referência); um número só esconderia qual metade é chute. E a célula mostra só o que ela tem:
+  dia futuro não exibe "feito 0h", dia entregue não exibe "previsto 0h".
+- **A leitura é uma só** (`lib/planning/week-done.ts`), usada pelas duas telas: a pessoa não pode
+  ver da própria semana um número diferente do que o gestor vê dela.
+
 #### A mesa semanal programava trabalho para fora da equipe
 
 - **Era a única porta do sistema que não validava.** Dava para programar trabalho de vídeo para

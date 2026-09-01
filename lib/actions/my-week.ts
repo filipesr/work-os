@@ -14,6 +14,7 @@ import {
 } from "@/lib/dates";
 import { buildDayQueue, type QueueItemInput } from "@/lib/planning/day-queue";
 import { getStageReferences } from "@/lib/planning/stage-reference";
+import { getWeekDone } from "@/lib/planning/week-done";
 import { weekDays } from "@/lib/planning/week-days";
 import { notDiscardedStageWhere } from "@/lib/task-availability";
 import { isAboveOwnPace, PACE_HISTORY_WEEKS } from "@/lib/planning/own-pace";
@@ -47,6 +48,8 @@ export type MyWeek = {
   todayISO: string | null;
   weeklyHours: number;
   usedHours: number;
+  /** Horas APONTADAS na semana — ao lado de `usedHours`, nunca somada a ela. */
+  doneHours: number;
   byDay: Record<string, DayView>;
   pool: PoolItem[];
   /** O próximo trabalho da semana, quando o dia de hoje já não tem nada executável. */
@@ -208,16 +211,25 @@ export async function getMyWeek(mondayISO: string): Promise<MyWeek> {
     porDia.set(dia, doDia);
   }
 
+  // O MESMO feito que a mesa do gestor mostra — mesma função, mesma regra de dia. A pessoa não
+  // pode ver da própria semana um número diferente do que o gestor vê dela.
+  const feito = await getWeekDone([me.id], days);
+
   const byDay: Record<string, DayView> = {};
   let usedHours = 0;
+  let doneHours = 0;
   for (const dia of days) {
     const fila = buildDayQueue(porDia.get(dia) ?? []);
+    const feitoNoDia = feito.hours.get(me.id)?.get(dia) ?? 0;
     byDay[dia] = {
       slots: fila.slots,
       usedHours: fila.usedHours,
       nextRunnableId: fila.nextRunnableId,
+      done: feito.lines.get(me.id)?.get(dia) ?? [],
+      doneHours: feitoNoDia,
     };
     usedHours += fila.usedHours;
+    doneHours += feitoNoDia;
   }
 
   // "Dia cumprido" é uma afirmação sobre trabalho FEITO, e um dia vazio não cumpriu nada: sem o
@@ -269,6 +281,7 @@ export async function getMyWeek(mondayISO: string): Promise<MyWeek> {
     todayISO,
     weeklyHours: eu?.weeklyCapacityHours ?? DEFAULT_WEEKLY_HOURS,
     usedHours,
+    doneHours,
     byDay,
     pool: livres.map((l) => ({
       id: l.id,
