@@ -3,7 +3,6 @@ import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { getProjectTimeline } from "@/lib/actions/project-timeline";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { SectionCard } from "@/components/ui/SectionCard";
 import { auth } from "@/lib/auth";
 import { TimelineFilters } from "./TimelineFilters";
 import { ProjectTimeline } from "./ProjectTimeline";
@@ -101,9 +100,9 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
         />
       </div>
 
-      <SectionCard bodyClassName="p-0">
-        <ProjectTimeline data={data} />
-      </SectionCard>
+      {/* ProjectTimeline monta seu próprio card ao redor só da tabela — legenda e futureHint
+          ficam fora dele, no mesmo container com padding da página, igual à carga por cliente. */}
+      <ProjectTimeline data={data} />
     </div>
   );
 }

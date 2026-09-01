@@ -25,103 +25,123 @@ export async function ProjectTimeline({ data }: { data: Timeline }) {
     return <p className="p-4 text-sm text-muted-foreground">{t("noDemands")}</p>;
   }
 
+  // "feito / em curso / não liberada / referência" — os rótulos vêm do locale, os glifos e as
+  // cores ficam no código para bater com as mesmas cores usadas nas células (mesma gramática
+  // visual da carga por cliente).
+  const [legendDone, legendPending, legendWaiting, legendReference] = t("legend").split(" / ");
+
   return (
-    <div className="overflow-x-auto">
-      <p className="mb-2 text-xs text-muted-foreground">{t("legend")}</p>
-      <table className="min-w-full table-fixed border-separate border-spacing-0 text-xs">
-        <thead>
-          <tr>
-            <th className="sticky left-0 z-10 w-20 bg-card px-2 py-2 text-left font-bold uppercase text-foreground">
-              {t("today")}
-            </th>
-            {data.demands.map((d) => (
-              <th
-                key={d.taskId}
-                className="min-w-[12rem] px-2 py-2 text-left font-bold text-foreground"
-              >
-                <span className="block truncate" title={d.title}>
-                  {d.title}
-                </span>
-                {d.dueDateISO && (
-                  <span className={d.overdue ? "text-danger" : "text-muted-foreground"}>
-                    {t(d.overdue ? "overdue" : "dueOn", { date: ddmm(d.dueDateISO) })}
-                  </span>
-                )}
+    <>
+      <p className="mb-2 text-xs text-muted-foreground">
+        <span className="text-success">✓</span> {legendDone} ·{" "}
+        <span className="text-primary">▶</span> {legendPending} · <span>·</span> {legendWaiting} ·{" "}
+        <span className="text-muted-foreground">~</span> {legendReference}
+      </p>
+      <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+        <table className="min-w-full table-fixed border-separate border-spacing-0 text-xs">
+          <thead>
+            <tr>
+              <th className="sticky left-0 z-10 w-20 bg-card px-2 py-2 text-left font-bold uppercase text-foreground">
+                {t("today")}
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.rows.map((row) => {
-            if (row.kind === "gap") {
-              // O vão é a informação principal desta tela: um trecho parado no meio do projeto é o
-              // que ninguém enxergava antes, e costuma ser a explicação do atraso.
+              {data.demands.map((d) => (
+                <th
+                  key={d.taskId}
+                  className="min-w-[12rem] px-2 py-2 text-left font-bold text-foreground"
+                >
+                  <span className="block truncate" title={d.title}>
+                    {d.title}
+                  </span>
+                  {d.dueDateISO && (
+                    <span className={d.overdue ? "text-danger" : "text-muted-foreground"}>
+                      {t(d.overdue ? "overdue" : "dueOn", { date: ddmm(d.dueDateISO) })}
+                    </span>
+                  )}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.rows.map((row) => {
+              if (row.kind === "gap") {
+                // O vão é a informação principal desta tela: um trecho parado no meio do projeto é o
+                // que ninguém enxergava antes, e costuma ser a explicação do atraso.
+                return (
+                  <tr key={`gap-${row.fromISO}`}>
+                    <td
+                      colSpan={data.demands.length + 1}
+                      className="border-y border-dashed border-border bg-muted/30 px-2 py-1 text-center text-[11px] text-muted-foreground"
+                    >
+                      {t("gap", { days: row.days })} · {ddmm(row.fromISO)} – {ddmm(row.toISO)}
+                    </td>
+                  </tr>
+                );
+              }
+              const futuro = row.dayISO > data.todayISO;
+              const hoje = row.dayISO === data.todayISO;
               return (
-                <tr key={`gap-${row.fromISO}`}>
+                <tr key={row.dayISO} className={futuro ? "opacity-70" : undefined}>
                   <td
-                    colSpan={data.demands.length + 1}
-                    className="border-y border-dashed border-border bg-muted/30 px-2 py-1 text-center text-[11px] text-muted-foreground"
+                    className={`sticky left-0 z-10 whitespace-nowrap px-2 py-1 align-top ${
+                      hoje
+                        ? "border-t-2 border-primary bg-card font-semibold text-primary"
+                        : "bg-card text-muted-foreground"
+                    }`}
                   >
-                    {t("gap", { days: row.days })} · {ddmm(row.fromISO)} – {ddmm(row.toISO)}
+                    {ddmm(row.dayISO)}
+                    {hoje && <span className="ml-1 text-[10px]">{t("today")}</span>}
+                    {futuro && <span className="ml-1 text-[10px]">{t("future")}</span>}
                   </td>
+                  {data.demands.map((d) => {
+                    const cel = data.byDay[row.dayISO]?.[d.taskId];
+                    return (
+                      <td
+                        key={d.taskId}
+                        className={`px-2 py-1 align-top ${hoje ? "border-t-2 border-primary" : ""}`}
+                      >
+                        {!cel ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          <ul className="space-y-0.5">
+                            {cel.lines.map((l, i) => (
+                              <li key={`${l.stageId}-${i}`} className="flex justify-between gap-2">
+                                <span
+                                  className="truncate"
+                                  title={`${l.stageName} · ${l.assigneeName ?? ""}`}
+                                >
+                                  {l.state === "done" && <span className="text-success">✓ </span>}
+                                  {l.state === "pending" && (
+                                    <span className="text-primary">▶ </span>
+                                  )}
+                                  {l.state === "waiting" && <span title={t("waiting")}>· </span>}
+                                  {l.stageOrder}. {l.stageName}
+                                  {l.assigneeName && ` · ${curto(l.assigneeName)}`}
+                                </span>
+                                <span className="shrink-0 whitespace-nowrap tabular-nums">
+                                  {fmtH(l.hours)}
+                                  {l.estimated && (
+                                    <span
+                                      className="ml-1 text-[10px] text-muted-foreground"
+                                      title={t("estimatedMark")}
+                                    >
+                                      ~
+                                    </span>
+                                  )}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
-            }
-            const futuro = row.dayISO > data.todayISO;
-            const hoje = row.dayISO === data.todayISO;
-            return (
-              <tr key={row.dayISO} className={futuro ? "opacity-70" : undefined}>
-                <td
-                  className={`sticky left-0 z-10 whitespace-nowrap px-2 py-1 align-top ${
-                    hoje
-                      ? "border-t-2 border-primary bg-card font-semibold text-primary"
-                      : "bg-card text-muted-foreground"
-                  }`}
-                >
-                  {ddmm(row.dayISO)}
-                  {hoje && <span className="ml-1 text-[10px]">{t("today")}</span>}
-                  {futuro && <span className="ml-1 text-[10px]">{t("future")}</span>}
-                </td>
-                {data.demands.map((d) => {
-                  const cel = data.byDay[row.dayISO]?.[d.taskId];
-                  return (
-                    <td
-                      key={d.taskId}
-                      className={`px-2 py-1 align-top ${hoje ? "border-t-2 border-primary" : ""}`}
-                    >
-                      {!cel ? (
-                        <span className="text-muted-foreground/40">·</span>
-                      ) : (
-                        <ul className="space-y-0.5">
-                          {cel.lines.map((l, i) => (
-                            <li key={`${l.stageId}-${i}`} className="flex justify-between gap-2">
-                              <span
-                                className="truncate"
-                                title={`${l.stageName} · ${l.assigneeName ?? ""}`}
-                              >
-                                {l.state === "done" && <span className="text-success">✓ </span>}
-                                {l.state === "pending" && <span className="text-primary">▶ </span>}
-                                {l.state === "waiting" && <span>· </span>}
-                                {l.stageOrder}. {l.stageName}
-                                {l.assigneeName && ` · ${curto(l.assigneeName)}`}
-                              </span>
-                              <span className="shrink-0 whitespace-nowrap tabular-nums">
-                                {fmtH(l.hours)}
-                                {l.estimated && <span className="ml-0.5 text-warning">~</span>}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            })}
+          </tbody>
+        </table>
+      </div>
       <p className="mt-2 text-xs text-muted-foreground">{t("futureHint")}</p>
-    </div>
+    </>
   );
 }
