@@ -11,6 +11,10 @@ vi.mock("next-intl/server", () => ({
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
+// Sem régua nestes cenários: o apontamento em si não é o que este arquivo testa.
+vi.mock("@/lib/planning/stage-reference", () => ({
+  getStageReferences: vi.fn().mockResolvedValue(new Map()),
+}));
 
 vi.mock("@/lib/prisma", () => ({
   default: {
@@ -38,6 +42,14 @@ vi.mock("@/lib/prisma", () => ({
       createMany: vi.fn().mockResolvedValue({}),
     },
     user: { findUnique: vi.fn() },
+    // Já apontado o bastante para não travar no gate de horas — o que este arquivo testa é a
+    // autocompleção da tarefa, não o apontamento em si.
+    activityLog: { findFirst: vi.fn().mockResolvedValue(null) },
+    timeLog: {
+      aggregate: vi.fn().mockResolvedValue({ _sum: { hoursSpent: 1 } }),
+      create: vi.fn().mockResolvedValue({}),
+    },
+    stageCompletionNote: { create: vi.fn().mockResolvedValue({}) },
   },
   prisma: {},
 }));

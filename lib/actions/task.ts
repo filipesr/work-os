@@ -23,6 +23,9 @@ import {
 } from "@/lib/stage-assignment-helpers";
 import { recordStageTransition, recordStageTransitions } from "@/lib/stage-transitions";
 import { markTaskStarted } from "@/lib/task-start";
+import { needsReason, type StageNoteReasonValue } from "@/lib/stage-completion-note";
+import { getStageReferences } from "@/lib/planning/stage-reference";
+import { closeActivityLog } from "@/lib/activity-close";
 import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
 // Re-export types for backward compatibility
@@ -836,13 +839,28 @@ export async function activateNextStages(taskId: string, completedStageId: strin
   }
 }
 
+/** Quanto já foi apontado nesta etapa e qual é a régua dela. A tela usa os dois para decidir o
+ *  que pedir; a ação recalcula por conta, porque o que a tela mandou não é confiável. */
+export async function getStageCompletionContext(taskId: string, stageId: string) {
+  await getCurrentUser();
+  const [agregado, referencias] = await Promise.all([
+    prisma.timeLog.aggregate({ where: { taskId, stageId }, _sum: { hoursSpent: true } }),
+    getStageReferences([stageId]),
+  ]);
+  return {
+    loggedHours: agregado._sum.hoursSpent ?? 0,
+    referenceHours: referencias.get(stageId)?.hours ?? 0,
+  };
+}
+
 /**
  * Complete current stage and activate next stages (replaces advanceTaskStage)
  */
 export async function completeStageAndAdvance(
   taskId: string,
   stageId: string,
-  assignments?: Record<string, string>
+  assignments?: Record<string, string>,
+  apontamento?: { hours: number; reason?: StageNoteReasonValue; note?: string }
 ) {
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser.id as string;
@@ -898,6 +916,73 @@ export async function completeStageAndAdvance(
 
     if (!isAdmin && !isManager && !isAssignee) {
       return { error: tTask("noPermissionCompleteStage") };
+    }
+
+    // --- Apontamento: a metade "realizado" de todas as telas de tempo nasce aqui ---
+    //
+    // O cronômetro aberto fecha ANTES de somar: senão a pessoa confirmaria um total que o próprio
+    // sistema contradiria um segundo depois, quando o período fechasse sozinho.
+    const aberto = await prisma.activityLog.findFirst({
+      where: { taskId, stageId, endedAt: null },
+      select: { id: true, userId: true, taskId: true, stageId: true, startedAt: true },
+    });
+    if (aberto) await closeActivityLog(prisma, aberto, new Date());
+
+    const agregado = await prisma.timeLog.aggregate({
+      where: { taskId, stageId },
+      _sum: { hoursSpent: true },
+    });
+    const jaApontado = agregado._sum.hoursSpent ?? 0;
+    const informado = apontamento?.hours;
+
+    // Sem apontamento nenhum e sem número informado, não há o que concluir: a etapa fecharia
+    // como se ninguém tivesse trabalhado nela.
+    if (jaApontado <= 0 && (informado === undefined || informado <= 0)) {
+      return { error: tTask("hoursRequired") };
+    }
+    // Reduzir hora já apontada por um campo de texto seria apagar período real, com início e fim.
+    // Corrigir apontamento errado é outro ato, e precisa ser deliberado.
+    if (informado !== undefined && informado < jaApontado) {
+      return { error: tTask("hoursBelowLogged") };
+    }
+
+    const totalHoras = informado !== undefined ? informado : jaApontado;
+    const referencias = await getStageReferences([stageId]);
+    const referenceHours = referencias.get(stageId)?.hours ?? 0;
+
+    if (needsReason(totalHoras, referenceHours) && !apontamento?.reason) {
+      return { error: tTask("reasonRequired") };
+    }
+
+    // A diferença vira apontamento complementar, com data de hoje. As horas são de quem FEZ o
+    // trabalho — mesmo quando quem clica em concluir é o gestor.
+    const diferenca = totalHoras - jaApontado;
+    if (diferenca > 0) {
+      await prisma.timeLog.create({
+        data: {
+          taskId,
+          stageId,
+          userId: activeStage.assigneeId ?? currentUserId,
+          hoursSpent: diferenca,
+          logDate: new Date(),
+        },
+      });
+    }
+
+    if (apontamento?.reason) {
+      await prisma.stageCompletionNote.create({
+        data: {
+          taskId,
+          stageId,
+          userId: currentUserId,
+          reason: apontamento.reason,
+          note: apontamento.note?.trim() || null,
+          hoursLogged: totalHoras,
+          // A régua da época: o p50 se move, e sem ela ninguém reconstrói por que a justificativa
+          // foi pedida.
+          referenceHours,
+        },
+      });
     }
 
     // 3. Validate contribution (if not admin/manager)

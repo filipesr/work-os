@@ -62,7 +62,10 @@
     "hoursMustBePositive": "Las horas deben ser mayores que cero.",
     "logDateRequired": "Indica la fecha del registro.",
     "dueDateRequired": "Indica la fecha de vencimiento o marca que esta demanda no tiene plazo.",
-    "invalidDueDate": "La fecha de vencimiento no es válida."
+    "invalidDueDate": "La fecha de vencimiento no es válida.",
+    "hoursRequired": "Indica cuántas horas has trabajado en esta etapa.",
+    "hoursBelowLogged": "El cronómetro ya ha registrado más horas que esas. Para reducirlas, corrige la imputación.",
+    "reasonRequired": "El tiempo ha quedado fuera de la referencia de esta etapa: cuenta qué ha pasado."
   },
   "user": {
     "notFound": "Usuario no encontrado",

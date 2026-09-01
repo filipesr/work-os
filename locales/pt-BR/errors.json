@@ -62,7 +62,10 @@
     "hoursMustBePositive": "As horas precisam ser maiores que zero.",
     "logDateRequired": "Informe a data do apontamento.",
     "dueDateRequired": "Informe a data de vencimento — ou marque que esta demanda não tem prazo.",
-    "invalidDueDate": "Data de vencimento inválida."
+    "invalidDueDate": "Data de vencimento inválida.",
+    "hoursRequired": "Informe quantas horas você trabalhou nesta etapa.",
+    "hoursBelowLogged": "O cronômetro já registrou mais horas do que isso. Para reduzir, corrija o apontamento.",
+    "reasonRequired": "O tempo ficou fora da referência desta etapa — diga o que aconteceu."
   },
   "user": {
     "notFound": "Usuário não encontrado",
