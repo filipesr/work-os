@@ -65,24 +65,21 @@ aviso) ou se a recusa é dura.
 
 ---
 
-## 4. `/planning/client-load` — falta o que não tem dono nem dia
+## 4. `/planning/client-load` — falta a demanda que ninguém pegou nem marcou
 
-**Já resolvido desta pendência:** a tela passou a contar as etapas **concluídas** na semana (antes
-a carga do cliente encolhia conforme a semana avançava — sexta mostrava menos que segunda, e quem
-mais entregou aparecia como quem menos ocupou), e a etapa **reivindicada sem dia** entra na fila
-de hoje, então trabalho em curso deixou de sumir. A célula virou uma lista por demanda, com as
-etapas na ordem do fluxo, cada uma com feito/por fazer.
+**Já resolvido:** a tela conta as etapas concluídas, o realizado vem do apontamento por dia, e o
+pendente é projetado pela cadeia de etapas até a véspera do vencimento. A célula fecha a demanda
+inteira, com quem faria cada etapa.
 
-**O que continua faltando:** demanda que não tem dono **nem** dia não aparece em lugar nenhum
-desta tela. Saber que um cliente tem cinco demandas paradas, sem ninguém e sem data, é justamente
-o que a tela deveria gritar.
+**O que continua faltando:** demanda que não tem dono **nem** dia não aparece em lugar nenhum desta
+tela. Saber que um cliente tem cinco demandas paradas, sem ninguém e sem data, é justamente o que a
+tela deveria gritar — e hoje ela cala.
 
 **Perguntas a resolver no desenho:**
 
 - Coluna própria ("sem dia") ao lado dos seis dias, ou faixa separada abaixo da grade?
-- O que conta como "carga" dela, já que não tem dia nem, possivelmente, referência de duração?
-- Vale distinguir "sem prazo" de "sem equipe"? São dois problemas diferentes, e o segundo tem
-  dono óbvio (o gestor roteia); o primeiro agora é uma escolha declarada na criação.
+- Vale distinguir "sem prazo" de "sem equipe"? São dois problemas diferentes, e o segundo tem dono
+  óbvio (o gestor roteia); o primeiro agora é uma escolha declarada na criação.
 
 ---
 

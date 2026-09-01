@@ -130,6 +130,17 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - **A justificativa é causa declarada, não penalidade.** Não bloqueia nada além da própria
   conclusão, não pontua, não entra em indicador, e nenhuma leitura a agrega por pessoa.
 
+#### Carga por cliente: passado medido, futuro projetado
+
+- **O realizado vem do apontamento**, por dia. "Trabalhei 2h ontem e não terminei" aparece como 2h
+  em ontem, e o que falta segue adiante — até a etapa fechar.
+- **O pendente é projetado pela cadeia de etapas.** A segunda etapa não aparece junto da primeira:
+  aparece depois dela. Onde o gestor decidiu o dia, a decisão dele manda.
+- **O vencimento é a parede.** Tudo que a projeção jogaria para depois dele empilha na véspera, e o
+  bloco mostra a data — sem isso, quatro etapas na terça é um amontoado sem causa visível.
+- **Etapa concluída sem apontamento conta zero.** Preencher o passado com estimativa seria fabricar
+  histórico.
+
 ### 🐛 Corrigido
 
 - **Preview de avanço divergia da execução:** `previewNextStages` olhava apenas as etapas que
