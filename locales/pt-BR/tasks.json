@@ -104,6 +104,21 @@
       "requirementLabel": "Requisito de contribuição:",
       "requirementText": "Você precisa ter adicionado <strong>pelo menos 1 artefato ou 1 comentário</strong> nesta tarefa antes de concluir a etapa. (Admins e Gerentes podem ignorar este requisito.)"
     },
+    "completion": {
+      "hoursLabel": "Horas nesta etapa",
+      "hoursFromTimer": "{hours}h já apontadas pelo cronômetro.",
+      "hoursHint": "Some o que faltou apontar. Não dá para reduzir o que o cronômetro já registrou.",
+      "reasonLabel": "O que aconteceu nesta etapa?",
+      "reasonHelp": "O tempo ficou fora da referência ({reference}h). Isso costuma ser do processo, não de quem trabalhou — registrar ajuda a encontrar o padrão.",
+      "notePlaceholder": "Detalhe, se quiser",
+      "reasons": {
+        "EXTERNAL_INTERRUPTION": "Interrupção externa",
+        "REWORK": "Retrabalho",
+        "SCOPE_LARGER": "Escopo maior que o previsto",
+        "TIMER_FORGOTTEN": "Esqueci o cronômetro",
+        "OTHER": "Outro"
+      }
+    },
     "revertModal": {
       "successToast": "Tarefa revertida para a etapa anterior",
       "validationError": "Por favor, selecione uma etapa e forneça um comentário.",

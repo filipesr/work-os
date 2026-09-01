@@ -1,8 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { completeStageAndAdvance } from "@/lib/actions/task";
+import { completeStageAndAdvance, getStageCompletionContext } from "@/lib/actions/task";
+import {
+  needsReason,
+  STAGE_NOTE_REASONS,
+  type StageNoteReasonValue,
+} from "@/lib/stage-completion-note";
 import { StageAssigneeSelect } from "@/components/ui/StageAssigneeSelect";
+import { FieldLabel } from "@/components/ui/FieldLabel";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useControllableOpen } from "@/lib/hooks/useControllableOpen";
@@ -39,6 +46,36 @@ export function AdvanceStageButton({
     setAssignment,
     loading: previewLoading,
   } = useNextStagePreview(taskId, currentStageId, showConfirm);
+
+  // Contexto do apontamento: quanto o cronômetro já registrou e qual é a régua da etapa. Vem do
+  // servidor ao abrir o diálogo — a tela não adivinha nenhum dos dois.
+  const [contexto, setContexto] = useState<{ loggedHours: number; referenceHours: number } | null>(
+    null
+  );
+  const [horas, setHoras] = useState("");
+  const [motivo, setMotivo] = useState<StageNoteReasonValue | "">("");
+  const [nota, setNota] = useState("");
+
+  useEffect(() => {
+    if (!showConfirm || !currentStageId) return;
+    let vivo = true;
+    getStageCompletionContext(taskId, currentStageId).then((c) => {
+      if (!vivo) return;
+      setContexto(c);
+      // Pré-preenchido com o que já foi apontado: quem usou o cronômetro não digita nada.
+      setHoras(c.loggedHours > 0 ? String(c.loggedHours) : "");
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [showConfirm, taskId, currentStageId]);
+
+  const horasNum = Number(horas.replace(",", "."));
+  const horasValidas = Number.isFinite(horasNum) && horasNum > 0;
+  // A MESMA regra do servidor (lib/stage-completion-note.ts). Duas cópias divergiriam, e a
+  // divergência apareceria como um diálogo que não pede nada e uma ação que recusa.
+  const pedeMotivo = !!contexto && horasValidas && needsReason(horasNum, contexto.referenceHours);
+  const podeConcluir = horasValidas && (!pedeMotivo || motivo !== "");
 
   const { run, isPending } = useServerAction(completeStageAndAdvance, {
     onSuccess: (result) => {
@@ -88,7 +125,11 @@ export function AdvanceStageButton({
   }
 
   const handleComplete = () => {
-    run(taskId, currentStageId, Object.keys(assignments).length > 0 ? assignments : undefined);
+    run(taskId, currentStageId, Object.keys(assignments).length > 0 ? assignments : undefined, {
+      hours: horasNum,
+      reason: pedeMotivo ? (motivo as StageNoteReasonValue) : undefined,
+      note: nota.trim() || undefined,
+    });
   };
 
   return (
@@ -244,6 +285,60 @@ export function AdvanceStageButton({
               </div>
             )}
 
+            <div className="space-y-3 border-t border-border pt-3">
+              <div>
+                <FieldLabel htmlFor="completion-hours" required>
+                  {t("completion.hoursLabel")}
+                </FieldLabel>
+                <input
+                  id="completion-hours"
+                  type="number"
+                  min="0"
+                  step="0.25"
+                  value={horas}
+                  onChange={(e) => setHoras(e.target.value)}
+                  className="h-10 w-full rounded-md border border-input-border bg-input px-3 text-sm text-foreground"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {contexto && contexto.loggedHours > 0
+                    ? t("completion.hoursFromTimer", { hours: contexto.loggedHours })
+                    : t("completion.hoursHint")}
+                </p>
+              </div>
+
+              {/* O motivo só aparece nos extremos: dentro da referência, concluir continua um clique. */}
+              {pedeMotivo && contexto && (
+                <div>
+                  <FieldLabel htmlFor="completion-reason" required>
+                    {t("completion.reasonLabel")}
+                  </FieldLabel>
+                  <select
+                    id="completion-reason"
+                    value={motivo}
+                    onChange={(e) => setMotivo(e.target.value as StageNoteReasonValue)}
+                    className="h-10 w-full rounded-md border border-input-border bg-input px-3 text-sm text-foreground"
+                  >
+                    <option value="">—</option>
+                    {STAGE_NOTE_REASONS.map((r) => (
+                      <option key={r} value={r}>
+                        {t(`completion.reasons.${r}`)}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("completion.reasonHelp", { reference: contexto.referenceHours })}
+                  </p>
+                  <textarea
+                    value={nota}
+                    onChange={(e) => setNota(e.target.value)}
+                    placeholder={t("completion.notePlaceholder")}
+                    rows={2}
+                    className="mt-2 w-full rounded-md border border-input-border bg-input px-3 py-2 text-sm text-foreground"
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Actions */}
             <div className="flex gap-3 justify-end">
               <button
@@ -255,7 +350,7 @@ export function AdvanceStageButton({
               </button>
               <button
                 onClick={handleComplete}
-                disabled={isPending}
+                disabled={isPending || !podeConcluir}
                 className="px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors disabled:opacity-50 font-medium flex items-center gap-2"
               >
                 {isPending ? (

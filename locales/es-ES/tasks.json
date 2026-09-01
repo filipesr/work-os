@@ -104,6 +104,21 @@
       "requirementLabel": "Requisito de contribución:",
       "requirementText": "Necesitas haber agregado <strong>al menos 1 artefacto o 1 comentario</strong> en esta tarea antes de completar la etapa. (Los administradores y gerentes pueden ignorar este requisito.)"
     },
+    "completion": {
+      "hoursLabel": "Horas en esta etapa",
+      "hoursFromTimer": "{hours}h ya imputadas por el cronómetro.",
+      "hoursHint": "Suma lo que falte imputar. No se puede reducir lo que el cronómetro ya registró.",
+      "reasonLabel": "¿Qué ha pasado en esta etapa?",
+      "reasonHelp": "El tiempo ha quedado fuera de la referencia ({reference}h). Esto suele ser del proceso, no de quien trabajó: registrarlo ayuda a encontrar el patrón.",
+      "notePlaceholder": "Detalla, si quieres",
+      "reasons": {
+        "EXTERNAL_INTERRUPTION": "Interrupción externa",
+        "REWORK": "Retrabajo",
+        "SCOPE_LARGER": "Alcance mayor de lo previsto",
+        "TIMER_FORGOTTEN": "Se me olvidó el cronómetro",
+        "OTHER": "Otro"
+      }
+    },
     "revertModal": {
       "successToast": "Tarea revertida a la etapa anterior",
       "validationError": "Por favor, selecciona una etapa y proporciona un comentario.",
