@@ -10,8 +10,8 @@ vi.mock("@/lib/planning/stage-reference", () => ({
     .fn()
     .mockResolvedValue(new Map([["s1", { hours: 4, source: "observed" }]])),
 }));
-vi.mock("@/lib/prisma", () => ({
-  default: {
+vi.mock("@/lib/prisma", () => {
+  const db = {
     taskActiveStage: {
       findUnique: vi.fn(),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -20,22 +20,37 @@ vi.mock("@/lib/prisma", () => ({
     },
     user: { findUnique: vi.fn().mockResolvedValue({ role: "ADMIN" }) },
     task: { update: vi.fn().mockResolvedValue({}), updateMany: vi.fn().mockResolvedValue({}) },
-    taskComment: { create: vi.fn().mockResolvedValue({}) },
+    taskComment: { create: vi.fn().mockResolvedValue({}), count: vi.fn().mockResolvedValue(0) },
+    taskArtifact: { count: vi.fn().mockResolvedValue(0) },
     taskStageLog: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     stageTransition: { create: vi.fn().mockResolvedValue({}) },
     templateStage: { findUnique: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
     timeLog: { aggregate: vi.fn(), create: vi.fn().mockResolvedValue({}) },
     activityLog: {
-      findFirst: vi.fn().mockResolvedValue(null),
+      // `findMany`: a conclusão fecha TODOS os períodos abertos da etapa, não o primeiro.
+      findMany: vi.fn().mockResolvedValue([]),
       update: vi.fn().mockResolvedValue({}),
     },
     stageCompletionNote: { create: vi.fn().mockResolvedValue({}) },
-  },
-}));
+  };
+  // As escritas do apontamento rodam dentro de `prisma.$transaction`. Aqui o MESMO objeto faz de
+  // cliente e de transação — assim as asserções continuam olhando `prisma.timeLog` e
+  // `prisma.activityLog`, e não uma cópia paralela que ninguém inspeciona.
+  return {
+    default: Object.assign(db, {
+      $transaction: vi.fn((arg: unknown) =>
+        typeof arg === "function"
+          ? (arg as (c: typeof db) => Promise<unknown>)(db)
+          : Promise.all(arg as unknown[])
+      ),
+    }),
+    prisma: {},
+  };
+});
 
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { completeStageAndAdvance } from "@/lib/actions/task";
+import { completeStageAndAdvance, getStageCompletionContext } from "@/lib/actions/task";
 
 function cenario(horasJaApontadas: number) {
   vi.mocked(auth).mockResolvedValue({
@@ -55,7 +70,9 @@ function cenario(horasJaApontadas: number) {
   } as never);
   // `clearAllMocks` não desfaz `mockResolvedValue` de um teste anterior — só limpa o histórico de
   // chamadas. Sem este reset, um cenário com cronômetro aberto vazaria para o próximo teste.
-  vi.mocked(prisma.activityLog.findFirst).mockResolvedValue(null);
+  vi.mocked(prisma.activityLog.findMany).mockResolvedValue([] as never);
+  // Idem para o papel: o cenário MEMBER (sem evidência) vazaria para os testes seguintes.
+  vi.mocked(prisma.user.findUnique).mockResolvedValue({ role: "ADMIN" } as never);
 }
 
 beforeEach(() => vi.clearAllMocks());
@@ -136,13 +153,15 @@ describe("completeStageAndAdvance — apontamento", () => {
     // isso NÃO pode recusar, porque é o caminho mais comum do produto: aceitar o pré-preenchido
     // com o cronômetro ligado.
     cenario(1);
-    vi.mocked(prisma.activityLog.findFirst).mockResolvedValue({
-      id: "log1",
-      userId: "ana",
-      taskId: "t1",
-      stageId: "s1",
-      startedAt: new Date(Date.now() - 2 * 3_600_000), // 2h de período aberto
-    } as never);
+    vi.mocked(prisma.activityLog.findMany).mockResolvedValue([
+      {
+        id: "log1",
+        userId: "ana",
+        taskId: "t1",
+        stageId: "s1",
+        startedAt: new Date(Date.now() - 2 * 3_600_000), // 2h de período aberto
+      },
+    ] as never);
     // Informado = jaGravado (1) + o que a tela viu de período aberto na abertura do diálogo (1.5),
     // menor que as ~2h que o cronômetro já vale agora — é exatamente a defasagem entre abrir e
     // enviar.
@@ -156,13 +175,15 @@ describe("completeStageAndAdvance — apontamento", () => {
     // A tolerância é só para o período em aberto (ainda não é TimeLog). O que já está gravado
     // continua intocável: reduzi-lo seria apagar período real, com início e fim.
     cenario(3);
-    vi.mocked(prisma.activityLog.findFirst).mockResolvedValue({
-      id: "log1",
-      userId: "ana",
-      taskId: "t1",
-      stageId: "s1",
-      startedAt: new Date(Date.now() - 1 * 3_600_000),
-    } as never);
+    vi.mocked(prisma.activityLog.findMany).mockResolvedValue([
+      {
+        id: "log1",
+        userId: "ana",
+        taskId: "t1",
+        stageId: "s1",
+        startedAt: new Date(Date.now() - 1 * 3_600_000),
+      },
+    ] as never);
     const r = await completeStageAndAdvance("t1", "s1", undefined, { hours: 2 });
     expect(r).toEqual({ error: "hoursBelowLogged" });
     expect(prisma.activityLog.update).not.toHaveBeenCalled();
@@ -172,13 +193,15 @@ describe("completeStageAndAdvance — apontamento", () => {
     // Fechar é escrita. Uma recusa — por hora ou por motivo — não pode ter gravado nada no
     // caminho: nem o TimeLog complementar, nem o fechamento do período em aberto.
     cenario(0);
-    vi.mocked(prisma.activityLog.findFirst).mockResolvedValue({
-      id: "log1",
-      userId: "ana",
-      taskId: "t1",
-      stageId: "s1",
-      startedAt: new Date(Date.now() - 9 * 3_600_000), // 9h atrás: acima da referência (4h)
-    } as never);
+    vi.mocked(prisma.activityLog.findMany).mockResolvedValue([
+      {
+        id: "log1",
+        userId: "ana",
+        taskId: "t1",
+        stageId: "s1",
+        startedAt: new Date(Date.now() - 9 * 3_600_000), // 9h atrás: acima da referência (4h)
+      },
+    ] as never);
     const r = await completeStageAndAdvance("t1", "s1");
     expect(r).toEqual({ error: "reasonRequired" });
     expect(prisma.activityLog.update).not.toHaveBeenCalled();
@@ -204,7 +227,7 @@ describe("completeStageAndAdvance — apontamento", () => {
       _sum: { hoursSpent: 1 },
     } as never);
     // Sem `cenario` aqui — reseta explicitamente o que o teste anterior deixou configurado.
-    vi.mocked(prisma.activityLog.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.activityLog.findMany).mockResolvedValue([] as never);
 
     await completeStageAndAdvance("t1", "s1", undefined, { hours: 3 });
 
@@ -214,5 +237,107 @@ describe("completeStageAndAdvance — apontamento", () => {
     };
     expect(data.hoursSpent).toBe(2);
     expect(data.userId).toBe("bruno");
+  });
+
+  it("MEMBER sem evidência não tem cronômetro fechado nem hora gravada", async () => {
+    // Prova a ORDEM dos blocos: o apontamento vem DEPOIS do gate de contribuição. Movido para
+    // cima, um MEMBER sem artefato nem comentário teria o período fechado e o TimeLog gravado numa
+    // conclusão RECUSADA — escrita que ficaria para sempre, sem nada na tela denunciando. Hoje
+    // nada falharia se alguém trocasse os blocos de lugar; este teste é esse alarme.
+    cenario(0);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ role: "MEMBER" } as never);
+    vi.mocked(prisma.taskArtifact.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.taskComment.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.activityLog.findMany).mockResolvedValue([
+      {
+        id: "log1",
+        userId: "ana",
+        taskId: "t1",
+        stageId: "s1",
+        startedAt: new Date(Date.now() - 2 * 3_600_000),
+      },
+    ] as never);
+
+    const r = await completeStageAndAdvance("t1", "s1", undefined, { hours: 2 });
+
+    expect(r).toEqual({ error: "evidenceRequired" });
+    expect(prisma.activityLog.update).not.toHaveBeenCalled();
+    expect(prisma.timeLog.create).not.toHaveBeenCalled();
+  });
+
+  it("recusa `hours` que não é número — a etapa não conclui com zero hora e sem nota", async () => {
+    // Server Action é fronteira de rede. Com `"abc"` em `hours`, as duas travas passavam batidas
+    // (`"abc" < 3` é falso), `Math.max` virava `NaN`, `needsReason(NaN, ref)` era falso e
+    // `diferenca > 0` também: a etapa concluía com zero hora e sem nota — exatamente o que esta
+    // feature existe para impedir.
+    cenario(0);
+    const r = await completeStageAndAdvance("t1", "s1", undefined, {
+      hours: "abc" as unknown as number,
+    });
+    expect(r).toEqual({ error: "hoursMustBePositive" });
+    expect(prisma.taskActiveStage.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("fecha TODOS os períodos abertos da etapa, não só o primeiro", async () => {
+    // `openForUserId` é único por PESSOA, não por etapa: duas pessoas podem estar com o cronômetro
+    // na mesma etapa. Fechando um só, o da outra ficava aberto para sempre numa etapa concluída, e
+    // as horas dela nunca entravam em lugar nenhum.
+    cenario(0);
+    vi.mocked(prisma.activityLog.findMany).mockResolvedValue([
+      {
+        id: "log1",
+        userId: "ana",
+        taskId: "t1",
+        stageId: "s1",
+        startedAt: new Date(Date.now() - 1 * 3_600_000),
+      },
+      {
+        id: "log2",
+        userId: "bruno",
+        taskId: "t1",
+        stageId: "s1",
+        startedAt: new Date(Date.now() - 2 * 3_600_000),
+      },
+    ] as never);
+
+    const r = await completeStageAndAdvance("t1", "s1");
+
+    expect(r).toMatchObject({ success: true });
+    const fechados = vi
+      .mocked(prisma.activityLog.update)
+      .mock.calls.map((c) => (c[0] as { where: { id: string } }).where.id);
+    expect(fechados).toEqual(["log1", "log2"]);
+  });
+});
+
+describe("getStageCompletionContext", () => {
+  it("soma o período em aberto ao que já está gravado", async () => {
+    // É a origem do pré-preenchido E da régua que a tela usa para decidir se pede motivo. Se o
+    // cronômetro em aberto não entrar aqui, a tela decide sobre um número menor que o do servidor
+    // — e a pessoa leva um `reasonRequired` sem que o campo de motivo apareça.
+    cenario(1);
+    vi.mocked(prisma.activityLog.findMany).mockResolvedValue([
+      { startedAt: new Date(Date.now() - 2 * 3_600_000) },
+    ] as never);
+
+    const c = await getStageCompletionContext("t1", "s1");
+
+    expect(c.loggedHours).toBeCloseTo(3, 1);
+    expect(c.referenceHours).toBe(4);
+  });
+
+  it("arredonda a 2 casas — o campo não mostra 2.9000000000000004", async () => {
+    // Ruído de ponto flutuante no campo pré-preenchido faz o sistema errar, na cara da pessoa, uma
+    // conta que ela sabe fazer de cabeça.
+    // 1.1 gravado + 1.8 de cronômetro aberto dá 2.9000000000000004 em ponto flutuante — e era
+    // isso que ia para dentro do campo, via `String(c.loggedHours)`.
+    cenario(1.1);
+    vi.mocked(prisma.activityLog.findMany).mockResolvedValue([
+      { startedAt: new Date(Date.now() - 1.8 * 3_600_000) },
+    ] as never);
+
+    const c = await getStageCompletionContext("t1", "s1");
+
+    expect(String(c.loggedHours)).toBe("2.9");
   });
 });

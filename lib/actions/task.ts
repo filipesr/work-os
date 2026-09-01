@@ -843,10 +843,14 @@ export async function activateNextStages(taskId: string, completedStageId: strin
  *  que pedir; a ação recalcula por conta, porque o que a tela mandou não é confiável. */
 export async function getStageCompletionContext(taskId: string, stageId: string) {
   await getCurrentUser();
-  const [agregado, referencias, aberto] = await Promise.all([
+  const [agregado, referencias, abertos] = await Promise.all([
     prisma.timeLog.aggregate({ where: { taskId, stageId }, _sum: { hoursSpent: true } }),
     getStageReferences([stageId]),
-    prisma.activityLog.findFirst({
+    // TODOS os períodos abertos, não o primeiro: `openForUserId` é único por PESSOA, não por
+    // etapa, então duas pessoas podem ter cronômetro na mesma etapa. Ler só um mostraria menos
+    // hora do que `completeStageAndAdvance` vai somar — e a régua da tela divergiria da do
+    // servidor, que é exatamente o beco sem saída que este contexto existe para evitar.
+    prisma.activityLog.findMany({
       where: { taskId, stageId, endedAt: null },
       select: { startedAt: true },
     }),
@@ -854,9 +858,12 @@ export async function getStageCompletionContext(taskId: string, stageId: string)
   // O cronômetro em aberto ainda não é TimeLog, mas já é trabalho feito. Sem somar aqui, a tela
   // mostra menos hora do que `completeStageAndAdvance` vai considerar ao validar — e o
   // pré-preenchido nasceria defasado antes mesmo de o diálogo abrir.
-  const horasAbertas = aberto ? hoursBetween(aberto.startedAt, new Date()) : 0;
+  const agora = new Date();
+  const horasAbertas = abertos.reduce((soma, a) => soma + hoursBetween(a.startedAt, agora), 0);
   return {
-    loggedHours: (agregado._sum.hoursSpent ?? 0) + horasAbertas,
+    // Arredondado a 2 casas: a soma de floats escreve "2.9000000000000004" no campo
+    // pré-preenchido, e a pessoa vê o sistema errando uma conta que ela sabe fazer de cabeça.
+    loggedHours: Math.round(((agregado._sum.hoursSpent ?? 0) + horasAbertas) * 100) / 100,
     referenceHours: referencias.get(stageId)?.hours ?? 0,
   };
 }
@@ -950,13 +957,18 @@ export async function completeStageAndAdvance(
     // estava. Por isso a leitura do cronômetro aberto NÃO fecha nada ainda: fechar é escrita, e
     // uma recusa por hora ou por motivo faltando não pode ter gravado nada no caminho.
     const agora = new Date();
-    const aberto = await prisma.activityLog.findFirst({
+    // TODOS os períodos abertos desta etapa, não só o primeiro. `openForUserId` é único por
+    // PESSOA, não por etapa: duas pessoas podem estar com o cronômetro na mesma etapa. Um
+    // `findFirst` sem `orderBy` fechava um deles ao acaso e deixava o outro aberto para sempre
+    // numa etapa já concluída — as horas dessa pessoa nunca entrariam em lugar nenhum. É o mesmo
+    // defeito que o `updateMany` de `taskStageLog`, mais abaixo, já resolveu.
+    const abertos = await prisma.activityLog.findMany({
       where: { taskId, stageId, endedAt: null },
       select: { id: true, userId: true, taskId: true, stageId: true, startedAt: true },
     });
-    // Quanto o período aberto já vale, sem gravar nada — a mesma conta que `closeActivityLog`
+    // Quanto os períodos abertos já valem, sem gravar nada — a mesma conta que `closeActivityLog`
     // fará depois, com o mesmo instante `agora`, para o número não mudar entre validar e fechar.
-    const horasAbertas = aberto ? hoursBetween(aberto.startedAt, agora) : 0;
+    const horasAbertas = abertos.reduce((soma, a) => soma + hoursBetween(a.startedAt, agora), 0);
 
     const agregado = await prisma.timeLog.aggregate({
       where: { taskId, stageId },
@@ -968,9 +980,22 @@ export async function completeStageAndAdvance(
     const jaApontado = jaGravado + horasAbertas;
     const informado = apontamento?.hours;
 
+    // O número tem que ser NÚMERO. Server Action é uma fronteira de rede: nada garante que o que
+    // chegou em `hours` veio do diálogo. Com `"abc"` ali, as duas travas abaixo passavam batidas
+    // (`"abc" < 3` é falso), `Math.max` virava `NaN`, `needsReason(NaN, ref)` era falso e
+    // `diferenca > 0` também — a etapa concluía com zero hora e sem nota, exatamente o que esta
+    // feature existe para impedir. Vale para `NaN`, `Infinity`, string e nulo.
+    if (
+      informado !== undefined &&
+      (typeof informado !== "number" || !Number.isFinite(informado) || informado <= 0)
+    ) {
+      return { error: tTask("hoursMustBePositive") };
+    }
+
     // Sem apontamento nenhum e sem número informado, não há o que concluir: a etapa fecharia
     // como se ninguém tivesse trabalhado nela.
-    if (jaApontado <= 0 && (informado === undefined || informado <= 0)) {
+    // (número não-positivo já foi recusado acima, com a sua própria mensagem)
+    if (jaApontado <= 0 && informado === undefined) {
       return { error: tTask("hoursRequired") };
     }
     // Reduzir hora já GRAVADA por um campo de texto seria apagar período real, com início e fim.
@@ -994,46 +1019,53 @@ export async function completeStageAndAdvance(
       return { error: tTask("reasonRequired") };
     }
 
-    // Toda validação passou — só agora é seguro escrever. Fecha o cronômetro aberto primeiro
-    // (ele mesmo vira TimeLog, por conta de `closeActivityLog`) e só então grava a diferença como
-    // complementar, contando o que o fechamento acabou de gravar — senão o mesmo período entraria
-    // duas vezes.
-    let jaLancado = jaGravado;
-    if (aberto) {
-      const fechamento = await closeActivityLog(prisma, aberto, agora);
-      if (fechamento.recorded) jaLancado += fechamento.hoursSpent;
-    }
+    // Toda validação passou — só agora é seguro escrever. As TRÊS escritas do apontamento vão
+    // numa transação só: fechar o cronômetro, gravar o complementar e gravar a justificativa.
+    // Soltas, uma falha na terceira deixava as duas primeiras gravadas e a etapa NÃO concluída —
+    // cronômetro fechado, hora lançada e nenhuma justificativa, num estado que ninguém pediu e
+    // que a pessoa só descobre tentando concluir de novo. `closeActivityLog` recebe um
+    // `CloseWriter` justamente para poder rodar dentro da transação.
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Fecha os cronômetros abertos primeiro (cada um vira TimeLog, por conta de
+      // `closeActivityLog`) e só então grava a diferença como complementar, contando o que os
+      // fechamentos acabaram de gravar — senão o mesmo período entraria duas vezes.
+      let jaLancado = jaGravado;
+      for (const aberto of abertos) {
+        const fechamento = await closeActivityLog(tx, aberto, agora);
+        if (fechamento.recorded) jaLancado += fechamento.hoursSpent;
+      }
 
-    // A diferença vira apontamento complementar, com data de hoje. As horas são de quem FEZ o
-    // trabalho — mesmo quando quem clica em concluir é o gestor.
-    const diferenca = totalHoras - jaLancado;
-    if (diferenca > 0) {
-      await prisma.timeLog.create({
-        data: {
-          taskId,
-          stageId,
-          userId: activeStage.assigneeId ?? currentUserId,
-          hoursSpent: diferenca,
-          logDate: new Date(),
-        },
-      });
-    }
+      // A diferença vira apontamento complementar, com data de hoje. As horas são de quem FEZ o
+      // trabalho — mesmo quando quem clica em concluir é o gestor.
+      const diferenca = totalHoras - jaLancado;
+      if (diferenca > 0) {
+        await tx.timeLog.create({
+          data: {
+            taskId,
+            stageId,
+            userId: activeStage.assigneeId ?? currentUserId,
+            hoursSpent: diferenca,
+            logDate: new Date(),
+          },
+        });
+      }
 
-    if (apontamento?.reason) {
-      await prisma.stageCompletionNote.create({
-        data: {
-          taskId,
-          stageId,
-          userId: currentUserId,
-          reason: apontamento.reason,
-          note: apontamento.note?.trim() || null,
-          hoursLogged: totalHoras,
-          // A régua da época: o p50 se move, e sem ela ninguém reconstrói por que a justificativa
-          // foi pedida.
-          referenceHours,
-        },
-      });
-    }
+      if (apontamento?.reason) {
+        await tx.stageCompletionNote.create({
+          data: {
+            taskId,
+            stageId,
+            userId: currentUserId,
+            reason: apontamento.reason,
+            note: apontamento.note?.trim() || null,
+            hoursLogged: totalHoras,
+            // A régua da época: o p50 se move, e sem ela ninguém reconstrói por que a
+            // justificativa foi pedida.
+            referenceHours,
+          },
+        });
+      }
+    });
 
     // 4. Fecha TODO log aberto desta etapa — não só o primeiro.
     //

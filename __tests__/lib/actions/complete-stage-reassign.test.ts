@@ -17,8 +17,8 @@ vi.mock("@/lib/planning/stage-reference", () => ({
   getStageReferences: vi.fn().mockResolvedValue(new Map()),
 }));
 
-vi.mock("@/lib/prisma", () => ({
-  default: {
+vi.mock("@/lib/prisma", () => {
+  const db = {
     task: { update: vi.fn().mockResolvedValue({}), updateMany: vi.fn().mockResolvedValue({}) },
     taskActiveStage: {
       updateMany: vi.fn().mockResolvedValue({}),
@@ -42,15 +42,27 @@ vi.mock("@/lib/prisma", () => ({
     user: { findUnique: vi.fn() },
     // Já apontado o bastante para não travar no gate de horas — o que este arquivo testa é o
     // remanejamento de responsável, não o apontamento em si.
-    activityLog: { findFirst: vi.fn().mockResolvedValue(null) },
+    activityLog: { findMany: vi.fn().mockResolvedValue([]), update: vi.fn().mockResolvedValue({}) },
     timeLog: {
       aggregate: vi.fn().mockResolvedValue({ _sum: { hoursSpent: 1 } }),
       create: vi.fn().mockResolvedValue({}),
     },
     stageCompletionNote: { create: vi.fn().mockResolvedValue({}) },
-  },
-  prisma: {},
-}));
+  };
+  // As escritas do apontamento rodam dentro de `prisma.$transaction`. Aqui o MESMO objeto faz de
+  // cliente e de transação — assim as asserções continuam olhando `prisma.timeLog` e
+  // `prisma.activityLog`, e não uma cópia paralela que ninguém inspeciona.
+  return {
+    default: Object.assign(db, {
+      $transaction: vi.fn((arg: unknown) =>
+        typeof arg === "function"
+          ? (arg as (c: typeof db) => Promise<unknown>)(db)
+          : Promise.all(arg as unknown[])
+      ),
+    }),
+    prisma: {},
+  };
+});
 
 import { auth } from "@/auth";
 
