@@ -205,12 +205,22 @@ export default async function ClientLoadPage({
                     ) : (
                       <>
                         {/* O tamanho do que está parado, sem entrar no total da semana: aquele
-                            número responde "quanto este cliente ocupou", e parado não ocupou. */}
+                            número responde "quanto este cliente ocupou", e parado não ocupou.
+                            `fmtH` — não `toFixed(1)` — porque esta tela inteira escreve "18h", não
+                            "18.0h"; o `h` do template de locale foi removido para não duplicar o
+                            que `fmtH` já devolve. O `~` é a mesma marca de estimativa das etapas:
+                            hora parada é SEMPRE estimativa, porque ninguém trabalhou nela ainda. */}
                         <p className="mb-1 font-semibold text-foreground">
                           {t("stalledSummary", {
                             count: c.stalled.length,
-                            hours: c.stalledHours.toFixed(1),
+                            hours: fmtH(c.stalledHours),
                           })}
+                          <span
+                            className="ml-1 text-[10px] text-muted-foreground"
+                            title={t("estimatedMark")}
+                          >
+                            ~
+                          </span>
                         </p>
                         <ul className="space-y-1.5">
                           {c.stalled.map((s) => (

@@ -205,14 +205,14 @@
     "waiting": "não liberada",
     "unassigned": "não atribuído",
     "stalledHeader": "Parado",
-    "stalledSummary": "{count} demandas · {hours}h",
+    "stalledSummary": "{count, plural, one {# demanda} other {# demandas}} · {hours}",
     "stalledEmpty": "—",
     "stalledNoTeam": "sem equipe",
     "stalledNoDueDate": "sem prazo",
     "stalledOverdue": "venceu {date}",
     "stalledDueOn": "vence {date}",
-    "stalledIdle": "parado há {days} dias",
-    "stalledHelp": "Demandas cuja próxima etapa não tem responsável nem dia. As horas não entram no total da semana — elas ainda não ocuparam ninguém."
+    "stalledIdle": "parado há {days, plural, one {# dia} other {# dias}}",
+    "stalledHelp": "Demandas cuja próxima etapa não tem responsável nem dia. As horas são a referência do que falta na demanda — estimativa, fora do total da semana — e a coluna mostra a situação de hoje, qualquer que seja a semana em tela."
   },
   "done": {
     "noHours": "sem apontamento"

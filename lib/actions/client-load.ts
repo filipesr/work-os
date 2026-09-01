@@ -12,7 +12,11 @@ import {
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { projectDemandDays } from "@/lib/planning/demand-projection";
 import { weekDays } from "@/lib/planning/week-days";
-import { availableStageWhere, notDiscardedStageWhere } from "@/lib/task-availability";
+import {
+  availableStageWhere,
+  availableTaskWhere,
+  notDiscardedStageWhere,
+} from "@/lib/task-availability";
 import {
   checkStalled,
   idleDays,
@@ -557,12 +561,27 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
   // O que ninguém pegou nem marcou. Consulta própria porque nenhuma das três portas da grade a
   // alcança: todas exigem vínculo com a semana (dia marcado, etapa reivindicada, conclusão nela).
   //
-  // O `where` é um SUPERCONJUNTO — demandas com ALGUMA etapa aberta sem dono e sem dia —, e a regra
-  // fina (ser a PRÓXIMA etapa) roda em memória, em `checkStalled`: "a de menor ordem entre as não
-  // concluídas" não se escreve em SQL sem uma subconsulta por linha.
+  // O `where` é um SUPERCONJUNTO LARGO DE PROPÓSITO — toda demanda com ALGUMA etapa aberta sem
+  // dono e sem dia —, e a regra fina (ser a PRÓXIMA etapa) roda em memória, em `checkStalled`: "a
+  // de menor ordem entre as não concluídas" não se escreve em SQL sem uma subconsulta por linha.
+  // Duas tentações de estreitar isto aqui, e por que nenhuma das duas entra:
+  //   - Um `take` cortaria silenciosamente o que ninguém tirou da tela — exatamente o defeito que
+  //     esta coluna existe para expor. Melhor "carregou devagar" que "sumiu sem avisar".
+  //   - Trocar `some: { status: { not: "COMPLETED" }, ... }` por `status: { in: ["ACTIVE",
+  //     "BLOCKED"] }` deixaria de fora a demanda cuja próxima etapa aberta é INACTIVE (o caso
+  //     normal: numa cadeia sequencial, toda etapa que ainda não é a atual É INACTIVE) — a coluna
+  //     passaria a mentir por omissão, escondendo trabalho parado em vez de mostrá-lo.
+  // As duas maiores fatias do superconjunto — a demanda já concluída e a que ainda nem deveria ter
+  // começado — são cortadas abaixo, reaproveitando `availableTaskWhere` de lib/task-availability.ts
+  // (a mesma regra "isto é trabalho de agora" que as telas de execução já usam) com um `status`
+  // mais estrito por cima: `availableTaskWhere` só descarta CANCELLED/OBSOLETE, e esta tela
+  // precisa descartar COMPLETED também — "Concluir demanda" (botão manual, `completeTask` em
+  // lib/actions/task.ts) marca o status sem tocar nas etapas seguintes, e sem este corte a
+  // demanda encerrada à mão ficaria parada para sempre.
   const candidatas = await prisma.task.findMany({
     where: {
-      status: { notIn: ["CANCELLED", "OBSOLETE"] },
+      ...availableTaskWhere(),
+      status: { notIn: ["CANCELLED", "OBSOLETE", "COMPLETED"] },
       activeStages: {
         some: { status: { not: "COMPLETED" }, assigneeId: null, plannedDate: null },
       },
@@ -572,8 +591,17 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
       title: true,
       dueDate: true,
       createdAt: true,
+      // Defesa em profundidade para o `overdue` abaixo — mesmo espírito do guarda que já existe
+      // no bloco da célula do dia (`row.task.status !== "COMPLETED"`, algumas centenas de linhas
+      // acima): sem `status` aqui, uma demanda entregue com atraso e vencimento passado ficaria
+      // marcada como vencida para sempre.
+      status: true,
       project: { select: { name: true, client: { select: { id: true, name: true } } } },
       activeStages: {
+        // Empate de `order` (duas etapas abertas com o mesmo número, nada no schema impede) sem
+        // este desempate deixaria a ordem de linha do Postgres decidir quem é "a próxima" — e ela
+        // pode trocar entre dois carregamentos da mesma tela.
+        orderBy: [{ stage: { order: "asc" } }, { stageId: "asc" }],
         select: {
           stageId: true,
           status: true,
@@ -600,8 +628,10 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
     .filter(
       (
         x
-      ): x is { t: (typeof candidatas)[number]; check: { stalled: true; teamId: string | null } } =>
-        x.check.stalled
+      ): x is {
+        t: (typeof candidatas)[number];
+        check: { stalled: true; teamId: string | null; stageId: string };
+      } => x.check.stalled
     )
     // Demanda SEM equipe efetiva aparece em qualquer filtro: ela não pertence a equipe nenhuma, e
     // com o filtro ligado sumiria de todas as visões. Dois gestores verem o mesmo item é melhor
@@ -648,23 +678,26 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
   );
 
   const paradasPorCliente = new Map<string, { nome: string; itens: StalledItem[] }>();
-  for (const { t } of paradas) {
+  for (const { t, check } of paradas) {
+    // A PRÓXIMA etapa já foi escolhida por `checkStalled` — usar `check.teamId`/`check.stageId`
+    // em vez de recalcular a mesma derivação aqui. Duas contas para a mesma coisa convergem hoje
+    // e podem divergir amanhã: o item passaria pelo filtro de uma equipe enquanto exibe "sem
+    // equipe", e o "parado há N dias" contaria a partir da transição de outra etapa.
     const abertas = t.activeStages.filter((a) => a.status !== "COMPLETED");
-    const proxima = abertas.reduce(
-      (m, a) => (m && m.stage.order <= a.stage.order ? m : a),
-      abertas[0]
-    );
     const vencimento = t.dueDate ? formatISODate(t.dueDate) : null;
     const item: StalledItem = {
       taskId: t.id,
       taskTitle: t.title,
       projectName: t.project.name,
       dueDateISO: vencimento,
-      overdue: !!vencimento && vencimento < hojeISO,
-      noTeam: (proxima.teamId ?? proxima.stage.defaultTeamId) === null,
+      // `t.status !== "COMPLETED"` é defesa em profundidade: o `where` já exclui COMPLETED (ver
+      // comentário da consulta acima), mas sem esta segunda checagem aqui a demanda entregue com
+      // atraso ficaria vermelha para sempre caso a exclusão do `where` algum dia enfraqueça.
+      overdue: !!vencimento && vencimento < hojeISO && t.status !== "COMPLETED",
+      noTeam: check.teamId === null,
       idleDays: idleDays(
         stalledSince({
-          releasedISO: liberacaoPorEtapa.get(`${t.id}:${proxima.stageId}`) ?? null,
+          releasedISO: liberacaoPorEtapa.get(`${t.id}:${check.stageId}`) ?? null,
           lastLogISO: ultimoLogPorTarefa.get(t.id) ?? null,
           createdISO: formatISODate(nowInSaoPaulo(t.createdAt)),
         }),

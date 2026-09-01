@@ -12,6 +12,10 @@
 const DIA_MS = 86_400_000;
 
 export type StalledStage = {
+  /** Identifica a etapa escolhida — devolvida em `StalledCheck` para quem chama não recalcular a
+   *  mesma derivação ("a próxima etapa") uma segunda vez em memória. Duas contas para a mesma
+   *  coisa convergem hoje; amanhã podem divergir, e a falha seria silenciosa e partida. */
+  stageId: string;
   order: number;
   status: "INACTIVE" | "ACTIVE" | "BLOCKED" | "COMPLETED";
   assigneeId: string | null;
@@ -24,8 +28,9 @@ export type StalledStage = {
 
 export type StalledCheck =
   | { stalled: false }
-  /** `teamId` é a equipe EFETIVA da próxima etapa; `null` na coringa que ninguém roteou. */
-  | { stalled: true; teamId: string | null };
+  /** `teamId` é a equipe EFETIVA da próxima etapa; `null` na coringa que ninguém roteou.
+   *  `stageId` é a etapa escolhida como "a próxima" — a mesma que decidiu `teamId`. */
+  | { stalled: true; teamId: string | null; stageId: string };
 
 /**
  * A demanda está parada quando a PRÓXIMA etapa — a não concluída de menor `order` — não tem dono e
@@ -44,7 +49,11 @@ export function checkStalled(stages: StalledStage[]): StalledCheck {
   if (!proxima) return { stalled: false };
   if (proxima.assigneeId || proxima.plannedDate) return { stalled: false };
   // Roteamento da demanda substitui o padrão do modelo — a regra de `lib/stage-team.ts`.
-  return { stalled: true, teamId: proxima.teamId ?? proxima.defaultTeamId };
+  return {
+    stalled: true,
+    teamId: proxima.teamId ?? proxima.defaultTeamId,
+    stageId: proxima.stageId,
+  };
 }
 
 /**

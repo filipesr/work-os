@@ -10,6 +10,7 @@ import {
 
 function etapa(over: Partial<StalledStage> = {}): StalledStage {
   return {
+    stageId: "s1",
     order: 1,
     status: "ACTIVE",
     assigneeId: null,
@@ -36,7 +37,7 @@ function item(over: Partial<StalledItem> = {}): StalledItem {
 
 describe("checkStalled", () => {
   it("próxima etapa sem dono e sem dia: parada", () => {
-    expect(checkStalled([etapa()])).toEqual({ stalled: true, teamId: "video" });
+    expect(checkStalled([etapa()])).toEqual({ stalled: true, teamId: "video", stageId: "s1" });
   });
 
   it("próxima etapa COM dono: não está parada", () => {
@@ -59,15 +60,18 @@ describe("checkStalled", () => {
 
   it("a próxima é a de menor `order` entre as NÃO concluídas", () => {
     const stages = [
-      etapa({ order: 1, status: "COMPLETED", assigneeId: "ana" }),
-      etapa({ order: 2, defaultTeamId: "trafego" }),
-      etapa({ order: 3, assigneeId: "bruno" }),
+      etapa({ stageId: "s1", order: 1, status: "COMPLETED", assigneeId: "ana" }),
+      etapa({ stageId: "s2", order: 2, defaultTeamId: "trafego" }),
+      etapa({ stageId: "s3", order: 3, assigneeId: "bruno" }),
     ];
-    expect(checkStalled(stages)).toEqual({ stalled: true, teamId: "trafego" });
+    expect(checkStalled(stages)).toEqual({ stalled: true, teamId: "trafego", stageId: "s2" });
   });
 
   it("a ordem do array não importa — quem manda é o `order`", () => {
-    const stages = [etapa({ order: 3 }), etapa({ order: 1, assigneeId: "ana" })];
+    const stages = [
+      etapa({ stageId: "s3", order: 3 }),
+      etapa({ stageId: "s1", order: 1, assigneeId: "ana" }),
+    ];
     expect(checkStalled(stages)).toEqual({ stalled: false });
   });
 
@@ -81,6 +85,7 @@ describe("checkStalled", () => {
     expect(checkStalled([etapa({ teamId: "trafego", defaultTeamId: "video" })])).toEqual({
       stalled: true,
       teamId: "trafego",
+      stageId: "s1",
     });
   });
 
@@ -88,6 +93,7 @@ describe("checkStalled", () => {
     expect(checkStalled([etapa({ teamId: null, defaultTeamId: null })])).toEqual({
       stalled: true,
       teamId: null,
+      stageId: "s1",
     });
   });
 });
