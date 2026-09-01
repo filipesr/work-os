@@ -26,6 +26,7 @@ import { markTaskStarted } from "@/lib/task-start";
 import { needsReason, type StageNoteReasonValue } from "@/lib/stage-completion-note";
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { closeActivityLog, hoursBetween } from "@/lib/activity-close";
+import { realInstant } from "@/lib/dates";
 import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
 // Re-export types for backward compatibility
@@ -2140,6 +2141,18 @@ export async function addLinkArtifact(
 /**
  * Log time spent on a task.
  * This creates a TimeLog entry for productivity reporting.
+ *
+ * `logDate` chega como DIA de calendário de São Paulo — o `<input type="date">` do formulário vira
+ * `new Date("YYYY-MM-DD")`, meia-noite UTC, que é a convenção SP-local de `plannedDate`. Mas a
+ * coluna `TimeLog.logDate` guarda INSTANTE REAL: as três outras origens de apontamento
+ * (`activity-close.ts` ao parar o cronômetro, `quick-task.ts`, e a conclusão de etapa) gravam
+ * `endedAt`/`completedAt`/`new Date()`. Gravar a representação SP-local numa coluna de instante
+ * erra em três horas, e o erro só aparece na borda do dia: quem lê agrupando por São Paulo
+ * (`/planning/client-load`) via o apontamento manual de terça cair na SEGUNDA, e o de segunda
+ * escorregar para a fresta de três horas ANTES da semana — sem aparecer em nenhuma delas.
+ *
+ * Por isso a conversão acontece aqui, na origem, e não em cada leitura: uma coluna com duas
+ * convenções é uma coluna que vai divergir na próxima tela que a somar.
  */
 export async function logTime(
   taskId: string,
@@ -2182,13 +2195,17 @@ export async function logTime(
       return { error: (await getTranslations("errors.common"))("taskNotFound") };
     }
 
+    // O dia informado vira o instante real da meia-noite daquele dia em São Paulo — ver o
+    // cabeçalho desta função.
+    const instanteDoDia = realInstant(logDate);
+
     // Create the time log entry
     const timeLog = await prisma.timeLog.create({
       data: {
         taskId,
         userId,
         hoursSpent,
-        logDate,
+        logDate: instanteDoDia,
         description: description || null,
         stageId: task.activeStages[0]?.stageId || null, // Associate with first active stage
       },
