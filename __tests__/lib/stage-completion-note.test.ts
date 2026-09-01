@@ -38,6 +38,27 @@ describe("needsReason", () => {
     expect(needsReason(99, 0)).toBe(false);
   });
 
+  it("referência negativa nunca pede — dado corrompido, sem guardrail", () => {
+    // Garante que a guarda é `<= 0` e não `=== 0`. Se alguém trocasse, etapa com régua negativa
+    // (cálculo errado) passaria a pedir justificativa — ruído em cima de quem não tem contra o que
+    // comparar. Este teste trava a regressão.
+    expect(needsReason(5, -2)).toBe(false);
+  });
+
+  it("hoursLogged negativo não explode nem vira NaN", () => {
+    // Entrada inválida (não deveria acontecer), mas se acontecer o comportamento é coerente:
+    // -1 < -1 * 0.1 (true), então pede motivo. Sem este teste alguém poderia quebrar sem saber.
+    expect(needsReason(-1, 4)).toBe(true);
+  });
+
+  it("limite de 10% funciona com referência fracionária", () => {
+    // Prova que o cálculo `referenceHours * LOW_LOG_RATIO` não precisa de números redondos.
+    // 3.7 horas de referência × 0.1 = 0.37; 0.36 <= 0.37, então pede motivo.
+    expect(needsReason(0.36, 3.7)).toBe(true);
+    expect(needsReason(0.37, 3.7)).toBe(true);
+    expect(needsReason(0.38, 3.7)).toBe(false);
+  });
+
   it("a razão do limite de baixo é 10%", () => {
     expect(LOW_LOG_RATIO).toBe(0.1);
   });
