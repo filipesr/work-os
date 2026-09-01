@@ -118,6 +118,18 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   pura. As horas saem do mesmo cálculo da mesa — etapa não liberada aparece sem somar —, senão o
   mesmo cliente teria dois números diferentes na mesma semana.
 
+#### Apontamento obrigatório para concluir etapa
+
+- **Concluir etapa passa a exigir horas.** Quem usou o cronômetro não digita nada: o campo já vem
+  preenchido com o que foi registrado. O atrito é proporcional ao que falta.
+- **Motivo nos dois extremos:** acima da referência, ou 10% dela ou menos. São as duas formas de o
+  apontamento voluntário falhar — ninguém ligou o cronômetro, ou ninguém desligou — e as duas
+  envenenam o p50 que o sistema oferece a todo mundo.
+- **Não dá para reduzir hora já apontada** pelo campo de conclusão: o cronômetro gravou períodos
+  reais, e apagá-los ali seria destruir medição em silêncio.
+- **A justificativa é causa declarada, não penalidade.** Não bloqueia nada além da própria
+  conclusão, não pontua, não entra em indicador, e nenhuma leitura a agrega por pessoa.
+
 ### 🐛 Corrigido
 
 - **Preview de avanço divergia da execução:** `previewNextStages` olhava apenas as etapas que

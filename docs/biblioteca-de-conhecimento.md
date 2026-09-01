@@ -609,6 +609,16 @@ team-profiles.test.ts` reprova vocabulário de premiação/ordenação dentro de
   neutro de "abaixo do seu ritmo"; (4) o número **não é persistido**, então não há histórico para
   alguém transformar em indicador depois. Quem copiar esta mensagem para outra tela precisa copiar
   as quatro. _(exceção a P1/P2)_
+- **Justificativa de conclusão fora da referência — e as quatro travas que a mantêm P1/P2** —
+  concluir etapa pede um motivo quando o apontado passa da referência ou é 10% dela ou menos. Um
+  campo assim vira "explique por que você demorou" com muita facilidade, e aí ensina a apontar o
+  número que não pergunta nada. O que o mantém do lado certo: (1) a pergunta é sobre o TRABALHO —
+  "o que aconteceu nesta etapa" —, e a tela diz em voz alta que a causa costuma ser do processo;
+  (2) o motivo é categorizado, para o padrão sistêmico aparecer ("metade das estouradas deste time
+  foi interrupção externa"); (3) nenhuma leitura agrega por pessoa; (4) nada no sistema muda de
+  comportamento por causa dele — não bloqueia, não pontua, não entra em indicador. Faixa de ±10%
+  foi rejeitada: a referência é um p50, metade das execuções fica acima dele, e justificativa que
+  aparece toda vez deixa de ser lida. _(P1/P2/P3)_
 
 ---
 
