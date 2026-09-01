@@ -81,6 +81,32 @@ ninguém descobre olhando a lista — ela não tem sintoma visível.
 
 A gramática é a que a tela já usa: `⚠` só nas vencidas, `·` no resto. Nenhum vocabulário novo.
 
+## Há quanto tempo está parado
+
+Cada linha traz também **desde quando ninguém toca na demanda**: `parado há 23 dias`.
+
+É a informação que transforma a lista de um inventário numa ordem de gravidade real. Uma demanda sem
+prazo parada há três dias é uma demanda nova; a mesma demanda parada há três meses é dinheiro que a
+agência já gastou vendendo e nunca entregou. Sem o número, as duas são a mesma linha.
+
+**A conta é o mais recente entre dois fatos:** o dia em que a etapa foi LIBERADA (`StageTransition`
+com `status: ACTIVE`, o mesmo carimbo que a linha do tempo do projeto usa) e o dia do ÚLTIMO
+apontamento na demanda. Os dois são necessários: sem o primeiro não há marco inicial para a demanda
+que nunca andou; sem o segundo, uma demanda que alguém pegou, trabalhou e largou contaria desde a
+liberação original e diria "parado há 40 dias" sobre um trabalho que aconteceu ontem.
+
+Sem nenhum dos dois — dado antigo, sem transição registrada —, vale a **criação da demanda**. É o
+piso honesto: ela existe desde então e não andou.
+
+**Zero dia não vira texto.** Uma etapa liberada hoje aparece sem o carimbo: ela não está parada,
+está começando, e "parado há 0 dias" seria a tela inventando um problema que não existe.
+
+### O tempo desempata quem não tem prazo
+
+A ordem continua sendo a urgência — vencidas, depois por prazo crescente, sem prazo por último. Mas
+**entre as sem prazo, a mais parada vem primeiro**. São as que nunca vão subir por vencimento, e
+sem esse critério a mais podre do cliente fica no fim da lista para sempre.
+
 ## As horas paradas ficam FORA do total da semana
 
 O total do cliente responde "quanto desta semana este cliente ocupou". Trabalho parado não ocupou
@@ -120,14 +146,18 @@ leitura desta entrega agrega por pessoa, e a lista nunca diz de quem "deveria" t
 | `TaskActiveStage.teamId` + `TemplateStage.defaultTeamId`  | a equipe efetiva, ou a falta dela   |
 | `Task` (`dueDate`, `status`)                              | o prazo e o descarte                |
 | `getStageReferences`                                      | as horas paradas                    |
+| `StageTransition` (`status: ACTIVE`, `at`)                | quando a etapa foi liberada         |
+| `TimeLog` (`logDate`)                                     | o último toque na demanda           |
 
 ## Testes
 
 - **Puro, com teste primeiro — a classificação.** Dada a lista de etapas de uma demanda, dizer se
   ela está parada e por quê. Próxima etapa sem dono e sem dia → parada; com dono → não; com dia →
   não; etapa futura sem dono, com a próxima em ordem → não; demanda descartada → nunca.
-- **A ordem:** vencida antes de com prazo, com prazo antes de sem prazo, e entre as com prazo a mais
-  próxima primeiro.
+- **A ordem:** vencida antes de com prazo, com prazo antes de sem prazo, entre as com prazo a mais
+  próxima primeiro, e entre as SEM prazo a mais parada primeiro.
+- **O tempo parado, puro:** conta do mais recente entre liberação e último apontamento; cai na
+  criação quando não há nenhum dos dois; zero dia não vira texto.
 - **A demanda que andou na semana E travou aparece nos dois lugares** — na célula do dia e na coluna.
 - **As horas paradas não entram no total da semana** — teste explícito, porque é a regra que um
   refactor futuro mais provavelmente quebraria sem perceber.
@@ -143,6 +173,3 @@ leitura desta entrega agrega por pessoa, e a lista nunca diz de quem "deveria" t
   para as duas divergirem.
 - **Levar o "parado" para a mesa semanal.** Lá o poço já mostra o que está sem dono; o que falta lá
   é outra pergunta.
-- **Contar há quanto tempo está parado.** É a leitura mais valiosa que este dado habilita ("esta
-  demanda está sem ninguém há 23 dias"), e depende de saber quando a etapa ficou disponível —
-  `StageTransition` tem isso. Fica registrado como direção.
