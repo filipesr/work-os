@@ -13,6 +13,13 @@ import { getStageReferences } from "@/lib/planning/stage-reference";
 import { projectDemandDays } from "@/lib/planning/demand-projection";
 import { weekDays } from "@/lib/planning/week-days";
 import { availableStageWhere, notDiscardedStageWhere } from "@/lib/task-availability";
+import {
+  checkStalled,
+  idleDays,
+  sortStalled,
+  stalledSince,
+  type StalledItem,
+} from "@/lib/planning/stalled-demand";
 
 /**
  * A semana pelo eixo do cliente: o que já foi FEITO e o que ainda está por fazer.
@@ -110,6 +117,11 @@ export type ClientWeek = {
   totalDone: number;
   totalPending: number;
   byDay: Record<string, ClientDay>;
+  /** O que ninguém pegou nem marcou, já ordenado por urgência. */
+  stalled: StalledItem[];
+  /** Soma das horas paradas. FORA de `totalDone`/`totalPending` de propósito: o total responde
+   *  "quanto desta semana este cliente ocupou", e trabalho parado não ocupou nada. */
+  stalledHours: number;
 };
 
 export type ClientLoad = { days: string[]; clients: ClientWeek[] };
@@ -531,8 +543,164 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
       totalDone += doneHours;
       totalPending += pendingHours;
     }
-    return { clientId, clientName: acc.name, totalDone, totalPending, byDay };
+    return {
+      clientId,
+      clientName: acc.name,
+      totalDone,
+      totalPending,
+      byDay,
+      stalled: [],
+      stalledHours: 0,
+    };
   });
+
+  // O que ninguém pegou nem marcou. Consulta própria porque nenhuma das três portas da grade a
+  // alcança: todas exigem vínculo com a semana (dia marcado, etapa reivindicada, conclusão nela).
+  //
+  // O `where` é um SUPERCONJUNTO — demandas com ALGUMA etapa aberta sem dono e sem dia —, e a regra
+  // fina (ser a PRÓXIMA etapa) roda em memória, em `checkStalled`: "a de menor ordem entre as não
+  // concluídas" não se escreve em SQL sem uma subconsulta por linha.
+  const candidatas = await prisma.task.findMany({
+    where: {
+      status: { notIn: ["CANCELLED", "OBSOLETE"] },
+      activeStages: {
+        some: { status: { not: "COMPLETED" }, assigneeId: null, plannedDate: null },
+      },
+    },
+    select: {
+      id: true,
+      title: true,
+      dueDate: true,
+      createdAt: true,
+      project: { select: { name: true, client: { select: { id: true, name: true } } } },
+      activeStages: {
+        select: {
+          stageId: true,
+          status: true,
+          assigneeId: true,
+          plannedDate: true,
+          teamId: true,
+          stage: { select: { order: true, defaultTeamId: true } },
+        },
+      },
+    },
+  });
+
+  const paradas = candidatas
+    .map((t) => ({
+      t,
+      check: checkStalled(
+        t.activeStages.map((a) => ({
+          ...a,
+          order: a.stage.order,
+          defaultTeamId: a.stage.defaultTeamId,
+        }))
+      ),
+    }))
+    .filter(
+      (
+        x
+      ): x is { t: (typeof candidatas)[number]; check: { stalled: true; teamId: string | null } } =>
+        x.check.stalled
+    )
+    // Demanda SEM equipe efetiva aparece em qualquer filtro: ela não pertence a equipe nenhuma, e
+    // com o filtro ligado sumiria de todas as visões. Dois gestores verem o mesmo item é melhor
+    // que nenhum ver — a marca `sem equipe` explica por que ele está ali.
+    .filter((x) => !teamId || x.check.teamId === null || x.check.teamId === teamId);
+
+  const idsParados = paradas.map((x) => x.t.id);
+  const [liberacoes, ultimoLog, refsParadas] = await Promise.all([
+    idsParados.length
+      ? prisma.stageTransition.findMany({
+          where: { taskId: { in: idsParados }, status: "ACTIVE" },
+          select: { taskId: true, stageId: true, at: true },
+        })
+      : Promise.resolve([]),
+    idsParados.length
+      ? prisma.timeLog.groupBy({
+          by: ["taskId"],
+          where: { taskId: { in: idsParados } },
+          _max: { logDate: true },
+        })
+      : Promise.resolve([]),
+    getStageReferences([
+      ...new Set(
+        paradas.flatMap((x) =>
+          x.t.activeStages.filter((a) => a.status !== "COMPLETED").map((a) => a.stageId)
+        )
+      ),
+    ]),
+  ]);
+
+  // A liberação MAIS RECENTE de cada etapa: uma etapa pode entrar em ACTIVE mais de uma vez
+  // (bloqueio e desbloqueio, reversão), e o que interessa é desde quando ela está disponível AGORA.
+  const liberacaoPorEtapa = new Map<string, string>();
+  for (const l of liberacoes) {
+    const k = `${l.taskId}:${l.stageId}`;
+    const dia = formatISODate(nowInSaoPaulo(l.at));
+    const anterior = liberacaoPorEtapa.get(k);
+    if (!anterior || dia > anterior) liberacaoPorEtapa.set(k, dia);
+  }
+  const ultimoLogPorTarefa = new Map(
+    ultimoLog
+      .filter((g) => g._max.logDate)
+      .map((g) => [g.taskId, formatISODate(nowInSaoPaulo(g._max.logDate as Date))])
+  );
+
+  const paradasPorCliente = new Map<string, { nome: string; itens: StalledItem[] }>();
+  for (const { t } of paradas) {
+    const abertas = t.activeStages.filter((a) => a.status !== "COMPLETED");
+    const proxima = abertas.reduce(
+      (m, a) => (m && m.stage.order <= a.stage.order ? m : a),
+      abertas[0]
+    );
+    const vencimento = t.dueDate ? formatISODate(t.dueDate) : null;
+    const item: StalledItem = {
+      taskId: t.id,
+      taskTitle: t.title,
+      projectName: t.project.name,
+      dueDateISO: vencimento,
+      overdue: !!vencimento && vencimento < hojeISO,
+      noTeam: (proxima.teamId ?? proxima.stage.defaultTeamId) === null,
+      idleDays: idleDays(
+        stalledSince({
+          releasedISO: liberacaoPorEtapa.get(`${t.id}:${proxima.stageId}`) ?? null,
+          lastLogISO: ultimoLogPorTarefa.get(t.id) ?? null,
+          createdISO: formatISODate(nowInSaoPaulo(t.createdAt)),
+        }),
+        hojeISO
+      ),
+      // A referência de TODAS as etapas por concluir: o que a demanda ainda custa inteira.
+      hours: abertas.reduce((n, a) => n + (refsParadas.get(a.stageId)?.hours ?? 0), 0),
+    };
+    const acc = paradasPorCliente.get(t.project.client.id) ?? {
+      nome: t.project.client.name,
+      itens: [],
+    };
+    acc.itens.push(item);
+    paradasPorCliente.set(t.project.client.id, acc);
+  }
+
+  // Um cliente pode ter APENAS trabalho parado — e é o pior caso, o cliente para quem ninguém está
+  // trabalhando. Sem esta parte ele não teria linha na grade e sumiria da tela inteira.
+  for (const c of clients) {
+    const p = paradasPorCliente.get(c.clientId);
+    c.stalled = sortStalled(p?.itens ?? []);
+    c.stalledHours = c.stalled.reduce((n, i) => n + i.hours, 0);
+    paradasPorCliente.delete(c.clientId);
+  }
+  for (const [clientId, p] of paradasPorCliente) {
+    const stalled = sortStalled(p.itens);
+    clients.push({
+      clientId,
+      clientName: p.nome,
+      totalDone: 0,
+      totalPending: 0,
+      byDay: Object.fromEntries(days.map((d) => [d, { doneHours: 0, pendingHours: 0, tasks: [] }])),
+      stalled,
+      stalledHours: stalled.reduce((n, i) => n + i.hours, 0),
+    });
+  }
 
   // Do que mais pega a semana para o que menos: a pergunta que traz o gestor aqui é "quem está
   // comendo a capacidade", e ela se responde na primeira linha. Feito + por fazer, porque as duas
@@ -540,6 +708,8 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
   clients.sort(
     (a, b) =>
       b.totalDone + b.totalPending - (a.totalDone + a.totalPending) ||
+      // Entre clientes que ocupam o mesmo (dois zeros, por exemplo), quem tem mais parado primeiro.
+      b.stalledHours - a.stalledHours ||
       a.clientName.localeCompare(b.clientName)
   );
 

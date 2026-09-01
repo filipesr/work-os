@@ -17,7 +17,12 @@ vi.mock("@/lib/planning/stage-reference", () => ({
   ),
 }));
 vi.mock("@/lib/prisma", () => ({
-  default: { taskActiveStage: { findMany: vi.fn() }, timeLog: { findMany: vi.fn() } },
+  default: {
+    taskActiveStage: { findMany: vi.fn() },
+    timeLog: { findMany: vi.fn(), groupBy: vi.fn() },
+    task: { findMany: vi.fn() },
+    stageTransition: { findMany: vi.fn() },
+  },
 }));
 
 import prisma from "@/lib/prisma";
@@ -57,6 +62,10 @@ beforeEach(() => {
   // Duas consultas agora: as linhas da semana e as etapas restantes das demandas em tela.
   vi.mocked(prisma.taskActiveStage.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.timeLog.findMany).mockResolvedValue([] as never);
+  // As consultas do parado não são o assunto deste arquivo — retorno vazio para as três novas.
+  vi.mocked(prisma.task.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.timeLog.groupBy).mockResolvedValue([] as never);
+  vi.mocked(prisma.stageTransition.findMany).mockResolvedValue([] as never);
 });
 
 describe("getClientLoad", () => {
