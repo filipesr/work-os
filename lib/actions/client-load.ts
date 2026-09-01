@@ -37,8 +37,17 @@ import { availableStageWhere, notDiscardedStageWhere } from "@/lib/task-availabi
  * descontar. Uma correção anterior trocou a fonte da referência para o próprio `TimeLog` — datas
  * diferentes da mesma unidade, não mais grandezas diferentes disputando o mesmo número.
  *
- * Etapa não liberada aparece na lista mas não soma — a mesma regra da mesa. Trabalho que ninguém
- * pode começar não é carga de ninguém.
+ * Etapa não liberada aparece na lista E SOMA — e esta é a única divergência deliberada em relação
+ * à mesa do gestor. A regra "não liberada não soma" nasceu lá, onde a pergunta é "o que dá para
+ * fazer AGORA": naquela mesa, trabalho travado não consome a capacidade de hoje. Aqui a pergunta é
+ * outra — "quanto desta semana este cliente ocupa" — e a projeção existe justamente para mostrar o
+ * que VEM. Como toda etapa futura é, por definição, ainda não liberada (numa cadeia sequencial só a
+ * primeira é ACTIVE; as seguintes ficam INACTIVE até a anterior fechar), manter a regra da mesa
+ * aqui zeraria o futuro inteiro — que é a feature. O cabeçalho diria "0h" com nove horas
+ * projetadas logo abaixo dele.
+ *
+ * O `state` de cada etapa continua sendo devolvido como está (`waiting` segue `waiting`), para a
+ * tela distinguir o que já pode começar do que ainda espera: o que muda é só a SOMA.
  */
 
 /** Uma etapa dentro do bloco da demanda, na ordem sequencial do fluxo. */
@@ -47,13 +56,22 @@ export type StageLine = {
   stageOrder: number;
   stageName: string;
   assigneeName: string | null;
+  /** O número que a linha exibe. No encaixe RETROSPECTIVO (dia em que a etapa foi trabalhada, e o
+   *  dia em que fechou) é o APONTAMENTO daquele dia — medição. Só no dia projetado é o pendente,
+   *  derivado da referência. Sem essa distinção, uma etapa aberta encaixada em três dias passados
+   *  mostrava o mesmo pendente nos três, e quem lia a coluna de segunda lia "2h" onde a pessoa fez
+   *  1h: estimativa disfarçada de medição, no lugar em que a tela promete medição. */
   hours: number;
   /** Horas APONTADAS desta etapa no dia da célula. Zero quando ninguém apontou — o passado não é
    *  preenchido com estimativa. */
   doneHours: number;
-  /** A referência é estimativa (SLA declarado), não medição. A tela avisa. */
+  /** O número em `hours` É a referência declarada (SLA), não medição — a tela avisa com `~`. Falso
+   *  quando `hours` traz apontamento, ainda que a referência da etapa seja declarada: a marca fala
+   *  sobre o NÚMERO EXIBIDO, e pôr `~` ao lado de uma hora medida seria mentir sobre ela. */
   estimated: boolean;
-  /** `done` = concluída; `pending` = ativa ou na fila; `waiting` = ainda não liberada (não soma). */
+  /** `done` = concluída; `pending` = ativa ou na fila; `waiting` = ainda não liberada. As três
+   *  somam o pendente nesta tela — ver o cabeçalho do arquivo; `state` só diz o que já pode
+   *  começar. */
   state: "done" | "pending" | "waiting";
 };
 
@@ -67,23 +85,20 @@ export type TaskBlock = {
   /** O prazo já passou e a demanda não fechou. Justifica etapas empilhadas em hoje. */
   overdue: boolean;
   /** Soma do `doneHours` das etapas DESTE bloco — o apontamento que caiu no dia em que o bloco
-   *  está posicionado. Desde a Task 3 a etapa aparece também nos dias em que foi trabalhada (não só
-   *  no dia projetado ou concluído), então esta soma tende a bater com `ClientDay.doneHours` do
-   *  mesmo dia — mas ainda não é literalmente a mesma conta: aqui só entra o apontamento de etapas
-   *  que este bloco encaixou, enquanto `ClientDay.doneHours` soma o `TimeLog` inteiro do cliente. */
+   *  está posicionado. A etapa aparece também nos dias em que foi trabalhada (não só no dia
+   *  projetado ou concluído), e o realizado do dia só conta etapas que esta leitura enxerga, então
+   *  esta soma, somada entre os blocos do cliente, bate com `ClientDay.doneHours` do mesmo dia. */
   doneHours: number;
   pendingHours: number;
   stages: StageLine[];
 };
 
 export type ClientDay = {
-  /** Apontamento do CLIENTE inteiro neste dia, somado direto do `TimeLog` — não a soma dos
-   *  `TaskBlock.doneHours` dos blocos exibidos aqui. Desde a Task 3 a etapa passa a aparecer também
-   *  no dia em que foi trabalhada (além do dia projetado/concluído, e mesmo quando o dia projetado
-   *  cai fora da semana em exibição), e por isso os dois números batem no caso comum. A exceção que
-   *  sobra: um apontamento cuja etapa não aparece em NENHUMA das duas consultas desta semana (ex.:
-   *  ficou de fora dos filtros que trazem `linhas`/`restantes`) ainda soma aqui sem ter bloco para
-   *  mostrá-lo — não há linha para encaixar o que não foi buscado. */
+  /** Apontamento do cliente neste dia, somado direto do `TimeLog` — mas SÓ das etapas que esta
+   *  leitura enxerga (as que passaram pelos filtros, `?team=` inclusive). Não é a soma dos
+   *  `TaskBlock.doneHours` dos blocos exibidos aqui, e sim a mesma matéria-prima deles: a etapa
+   *  aparece também no dia em que foi trabalhada (além do dia projetado/concluído, e mesmo quando o
+   *  dia projetado cai fora da semana em exibição), então os dois números batem. */
   doneHours: number;
   pendingHours: number;
   tasks: TaskBlock[];
@@ -147,6 +162,9 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
           id: true,
           title: true,
           dueDate: true,
+          // Vencida é "prazo passou E a demanda não fechou" — sem o status, a demanda entregue com
+          // atraso continuava vermelha para sempre.
+          status: true,
           project: { select: { name: true, client: { select: { id: true, name: true } } } },
         },
       },
@@ -168,9 +186,19 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
     orderBy: [{ stage: { order: "asc" } }, { id: "asc" }],
   });
 
-  // As ETAPAS QUE FALTAM das demandas já em tela: sem dia, não concluídas, e portanto fora dos
-  // três ramos acima. Sem elas a célula mostra só o pedaço que tem data e o gestor não vê o
-  // tamanho do que ainda vem — a leitura fecha a demanda inteira ou não fecha nada.
+  // As ETAPAS QUE FALTAM das demandas já em tela: TODAS as não concluídas que a primeira consulta
+  // não trouxe. Sem elas a célula mostra só o pedaço que tem data e o gestor não vê o tamanho do
+  // que ainda vem — a leitura fecha a demanda inteira ou não fecha nada.
+  //
+  // "Todas" inclui as marcadas para DEPOIS da janela. Enquanto esta consulta exigia
+  // `plannedDate: null`, uma etapa marcada para a segunda que vem não caía nem aqui nem no ramo 1
+  // (`plannedDate <= fim`): sumia do mapa da projeção, e `obterDia` a tratava como "não faz parte
+  // da demanda: nenhuma restrição" — a dependente dela aparecia NESTA semana, antes do
+  // pré-requisito que só acontece na próxima. Quem decide o que aparece é a projeção, que já sabe
+  // descartar o que não cabe na semana (`days.includes`); a consulta não pode decidir isso por ela.
+  //
+  // O recorte por `id` desduplica o que a primeira consulta já trouxe — sem ele a mesma etapa
+  // entraria duas vezes na projeção e no bloco.
   //
   // Consulta separada porque ela depende das demandas que a primeira encontrou: fundir as duas
   // exigiria um OR com subconsulta, mais caro de ler e de manter que uma ida a mais ao banco.
@@ -180,9 +208,7 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
         where: {
           taskId: { in: idsEmTela },
           status: { notIn: ["COMPLETED"] },
-          plannedDate: null,
-          // As reivindicadas sem dia já vieram no ramo 2; aqui é o que ninguém pegou.
-          NOT: { status: "ACTIVE", assigneeId: { not: null } },
+          id: { notIn: linhas.map((l) => l.id) },
         },
         select: {
           id: true,
@@ -195,6 +221,7 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
               id: true,
               title: true,
               dueDate: true,
+              status: true,
               project: { select: { name: true, client: { select: { id: true, name: true } } } },
             },
           },
@@ -215,13 +242,29 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
       })
     : [];
 
+  // Os pares (demanda, etapa) que ESTA leitura de fato enxerga — as etapas que passaram pelos
+  // filtros acima. O realizado se restringe a eles: quando há `?team=`, `linhas` já é o recorte do
+  // time, e somar o `TimeLog` da demanda INTEIRA faria a coluna "feito" responder sobre a agência
+  // toda enquanto o resto da tela responde sobre um time só. É o par de chaves que mantém
+  // `ClientDay.doneHours` sendo a soma das etapas exibidas, e não do que ficou de fora.
+  const paresEmTela = new Set([...linhas, ...restantes].map((l) => `${l.task.id}:${l.stageId}`));
+
   // O REALIZADO: horas apontadas na janela, por etapa e por dia. `logDate` é instante real (o
-  // fechamento do cronômetro grava `endedAt`), então a janela usa `realInstant` — a mesma conta de
-  // `completedAt`. Comparar com a representação SP-local erraria em três horas e sumiria com o que
-  // foi trabalhado à noite.
+  // fechamento do cronômetro grava `endedAt`, e o formulário manual grava o instante real do dia
+  // informado — ver `logTime` em lib/actions/task.ts), então a janela usa `realInstant` — a mesma
+  // conta de `completedAt`. Comparar com a representação SP-local erraria em três horas e sumiria
+  // com o que foi trabalhado à noite.
+  //
+  // A consulta filtra por demanda E por etapa; o cruzamento exato dos pares fica no laço abaixo,
+  // porque `in` × `in` ainda deixaria passar (demanda A, etapa de B).
+  const stageIdsEmTela = [...new Set([...linhas, ...restantes].map((l) => l.stageId))];
   const apontamentos = idsEmTela.length
     ? await prisma.timeLog.findMany({
-        where: { taskId: { in: idsEmTela }, logDate: { gte: inicioReal, lte: fimReal } },
+        where: {
+          taskId: { in: idsEmTela },
+          stageId: { in: stageIdsEmTela },
+          logDate: { gte: inicioReal, lte: fimReal },
+        },
         select: { taskId: true, stageId: true, hoursSpent: true, logDate: true },
       })
     : [];
@@ -247,6 +290,9 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
 
   for (const a of apontamentos) {
     if (!a.stageId) continue; // hora lançada na demanda inteira, sem etapa: não é de ninguém aqui
+    // Etapa que não passou pelos filtros desta leitura não tem linha para mostrar a hora dela — e
+    // somá-la mesmo assim é o que fazia o `?team=` mentir sobre o que o time entregou.
+    if (!paresEmTela.has(`${a.taskId}:${a.stageId}`)) continue;
     const dia = formatISODate(nowInSaoPaulo(a.logDate));
     const kDia = chave(a.taskId, a.stageId, dia);
     realizadoPorEtapaDia.set(kDia, (realizadoPorEtapaDia.get(kDia) ?? 0) + a.hoursSpent);
@@ -305,9 +351,11 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
       projectName: row.task.project.name,
       taskTitle: row.task.title,
       dueDateISO: vencimento,
-      // Vencida = o prazo já passou e a demanda não fechou. É o que justifica o empilhamento em
-      // hoje, e a tela precisa dizer isso em vez de mostrar um amontoado sem causa.
-      overdue: !!vencimento && vencimento < formatISODate(todayInSaoPaulo()),
+      // Vencida = o prazo já passou E a demanda não fechou. É o que justifica o empilhamento em
+      // hoje, e a tela precisa dizer isso em vez de mostrar um amontoado sem causa. A segunda
+      // metade não é detalhe: sem ela, a demanda ENTREGUE com um dia de atraso ficava vermelha
+      // para sempre, avisando de um empilhamento que não existe mais.
+      overdue: !!vencimento && vencimento < hojeISO && row.task.status !== "COMPLETED",
       doneHours: 0,
       pendingHours: 0,
       stages: [],
@@ -322,15 +370,26 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
     // negativo: quem passou da referência não devolve horas ao cliente.
     const pendente = Math.max(0, referencia - (realizadoPorEtapa.get(kEtapa) ?? 0));
 
-    // Não liberada aparece e NÃO soma: trabalho que ninguém pode começar não é carga de ninguém.
+    // `state` diz o que já PODE começar — não o que soma. Ver o cabeçalho do arquivo: aqui o
+    // pendente conta independente de a etapa estar liberada, porque toda etapa futura é, por
+    // definição, ainda não liberada.
     const state: StageLine["state"] =
       row.status === "COMPLETED" ? "done" : row.status === "ACTIVE" ? "pending" : "waiting";
     bloco.doneHours += feitoNoDia;
+    // O encaixe é RETROSPECTIVO quando a etapa está sendo posta num dia em que ela foi trabalhada,
+    // e não no dia que a projeção lhe deu. Ali o número honesto é o medido.
+    const retrospectivo = !contaPendente;
     // Desde a Task 3 a mesma etapa pode ser encaixada em mais de um dia: o dia PROJETADO (ou o dia
     // em que fechou) e, além dele, cada dia em que houve apontamento. Só o dia projetado carrega o
     // pendente — `contaPendente` é falso nos demais — senão a mesma hora pendente seria somada uma
-    // vez por dia em que a etapa aparece, inflando o total da semana.
-    if (state === "pending" && contaPendente) bloco.pendingHours += pendente;
+    // vez por dia em que a etapa aparece, inflando o total da semana. Concluída também não carrega:
+    // o que sobrou da referência dela não é trabalho que ainda vem.
+    if (state !== "done" && contaPendente) bloco.pendingHours += pendente;
+
+    // O número que a linha exibe: medição quando o encaixe olha para trás (etapa fechada, ou etapa
+    // aberta aparecendo no dia em que foi trabalhada), referência só no dia projetado. Antes disto,
+    // uma etapa aberta encaixada em três dias passados repetia o mesmo pendente nos três.
+    const mostraReferencia = !(state === "done" || retrospectivo);
 
     bloco.stages.push({
       id: row.id,
@@ -345,11 +404,12 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
         row.team?.name ??
         row.stage.defaultTeam?.name ??
         null,
-      hours: state === "done" ? feitoNoDia : pendente,
+      hours: mostraReferencia ? pendente : feitoNoDia,
       doneHours: feitoNoDia,
-      // A referência é estimativa quando não há amostra observada — a tela avisa, para o número
-      // não passar por medição.
-      estimated: sourceDe(row.stageId) === "declared",
+      // A referência é estimativa quando não há amostra observada — a tela avisa, para o número não
+      // passar por medição. Só que a marca fala sobre o número EXIBIDO: ao lado de um apontamento
+      // ela diria "isto é estimativa" sobre uma hora que alguém de fato trabalhou.
+      estimated: mostraReferencia && sourceDe(row.stageId) === "declared",
       state,
     });
 

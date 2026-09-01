@@ -12,6 +12,7 @@ vi.mock("@/lib/planning/stage-reference", () => ({
     new Map([
       ["s1", { hours: 2, source: "observed" }],
       ["s2", { hours: 3, source: "declared" }],
+      ["s3", { hours: 4, source: "observed" }],
     ])
   ),
 }));
@@ -30,6 +31,7 @@ function tarefa(over: Record<string, unknown> = {}) {
     id: "t1",
     title: "Vídeo institucional",
     dueDate: null,
+    status: "IN_PROGRESS",
     project: { name: "Institucional", client: { id: "c1", name: "Cliente A" } },
     ...over,
   };
@@ -150,7 +152,11 @@ describe("getClientLoad", () => {
     });
   });
 
-  it("etapa não liberada aparece na lista mas não soma — a mesma regra da mesa", () => {
+  it("etapa não liberada aparece na lista E SOMA — aqui a pergunta é outra que a da mesa", () => {
+    // A mesa esconde da SOMA o que ninguém pode começar, porque lá a pergunta é "o que dá para
+    // fazer agora". Aqui a pergunta é "quanto desta semana este cliente ocupa", e a projeção existe
+    // para mostrar o que VEM — que é, por definição, ainda não liberado. `state` continua dizendo
+    // que ela espera; o que ela não faz é sumir do total.
     vi.mocked(prisma.taskActiveStage.findMany)
       .mockResolvedValueOnce([row({ status: "INACTIVE" })] as never)
       .mockResolvedValueOnce([] as never);
@@ -158,8 +164,58 @@ describe("getClientLoad", () => {
     return getClientLoad(SEGUNDA).then((carga) => {
       const dia = carga.clients[0].byDay["2026-09-08"];
       expect(dia.tasks[0].stages[0].state).toBe("waiting");
-      expect(dia.pendingHours).toBe(0);
+      expect(dia.pendingHours).toBe(2);
       expect(dia.doneHours).toBe(0);
+    });
+  });
+
+  it("cadeia sequencial: o pendente das INACTIVE atrás da ACTIVE chega ao total", () => {
+    // O defeito que anulava a feature: numa cadeia normal só a PRIMEIRA etapa é ACTIVE, e a soma
+    // só aceitava ACTIVE. A projeção espalhava 9h pela semana e o cabeçalho da linha dizia 2h —
+    // o total contradizendo o próprio conteúdo da célula.
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        row({ id: "as1", stageId: "s1", plannedDate: new Date("2026-09-07T00:00:00Z") }),
+      ] as never)
+      .mockResolvedValueOnce([
+        row({
+          id: "as2",
+          stageId: "s2",
+          status: "INACTIVE",
+          plannedDate: null,
+          stage: {
+            name: "Edição",
+            order: 2,
+            defaultTeam: null,
+            dependents: [{ dependsOnStageId: "s1" }],
+          },
+        }),
+        row({
+          id: "as3",
+          stageId: "s3",
+          status: "INACTIVE",
+          plannedDate: null,
+          stage: {
+            name: "Aprovação",
+            order: 3,
+            defaultTeam: null,
+            dependents: [{ dependsOnStageId: "s2" }],
+          },
+        }),
+      ] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      const cliente = carga.clients[0];
+      const dias = cliente.byDay;
+      // Uma etapa por dia, na ordem do fluxo — a cadeia andando pela semana.
+      expect(dias["2026-09-07"].tasks[0].stages.map((e) => e.state)).toEqual(["pending"]);
+      expect(dias["2026-09-08"].tasks[0].stages.map((e) => e.state)).toEqual(["waiting"]);
+      expect(dias["2026-09-09"].tasks[0].stages.map((e) => e.state)).toEqual(["waiting"]);
+      expect(dias["2026-09-07"].pendingHours).toBe(2);
+      expect(dias["2026-09-08"].pendingHours).toBe(3);
+      expect(dias["2026-09-09"].pendingHours).toBe(4);
+      // E o cabeçalho da linha fecha com o que a linha mostra.
+      expect(cliente.totalPending).toBe(9);
     });
   });
 
@@ -451,6 +507,153 @@ describe("getClientLoad", () => {
       const bloco = carga.clients[0].byDay["2026-09-08"].tasks[0];
       expect(bloco.dueDateISO).toBe("2020-01-01");
       expect(bloco.overdue).toBe(true);
+    });
+  });
+
+  it("demanda ENTREGUE com atraso não fica vencida para sempre", () => {
+    // `overdue` promete "o prazo passou E a demanda não fechou" — é o que justifica o
+    // empilhamento em hoje. Sem a segunda metade, o alerta vermelho sobrevivia à entrega.
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        row({
+          plannedDate: new Date("2026-09-08T00:00:00Z"),
+          task: tarefa({ dueDate: new Date("2020-01-01T00:00:00Z"), status: "COMPLETED" }),
+        }),
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      expect(carga.clients[0].byDay["2026-09-08"].tasks[0].overdue).toBe(false);
+    });
+  });
+
+  it("pré-requisito marcado para DEPOIS da semana leva a dependente junto", () => {
+    // Roteiro fechou terça; o gestor marcou a Edição para a segunda que vem; a Aprovação depende
+    // dela. Enquanto a consulta das restantes exigia `plannedDate: null`, a Edição sumia do mapa da
+    // projeção e a Aprovação era tratada como se não tivesse pré-requisito nenhum — aparecia NESTA
+    // semana, antes do trabalho de que ela depende.
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        row({
+          id: "as1",
+          stageId: "s1",
+          status: "COMPLETED",
+          plannedDate: null,
+          completedAt: new Date("2026-09-08T13:00:00Z"),
+        }),
+      ] as never)
+      .mockResolvedValueOnce([
+        row({
+          id: "as2",
+          stageId: "s2",
+          status: "INACTIVE",
+          // Fora da janela da semana em tela — e é justamente por isso que ela precisa vir.
+          plannedDate: new Date("2026-09-14T00:00:00Z"),
+          stage: {
+            name: "Edição",
+            order: 2,
+            defaultTeam: null,
+            dependents: [{ dependsOnStageId: "s1" }],
+          },
+        }),
+        row({
+          id: "as3",
+          stageId: "s3",
+          status: "INACTIVE",
+          plannedDate: null,
+          stage: {
+            name: "Aprovação",
+            order: 3,
+            defaultTeam: null,
+            dependents: [{ dependsOnStageId: "s2" }],
+          },
+        }),
+      ] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      const dias = carga.clients[0].byDay;
+      const etapasNaSemana = carga.days.flatMap((d) =>
+        dias[d].tasks.flatMap((t) => t.stages.map((e) => e.id))
+      );
+      // Só o Roteiro concluído. A Edição está na semana que vem, e a Aprovação vai atrás dela.
+      expect(etapasNaSemana).toEqual(["as1"]);
+      expect(carga.clients[0].totalPending).toBe(0);
+    });
+  });
+
+  it("a consulta das restantes traz TODAS as não concluídas, sem repetir as já lidas", () => {
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([row({ id: "as1" })] as never)
+      .mockResolvedValueOnce([] as never);
+
+    return getClientLoad(SEGUNDA).then(() => {
+      const where = (
+        vi.mocked(prisma.taskActiveStage.findMany).mock.calls[1][0] as never as {
+          where: Record<string, unknown>;
+        }
+      ).where;
+      // Sem recorte por data: quem decide o que cabe na semana é a projeção.
+      expect(where.plannedDate).toBeUndefined();
+      // E sem duplicar o que a primeira consulta já trouxe.
+      expect(where.id).toEqual({ notIn: ["as1"] });
+    });
+  });
+
+  it("o realizado respeita o filtro de time — só as etapas que passaram por ele", () => {
+    // Regressão numa tela em produção: `linhas` filtrava por time, mas o apontamento era buscado
+    // por `taskId` inteiro. Com `?team=Vídeo`, a coluna "feito" passava a incluir as horas de
+    // qualquer pessoa em qualquer etapa daquelas demandas.
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([row({ id: "as1", stageId: "s1" })] as never)
+      .mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.timeLog.findMany).mockResolvedValue([
+      { taskId: "t1", stageId: "s1", hoursSpent: 2, logDate: new Date("2026-09-08T16:00:00Z") },
+      // Etapa de outro time, na mesma demanda: fora do recorte, e portanto fora do "feito".
+      { taskId: "t1", stageId: "s2", hoursSpent: 5, logDate: new Date("2026-09-08T16:00:00Z") },
+    ] as never);
+
+    return getClientLoad(SEGUNDA, "time1").then((carga) => {
+      expect(carga.clients[0].byDay["2026-09-08"].doneHours).toBe(2);
+      expect(carga.clients[0].totalDone).toBe(2);
+      // A consulta também já sai estreitada pelas etapas em tela.
+      const where = (
+        vi.mocked(prisma.timeLog.findMany).mock.calls[0][0] as never as {
+          where: { stageId?: unknown };
+        }
+      ).where;
+      expect(where.stageId).toEqual({ in: ["s1"] });
+    });
+  });
+
+  it("no dia retrospectivo a linha mostra o MEDIDO, não o pendente projetado", () => {
+    // A etapa vale 3h de referência (declarada) e está projetada para quinta. Na terça ela aparece
+    // porque houve apontamento — e ali o número honesto é 0,5h, não o pendente. Antes, `hours` só
+    // virava medição quando a etapa estava CONCLUÍDA, então a coluna de terça exibia o pendente
+    // inteiro: estimativa disfarçada de medição.
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        row({
+          stageId: "s2",
+          plannedDate: new Date("2026-09-10T00:00:00Z"),
+          stage: { name: "Edição", order: 2, defaultTeam: null, dependents: [] },
+        }),
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.timeLog.findMany).mockResolvedValue([
+      { taskId: "t1", stageId: "s2", hoursSpent: 0.5, logDate: new Date("2026-09-08T16:00:00Z") },
+    ] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      const dias = carga.clients[0].byDay;
+      const retro = dias["2026-09-08"].tasks[0].stages[0];
+      expect(retro.hours).toBe(0.5);
+      expect(retro.doneHours).toBe(0.5);
+      // E sem a marca `~`: o número exibido é medição, não referência declarada.
+      expect(retro.estimated).toBe(false);
+
+      const projetado = dias["2026-09-10"].tasks[0].stages[0];
+      expect(projetado.hours).toBe(2.5);
+      expect(projetado.estimated).toBe(true);
     });
   });
 });
