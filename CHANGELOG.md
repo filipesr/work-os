@@ -141,6 +141,22 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - **Etapa concluída sem apontamento conta zero.** Preencher o passado com estimativa seria fabricar
   histórico.
 
+#### Linha do tempo do projeto (substitui o kanban)
+
+- **O tempo entrou na tela do projeto.** Dia no eixo vertical — futuro projetado em cima, hoje no
+  meio, passado abaixo — e demandas no horizontal. O kanban respondia uma pergunta só, "onde cada
+  demanda está agora", e jogava fora quanto tempo cada uma ficou parada.
+- **Os vãos são comprimidos**, e é aí que está a informação: "12 dias sem movimento" no meio de um
+  projeto é o que ninguém via, e costuma ser a explicação do atraso.
+- **A gramática é a mesma da carga por cliente** (✓ feito, ▶ em curso, · não liberada, ~
+  referência), e o futuro sai da mesma projeção — nenhuma segunda implementação para divergir.
+- **A célula vazia usa `—` e nunca `·`**, porque `·` já significa "etapa não liberada" nesta
+  gramática — um glyfo com dois significados é como um vocabulário compartilhado deixa de ser
+  compartilhado.
+- **Corrigido de passagem:** os filtros "minhas demandas" e "por responsável" do kanban filtravam
+  por `Task.assigneeId`, campo que nenhum caminho do fluxo escreve — devolviam sempre vazio. Agora
+  filtram pelo responsável da etapa.
+
 ### 🐛 Corrigido
 
 - **Preview de avanço divergia da execução:** `previewNextStages` olhava apenas as etapas que

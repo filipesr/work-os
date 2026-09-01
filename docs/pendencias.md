@@ -43,6 +43,10 @@ todas elas.
 **Pergunta aberta:** `Task.assigneeId` continua no schema sem ser escrito por ninguém. Vale
 remover, ou existe intenção de usá-lo?
 
+**Atualização (linha do tempo do projeto):** o mesmo defeito existia nos filtros do kanban e foi
+corrigido lá — eles passaram a olhar `TaskActiveStage.assigneeId`. A cobertura semanal continua
+lendo `Task.assignee`; o conserto é o mesmo, noutro arquivo.
+
 ---
 
 ## 3. `/planning/week` atribui sem validar equipe — **defeito**
