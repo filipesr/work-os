@@ -27,7 +27,6 @@ async function getUser(userId: string) {
         _count: {
           select: {
             activeStages: { where: { status: "ACTIVE" } },
-            assignedTasks: true,
           },
         },
       },
@@ -118,9 +117,11 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
       </SectionCard>
 
       {/* Info Cards */}
-      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+      {/* Havia um terceiro cartão aqui, "Tarefas Atribuídas", contando `Task.assigneeId` — coluna
+          que nenhum caminho do fluxo escrevia. Mostrava ZERO para todo mundo, sempre, ao lado de
+          "Etapas Ativas", que é a mesma pergunta respondida com o dado certo. */}
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <StatCard label={t("activeStages")} value={user._count.activeStages} />
-        <StatCard label={t("assignedTasks")} value={user._count.assignedTasks} />
         <StatCard label={t("hoursLogged")} value={user.totalHours.toFixed(1)} />
       </div>
 

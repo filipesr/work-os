@@ -1282,7 +1282,6 @@ export async function getCalendarTasks(filters: CalendarFilters): Promise<Calend
     },
     include: {
       project: { include: { client: true } },
-      assignee: { select: { id: true, name: true } },
       activeStages: {
         include: {
           stage: { include: { defaultTeam: true } },
@@ -1325,8 +1324,10 @@ export async function getCalendarTasks(filters: CalendarFilters): Promise<Calend
       primaryStageId: primaryStage?.stage.id ?? null,
       primaryStageName: primaryStage?.stage.name ?? null,
       extraStageCount,
-      assigneeId: stageAssignee?.id ?? task.assignee?.id ?? null,
-      assigneeName: stageAssignee?.name ?? task.assignee?.name ?? null,
+      // Sem fallback para a demanda: houve um `?? task.assignee` aqui, do tempo em que existia
+      // `Task.assigneeId` — coluna que nenhum caminho escrevia, então o fallback nunca valeu.
+      assigneeId: stageAssignee?.id ?? null,
+      assigneeName: stageAssignee?.name ?? null,
       // Time EFETIVO: o coringa roteado na criação pertence a quem foi
       // roteado, não ao "sem equipe" do template.
       teamId: primaryStage ? (effectiveStageTeam(primaryStage)?.id ?? null) : null,

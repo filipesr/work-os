@@ -29,7 +29,14 @@ async function getProject(projectId: string) {
       },
       tasks: {
         include: {
-          assignee: { select: { id: true, name: true, email: true } },
+          // Quem responde pela demanda é o dono da etapa EM CURSO. Esta coluna lia
+          // `Task.assignee`, campo que nenhum caminho do fluxo escreve, e por isso mostrava
+          // "sem responsável" para toda demanda do sistema.
+          activeStages: {
+            where: { status: "ACTIVE" },
+            select: { assignee: { select: { name: true, email: true } } },
+            orderBy: { stage: { order: "asc" } },
+          },
           artifacts: {
             where: { isCurrent: true },
             include: { user: { select: { name: true, email: true } } },
@@ -189,7 +196,10 @@ export default async function ProjectDetailPage({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm text-muted-foreground">
-                      {task.assignee?.name || task.assignee?.email || t("unassigned")}
+                      {task.activeStages
+                        .map((as) => as.assignee?.name ?? as.assignee?.email)
+                        .filter(Boolean)
+                        .join(" · ") || t("unassigned")}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

@@ -164,6 +164,21 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### 🐛 Corrigido
 
+#### `Task.assigneeId` saiu do banco
+
+- **A coluna existia desde o começo e nenhum caminho do fluxo a escrevia.** A atribuição neste
+  sistema é por ETAPA, porque é a etapa que tem dono, prazo e equipe. Enquanto a coluna ficasse, era
+  uma armadilha com nome de API: três telas a leram achando que era a fonte e mostraram informação
+  que nunca esteve certa.
+- **O que estava mentindo e foi consertado junto:** a coluna "Responsável" da lista de demandas do
+  projeto (admin) passa a mostrar quem responde pelas etapas em curso; o cartão "Tarefas Atribuídas"
+  do perfil da pessoa saiu — mostrava zero para todo mundo, ao lado de "Etapas Ativas", que é a
+  mesma pergunta com o dado certo; e os filtros "atribuída/não atribuída" da lista de demandas
+  perderam um ramo que era sempre falso.
+- **Código morto que saiu junto:** a ação `unassignTask` e o botão que a chamava — ele só aparecia
+  quando havia responsável de demanda, então nunca apareceu.
+- **Conferido antes de remover:** zero linhas com o campo preenchido.
+
 #### `/planning/my-week` ganhou a coluna de disponíveis no computador
 
 - **Semana à esquerda, disponíveis à direita**, como na mesa do gestor — e o poço fica fixo ao

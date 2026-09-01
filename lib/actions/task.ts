@@ -118,7 +118,6 @@ export async function createTask(formData: FormData) {
         dueDate,
         status: "BACKLOG",
         projectId,
-        assigneeId: null,
         workflowTemplateId: templateId,
       },
     });
@@ -212,7 +211,6 @@ export async function createTasksBatch(input: {
           plannedStartAt,
           status: "BACKLOG",
           projectId,
-          assigneeId: null,
           workflowTemplateId: input.templateId,
           calendarOccurrenceId: input.calendarOccurrenceId ?? null,
         },
@@ -296,13 +294,6 @@ export async function getTaskById(taskId: string) {
       project: {
         include: {
           client: true,
-        },
-      },
-      assignee: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
         },
       },
       activeStages: {
@@ -400,8 +391,9 @@ export async function getTaskById(taskId: string) {
     ...task,
     currentStage: currentActiveStage ? currentActiveStage.stage : null,
     currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
-    // Override assignee with the assignee from the active stage
-    assignee: currentActiveStage?.assignee || task.assignee,
+    // O responsável da demanda É o da etapa em curso. Havia um `?? task.assignee` aqui, do tempo
+    // da coluna no nível da demanda — que nenhum caminho escrevia, então o fallback nunca valeu.
+    assignee: currentActiveStage?.assignee ?? null,
     stagePipeline,
   };
 }
@@ -504,20 +496,17 @@ export async function getTasks(options?: {
     });
   }
 
+  // "Atribuída" = alguma etapa ABERTA tem dono. Havia um `OR` com `Task.assigneeId` aqui: como
+  // nada escrevia a coluna, aquele ramo era sempre falso e só fazia o `where` parecer mais
+  // completo do que era.
   if (filters.assignment === "assigned") {
     and.push({
-      OR: [
-        { assigneeId: { not: null } },
-        {
-          activeStages: {
-            some: { status: { in: OPEN_STAGE_STATUSES }, assigneeId: { not: null } },
-          },
-        },
-      ],
+      activeStages: {
+        some: { status: { in: OPEN_STAGE_STATUSES }, assigneeId: { not: null } },
+      },
     });
   } else if (filters.assignment === "unassigned") {
     and.push({
-      assigneeId: null,
       activeStages: { none: { status: { in: OPEN_STAGE_STATUSES }, assigneeId: { not: null } } },
     });
   }
@@ -551,9 +540,6 @@ export async function getTasks(options?: {
         project: {
           include: { client: true },
         },
-        assignee: {
-          select: { id: true, name: true, email: true },
-        },
         activeStages: {
           where: { status: { in: ["ACTIVE", "BLOCKED"] } },
           include: {
@@ -580,7 +566,7 @@ export async function getTasks(options?: {
       ...task,
       currentStage: currentActiveStage ? currentActiveStage.stage : null,
       currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
-      assignee: currentActiveStage?.assignee || task.assignee,
+      assignee: currentActiveStage?.assignee ?? null,
     };
   });
 
@@ -605,82 +591,6 @@ export async function getAvailableNextStages(taskId: string) {
 }
 
 /**
- * Unassign a task (remove assignee) - Only for admin, manager, or task creator
- */
-export async function unassignTask(taskId: string) {
-  const currentUser = await getCurrentUser();
-  const currentUserId = currentUser.id as string;
-  const tTask = await getTranslations("errors.task");
-  const tCommon = await getTranslations("errors.common");
-
-  try {
-    // Fetch task + current user's role in parallel (independent queries)
-    const [task, userWithRole] = await Promise.all([
-      prisma.task.findUnique({
-        where: { id: taskId },
-        include: {
-          assignee: true,
-          project: {
-            include: {
-              client: true,
-            },
-          },
-        },
-      }),
-      prisma.user.findUnique({
-        where: { id: currentUserId },
-        select: { role: true },
-      }),
-    ]);
-
-    if (!task) {
-      return { error: tCommon("taskNotFound") };
-    }
-
-    // Check permissions: must be admin, manager, or the assignee themselves
-    const isAdmin = userWithRole?.role === "ADMIN";
-    const isManager = userWithRole?.role === "MANAGER";
-    const isAssignee = task.assigneeId === currentUserId;
-
-    if (!isAdmin && !isManager && !isAssignee) {
-      return {
-        error: tTask("unassignTaskOnlyAssigneeOrManager"),
-      };
-    }
-
-    // Unassign task and return it to backlog
-    await prisma.task.update({
-      where: { id: taskId },
-      data: {
-        assigneeId: null,
-        status: "BACKLOG", // Return task to backlog when unassigned
-      },
-    });
-
-    // Add comment about unassignment
-    const userName = currentUser.name || currentUser.email;
-    const previousAssignee = task.assignee?.name || task.assignee?.email || "Não atribuído";
-
-    await prisma.taskComment.create({
-      data: {
-        taskId: taskId,
-        userId: currentUserId,
-        content: `**TAREFA DESATRIBUÍDA** por ${userName}\nAnterior: ${previousAssignee}\nData: ${new Date().toLocaleString("pt-BR")}`,
-      },
-    });
-
-    revalidatePath(`/admin/tasks/${taskId}`);
-    revalidatePath("/admin/tasks");
-    revalidatePath("/dashboard");
-    revalidatePath(`/tasks/${taskId}`);
-    return { success: true };
-  } catch (error) {
-    console.error("Error unassigning task:", error);
-    return { error: tTask("unassignTaskFailed") };
-  }
-}
-
-/**
  * Complete a task - Mark task as COMPLETED
  * Can be used by task assignee, admin, or manager
  */
@@ -695,9 +605,7 @@ export async function completeTask(taskId: string) {
     const [task, userWithRole] = await Promise.all([
       prisma.task.findUnique({
         where: { id: taskId },
-        include: {
-          assignee: true,
-        },
+        select: { id: true, status: true },
       }),
       prisma.user.findUnique({
         where: { id: currentUserId },
@@ -709,12 +617,13 @@ export async function completeTask(taskId: string) {
       return { error: tCommon("taskNotFound") };
     }
 
-    // Check permissions: must be admin, manager, or the assignee
+    // Admin ou gestor. Havia um terceiro caso aqui — "ou o responsável pela demanda" —, mas ele
+    // comparava contra `Task.assigneeId`, coluna que nenhum caminho do fluxo escrevia: era sempre
+    // falso, e na prática só admin e gestor já concluíam. Removê-lo não muda quem pode.
     const isAdmin = userWithRole?.role === "ADMIN";
     const isManager = userWithRole?.role === "MANAGER";
-    const isAssignee = task.assigneeId === currentUserId;
 
-    if (!isAdmin && !isManager && !isAssignee) {
+    if (!isAdmin && !isManager) {
       return {
         error: tTask("completeOnlyAssigneeOrManager"),
       };
@@ -2019,7 +1928,6 @@ export async function revertTaskStage(
         where: { id: taskId },
         data: {
           status: "BACKLOG",
-          assigneeId: null,
         },
       });
     });
@@ -2405,7 +2313,6 @@ export async function duplicateTask(
           priority: original.priority,
           status: "BACKLOG",
           projectId: original.projectId,
-          assigneeId: null,
           dueDate: prazo.date,
           workflowTemplateId: templateId,
         },

@@ -87,7 +87,6 @@ export async function createQuickTask(formData: FormData) {
           priority: "MEDIUM",
           projectId,
           workflowTemplateId: templateId,
-          assigneeId: userId,
           createdAt,
           startedAt,
           completedAt,

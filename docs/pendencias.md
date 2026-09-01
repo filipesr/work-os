@@ -7,27 +7,7 @@ Item resolvido sai daqui e vira commit; item que virar feature grande vira spec 
 
 ---
 
-## 1. `Task.assigneeId` está no schema e ninguém escreve — **decisão pendente**
-
-**O que é:** o campo de responsável no nível da DEMANDA existe na tabela e **nenhum caminho do
-fluxo o preenche**. Conferido no banco: zero demandas com ele. A atribuição neste sistema é por
-etapa (`TaskActiveStage.assigneeId`).
-
-**O estrago que ele já fez:** três telas o leram achando que era a fonte, e as três mostravam
-informação que nunca esteve certa — os filtros do kanban (devolviam sempre vazio), a cobertura
-semanal (dizia "sem responsável" para toda demanda) e, por pouco, a linha do tempo. As três já
-foram corrigidas. O campo continua lá, convidando a próxima.
-
-**A decisão:** remover a coluna, ou assumir uma intenção de uso. Enquanto ficar, é uma armadilha
-com aparência de API — o nome é exatamente o que alguém procuraria.
-
-**Cuidado ao remover:** `lib/actions/reporting.ts` ainda o usa como _fallback_ depois do
-responsável da etapa (`stageAssignee?.name ?? task.assignee?.name`). O fallback é inofensivo hoje
-(sempre nulo), mas some junto.
-
----
-
-## 2. `/planning/client-load` — falta a demanda que ninguém pegou nem marcou
+## 1. `/planning/client-load` — falta a demanda que ninguém pegou nem marcou
 
 **Já resolvido:** a tela conta as etapas concluídas, o realizado vem do apontamento por dia, e o
 pendente é projetado pela cadeia de etapas até a véspera do vencimento. A célula fecha a demanda
@@ -45,7 +25,7 @@ tela deveria gritar — e hoje ela cala.
 
 ---
 
-## 3. Linha do tempo do projeto — arestas deixadas de propósito
+## 2. Linha do tempo do projeto — arestas deixadas de propósito
 
 **O que é:** a revisão final da linha do tempo (`/projects/{id}`) levantou quinze pontos. Os nove que
 mudavam comportamento foram corrigidos na entrega; estes quatro ficaram, cada um com o motivo.

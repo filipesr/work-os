@@ -44,14 +44,6 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
           },
         },
       },
-      assignee: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-        },
-      },
       activeStages: {
         where: {
           status: { in: ["ACTIVE", "BLOCKED"] },
@@ -154,8 +146,9 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
     currentActiveStage?.assignee?.name || currentActiveStage?.assignee?.email || null;
   const task = {
     ...taskData,
-    // Reflect the current stage's assignee as the task responsible (matches getTaskById)
-    assignee: currentActiveStage?.assignee ?? taskData.assignee,
+    // O responsável da demanda É o da etapa em curso (igual a `getTaskById`). Havia um fallback
+    // para `Task.assignee` aqui, coluna que nenhum caminho do fluxo escrevia — nunca valeu.
+    assignee: currentActiveStage?.assignee ?? null,
     currentStage: currentActiveStage ? currentActiveStage.stage : null,
     currentStageId: currentActiveStage ? currentActiveStage.stageId : null,
   };

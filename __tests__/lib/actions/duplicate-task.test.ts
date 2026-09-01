@@ -90,11 +90,13 @@ describe("duplicateTask", () => {
     await duplicateTask("t1", { dueDate: "2026-09-30", noDueDate: false });
 
     // Sem assignments a etapa de entrada nasce sem dono → task fica em BACKLOG
-    // com startedAt nulo, dentro da janela de lib/task-virgin.ts.
+    // com startedAt nulo, dentro da janela de lib/task-virgin.ts. Não há mais `assigneeId` na
+    // demanda para conferir: a coluna foi removida, e o dono sempre foi da ETAPA.
     expect(createTaskStages.mock.calls[0][1].assignments).toBeUndefined();
     expect(tx.task.create.mock.calls[0][0].data).toEqual(
-      expect.objectContaining({ status: "BACKLOG", assigneeId: null })
+      expect.objectContaining({ status: "BACKLOG" })
     );
+    expect(tx.task.create.mock.calls[0][0].data).not.toHaveProperty("assigneeId");
   });
 
   it("recusa duplicar tarefa sem etapas", async () => {

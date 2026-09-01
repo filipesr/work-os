@@ -193,7 +193,6 @@ model User {
   weeklyCapacityHours Int?
 
   // Relations
-  assignedTasks       Task[]            @relation("Assignee")
   activeStages        TaskActiveStage[] @relation("StageAssignee")
   comments            TaskComment[]
   stageCompletionNotes StageCompletionNote[]
@@ -368,8 +367,12 @@ model Task {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  assigneeId String?
-  assignee   User?   @relation("Assignee", fields: [assigneeId], references: [id], onUpdate: NoAction, onDelete: SetNull)
+  // NÃO existe responsável no nível da demanda. A atribuição neste sistema é por ETAPA
+  // (`TaskActiveStage.assigneeId`), porque é a etapa que tem dono, prazo e equipe. Houve uma coluna
+  // `assigneeId` aqui que nenhum caminho do fluxo escrevia: três telas a leram achando que era a
+  // fonte, e as três mostraram informação que nunca esteve certa. Removida — se algum dia a demanda
+  // precisar de um dono próprio, ele é outra coisa (um responsável de RELACIONAMENTO, não de
+  // execução) e merece nome próprio.
 
   // Task History (all in separate tables)
   activeStages         TaskActiveStage[]
