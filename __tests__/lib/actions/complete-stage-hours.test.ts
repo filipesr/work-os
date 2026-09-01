@@ -25,7 +25,10 @@ vi.mock("@/lib/prisma", () => ({
     stageTransition: { create: vi.fn().mockResolvedValue({}) },
     templateStage: { findUnique: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
     timeLog: { aggregate: vi.fn(), create: vi.fn().mockResolvedValue({}) },
-    activityLog: { findFirst: vi.fn().mockResolvedValue(null) },
+    activityLog: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      update: vi.fn().mockResolvedValue({}),
+    },
     stageCompletionNote: { create: vi.fn().mockResolvedValue({}) },
   },
 }));
@@ -50,6 +53,9 @@ function cenario(horasJaApontadas: number) {
   vi.mocked(prisma.timeLog.aggregate).mockResolvedValue({
     _sum: { hoursSpent: horasJaApontadas },
   } as never);
+  // `clearAllMocks` não desfaz `mockResolvedValue` de um teste anterior — só limpa o histórico de
+  // chamadas. Sem este reset, um cenário com cronômetro aberto vazaria para o próximo teste.
+  vi.mocked(prisma.activityLog.findFirst).mockResolvedValue(null);
 }
 
 beforeEach(() => vi.clearAllMocks());
@@ -122,5 +128,53 @@ describe("completeStageAndAdvance — apontamento", () => {
     cenario(3);
     await completeStageAndAdvance("t1", "s1");
     expect(prisma.stageCompletionNote.create).not.toHaveBeenCalled();
+  });
+
+  it("cronômetro aberto e motivo faltando: recusa e não fecha o cronômetro", async () => {
+    // Fechar é escrita. Uma recusa — por hora ou por motivo — não pode ter gravado nada no
+    // caminho: nem o TimeLog complementar, nem o fechamento do período em aberto.
+    cenario(0);
+    vi.mocked(prisma.activityLog.findFirst).mockResolvedValue({
+      id: "log1",
+      userId: "ana",
+      taskId: "t1",
+      stageId: "s1",
+      startedAt: new Date(Date.now() - 9 * 3_600_000), // 9h atrás: acima da referência (4h)
+    } as never);
+    const r = await completeStageAndAdvance("t1", "s1");
+    expect(r).toEqual({ error: "reasonRequired" });
+    expect(prisma.activityLog.update).not.toHaveBeenCalled();
+  });
+
+  it("gestor conclui etapa de outra pessoa: a hora complementar é do responsável", async () => {
+    // Cobre especificamente a restrição da task: as horas são de quem FEZ o trabalho, mesmo
+    // quando quem clica em concluir é outra pessoa. Com `cenario` o autor e o responsável são o
+    // mesmo ("ana"), e por isso não bastava para provar isto — aqui eles são pessoas diferentes.
+    vi.mocked(auth).mockResolvedValue({
+      user: { id: "gestor", name: "Gestor", email: "g@x.com", role: "ADMIN" },
+    } as never);
+    vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue({
+      id: "as1",
+      status: "ACTIVE",
+      assigneeId: "bruno",
+      stageId: "s1",
+      stage: { id: "s1", name: "Edição", template: {}, defaultTeam: null },
+      task: { id: "t1", project: { client: {} } },
+    } as never);
+    vi.mocked(prisma.templateStage.findUnique).mockResolvedValue({ templateId: "tpl" } as never);
+    vi.mocked(prisma.timeLog.aggregate).mockResolvedValue({
+      _sum: { hoursSpent: 1 },
+    } as never);
+    // Sem `cenario` aqui — reseta explicitamente o que o teste anterior deixou configurado.
+    vi.mocked(prisma.activityLog.findFirst).mockResolvedValue(null);
+
+    await completeStageAndAdvance("t1", "s1", undefined, { hours: 3 });
+
+    const data = vi.mocked(prisma.timeLog.create).mock.calls[0][0].data as {
+      hoursSpent: number;
+      userId: string;
+    };
+    expect(data.hoursSpent).toBe(2);
+    expect(data.userId).toBe("bruno");
   });
 });

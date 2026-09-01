@@ -25,7 +25,7 @@ import { recordStageTransition, recordStageTransitions } from "@/lib/stage-trans
 import { markTaskStarted } from "@/lib/task-start";
 import { needsReason, type StageNoteReasonValue } from "@/lib/stage-completion-note";
 import { getStageReferences } from "@/lib/planning/stage-reference";
-import { closeActivityLog } from "@/lib/activity-close";
+import { closeActivityLog, hoursBetween } from "@/lib/activity-close";
 import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
 // Re-export types for backward compatibility
@@ -918,21 +918,46 @@ export async function completeStageAndAdvance(
       return { error: tTask("noPermissionCompleteStage") };
     }
 
+    // 3. Validate contribution (if not admin/manager)
+    if (!isAdmin && !isManager) {
+      const contributions = await prisma.$transaction([
+        prisma.taskArtifact.count({
+          where: { taskId, userId: currentUserId },
+        }),
+        prisma.taskComment.count({
+          where: { taskId, userId: currentUserId },
+        }),
+      ]);
+
+      const [artifactCount, commentCount] = contributions;
+      if (artifactCount === 0 && commentCount === 0) {
+        return { error: tTask("evidenceRequired") };
+      }
+    }
+
     // --- Apontamento: a metade "realizado" de todas as telas de tempo nasce aqui ---
     //
-    // O cronômetro aberto fecha ANTES de somar: senão a pessoa confirmaria um total que o próprio
-    // sistema contradiria um segundo depois, quando o período fechasse sozinho.
+    // Fica depois da checagem de evidência (e antes de qualquer escrita da conclusão): toda
+    // recusa — permissão, evidência, hora, motivo — tem que deixar a etapa exatamente como
+    // estava. Por isso a leitura do cronômetro aberto NÃO fecha nada ainda: fechar é escrita, e
+    // uma recusa por hora ou por motivo faltando não pode ter gravado nada no caminho.
+    const agora = new Date();
     const aberto = await prisma.activityLog.findFirst({
       where: { taskId, stageId, endedAt: null },
       select: { id: true, userId: true, taskId: true, stageId: true, startedAt: true },
     });
-    if (aberto) await closeActivityLog(prisma, aberto, new Date());
+    // Quanto o período aberto já vale, sem gravar nada — a mesma conta que `closeActivityLog`
+    // fará depois, com o mesmo instante `agora`, para o número não mudar entre validar e fechar.
+    const horasAbertas = aberto ? hoursBetween(aberto.startedAt, agora) : 0;
 
     const agregado = await prisma.timeLog.aggregate({
       where: { taskId, stageId },
       _sum: { hoursSpent: true },
     });
-    const jaApontado = agregado._sum.hoursSpent ?? 0;
+    const jaGravado = agregado._sum.hoursSpent ?? 0;
+    // O que já está trabalhado, gravado ou não: o período em aberto entra na conta desde já, ou
+    // a etapa recusaria concluir por falta de hora com o cronômetro rodando na própria tela.
+    const jaApontado = jaGravado + horasAbertas;
     const informado = apontamento?.hours;
 
     // Sem apontamento nenhum e sem número informado, não há o que concluir: a etapa fecharia
@@ -954,9 +979,19 @@ export async function completeStageAndAdvance(
       return { error: tTask("reasonRequired") };
     }
 
+    // Toda validação passou — só agora é seguro escrever. Fecha o cronômetro aberto primeiro
+    // (ele mesmo vira TimeLog, por conta de `closeActivityLog`) e só então grava a diferença como
+    // complementar, contando o que o fechamento acabou de gravar — senão o mesmo período entraria
+    // duas vezes.
+    let jaLancado = jaGravado;
+    if (aberto) {
+      const fechamento = await closeActivityLog(prisma, aberto, agora);
+      if (fechamento.recorded) jaLancado += fechamento.hoursSpent;
+    }
+
     // A diferença vira apontamento complementar, com data de hoje. As horas são de quem FEZ o
     // trabalho — mesmo quando quem clica em concluir é o gestor.
-    const diferenca = totalHoras - jaApontado;
+    const diferenca = totalHoras - jaLancado;
     if (diferenca > 0) {
       await prisma.timeLog.create({
         data: {
@@ -983,23 +1018,6 @@ export async function completeStageAndAdvance(
           referenceHours,
         },
       });
-    }
-
-    // 3. Validate contribution (if not admin/manager)
-    if (!isAdmin && !isManager) {
-      const contributions = await prisma.$transaction([
-        prisma.taskArtifact.count({
-          where: { taskId, userId: currentUserId },
-        }),
-        prisma.taskComment.count({
-          where: { taskId, userId: currentUserId },
-        }),
-      ]);
-
-      const [artifactCount, commentCount] = contributions;
-      if (artifactCount === 0 && commentCount === 0) {
-        return { error: tTask("evidenceRequired") };
-      }
     }
 
     // 4. Fecha TODO log aberto desta etapa — não só o primeiro.

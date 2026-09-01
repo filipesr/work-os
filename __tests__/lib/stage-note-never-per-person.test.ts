@@ -16,17 +16,30 @@ function arquivos(dir: string): string[] {
   });
 }
 
+/** Todo índice onde `alvo` aparece em `texto` — não só o primeiro. Um arquivo grande pode ter mais
+ *  de uma função que fala de `stageCompletionNote`, e a segunda não pode ficar fora do guarda. */
+function ocorrencias(texto: string, alvo: string): number[] {
+  const posicoes: number[] = [];
+  for (let i = texto.indexOf(alvo); i !== -1; i = texto.indexOf(alvo, i + alvo.length)) {
+    posicoes.push(i);
+  }
+  return posicoes;
+}
+
 describe("StageCompletionNote nunca é agregado por pessoa", () => {
   it("nenhum arquivo agrupa ou conta a nota por usuário", () => {
     const suspeitos: string[] = [];
     for (const caminho of [...arquivos("lib"), ...arquivos("app"), ...arquivos("components")]) {
       const texto = readFileSync(caminho, "utf-8");
-      if (!texto.includes("stageCompletionNote")) continue;
-      // Recorta o trecho que fala da tabela e procura agregação por pessoa perto dela.
-      const trecho = texto.slice(texto.indexOf("stageCompletionNote"));
-      const janela = trecho.slice(0, 600);
-      if (/groupBy[\s\S]{0,120}userId/.test(janela)) suspeitos.push(caminho);
-      if (/_count[\s\S]{0,120}userId/.test(janela)) suspeitos.push(caminho);
+      // Cada ocorrência ganha a própria janela: um arquivo com 2000+ linhas pode ter mais de uma
+      // função que fala da tabela, e olhar só a partir da primeira deixaria as demais no escuro.
+      for (const pos of ocorrencias(texto, "stageCompletionNote")) {
+        const janela = texto.slice(pos, pos + 600);
+        if (/groupBy[\s\S]{0,120}userId/.test(janela) || /_count[\s\S]{0,120}userId/.test(janela)) {
+          suspeitos.push(caminho);
+          break;
+        }
+      }
     }
     expect(suspeitos).toEqual([]);
   });
