@@ -244,4 +244,29 @@ describe("projectDemandDays", () => {
     // b depende da conclusão de a; libera o mesmo dia da conclusão.
     expect(r.get("b")).toBe("2026-09-09");
   });
+
+  it("demanda VENCIDA: data humana não é puxada para hoje pela parede", () => {
+    // Vence em 2026-09-04 (quinta passada). Parede = 2026-09-07 (segunda, hoje).
+    // Uma etapa com plannedDate em 2026-09-08 deve ficar em 2026-09-08, não ser puxada para hoje.
+    const r = projectDemandDays({
+      stages: [etapa({ id: "a", plannedDate: "2026-09-08" })],
+      days: DIAS,
+      todayISO: "2026-09-07",
+      dueDateISO: "2026-09-04",
+    });
+    // Data humana manda: fica onde foi posta.
+    expect(r.get("a")).toBe("2026-09-08");
+  });
+
+  it("demanda VENCIDA: sem plannedDate, a parede continua valendo", () => {
+    // Mesma demanda: ordem 1 sem plannedDate deve cair na parede (hoje).
+    const r = projectDemandDays({
+      stages: [etapa({ id: "a", order: 1 })],
+      days: DIAS,
+      todayISO: "2026-09-07",
+      dueDateISO: "2026-09-04",
+    });
+    // Sem data humana, cascata caiu na parede.
+    expect(r.get("a")).toBe("2026-09-07");
+  });
 });

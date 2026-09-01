@@ -436,9 +436,8 @@ describe("getClientLoad", () => {
 
   it("vencimento passado marca a demanda como vencida", () => {
     // Sem este caso, uma regressão que devolvesse `overdue: false` sempre passaria despercebida.
-    // O vencimento de 2020 é a parede: mesmo com `plannedDate` humano em 2026-09-08, a projeção
-    // clampa para a âncora (o primeiro dia visível, já que hoje está fora desta semana) — vencida
-    // não tem para onde adiar.
+    // Data humana manda: uma etapa com `plannedDate` em 2026-09-08 fica lá, mesmo que o vencimento
+    // seja 2020-01-01 e a parede fosse hoje. A parede não desfaz decisão do gestor.
     vi.mocked(prisma.taskActiveStage.findMany)
       .mockResolvedValueOnce([
         row({
@@ -449,7 +448,7 @@ describe("getClientLoad", () => {
       .mockResolvedValueOnce([] as never);
 
     return getClientLoad(SEGUNDA).then((carga) => {
-      const bloco = carga.clients[0].byDay["2026-09-07"].tasks[0];
+      const bloco = carga.clients[0].byDay["2026-09-08"].tasks[0];
       expect(bloco.dueDateISO).toBe("2020-01-01");
       expect(bloco.overdue).toBe(true);
     });

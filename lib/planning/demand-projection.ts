@@ -98,6 +98,7 @@ export function projectDemandDays(input: {
     }
 
     let dia: string;
+    let fromPlannedDate = false;
 
     // Concluída: devolve o completedDay se conhecido, ou âncora se não há data (sem restrição).
     if (s.status === "COMPLETED") {
@@ -105,6 +106,7 @@ export function projectDemandDays(input: {
     } else if (s.plannedDate) {
       // Decisão humana manda: inventar por cima dela seria a tela discordando de quem a usa.
       dia = s.plannedDate;
+      fromPlannedDate = true;
     } else {
       let base = ancora;
       for (const depId of s.dependsOnIds) {
@@ -131,8 +133,8 @@ export function projectDemandDays(input: {
 
     // Atrasado entra no primeiro dia visível, como em toda tela deste sistema.
     if (dia < primeiro) dia = primeiro;
-    // Parede do vencimento limita o quanto se pode adiar.
-    if (parede && dia > parede) dia = parede;
+    // Parede do vencimento limita o quanto a cascata pode adiar — mas não desfaz decisão humana.
+    if (!fromPlannedDate && parede && dia > parede) dia = parede;
 
     diaDe.set(stageId, dia);
     visitando.delete(stageId);
