@@ -24,9 +24,17 @@ import { availableStageWhere, notDiscardedStageWhere } from "@/lib/task-availabi
  * e sem o concluído a leitura se inverte: a carga ENCOLHE conforme a semana avança, e quem mais
  * entregou aparece como quem menos ocupou.
  *
- * As horas são de REFERÊNCIA nos dois lados — feito e por fazer contam pelo mesmo p50/SLA da
- * etapa. Uma unidade só na célula: misturar hora apontada com hora de referência no mesmo total
- * já custou um bug nesta base, e o apontamento é voluntário demais para servir de denominador.
+ * O feito é o APONTAMENTO (`TimeLog`) do dia, não a referência da etapa concluída: com o
+ * apontamento obrigatório em vigor, o realizado passa a ser medido, não estimado. O pendente é a
+ * referência menos o que já foi apontado na janela, nunca negativo. Etapa concluída SEM
+ * apontamento conta ZERO — preencher o passado com estimativa seria fabricar histórico.
+ *
+ * As três grandezas — referência, realizado e pendente — são hora de TRABALHO, e por isso a
+ * subtração "referência − realizado" fecha. Antes não fechava: a referência (`getStageReferences`)
+ * media tempo de RELÓGIO (`completedAt − startedAt` da etapa), e uma etapa aberta a noite toda sem
+ * ninguém mexer inflava a mesma referência que o apontamento, em hora de trabalho, tentava
+ * descontar. Uma correção anterior trocou a fonte da referência para o próprio `TimeLog` — datas
+ * diferentes da mesma unidade, não mais grandezas diferentes disputando o mesmo número.
  *
  * Etapa não liberada aparece na lista mas não soma — a mesma regra da mesa. Trabalho que ninguém
  * pode começar não é carga de ninguém.
@@ -53,12 +61,24 @@ export type TaskBlock = {
   taskId: string;
   projectName: string;
   taskTitle: string;
+  /** Soma do `doneHours` das etapas DESTE bloco — o apontamento que caiu no dia em que o bloco
+   *  está posicionado. Não é a mesma conta de `ClientDay.doneHours`: uma etapa apontada num dia
+   *  diferente daquele em que está posicionada (concluída/planejada) credita o cliente naquele
+   *  outro dia, não aqui. */
   doneHours: number;
   pendingHours: number;
   stages: StageLine[];
 };
 
-export type ClientDay = { doneHours: number; pendingHours: number; tasks: TaskBlock[] };
+export type ClientDay = {
+  /** Apontamento do CLIENTE inteiro neste dia, somado direto do `TimeLog` — não a soma dos
+   *  `TaskBlock.doneHours` dos blocos exibidos aqui. Por isso pode incluir horas de etapas cujo
+   *  bloco está posicionado (e visível) em outro dia da semana; é estado transitório até a Task 3,
+   *  que passa a exibir a etapa também no dia em que foi trabalhada. */
+  doneHours: number;
+  pendingHours: number;
+  tasks: TaskBlock[];
+};
 
 export type ClientWeek = {
   clientId: string;

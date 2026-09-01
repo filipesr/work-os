@@ -330,4 +330,20 @@ describe("getClientLoad", () => {
       expect(carga.clients[0].byDay["2026-09-09"].pendingHours).toBe(0);
     });
   });
+
+  it("estimated marca quando a referência é declarada, não observada", () => {
+    // s1 é "observed" e s2 é "declared" no mock de getStageReferences — a tela avisa a diferença.
+    vi.mocked(prisma.taskActiveStage.findMany)
+      .mockResolvedValueOnce([
+        row({ id: "as1", stageId: "s1" }),
+        row({ id: "as2", stageId: "s2", stage: { name: "Edição", order: 2 } }),
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+
+    return getClientLoad(SEGUNDA).then((carga) => {
+      const stages = carga.clients[0].byDay["2026-09-08"].tasks[0].stages;
+      expect(stages.find((e) => e.id === "as1")?.estimated).toBe(false);
+      expect(stages.find((e) => e.id === "as2")?.estimated).toBe(true);
+    });
+  });
 });
