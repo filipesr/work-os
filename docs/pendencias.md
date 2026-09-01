@@ -7,25 +7,7 @@ Item resolvido sai daqui e vira commit; item que virar feature grande vira spec 
 
 ---
 
-## 1. `/planning/client-load` — falta a demanda que ninguém pegou nem marcou
-
-**Já resolvido:** a tela conta as etapas concluídas, o realizado vem do apontamento por dia, e o
-pendente é projetado pela cadeia de etapas até a véspera do vencimento. A célula fecha a demanda
-inteira, com quem faria cada etapa.
-
-**O que continua faltando:** demanda que não tem dono **nem** dia não aparece em lugar nenhum desta
-tela. Saber que um cliente tem cinco demandas paradas, sem ninguém e sem data, é justamente o que a
-tela deveria gritar — e hoje ela cala.
-
-**Perguntas a resolver no desenho:**
-
-- Coluna própria ("sem dia") ao lado dos seis dias, ou faixa separada abaixo da grade?
-- Vale distinguir "sem prazo" de "sem equipe"? São dois problemas diferentes, e o segundo tem dono
-  óbvio (o gestor roteia); o primeiro agora é uma escolha declarada na criação.
-
----
-
-## 2. Linha do tempo do projeto — arestas deixadas de propósito
+## 1. Linha do tempo do projeto — arestas deixadas de propósito
 
 **O que é:** a revisão final da linha do tempo (`/projects/{id}`) levantou quinze pontos. Os nove que
 mudavam comportamento foram corrigidos na entrega; estes quatro ficaram, cada um com o motivo.

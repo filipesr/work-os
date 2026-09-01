@@ -130,6 +130,25 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - **A justificativa é causa declarada, não penalidade.** Não bloqueia nada além da própria
   conclusão, não pontua, não entra em indicador, e nenhuma leitura a agrega por pessoa.
 
+#### `/planning/client-load` mostra o que ninguém pegou nem marcou
+
+- **O silêncio era indistinguível de "está tudo distribuído".** As três portas da tela exigiam
+  vínculo com a semana — dia marcado, etapa reivindicada, conclusão nela —, então a demanda parada
+  não aparecia em lugar nenhum. Agora tem coluna própria, na linha do cliente.
+- **Ordenada por urgência:** com prazo primeiro, por prazo crescente (a vencida sobe sozinha), sem
+  prazo por último — e entre as sem prazo, a mais parada primeiro, porque são as que nunca vão subir
+  por vencimento.
+- **Cada linha diz o que fazer,** não só o que está parado: `sem equipe` (o gestor roteia), prazo sem
+  marca (alguém pega), `sem prazo` (alguém decide a data), e `parado há N dias`.
+- **As horas paradas ficam FORA do total da semana.** O total responde "quanto este cliente ocupou",
+  e trabalho parado não ocupou nada. O número tem lugar próprio, no cabeçalho da coluna.
+- **O cliente que só tem trabalho parado ganha linha na grade** — é o pior caso, e antes ele sumia
+  da tela inteira.
+- **Cada linha também mostra há quanto tempo está parada** (`parado há N dias`), contada a partir do
+  mais recente dos dois fatos — o dia de lançamento da etapa e o da última entrada de tempo na
+  demanda —, porque sem a entrada de tempo uma demanda que alguém pegou, trabalhou e largou ontem
+  reivindicaria estar parada há quarenta dias.
+
 #### Carga por cliente: passado medido, futuro projetado
 
 - **O realizado vem do apontamento**, por dia. "Trabalhei 2h ontem e não terminei" aparece como 2h
