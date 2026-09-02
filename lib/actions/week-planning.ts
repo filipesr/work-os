@@ -424,6 +424,11 @@ export async function scheduleStage(input: {
 
     const doDestino = await prisma.taskActiveStage.findMany({
       where: {
+        // Demanda descartada não bloqueia horário de ninguém: ela já não aparece na mesa (a
+        // leitura aplica a mesma regra). Sem isto, a janela de uma demanda obsoleta ou cancelada
+        // barrava um agendamento legítimo e ainda era NOMEADA na recusa — mandando o gestor caçar
+        // na grade algo que a grade não mostra. Ver lib/task-availability.ts.
+        ...notDiscardedStageWhere(),
         assigneeId: input.userId,
         // O dia de DESTINO, nunca o de origem: a pergunta é "esta pessoa está livre nesta faixa NO
         // DIA PARA ONDE a etapa vai". `row.plannedDate` é de onde ela veio — e podia ser nulo, que
@@ -597,6 +602,11 @@ export async function setStageWindow(input: {
   // existente colidiria com ele próprio.
   const outras = await prisma.taskActiveStage.findMany({
     where: {
+      // Demanda descartada não bloqueia horário de ninguém: ela já não aparece na mesa (a leitura
+      // aplica a mesma regra). Sem isto, a janela de uma demanda obsoleta ou cancelada barrava um
+      // agendamento legítimo e ainda era NOMEADA na recusa — mandando o gestor caçar na grade algo
+      // que a grade não mostra. Ver lib/task-availability.ts.
+      ...notDiscardedStageWhere(),
       assigneeId: row.assigneeId,
       plannedDate: row.plannedDate,
       scheduledStart: { not: null },
@@ -760,6 +770,9 @@ export async function listWindowCandidates(
   // Ver `getWeekPlanning`: uma consulta para todo o time, nunca uma por pessoa.
   const agendasDoDia = await prisma.taskActiveStage.findMany({
     where: {
+      // Demanda descartada não ocupa a agenda de ninguém — mesma regra da mesa e das outras duas
+      // checagens de colisão. Ver lib/task-availability.ts.
+      ...notDiscardedStageWhere(),
       assigneeId: { in: membros.map((m) => m.id) },
       plannedDate: row.plannedDate,
       scheduledStart: { not: null },

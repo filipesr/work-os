@@ -22,6 +22,7 @@ vi.mock("@/lib/prisma", () => ({
 import prisma from "@/lib/prisma";
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { listWindowCandidates, setStageWindow } from "@/lib/actions/week-planning";
+import { notDiscardedStageWhere } from "@/lib/task-availability";
 
 const db = prisma as unknown as {
   taskActiveStage: {
@@ -284,6 +285,22 @@ describe("setStageWindow — a trava de sobreposição", () => {
       scheduledStart: { not: null },
       id: { not: "as1" },
     });
+  });
+
+  it("[IMPORTANTE] demanda DESCARTADA não bloqueia horário — é a mesma regra da mesa", async () => {
+    // A leitura da mesa já aplica `notDiscardedStageWhere`: uma demanda obsoleta ou cancelada não
+    // ocupa dia de ninguém e não aparece na grade. As checagens de colisão não aplicavam — então a
+    // janela de uma demanda MORTA barrava um agendamento legítimo, e a recusa ainda nomeava, como
+    // obstáculo, algo que a tela não mostra em lugar nenhum. O gestor era mandado caçar um
+    // fantasma. A regra mora em `lib/task-availability.ts` justamente para não divergir por tela.
+    db.taskActiveStage.findUnique.mockResolvedValue(linha());
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+
+    await setStageWindow({ activeStageId: "as1", startTime: "15:00" });
+
+    expect(db.taskActiveStage.findMany.mock.calls[0][0].where).toMatchObject(
+      notDiscardedStageWhere()
+    );
   });
 });
 
