@@ -68,7 +68,8 @@
       "IN_PROGRESS": "En Progreso",
       "PAUSED": "Pausada",
       "COMPLETED": "Completada",
-      "CANCELLED": "Cancelada"
+      "CANCELLED": "Cancelada",
+      "OBSOLETE": "Obsoleta"
     },
     "nav": {
       "prev": "Mes anterior",
