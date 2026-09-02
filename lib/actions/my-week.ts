@@ -128,6 +128,7 @@ export async function getMyWeek(mondayISO: string): Promise<MyWeek> {
         plannedDate: true,
         plannedOrder: true,
         scheduledStart: true,
+        scheduledEnd: true,
         assignedAt: true,
         stage: { select: { name: true } },
         task: {
@@ -203,6 +204,7 @@ export async function getMyWeek(mondayISO: string): Promise<MyWeek> {
       referenceHours: horasDe(row.stageId),
       referenceSource: sourceDe(row.stageId),
       scheduledStart: row.scheduledStart,
+      scheduledEnd: row.scheduledEnd,
       taskTitle: row.task.title,
       stageName: row.stage.name,
       stageStatus: row.status,

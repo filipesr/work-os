@@ -141,6 +141,7 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
         plannedDate: true,
         plannedOrder: true,
         scheduledStart: true,
+        scheduledEnd: true,
         assignedAt: true,
         stage: { select: { name: true } },
         task: {
@@ -261,6 +262,7 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
       referenceHours: horasDe(row.stageId),
       referenceSource: sourceDe(row.stageId),
       scheduledStart: row.scheduledStart,
+      scheduledEnd: row.scheduledEnd,
       // Rótulos para a lista de conflitos: sem eles a tela sabe QUE algo está em risco, mas não O
       // QUE remarcar. Vêm de campos que a consulta acima já busca.
       taskTitle: row.task.title,

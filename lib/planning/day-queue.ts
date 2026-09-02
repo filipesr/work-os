@@ -20,6 +20,9 @@ export type QueueItemInput = {
   referenceHours: number;
   /** Preenchido só nos itens com compromisso marcado. */
   scheduledStart: Date | null;
+  /** Fim declarado do compromisso, quando existe. Passthrough puro — a fila ordena e classifica
+   *  pelo INÍCIO; o fim só atravessa até a tela, que reabre o diálogo com os dois campos. */
+  scheduledEnd?: Date | null;
   /** `"declared"` = SLA cadastrado (ou nem isso — pode vir com `referenceHours: 0`), não medição
    *  real. Opcional e sem papel nenhum na fila: só atravessa até a tela, que é quem precisa avisar
    *  que o número é estimativa. Ver `lib/planning/stage-reference.ts`. */

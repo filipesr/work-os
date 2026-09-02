@@ -247,6 +247,24 @@ describe("getWeekPlanning", () => {
     expect(r.people[0].byDay["2026-08-31"].slots[0].kind).toBe("scheduled");
   });
 
+  it("o FIM da janela também atravessa do select até a fila", async () => {
+    // Mesmo fio do teste acima, um campo adiante: select do Prisma -> QueueItemInput.scheduledEnd ->
+    // tela. Sem ele, reabrir o diálogo de um compromisso de 14h–16h o transformaria silenciosamente
+    // num de "14h + referência".
+    db.taskActiveStage.findMany.mockResolvedValue([
+      stageRow({
+        scheduledStart: new Date("2026-08-31T14:00:00Z"),
+        scheduledEnd: new Date("2026-08-31T16:00:00Z"),
+      }),
+    ]);
+
+    const r = await getWeekPlanning("2026-08-31");
+
+    expect(r.people[0].byDay["2026-08-31"].slots[0].item.scheduledEnd).toEqual(
+      new Date("2026-08-31T16:00:00Z")
+    );
+  });
+
   it("demanda descartada não ocupa dia na mesa", () => {
     // Mesma regra da tela da pessoa e da carga por cliente, na mesma fonte compartilhada.
     return getWeekPlanning("2026-08-31").then(() => {
