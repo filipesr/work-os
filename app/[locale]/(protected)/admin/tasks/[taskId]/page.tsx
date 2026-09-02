@@ -1,8 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTaskById, getPreviousStages, getTaskTimeTracking } from "@/lib/actions/task";
-import { AdvanceStageButton } from "@/components/tasks/AdvanceStageButton";
-import { RevertStageButton } from "@/components/tasks/RevertStageButton";
-import { UnassignActiveStageButton } from "@/components/tasks/UnassignActiveStageButton";
+import { AdminTaskStages } from "@/components/tasks/AdminTaskStages";
 import { CompleteTaskButton } from "@/components/tasks/CompleteTaskButton";
 import prisma from "@/lib/prisma";
 import { mapArtifactRow } from "@/lib/artifacts/unify";
@@ -126,11 +124,6 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
     ),
   };
 
-  // Time EFETIVO da etapa atual: numa etapa coringa quem responde é o time
-  // roteado na criação, não o "sem equipe" que o template deixou.
-  const currentPipelineRow = task.stagePipeline.find((ps) => ps.stageId === task.currentStageId);
-  const currentRouting = currentPipelineRow ? effectiveStageTeam(currentPipelineRow) : null;
-
   const artifactRows = [
     ...task.artifacts.map((a) => mapArtifactRow(a, "TASK", { id: task.id, title: task.title })),
     ...(scoped?.artifacts ?? []).map((a) => mapArtifactRow(a, "PROJECT")),
@@ -208,48 +201,20 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
             )}
           </SectionCard>
 
-          {/* Current Stage & Actions */}
+          {/* Active stage actions (Task 10): a demanda não elege mais "a" etapa sozinha via
+              `currentStageId` — fork/join deixa mais de uma `TaskActiveStage` ACTIVE ou BLOCKED
+              ao mesmo tempo, e cada uma ganha o próprio bloco de ações abaixo.
+              `CompleteTaskButton` fica de fora: concluir a demanda é poder de nível DEMANDA, não
+              de etapa. */}
           <SectionCard
             title={t("currentStage")}
-            action={
-              <div className="flex gap-2 flex-wrap">
-                <AdvanceStageButton taskId={task.id} currentStageId={task.currentStageId} />
-                <RevertStageButton taskId={task.id} previousStages={previousStages} />
-                <CompleteTaskButton taskId={task.id} taskStatus={task.status} />
-                {task.currentStageId && (
-                  <UnassignActiveStageButton
-                    taskId={task.id}
-                    stageId={task.currentStageId}
-                    currentAssignee={task.assignee?.name || task.assignee?.email || null}
-                  />
-                )}
-              </div>
-            }
+            action={<CompleteTaskButton taskId={task.id} taskStatus={task.status} />}
           >
-            {task.currentStage ? (
-              <div className="border-2 border-primary/20 bg-primary/5 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold">
-                    {task.currentStage.order}
-                  </span>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-foreground">
-                      {task.currentStage.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {t("template")} {task.currentStage.template.name}
-                    </p>
-                    {currentRouting && (
-                      <p className="text-sm text-muted-foreground">
-                        {t("team")} {currentRouting.name}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-muted-foreground">{t("noCurrentStage")}</p>
-            )}
+            <AdminTaskStages
+              taskId={task.id}
+              stages={task.activeStages}
+              previousStages={previousStages}
+            />
           </SectionCard>
 
           {/* All stages pipeline (status + responsible per stage) */}
