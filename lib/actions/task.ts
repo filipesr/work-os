@@ -119,6 +119,9 @@ export async function createTask(formData: FormData) {
         status: "BACKLOG",
         projectId,
         workflowTemplateId: templateId,
+        // Quem gerou a demanda assina a instrução das etapas dela — inclusive as que outra pessoa
+        // vai executar. É por isso que este campo existe.
+        createdById: userId,
       },
     });
 
