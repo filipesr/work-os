@@ -35,5 +35,3 @@ Não são pendências desta lista, mas quem lê aqui costuma precisar delas:
 - **Upload de artefato é LAN-only** — fora da rede, só o registro de link. Ver a spec da tarefa
   rápida, seção "Problema em aberto — foto do artefato fora da rede".
 - **Marcar demanda como obsoleta não apaga as horas apontadas nela.**
-- **Janela fixa de agendamento** (`scheduledStart`/`scheduledEnd`) não tem tela: só existe no
-  banco. Sem ela, o bloco de conflitos da programação semanal nunca acende em uso real.

@@ -53,6 +53,8 @@ A exceção são os itens com **janela fixa** — agendamento de pessoa, lugar o
 hora porque a realidade tem: a locação é às 14h. Não é estimativa apresentada como verdade; é
 compromisso.
 
+> A janela fixa ganhou tela própria: [`docs/superpowers/specs/2026-09-02-janela-fixa-agendamento-design.md`](2026-09-02-janela-fixa-agendamento-design.md).
+
 ## Decisões
 
 ### A unidade programada é a ETAPA

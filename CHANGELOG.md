@@ -118,6 +118,43 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   pura. As horas saem do mesmo cálculo da mesa — etapa não liberada aparece sem somar —, senão o
   mesmo cliente teria dois números diferentes na mesma semana.
 
+#### Janela fixa do agendamento
+
+- **Marcar o compromisso vira ação da mesa** (`/planning/week`): numa etapa que já está numa coluna
+  de dia, o gestor declara o início (obrigatório) e, se souber, o fim (opcional). A ação não recebe
+  data nenhuma — o dia sai do `plannedDate` da própria linha, o que torna estruturalmente impossível
+  gravar um compromisso de quinta numa etapa sentada na coluna de quarta. Fecha a pendência "janela
+  fixa não tem tela": `scheduledStart`/`scheduledEnd` existiam desde a fatia 1 da programação
+  semanal, e o bloco de conflito no topo da mesa nunca acendia em uso real porque nada os escrevia.
+- **A faixa que conta para colisão** é o fim declarado, quando existe; senão o início mais as horas
+  de referência da etapa; senão início + 1h por convenção, para uma etapa sem referência nenhuma não
+  virar trava decorativa.
+- **Sobreposição nunca chega ao banco.** Ao colidir, o servidor não grava nada e devolve quem está
+  no caminho — demanda, etapa e horário. A prioridade decide se a nova pode tomar o horário
+  (`rank(nova) > rank(ocupante)`, ou a nova ser `URGENT` — condição que só importa em
+  urgente-contra-urgente, porque `URGENT` já é o topo do enum). Autorizada, o gestor escolhe uma
+  saída: adiar a ocupante para o primeiro horário livre, remarcar a nova para outra hora, passar a
+  ocupante para outra pessoa, ou passar a nova para outra pessoa — ou cancelar. As duas trocas listam
+  só o time efetivo da etapa; quem já tem compromisso na faixa aparece **desabilitado com o motivo**,
+  não escondido, e quando todo o time está comprometido a lista diz isso em vez de deixar um botão
+  morto.
+- **Adiar a ocupante e trocar a ocupante só aparecem com exatamente UM ocupante.** As duas saídas
+  agem sobre um compromisso só; com dois ou mais, "a que foi marcada" deixa de ter um único
+  referente.
+- **Devolver ao poço limpa a janela, e mudar de dia também.** Um compromisso foi combinado _para
+  aquele dia_: devolver ao poço sem limpar deixaria um agendamento fantasma esperando a etapa voltar
+  noutro dia com outra pessoa, e deslizar o compromisso ao mudar de coluna seria o sistema remarcando
+  um estúdio sozinho.
+- **A trava de "já atribuído" foi relaxada para troca no mesmo dia.** Toda etapa na mesa já tem
+  dono, então sem essa folga duas das quatro saídas de troca seriam impossíveis de oferecer. Mudar
+  de dia continua recusando: isso é reagendamento de verdade, e mora na tela da própria etapa, não
+  no diálogo de conflito.
+- **Agendados passam a ordenar por hora entre si, não pela posição manual** — senão "o que fazer
+  agora" podia apontar para o compromisso das 16h antes do das 10h. É uma segunda passagem sobre as
+  posições que os agendados já ocupam, não uma regra de comparação: um comparador que mistura "por
+  hora" com "por posição" não é transitivo, e fazia o `Array.sort` devolver ordens diferentes para
+  os mesmos itens.
+
 #### Apontamento obrigatório para concluir etapa
 
 - **Concluir etapa passa a exigir horas.** Quem usou o cronômetro não digita nada: o campo já vem
