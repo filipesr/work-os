@@ -31,10 +31,21 @@ export function WindowDialog({
   const t = useTranslations("planning.week");
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  // Inicializado da prop, não sincronizado depois: reabrir o diálogo precisa mostrar o horário que
-  // já está marcado (ver comentário no teste), e o diálogo nasce fechado a cada montagem da célula.
   const [start, setStart] = useState(startTime ?? "");
   const [end, setEnd] = useState(endTime ?? "");
+
+  // O estado local é rascunho de edição; a verdade é a prop, e reabrir tem de recomeçar dela. O
+  // `<li>` da célula é estável entre um "Desmarcar" e o `router.refresh()` que o segue — React
+  // reaproveita esta mesma instância, então sem isto o formulário reabriria mostrando um
+  // compromisso que o servidor já apagou, e um submit desatento o recriaria. Também cobre quem
+  // mexeu na hora com o diálogo fechado.
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      setStart(startTime ?? "");
+      setEnd(endTime ?? "");
+    }
+    setOpen(next);
+  };
 
   const fecharEAtualizar = () => {
     setOpen(false);
@@ -54,7 +65,7 @@ export function WindowDialog({
   return (
     <FormDialog
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={handleOpenChange}
       trigger={
         <Button type="button" variant="outline" size="sm" aria-label={t("windowOpen")}>
           <Clock className="h-3.5 w-3.5" />
@@ -76,7 +87,9 @@ export function WindowDialog({
         }}
       >
         <div>
-          <FieldLabel htmlFor="wd-start">{t("windowStart")}</FieldLabel>
+          <FieldLabel htmlFor="wd-start" required>
+            {t("windowStart")}
+          </FieldLabel>
           <input
             id="wd-start"
             type="time"

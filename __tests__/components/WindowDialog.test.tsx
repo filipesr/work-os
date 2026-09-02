@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const setStageWindow = vi.fn().mockResolvedValue({ success: true });
 vi.mock("@/lib/actions/week-planning", () => ({
@@ -24,7 +24,11 @@ describe("WindowDialog", () => {
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
-    expect((screen.getByLabelText("windowStart") as HTMLInputElement).value).toBe("14:00");
+    // `exact: false`: o label carrega o asterisco de obrigatório (FieldLabel `required`), então o
+    // texto acessível é "windowStart*", não "windowStart".
+    expect((screen.getByLabelText("windowStart", { exact: false }) as HTMLInputElement).value).toBe(
+      "14:00"
+    );
     expect((screen.getByLabelText("windowEnd") as HTMLInputElement).value).toBe("16:00");
   });
 
@@ -33,7 +37,9 @@ describe("WindowDialog", () => {
       <WindowDialog activeStageId="as1" label="Reels · Gravação" startTime={null} endTime={null} />
     );
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
-    fireEvent.change(screen.getByLabelText("windowStart"), { target: { value: "09:30" } });
+    fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
+      target: { value: "09:30" },
+    });
     fireEvent.submit(screen.getByTestId("window-form"));
     expect(setStageWindow).toHaveBeenCalledWith({
       activeStageId: "as1",
@@ -50,5 +56,39 @@ describe("WindowDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
     fireEvent.click(screen.getByRole("button", { name: "windowClear" }));
     expect(setStageWindow).toHaveBeenCalledWith({ activeStageId: "as1", startTime: null });
+  });
+
+  it("reabrir depois de desmarcar não ressuscita o horário apagado", async () => {
+    // A falha que isto evita: o `<li>` da célula é estável entre um "Desmarcar" e o
+    // `router.refresh()` que o segue, então a MESMA instância do componente sobrevive. Sem
+    // recarregar o rascunho a partir das props ao abrir, o formulário reabriria mostrando
+    // 14:00–16:00 mesmo depois do servidor já ter apagado o compromisso — e um submit
+    // desatento o recriaria.
+    const { rerender } = render(
+      <WindowDialog
+        activeStageId="as1"
+        label="Reels · Gravação"
+        startTime="14:00"
+        endTime="16:00"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    fireEvent.click(screen.getByRole("button", { name: "windowClear" }));
+
+    // `fecharEAtualizar` roda dentro do `useTransition` do `useServerAction` — assíncrono. Espera
+    // o diálogo fechar de verdade antes de simular o `router.refresh()`, senão a reabertura abaixo
+    // não passaria por `handleOpenChange` com o diálogo já aberto.
+    await waitFor(() => expect(screen.queryByTestId("window-form")).not.toBeInTheDocument());
+
+    // O que `router.refresh()` traria de volta: as mesmas props, agora nulas.
+    rerender(
+      <WindowDialog activeStageId="as1" label="Reels · Gravação" startTime={null} endTime={null} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    expect((screen.getByLabelText("windowStart", { exact: false }) as HTMLInputElement).value).toBe(
+      ""
+    );
+    expect((screen.getByLabelText("windowEnd") as HTMLInputElement).value).toBe("");
   });
 });
