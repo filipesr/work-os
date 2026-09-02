@@ -106,4 +106,49 @@ describe("activateNextStages — instrução da etapa liberada", () => {
     await activateNextStages("t1", "s1");
     expect(db.taskComment.createMany).not.toHaveBeenCalled();
   });
+
+  it("etapa revertida e reativada: a instrução chega de novo, sem checagem de 'já entreguei'", async () => {
+    // A instrução é direção para o trabalho que vem, não registro; quem refaz a etapa depois de
+    // uma reversão precisa dela de novo, e a conversa do retrabalho não pode começar cega. Sem
+    // este teste, alguém "conserta" a duplicata no futuro achando que é bug, e a segunda passada
+    // passa a começar sem direção nenhuma. Ruling do controller: o comportamento fica.
+    const { db, activateNextStages } = await setup();
+    db.task.findUnique.mockResolvedValue({ createdById: "gestor1" });
+    db.taskActiveStage.findMany
+      .mockResolvedValueOnce([
+        { stageId: "s1", status: "COMPLETED" },
+        { stageId: "s2", status: "INACTIVE" },
+      ])
+      .mockResolvedValueOnce([{ id: "as2", instructions: "Gravar no estúdio B" }])
+      .mockResolvedValueOnce([
+        { stageId: "s1", status: "COMPLETED" },
+        { stageId: "s2", status: "INACTIVE" },
+      ])
+      .mockResolvedValueOnce([{ id: "as2", instructions: "Gravar no estúdio B" }]);
+    db.templateStage.findUnique.mockResolvedValue({ templateId: "tpl" });
+    db.templateStage.findMany.mockResolvedValue(
+      graph([{ id: "s1" }, { id: "s2", dependsOn: ["s1"] }])
+    );
+
+    // Primeira passada: libera a etapa, a instrução vira comentário.
+    await activateNextStages("t1", "s1");
+    // Reversão devolveu a etapa a INACTIVE (fora deste teste) e o avanço seguinte a reativa —
+    // mesma TaskActiveStage.id, mesma instructions.
+    await activateNextStages("t1", "s1");
+
+    const conteudoEsperado = {
+      data: [
+        {
+          taskId: "t1",
+          userId: "gestor1",
+          activeStageId: "as2",
+          kind: "STAGE_INSTRUCTION",
+          content: "Gravar no estúdio B",
+        },
+      ],
+    };
+    expect(db.taskComment.createMany).toHaveBeenCalledTimes(2);
+    expect(db.taskComment.createMany).toHaveBeenNthCalledWith(1, conteudoEsperado);
+    expect(db.taskComment.createMany).toHaveBeenNthCalledWith(2, conteudoEsperado);
+  });
 });
