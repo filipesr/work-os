@@ -22,6 +22,9 @@ export default async function BlockedQueue() {
         <ul className="divide-y divide-border">
           {items.map((i) => (
             <li key={`${i.taskId}-${i.stageName}`} className="py-2">
+              {/* BlockedItem (getBlockedStages) não carrega o id da instância da etapa
+                  (TaskActiveStage.id), só dados do template — buscá-lo exigiria uma
+                  consulta nova em lib/actions/team-health.ts. Fica na demanda. */}
               <Link
                 href={`/tasks/${i.taskId}`}
                 className="block hover:bg-accent rounded-md px-2 py-1 -mx-2"

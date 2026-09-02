@@ -14,6 +14,7 @@ import {
 import { recordStageTransition } from "@/lib/stage-transitions";
 import { markTaskStarted } from "@/lib/task-start";
 import { taskVirginBlocker } from "@/lib/task-virgin";
+import { stagePath } from "@/lib/navigation";
 
 /**
  * Corrige o desenho de uma demanda **ainda não iniciada**: quais etapas
@@ -97,6 +98,9 @@ export async function updateTaskStageSetup(formData: FormData) {
   const existingByStage = new Map(task.activeStages.map((r) => [r.stageId, r]));
   const entryStageId = included[0].id; // menor ordem incluída = entrada do fluxo
   let entryAssigned = false;
+  // Capturado dentro da transação (o próprio update/create da entrada já devolve a linha) e usado
+  // só depois, fora dela, para revalidar a tela da etapa — sem consulta extra.
+  let entryActiveStageId: string | null = null;
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // 1. Etapas que saíram do desenho. A tarefa nunca começou, então não há
@@ -131,7 +135,7 @@ export async function updateTaskStageSetup(formData: FormData) {
 
       const existing = existingByStage.get(stage.id);
       if (existing) {
-        await tx.taskActiveStage.update({
+        const linha = await tx.taskActiveStage.update({
           where: { taskId_stageId: { taskId, stageId: stage.id } },
           data: {
             status,
@@ -141,11 +145,12 @@ export async function updateTaskStageSetup(formData: FormData) {
             assignedAt: assigneeId ? new Date() : null,
           },
         });
+        if (isEntry) entryActiveStageId = linha.id;
         if (existing.status !== status) {
           await recordStageTransition(tx, taskId, stage.id, status);
         }
       } else {
-        await tx.taskActiveStage.create({
+        const linha = await tx.taskActiveStage.create({
           data: {
             taskId,
             stageId: stage.id,
@@ -156,6 +161,7 @@ export async function updateTaskStageSetup(formData: FormData) {
             ...(assigneeId ? { assignedAt: new Date() } : {}),
           },
         });
+        if (isEntry) entryActiveStageId = linha.id;
         await recordStageTransition(tx, taskId, stage.id, status);
       }
     }
@@ -185,6 +191,9 @@ export async function updateTaskStageSetup(formData: FormData) {
   revalidatePath("/admin/tasks");
   revalidatePath("/dashboard");
   revalidatePath(`/projects/${task.projectId}`);
+  // A entrada é a única etapa que já nasce ACTIVE deste redesenho — time, instrução e
+  // responsável dela podem ter mudado, e é a tela que alguém pode estar olhando agora.
+  if (entryActiveStageId) revalidatePath(stagePath(taskId, entryActiveStageId));
 
   return { success: true };
 }

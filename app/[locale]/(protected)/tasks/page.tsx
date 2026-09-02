@@ -9,6 +9,7 @@ import { StageList, type StageRow } from "@/components/shared/StageList";
 import { WorkFilters, type WorkScope, type WorkStatus } from "@/components/shared/WorkFilters";
 import type { ActiveStageWithDetails } from "@/types/task";
 import type { Tone } from "@/lib/status-tone";
+import { stagePath } from "@/lib/navigation";
 
 export const metadata: Metadata = { title: "Meu Trabalho" };
 
@@ -116,7 +117,8 @@ export default async function TasksPage({
     }
     return {
       id: s.id,
-      href: `/tasks/${s.task.id}`,
+      // Vem de "minhas etapas": leva para a tela de trabalho da etapa, não para a demanda.
+      href: stagePath(s.task.id, s.id),
       taskTitle: s.task.title,
       clientProject: `${s.task.project.client.name} · ${s.task.project.name}`,
       stageName: s.stage.name,

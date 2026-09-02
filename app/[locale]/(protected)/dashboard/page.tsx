@@ -14,6 +14,7 @@ import { stageAgingRatio } from "@/lib/team-health-format";
 import { DEFAULT_SLA_HOURS } from "@/lib/actions/team-health";
 import { getTeamBacklog } from "@/lib/actions/task";
 import type { Tone } from "@/lib/status-tone";
+import { stagePath } from "@/lib/navigation";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -169,7 +170,8 @@ export default async function DashboardPage() {
     }
     return {
       id: s.id,
-      href: `/tasks/${s.task.id}`,
+      // Vem de "meu foco" (etapas ativas do usuário): leva para a tela de trabalho da etapa.
+      href: stagePath(s.task.id, s.id),
       taskTitle: s.task.title,
       clientProject: `${s.task.project.client.name} · ${s.task.project.name}`,
       stageName: s.stage.name,

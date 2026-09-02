@@ -324,6 +324,9 @@ export async function prepareArtifactUpload(input: unknown) {
     if (taskId) {
       revalidatePath(`/tasks/${taskId}`);
       revalidatePath(`/admin/tasks/${taskId}`);
+      // Sem revalidatePath de etapa: `data.stageId` referencia TemplateStage (é o que
+      // `TaskArtifact.stage` aponta no schema), não a instância — a instância exigiria consulta
+      // nova (taskId + stageId → TaskActiveStage.id).
     }
     if (projectId) revalidatePath(`/admin/projects/${projectId}`);
     if (clientId) revalidatePath(`/admin/clients/${clientId}`);
@@ -430,6 +433,8 @@ export async function createShareLink(input: unknown) {
       eventType: "SHARE_CREATED",
       metadata: { shareLinkId: link.id, expiresAt: expiresAt.toISOString() },
     });
+    // Sem revalidatePath de etapa: só o `taskId` do artefato é buscado — sem instância de etapa
+    // em mãos (e nada aqui a amarra a uma).
     revalidatePath(`/tasks/${artifact.taskId}`);
 
     return {
@@ -498,6 +503,7 @@ export async function changeSensitivity(input: unknown) {
       });
     });
 
+    // Sem revalidatePath de etapa: só o `taskId` do artefato é buscado — sem instância em mãos.
     revalidatePath(`/tasks/${artifact.taskId}`);
     return { success: true as const };
   } catch (error) {
@@ -546,6 +552,7 @@ export async function softDeleteArtifact(artifactId: string) {
       });
     });
 
+    // Sem revalidatePath de etapa: só o `taskId` do artefato é buscado — sem instância em mãos.
     revalidatePath(`/tasks/${artifact.taskId}`);
     return { success: true as const };
   } catch (error) {
@@ -571,6 +578,7 @@ export async function restoreArtifact(artifactId: string) {
     });
     await audit(prisma, { artifactId, actorUserId: user.id as string, eventType: "RESTORED" });
 
+    // Sem revalidatePath de etapa: só o `taskId` do artefato é buscado — sem instância em mãos.
     revalidatePath(`/tasks/${artifact.taskId}`);
     return { success: true as const };
   } catch (error) {
@@ -695,6 +703,9 @@ async function requireForArtifactScope(scope: string) {
   return scope === "TASK" ? requireMemberOrHigher() : requireManagerOrAdmin();
 }
 
+// Sem revalidatePath de etapa: os dois chamadores só selecionam `taskId` do artefato — e mesmo
+// que selecionassem `stageId`, ele referencia TemplateStage (não a instância), então chegar ao
+// TaskActiveStage.id exigiria consulta nova em ambos.
 function revalidateForArtifact(a: {
   taskId: string | null;
   projectId: string | null;

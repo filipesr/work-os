@@ -198,6 +198,9 @@ export function TeamLoadBalanceClient({ rows, summary }: { rows: MemberLoad[]; s
             <ul className="divide-y divide-border">
               {stages.map((s) => (
                 <li key={`${s.taskId}-${s.stageName}`} className="py-3">
+                  {/* MemberStage (getMemberActiveStages) não carrega o id da instância da
+                      etapa (TaskActiveStage.id) — buscá-lo exigiria uma consulta nova em
+                      lib/actions/member-drill.ts. Fica na demanda. */}
                   <Link
                     href={`/tasks/${s.taskId}`}
                     className="block rounded-md px-2 py-1.5 -mx-2 hover:bg-accent"

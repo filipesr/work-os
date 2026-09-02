@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { getNavItems, isNavGroup, type AppRole, type NavItem } from "@/lib/navigation";
+import { getNavItems, isNavGroup, stagePath, type AppRole, type NavItem } from "@/lib/navigation";
 
 /**
  * A navegação é a única superfície onde os nomes de todas as telas aparecem
@@ -106,5 +106,13 @@ describe("navegação", () => {
       );
       expect(hrefs[0], `menu difere entre idiomas para ${papel}`).toEqual(hrefs[1]);
     }
+  });
+});
+
+describe("stagePath", () => {
+  it("o caminho da etapa é montado num lugar só", () => {
+    // Seis telas linkam para a etapa. Seis interpolações à mão divergem no dia em que a rota mudar —
+    // e uma delas vai continuar mandando para a demanda sem ninguém notar.
+    expect(stagePath("t1", "as2")).toBe("/tasks/t1/stages/as2");
   });
 });

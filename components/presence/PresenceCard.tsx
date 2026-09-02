@@ -120,6 +120,9 @@ export function PresenceCard({
   // sugere uma interação que não existe ali.
   if (isTv || !entry.activeLog) return card;
 
+  // ActivityLog (fonte do activeLog) não tem relação com TaskActiveStage — só
+  // task e a etapa de TEMPLATE. Chegar ao id da instância exigiria uma consulta
+  // nova em lib/actions/activity.ts. Fica na demanda.
   return (
     <Link href={`/tasks/${entry.activeLog.task.id}`} target="_blank">
       {card}

@@ -150,3 +150,14 @@ export function roleLabelKey(role: AppRole): string {
 export function homeHref(_role: AppRole): string {
   return "/dashboard";
 }
+
+/**
+ * Caminho da tela de etapa (leitura E trabalho), a partir da demanda e da
+ * instância de etapa ativa (`TaskActiveStage.id`, não o id do template).
+ * Único lugar que sabe a forma dessa rota — quem chega de um contexto de
+ * etapa (minhas etapas, dashboard, filas de aging/bloqueio, balanço de time,
+ * presença) deve linkar para cá, não para a demanda somente-leitura.
+ */
+export function stagePath(taskId: string, activeStageId: string): string {
+  return `/tasks/${taskId}/stages/${activeStageId}`;
+}

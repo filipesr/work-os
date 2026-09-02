@@ -28,6 +28,7 @@ import { getStageReferences } from "@/lib/planning/stage-reference";
 import { closeActivityLog, hoursBetween } from "@/lib/activity-close";
 import { realInstant } from "@/lib/dates";
 import { buildInstructionComments } from "@/lib/stage-instruction";
+import { stagePath } from "@/lib/navigation";
 import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
 // Re-export types for backward compatibility
@@ -663,6 +664,8 @@ export async function completeTask(taskId: string) {
     revalidatePath(`/admin/tasks/${taskId}`);
     revalidatePath("/admin/tasks");
     revalidatePath("/dashboard");
+    // Sem revalidatePath de etapa aqui: `completeTask` opera na DEMANDA inteira, sem carregar
+    // nenhuma instância de TaskActiveStage — buscar uma exigiria uma consulta nova.
     revalidatePath(`/tasks/${taskId}`);
     return { success: true };
   } catch (error) {
@@ -1150,6 +1153,11 @@ export async function completeStageAndAdvance(
     revalidatePath("/admin/tasks");
     revalidatePath("/dashboard");
     revalidatePath(`/tasks/${taskId}`);
+    // `activeStage.id` já foi buscado acima (linha 822+); a etapa que acabou de concluir tem tela
+    // própria (mesmo somente-leitura agora) que não pode continuar mostrando ACTIVE.
+    revalidatePath(stagePath(taskId, activeStage.id));
+    // As PRÓXIMAS etapas ativadas/bloqueadas por `activateNextStages` só carregam o id do
+    // TemplateStage, não o da instância (TaskActiveStage.id) — buscá-lo exigiria consulta nova.
 
     return {
       success: true,
@@ -1547,6 +1555,9 @@ export async function claimActiveStage(taskId: string, stageId: string) {
 
     revalidatePath("/dashboard");
     revalidatePath(`/tasks/${taskId}`);
+    // `activeStage.id` já foi buscado acima: é a etapa que a pessoa acaba de reivindicar, e é ali
+    // que ela vai trabalhar — a tela da etapa não pode continuar mostrando "sem responsável".
+    revalidatePath(stagePath(taskId, activeStage.id));
 
     return { success: true };
   } catch (error) {
@@ -1651,6 +1662,9 @@ export async function unassignActiveStage(taskId: string, stageId: string) {
 
     revalidatePath("/dashboard");
     revalidatePath(`/tasks/${taskId}`);
+    // `activeStage.id` já foi buscado acima: a etapa acaba de voltar ao poço, e a tela dela não
+    // pode continuar mostrando o responsável que acabou de sair.
+    revalidatePath(stagePath(taskId, activeStage.id));
 
     return { success: true };
   } catch (error) {
@@ -1885,6 +1899,11 @@ export async function revertTaskStage(
       return { error: tTask("noPermissionRevert") };
     }
 
+    // Capturado dentro da transação (é o `id` da linha que a reversão reativa) e usado só depois,
+    // fora dela, para revalidar a tela da etapa — sem consulta extra: é o mesmo dado que o UPDATE
+    // já devolve.
+    let etapaRevertidaId: string | null = null;
+
     // 4. Execute reversion in a transaction
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 4a. Fechar logs abertos das etapas que estavam em andamento e marcá-las como REVERTED.
@@ -1946,6 +1965,7 @@ export async function revertTaskStage(
         },
       });
       await recordStageTransition(tx, taskId, revertToStageId, "ACTIVE");
+      etapaRevertidaId = linhaAlvo.id;
 
       // 4c-bis. Registrar o retrabalho atribuído à etapa-origem (a etapa-alvo).
       await tx.reworkEvent.create({
@@ -2000,6 +2020,8 @@ export async function revertTaskStage(
     revalidatePath("/admin/tasks");
     revalidatePath("/dashboard");
     revalidatePath(`/tasks/${taskId}`);
+    // A etapa-alvo reativada é onde o trabalho de refazer vai acontecer.
+    if (etapaRevertidaId) revalidatePath(stagePath(taskId, etapaRevertidaId));
 
     return {
       success: true,
@@ -2051,6 +2073,9 @@ export async function addComment(
     // Revalidate the task detail pages
     revalidatePath(`/tasks/${taskId}`);
     revalidatePath(`/admin/tasks/${taskId}`);
+    // `activeStageId` é parâmetro da própria função: quando a conversa é de etapa (não da
+    // demanda), a tela dessa etapa mostra os mesmos comentários e ficaria com a lista velha.
+    if (activeStageId) revalidatePath(stagePath(taskId, activeStageId));
 
     return { success: true, comment };
   } catch (error) {
@@ -2105,6 +2130,8 @@ export async function addLinkArtifact(
     // Revalidate the task detail pages
     revalidatePath(`/tasks/${taskId}`);
     revalidatePath(`/admin/tasks/${taskId}`);
+    // `addLinkArtifact` não recebe `activeStageId` — não há instância de etapa em mãos aqui, e
+    // adivinhar uma exigiria consulta nova.
 
     return { success: true, artifact };
   } catch (error) {
@@ -2232,6 +2259,11 @@ export async function logTime(
     revalidatePath(`/tasks/${taskId}`);
     revalidatePath(`/admin/tasks/${taskId}`);
     revalidatePath(`/reports/productivity`);
+    // `activeStageId` (parâmetro) é a instância mostrada ao apontar; mesma validação de posse
+    // (`activeStageRow.taskId === taskId`) usada acima para aceitar o apontamento.
+    if (activeStageId && activeStageRow?.taskId === taskId) {
+      revalidatePath(stagePath(taskId, activeStageId));
+    }
 
     return { success: true, timeLog };
   } catch (error) {
@@ -2312,6 +2344,8 @@ export async function markTaskObsolete(taskId: string) {
     });
 
     revalidatePath(`/admin/tasks/${taskId}`);
+    // Sem revalidatePath de etapa: obsolescência é decisão sobre a DEMANDA toda, sem uma
+    // instância de etapa específica em mãos.
     revalidatePath(`/tasks/${taskId}`);
     revalidatePath("/admin/tasks");
     revalidatePath("/dashboard");

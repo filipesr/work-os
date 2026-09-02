@@ -98,6 +98,9 @@ export async function startWorkOnTask(
     revalidatePath(`/admin/tasks/${taskId}`);
     revalidatePath(`/reports/live-activity`);
     revalidatePath(`/dashboard`);
+    // Sem revalidatePath de etapa: `currentStageId` aqui é o id do TemplateStage (é o que
+    // `ActivityLog.stageId` referencia), não o da instância (TaskActiveStage.id) — chegar nela
+    // exigiria uma consulta nova.
 
     return { success: true, ...result };
   } catch (error) {
@@ -152,6 +155,8 @@ export async function stopWorkOnTask(activeLogId: string, taskId: string, descri
     revalidatePath(`/admin/tasks/${taskId}`);
     revalidatePath(`/reports/live-activity`);
     revalidatePath(`/dashboard`);
+    // Mesmo caso de `startWorkOnTask`: `log.stageId` é o id do TemplateStage, não da instância —
+    // chegar ao TaskActiveStage.id exigiria uma consulta nova.
 
     return { success: true };
   } catch (error) {
