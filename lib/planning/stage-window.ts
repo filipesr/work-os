@@ -1,3 +1,5 @@
+import type { TaskPriority } from "@prisma/client";
+
 /**
  * A matemática da janela fixa: que faixa cada compromisso ocupa, quem colide com quem, quem vence
  * e para onde vai o perdedor.
@@ -49,4 +51,17 @@ export function rangesOverlap(a: Range, b: Range): boolean {
  *  chamador precisa dizer ao gestor QUAL demanda está ali, não só que existe uma. */
 export function collidingWith<T extends { range: Range }>(nova: Range, ocupadas: T[]): T[] {
   return ocupadas.filter((o) => rangesOverlap(nova, o.range));
+}
+
+const RANK: Record<TaskPriority, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, URGENT: 3 };
+
+/**
+ * A nova pode ocupar um horário já comprometido?
+ *
+ * Duas metades, e a segunda não é redundante: `URGENT` já é o topo do enum, então "maior que a
+ * ocupante" nunca autorizaria urgente contra urgente — e é justamente esse o caso que ela libera.
+ * Empate em qualquer outro nível não passa.
+ */
+export function canOverride(nova: TaskPriority, ocupante: TaskPriority): boolean {
+  return RANK[nova] > RANK[ocupante] || nova === "URGENT";
 }

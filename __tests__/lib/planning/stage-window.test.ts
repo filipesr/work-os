@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { occupiedRange, rangesOverlap, collidingWith } from "@/lib/planning/stage-window";
+import {
+  occupiedRange,
+  rangesOverlap,
+  collidingWith,
+  canOverride,
+} from "@/lib/planning/stage-window";
 import type { Range } from "@/lib/planning/stage-window";
+import type { TaskPriority } from "@prisma/client";
 
 const AS_14H = new Date("2026-09-04T17:00:00.000Z"); // 14h em São Paulo
 
@@ -73,5 +79,28 @@ describe("collidingWith", () => {
       { id: "c", range: faixa("2026-09-04T19:00:00Z", "2026-09-04T21:00:00Z") },
     ];
     expect(collidingWith(nova, ocupadas).map((o) => o.id)).toEqual(["b"]);
+  });
+});
+
+describe("canOverride", () => {
+  it("prioridade maior ocupa o horário", () => {
+    expect(canOverride("HIGH", "MEDIUM")).toBe(true);
+    expect(canOverride("MEDIUM", "LOW")).toBe(true);
+    expect(canOverride("URGENT", "HIGH")).toBe(true);
+  });
+
+  it("menor ou igual não ocupa", () => {
+    // Empate não passa: sem uma diferença declarada por quem classificou as duas demandas, o
+    // sistema não tem critério — e inventar um seria decidir no lugar do gestor.
+    expect(canOverride("LOW", "HIGH")).toBe(false);
+    expect(canOverride("MEDIUM", "MEDIUM")).toBe(false);
+    expect(canOverride("HIGH", "HIGH")).toBe(false);
+  });
+
+  it("urgente contra urgente PASSA — é o único efeito da segunda metade da regra", () => {
+    // `URGENT` já é o topo do enum, então "maior que a ocupante" nunca autorizaria este caso.
+    // A regra tem duas metades exatamente para ele: duas urgentes, e o desempate é de quem
+    // classificou as duas como urgentes.
+    expect(canOverride("URGENT", "URGENT")).toBe(true);
   });
 });
