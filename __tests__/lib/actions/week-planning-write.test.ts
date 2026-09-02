@@ -211,6 +211,45 @@ describe("scheduleStage", () => {
     expect(data).not.toHaveProperty("scheduledStart");
     expect(data).not.toHaveProperty("scheduledEnd");
   });
+
+  it("recusa transferir para pessoa diferente em dia diferente", async () => {
+    // É exatamente a borda que o afrouxamento tocou: permite o mesmo dia (saída do diálogo),
+    // recusa mudar de dia (remanejamento real, fora daqui).
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      plannedDate: new Date("2026-09-04T00:00:00Z"),
+      scheduledStart: new Date("2026-09-04T17:00:00Z"),
+      ...timeDe("u2"),
+    });
+
+    expect(
+      await scheduleStage({ activeStageId: "as1", userId: "u2", dateISO: "2026-09-05" })
+    ).toEqual({
+      error: "alreadyAssigned",
+    });
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("transferir para pessoa diferente no mesmo dia sem horário já marcado", async () => {
+    // É a saída "passar para outra pessoa" do diálogo, e ela vale também quando a etapa ainda não
+    // tem hora marcada — o compromisso é marcado depois, no próprio estúdio, não aqui.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      plannedDate: new Date("2026-09-04T00:00:00Z"),
+      scheduledStart: null,
+      ...timeDe("u2"),
+    });
+
+    expect(
+      await scheduleStage({ activeStageId: "as1", userId: "u2", dateISO: "2026-09-04" })
+    ).toEqual({
+      success: true,
+    });
+  });
 });
 
 describe("unscheduleStage", () => {

@@ -373,7 +373,9 @@ export async function scheduleStage(input: {
   const mudouDeDia = row.plannedDate ? formatISODate(row.plannedDate) !== input.dateISO : false;
 
   if (row.assigneeId && row.assigneeId !== input.userId) {
-    // Permitir reassignment só se já tem data planejada E é o mesmo dia
+    // Transferir dentro do MESMO dia é uma das saídas do diálogo de sobreposição — a etapa muda de
+    // mãos sem mudar de dia, e a hora combinada é preservada. Mudar de dia é remanejamento de
+    // verdade e o lugar dele é a tela da própria etapa, que é o que a mensagem alreadyAssigned diz.
     if (!row.plannedDate || mudouDeDia) {
       return { error: t("alreadyAssigned") };
     }
