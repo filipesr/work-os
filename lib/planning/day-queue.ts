@@ -21,7 +21,10 @@ export type QueueItemInput = {
   /** Preenchido só nos itens com compromisso marcado. */
   scheduledStart: Date | null;
   /** Fim declarado do compromisso, quando existe. Passthrough puro — a fila ordena e classifica
-   *  pelo INÍCIO; o fim só atravessa até a tela, que reabre o diálogo com os dois campos. */
+   *  pelo INÍCIO; o fim só atravessa até a tela, que reabre o diálogo com os dois campos. Por isso
+   *  é opcional mesmo quando `scheduledStart` não é: nenhuma regra da fila (classificação em
+   *  `scheduled`/`conflict`, ordenação por relógio, `nextRunnableId`) lê `scheduledEnd` — um item
+   *  que o omite continua classificando e ordenando exatamente igual a um que o traz. */
   scheduledEnd?: Date | null;
   /** `"declared"` = SLA cadastrado (ou nem isso — pode vir com `referenceHours: 0`), não medição
    *  real. Opcional e sem papel nenhum na fila: só atravessa até a tela, que é quem precisa avisar
@@ -75,13 +78,29 @@ export function buildDayQueue(items: QueueItemInput[]): {
       const tb = b.claimedAt?.getTime() ?? 0;
       return ta - tb || porId(a, b);
     }
-    // Entre DOIS compromissos, quem manda é o relógio — a ordem manual não tem o que dizer sobre
-    // qual das duas locações acontece primeiro. Só entre eles: um agendado não fura a fila de quem
-    // não tem hora, senão a fila ordenada viraria grade de horários.
-    if (a.scheduledStart && b.scheduledStart) {
-      return a.scheduledStart.getTime() - b.scheduledStart.getTime() || porId(a, b);
-    }
     return a.plannedOrder - b.plannedOrder || porId(a, b);
+  });
+
+  // Compromissos são ordenados ENTRE SI pelo relógio — mas isso não pode virar mais uma regra
+  // dentro do comparador acima. Um comparador par-a-par que decide "por relógio" entre dois
+  // compromissos e "por posição manual" quando pelo menos um lado não tem hora NÃO é transitivo:
+  // com X=19h, Y=sem hora, Z=13h (todos mesma posição manual crescente X<Y<Z), cmp(X,Z) manda pelo
+  // relógio e dá Z antes de X, mas cmp(X,Y) e cmp(Y,Z) caem na posição manual e dão X antes de Y
+  // antes de Z — um ciclo (Z<X, X<Y, Y<Z). `Array.prototype.sort` só é definido para ordem total;
+  // com um comparador não transitivo o resultado passa a depender da ordem de entrada dos itens, e
+  // a ordem de entrada é a ordem do Postgres, que não é garantida — reintroduziria exatamente o bug
+  // que esta tarefa existe para fechar, só que de forma intermitente. Por isso isto é um SEGUNDO
+  // passo, não uma comparação: o sort acima já fixou as POSIÇÕES de quem tem dia (é uma ordem total
+  // de verdade); aqui só se decide qual compromisso ocupa qual dessas posições já fixas — quem não
+  // tem hora nunca entra nessa troca, então nunca perde nem ganha posição.
+  const posicoesDeCompromisso = ordenados
+    .map((item, i) => (!item.semDia && item.scheduledStart ? i : -1))
+    .filter((i) => i !== -1);
+  const compromissosPorRelogio = posicoesDeCompromisso
+    .map((i) => ordenados[i])
+    .sort((a, b) => a.scheduledStart!.getTime() - b.scheduledStart!.getTime() || porId(a, b));
+  posicoesDeCompromisso.forEach((i, k) => {
+    ordenados[i] = compromissosPorRelogio[k];
   });
 
   const slots: QueueSlot[] = ordenados.map((item) => {

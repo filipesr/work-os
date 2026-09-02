@@ -162,6 +162,36 @@ describe("buildDayQueue — item agendado", () => {
     ]);
     expect(r.slots.map((s) => s.item.id)).toEqual(["primeiro", "agendado"]);
   });
+
+  it("três itens onde um par decide pelo relógio e outro pela posição não formam ciclo", () => {
+    // Reprodução do defeito do fix round 1: X(19h) vs Z(13h) só têm o relógio para decidir; X vs
+    // Y(sem hora) e Y vs Z só têm a posição manual (plannedOrder 1<2<3). Um comparador par-a-par que
+    // mistura os dois critérios produz Z<X, X<Y, Y<Z — um ciclo, que não é uma ordem válida. A
+    // implementação em dois passos evita isso: Y nunca entra na troca (não tem hora), e entre X e Z
+    // quem decide é sempre o relógio — 13h antes de 19h, e por isso 13h é o próximo a fazer.
+    const x = item({ id: "X", plannedOrder: 1, scheduledStart: new Date("2026-08-31T19:00:00Z") });
+    const y = item({ id: "Y", plannedOrder: 2, scheduledStart: null });
+    const z = item({ id: "Z", plannedOrder: 3, scheduledStart: new Date("2026-08-31T13:00:00Z") });
+
+    const r = buildDayQueue([x, y, z]);
+    expect(r.slots.map((s) => s.item.id)).toEqual(["Z", "Y", "X"]);
+    expect(r.nextRunnableId).toBe("Z");
+  });
+
+  it("o resultado do trio X/Y/Z não muda com a ordem de entrada", () => {
+    // Esta é a asserção que de fato pega não-transitividade: um comparador cíclico ainda pode
+    // acertar UMA permutação de entrada por acaso. Só testar várias permutações e exigir a MESMA
+    // saída prova que a ordem não depende da ordem em que o Postgres devolveu as linhas — que não é
+    // garantida.
+    const x = item({ id: "X", plannedOrder: 1, scheduledStart: new Date("2026-08-31T19:00:00Z") });
+    const y = item({ id: "Y", plannedOrder: 2, scheduledStart: null });
+    const z = item({ id: "Z", plannedOrder: 3, scheduledStart: new Date("2026-08-31T13:00:00Z") });
+
+    const esperado = ["Z", "Y", "X"];
+    expect(buildDayQueue([x, y, z]).slots.map((s) => s.item.id)).toEqual(esperado);
+    expect(buildDayQueue([z, x, y]).slots.map((s) => s.item.id)).toEqual(esperado);
+    expect(buildDayQueue([y, z, x]).slots.map((s) => s.item.id)).toEqual(esperado);
+  });
 });
 
 describe("buildDayQueue — dia vazio", () => {
