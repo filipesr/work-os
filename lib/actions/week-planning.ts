@@ -465,8 +465,18 @@ export async function setStageWindow(input: {
     return { success: true as const };
   }
 
+  if (row.status === "COMPLETED") return { error: t("completedStage") };
+  // O dia é a âncora da hora: sem ele o compromisso não tem onde existir, e o item nem está numa
+  // coluna da grade.
+  if (!row.plannedDate) return { error: t("windowNeedsDay") };
+  if (!HORA.test(input.startTime)) return { error: t("invalidTime") };
+  if (input.endTime && !HORA.test(input.endTime)) return { error: t("invalidTime") };
+
   const inicio = instanteNoDia(row.plannedDate as Date, input.startTime);
   const fim = input.endTime ? instanteNoDia(row.plannedDate as Date, input.endTime) : null;
+
+  // Duração zero não ocuparia nada e a trava de sobreposição viraria decorativa para esta linha.
+  if (fim && fim.getTime() <= inicio.getTime()) return { error: t("windowEndBeforeStart") };
 
   await prisma.taskActiveStage.update({
     where: { id: input.activeStageId },

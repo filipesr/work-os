@@ -99,3 +99,45 @@ describe("setStageWindow", () => {
     });
   });
 });
+
+describe("setStageWindow — recusas", () => {
+  it("etapa sem dia não recebe compromisso", async () => {
+    // "Quinta às 14h" precisa da quinta. Sem `plannedDate` não há dia em que ancorar a hora, e o
+    // item nem aparece numa coluna da grade.
+    db.taskActiveStage.findUnique.mockResolvedValue(linha({ plannedDate: null }));
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "14:00" });
+    expect(r).toEqual({ error: "windowNeedsDay" });
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("etapa concluída não recebe compromisso", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue(linha({ status: "COMPLETED" }));
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "14:00" });
+    expect(r).toEqual({ error: "completedStage" });
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("hora fora do formato é recusada, sem tentar gravar", async () => {
+    // Vem de `<input type="time">`, mas a ação é chamável direto — a tela explica, o servidor
+    // garante.
+    db.taskActiveStage.findUnique.mockResolvedValue(linha());
+    for (const hora of ["25:00", "14h", "", "9:00"]) {
+      const r = await setStageWindow({ activeStageId: "as1", startTime: hora });
+      expect(r).toEqual({ error: "invalidTime" });
+    }
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("fim antes do início é recusado", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue(linha());
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "16:00", endTime: "14:00" });
+    expect(r).toEqual({ error: "windowEndBeforeStart" });
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("fim IGUAL ao início é recusado — janela de duração zero não ocupa nada", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue(linha());
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "14:00", endTime: "14:00" });
+    expect(r).toEqual({ error: "windowEndBeforeStart" });
+  });
+});

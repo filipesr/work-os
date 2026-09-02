@@ -212,7 +212,10 @@
     "scheduleFailed": "Erro ao programar a etapa.",
     "reorderFailed": "Erro ao reordenar.",
     "scheduledStage": "Etapa com horário marcado não entra na ordenação — ela acontece na hora dela.",
-    "notYours": "Esta etapa não é sua."
+    "notYours": "Esta etapa não é sua.",
+    "windowNeedsDay": "Marque o dia antes da hora: o compromisso é \"quinta às 14h\".",
+    "invalidTime": "Informe uma hora válida, no formato 14:00.",
+    "windowEndBeforeStart": "O fim precisa vir depois do início."
   },
   "myWeek": {
     "stageNotFound": "Etapa não encontrada.",
