@@ -360,11 +360,24 @@ export async function scheduleStage(input: {
           defaultTeam: { select: { id: true, name: true, members: { select: { id: true } } } },
         },
       },
+      plannedDate: true,
+      scheduledStart: true,
     },
   });
   if (!row) return { error: t("stageNotFound") };
   if (row.status === "COMPLETED") return { error: t("completedStage") };
-  if (row.assigneeId && row.assigneeId !== input.userId) return { error: t("alreadyAssigned") };
+
+  // Mudar de dia derruba o compromisso: ele foi combinado PARA AQUELE DIA. Deslizar sozinho seria o
+  // sistema remarcando uma locação, que é conversa com o estúdio e não `UPDATE`. Trocar só a
+  // pessoa, no mesmo dia, preserva a hora — é uma das saídas do diálogo de sobreposição.
+  const mudouDeDia = row.plannedDate ? formatISODate(row.plannedDate) !== input.dateISO : false;
+
+  if (row.assigneeId && row.assigneeId !== input.userId) {
+    // Permitir reassignment só se já tem data planejada E é o mesmo dia
+    if (!row.plannedDate || mudouDeDia) {
+      return { error: t("alreadyAssigned") };
+    }
+  }
   // A mesa era a ÚNICA porta do sistema que não validava time: dava para programar trabalho de
   // vídeo para alguém de tráfego, e nada reclamava — enquanto o roteamento por time efetivo e o
   // caminho de conclusão já validavam. A tela explica (mostra o time e lista só quem pertence a
@@ -381,6 +394,9 @@ export async function scheduleStage(input: {
     _max: { plannedOrder: true },
   });
 
+  const limpaJanela =
+    mudouDeDia && row.scheduledStart ? { scheduledStart: null, scheduledEnd: null } : {};
+
   try {
     await prisma.taskActiveStage.update({
       where: { id: input.activeStageId },
@@ -388,6 +404,7 @@ export async function scheduleStage(input: {
         assigneeId: input.userId,
         plannedDate,
         plannedOrder: (ultimo._max.plannedOrder ?? 0) + 1,
+        ...limpaJanela,
       },
     });
   } catch (error) {

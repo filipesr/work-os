@@ -173,6 +173,44 @@ describe("scheduleStage", () => {
     });
     expect(db.taskActiveStage.update).not.toHaveBeenCalled();
   });
+
+  it("reprogramar para OUTRO dia limpa o compromisso", async () => {
+    // O horário foi combinado para aquele dia. Deslizar sozinho para o novo seria o sistema
+    // remarcando uma locação — decisão de quem combinou, não do UPDATE.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      plannedDate: new Date("2026-09-04T00:00:00Z"),
+      scheduledStart: new Date("2026-09-04T17:00:00Z"),
+      ...timeDe("u1"),
+    });
+
+    await scheduleStage({ activeStageId: "as1", userId: "u1", dateISO: "2026-09-05" });
+
+    expect(db.taskActiveStage.update.mock.calls[0][0].data).toMatchObject({
+      scheduledStart: null,
+      scheduledEnd: null,
+    });
+  });
+
+  it("reprogramar para o MESMO dia preserva o compromisso", async () => {
+    // Trocar só a pessoa (uma das saídas do diálogo de sobreposição) não pode apagar a hora.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      plannedDate: new Date("2026-09-04T00:00:00Z"),
+      scheduledStart: new Date("2026-09-04T17:00:00Z"),
+      ...timeDe("u2"),
+    });
+
+    await scheduleStage({ activeStageId: "as1", userId: "u2", dateISO: "2026-09-04" });
+
+    const data = db.taskActiveStage.update.mock.calls[0][0].data;
+    expect(data).not.toHaveProperty("scheduledStart");
+    expect(data).not.toHaveProperty("scheduledEnd");
+  });
 });
 
 describe("unscheduleStage", () => {
