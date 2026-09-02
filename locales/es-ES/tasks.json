@@ -71,6 +71,11 @@
     "stageInstructions": "Qué hacer en {stage} · {team}",
     "revertInstruction": "Retrabajo solicitado: {reason}"
   },
+  "stageView": {
+    "instructionTitle": "Instrucción de la etapa",
+    "backToDemand": "Volver a la demanda",
+    "thisStage": "Esta etapa"
+  },
   "stages": {
     "title": "Etapas del Flujo de Trabajo",
     "active": "Activa",
