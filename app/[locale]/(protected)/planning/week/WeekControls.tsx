@@ -71,8 +71,12 @@ export function WeekControls({
           {/* Os dois modos primeiro, separados das equipes: eles respondem "que recorte?", e a
               lista abaixo responde "quais?". Misturá-los faria o padrão parecer mais uma caixa. */}
           <DropdownMenuItem onSelect={() => setParam("team", null)}>
-            {t("teamsDefault")}
-            <span className="ml-1 text-xs text-muted-foreground">({t("teamsDefaultHint")})</span>
+            {/* Rótulo e dica empilhados: lado a lado, a dica disputa a largura do menu e quebra a
+                linha no meio do nome da opção. */}
+            <span className="flex flex-col">
+              <span>{t("teamsDefault")}</span>
+              <span className="text-xs text-muted-foreground">{t("teamsDefaultHint")}</span>
+            </span>
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setParam("team", TEAM_PARAM_ALL)}>
             {t("teamsAll")}
