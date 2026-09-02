@@ -19,6 +19,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import prisma from "@/lib/prisma";
 import { getClientLoad } from "@/lib/actions/client-load";
+import { availableTaskWhere } from "@/lib/task-availability";
 
 const SEGUNDA = "2026-09-07";
 
@@ -108,6 +109,24 @@ beforeEach(() => {
 });
 
 describe("getClientLoad — o que está parado", () => {
+  it("[GUARDA] o corte do parado ESTENDE availableTaskWhere — não o sobrescreve", async () => {
+    // A relação entre os dois, que nenhum outro teste olhava: os demais exercitam o `where` já
+    // montado e passariam felizes se esta consulta parasse de acompanhar o helper. Se
+    // `availableTaskWhere` ganhar um status descartado novo e esta tela voltar a sobrescrever a
+    // chave `status` com uma lista fixa, o silêncio morre aqui.
+    vi.mocked(prisma.task.findMany).mockResolvedValue([] as never);
+    await getClientLoad(SEGUNDA);
+
+    // `any` pelo mesmo motivo do banco falso acima: o tipo real é o `TaskFindManyArgs` do Prisma.
+    const args = vi.mocked(prisma.task.findMany).mock.calls[0][0] as any;
+    const cortadosAqui: string[] = args.where.status.notIn;
+    const cortadosLa = (availableTaskWhere().status as { notIn: string[] }).notIn;
+
+    for (const status of cortadosLa) expect(cortadosAqui).toContain(status);
+    // E o que é só desta tela: demanda encerrada à mão não fica parada para sempre.
+    expect(cortadosAqui).toContain("COMPLETED");
+  });
+
   it("cliente que SÓ tem trabalho parado ganha linha na grade", async () => {
     // Sem isto o pior caso — o cliente para quem ninguém está trabalhando — some da tela inteira,
     // que é exatamente o silêncio que esta entrega existe para quebrar.

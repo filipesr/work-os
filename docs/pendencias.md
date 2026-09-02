@@ -7,23 +7,7 @@ Item resolvido sai daqui e vira commit; item que virar feature grande vira spec 
 
 ---
 
-## 1. `availableTaskWhere()` estendido em vez de sobrescrito
-
-**O que é:** a coluna do parado em `/planning/client-load` precisa excluir mais status do que o
-helper `lib/task-availability.ts` exclui (ele tira `CANCELLED` e `OBSOLETE`; ali também sai
-`COMPLETED`). A leitura resolve espalhando o helper e sobrescrevendo a chave `status` logo depois.
-
-**Por que é uma armadilha:** funciona hoje só porque a lista local é superconjunto da do helper. Se
-`availableTaskWhere()` ganhar um quarto status descartado, esta tela passa a ignorá-lo **em
-silêncio** — e nenhum teste pega, porque os testes exercitam o `where` montado, não a relação entre
-os dois.
-
-**Direção:** o helper aceitar exclusões extras (`availableTaskWhere({ alsoExclude: ["COMPLETED"] })`)
-em vez de ser sobrescrito. Enquanto não for, o comentário na consulta é o único guarda.
-
----
-
-## 2. Linha do tempo do projeto — arestas deixadas de propósito
+## 1. Linha do tempo do projeto — arestas deixadas de propósito
 
 **O que é:** a revisão final da linha do tempo (`/projects/{id}`) levantou quinze pontos. Os nove que
 mudavam comportamento foram corrigidos na entrega; estes quatro ficaram, cada um com o motivo.

@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, TaskStatus } from "@prisma/client";
 
 /**
  * Disponibilidade de uma demanda para EXECUÇÃO.
@@ -27,6 +27,10 @@ import type { Prisma } from "@prisma/client";
  * conceito, ou criadas sem passar pelo planejamento, não podem sumir.
  */
 
+/** Os dois status que significam "esta demanda foi descartada". Uma lista só, para que os
+ *  fragmentos daqui não divirjam entre si. */
+const DISCARDED: TaskStatus[] = ["OBSOLETE", "CANCELLED"];
+
 /** Predicado puro, para uso em memória e nos testes. */
 export function isAvailableForExecution(
   plannedStartAt: Date | null | undefined,
@@ -43,10 +47,20 @@ export function isAvailableForExecution(
  * uma regra repetida em cada consulta é uma regra que vai divergir — basta uma
  * tela nova esquecer a condição para a demanda futura reaparecer só ali.
  */
-export function availableTaskWhere(now: Date = new Date()): Prisma.TaskWhereInput {
+export function availableTaskWhere({
+  now = new Date(),
+  alsoExclude = [],
+}: {
+  now?: Date;
+  /** Status que ESTA consulta descarta além dos descartados de sempre. Existe para que uma tela
+   *  mais estrita ESTENDA a regra em vez de sobrescrever a chave `status` do fragmento: quem
+   *  sobrescreve fica certo só enquanto a lista local for superconjunto desta, e passa a ignorar
+   *  em silêncio qualquer status que apareça aqui depois. */
+  alsoExclude?: TaskStatus[];
+} = {}): Prisma.TaskWhereInput {
   return {
     // Descartada não é trabalho: nem de quem executa, nem da programação.
-    status: { notIn: ["OBSOLETE", "CANCELLED"] },
+    status: { notIn: [...DISCARDED, ...alsoExclude] },
     OR: [{ plannedStartAt: null }, { plannedStartAt: { lte: now } }],
   };
 }
@@ -54,7 +68,7 @@ export function availableTaskWhere(now: Date = new Date()): Prisma.TaskWhereInpu
 /** O mesmo, para consultas que partem de `TaskActiveStage` (a maioria das telas
  *  de execução lista ETAPAS, não tarefas). */
 export function availableStageWhere(now: Date = new Date()): Prisma.TaskActiveStageWhereInput {
-  return { task: availableTaskWhere(now) };
+  return { task: availableTaskWhere({ now }) };
 }
 
 /**
@@ -66,5 +80,5 @@ export function availableStageWhere(now: Date = new Date()): Prisma.TaskActiveSt
  * continuava reservando espaço para trabalho que foi descartado.
  */
 export function notDiscardedStageWhere(): Prisma.TaskActiveStageWhereInput {
-  return { task: { status: { notIn: ["OBSOLETE", "CANCELLED"] } } };
+  return { task: { status: { notIn: DISCARDED } } };
 }

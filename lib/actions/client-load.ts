@@ -573,15 +573,16 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
   //     passaria a mentir por omissão, escondendo trabalho parado em vez de mostrá-lo.
   // As duas maiores fatias do superconjunto — a demanda já concluída e a que ainda nem deveria ter
   // começado — são cortadas abaixo, reaproveitando `availableTaskWhere` de lib/task-availability.ts
-  // (a mesma regra "isto é trabalho de agora" que as telas de execução já usam) com um `status`
-  // mais estrito por cima: `availableTaskWhere` só descarta CANCELLED/OBSOLETE, e esta tela
-  // precisa descartar COMPLETED também — "Concluir demanda" (botão manual, `completeTask` em
-  // lib/actions/task.ts) marca o status sem tocar nas etapas seguintes, e sem este corte a
-  // demanda encerrada à mão ficaria parada para sempre.
+  // (a mesma regra "isto é trabalho de agora" que as telas de execução já usam) com UMA exclusão a
+  // mais, pedida pelo `alsoExclude`: esta tela precisa descartar COMPLETED também — "Concluir
+  // demanda" (botão manual, `completeTask` em lib/actions/task.ts) marca o status sem tocar nas
+  // etapas seguintes, e sem este corte a demanda encerrada à mão ficaria parada para sempre.
+  // O pedido é ESTENDIDO, nunca sobrescrito: sobrescrever a chave `status` fica certo só enquanto
+  // a lista local for superconjunto da do helper, e um status descartado novo lá passaria a ser
+  // ignorado aqui em silêncio.
   const candidatas = await prisma.task.findMany({
     where: {
-      ...availableTaskWhere(),
-      status: { notIn: ["CANCELLED", "OBSOLETE", "COMPLETED"] },
+      ...availableTaskWhere({ alsoExclude: ["COMPLETED"] }),
       activeStages: {
         some: { status: { not: "COMPLETED" }, assigneeId: null, plannedDate: null },
       },

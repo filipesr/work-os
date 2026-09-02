@@ -183,6 +183,22 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### 🐛 Corrigido
 
+#### `availableTaskWhere()` passou a ser ESTENDIDO, não sobrescrito
+
+- **A armadilha:** a coluna do parado em `/planning/client-load` precisa descartar `COMPLETED` além
+  dos descartados de sempre, e conseguia isso espalhando o fragmento de `lib/task-availability.ts` e
+  reescrevendo a chave `status` logo depois. Funcionava só porque a lista local era **superconjunto**
+  da do helper — um quarto status descartado no helper passaria a ser ignorado nesta tela **em
+  silêncio**, e nenhum teste pegaria, porque todos exercitavam o `where` já montado e nenhum olhava a
+  relação entre os dois.
+- **A saída:** `availableTaskWhere({ alsoExclude: ["COMPLETED"] })`. A tela mais estrita PEDE a
+  exclusão a mais em vez de reescrever a regra, e a lista dos descartados vira uma constante só
+  (`DISCARDED`), compartilhada com `notDiscardedStageWhere`.
+- **O guarda que faltava:** um teste em `client-load-stalled` afirma que todo status descartado pelo
+  helper também é descartado por esta consulta — a relação, não o resultado. Conferido que ele falha
+  ao simular a armadilha (helper com um status a mais + tela sobrescrevendo): `expected [...] to
+include 'PAUSED'`.
+
 #### `Task.assigneeId` saiu do banco
 
 - **A coluna existia desde o começo e nenhum caminho do fluxo a escrevia.** A atribuição neste
