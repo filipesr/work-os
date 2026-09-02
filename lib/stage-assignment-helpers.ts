@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { recordStageTransition } from "@/lib/stage-transitions";
+import { buildInstructionComments } from "@/lib/stage-instruction";
 
 // Pure / server-only helpers for stage assignment. NOT a "use server" module:
 // it exports synchronous functions and a transaction-scoped helper that are
@@ -249,6 +250,9 @@ export async function createTaskStages(
   // Lowest order among the INCLUDED stages (already sorted asc) is the entry point.
   const startStageId = included[0].id;
   let initialAssigned = false;
+  // A linha da etapa de ENTRADA, guardada para entregar a instrução dela como conversa depois do
+  // laço (ver o bloco no fim da função). O `create` já devolve a linha — o id sai daí, sem consulta.
+  let linhaInicial: { activeStageId: string; instructions: string | null } | null = null;
 
   for (const stage of included) {
     const isStart = stage.id === startStageId;
@@ -269,7 +273,7 @@ export async function createTaskStages(
     // Instrução só faz sentido onde o template não diz o que fazer.
     const note = stage.defaultTeamId ? undefined : instructions[stage.id];
 
-    await tx.taskActiveStage.create({
+    const linha = await tx.taskActiveStage.create({
       data: {
         taskId,
         stageId: stage.id,
@@ -280,6 +284,9 @@ export async function createTaskStages(
         ...(assigneeId ? { assignedAt: new Date() } : {}),
       },
     });
+    if (isStart) {
+      linhaInicial = { activeStageId: linha.id, instructions: linha.instructions ?? null };
+    }
     // Anchor the transition log at creation so the first real transition pairs
     // correctly (the entry stage starts ACTIVE; the rest start INACTIVE).
     await recordStageTransition(tx, taskId, stage.id, isStart ? "ACTIVE" : "INACTIVE");
@@ -289,6 +296,31 @@ export async function createTaskStages(
         data: { taskId, stageId: stage.id, enteredAt: new Date(), exitedAt: null, userId },
       });
     }
+  }
+
+  // A instrução da PRIMEIRA etapa vira conversa aqui, e não em `activateNextStages`: ela nasce
+  // ACTIVE nesta função e nunca passa por lá, então sem este bloco a etapa 1 de TODA demanda era a
+  // única sem o comentário que todas as outras recebem ao serem liberadas — dentro da mesma
+  // demanda, umas com direção na conversa e uma sem.
+  //
+  // A regra ("gera ou não gera, assinada por quem") continua morando em `buildInstructionComments`,
+  // a mesma que a liberação usa; aqui só se junta o que ela precisa. A ORDEM importa: a linha da
+  // task já existe (quem chama cria a demanda antes) e a linha da etapa acabou de ser criada — o
+  // comentário aponta para as duas.
+  //
+  // A consulta do criador só acontece quando a etapa de entrada TEM instrução escrita: o caso
+  // comum (etapa com time padrão, onde instrução nem é aceita) não paga por ela.
+  if (linhaInicial?.instructions) {
+    const task = await tx.task.findUnique({
+      where: { id: taskId },
+      select: { createdById: true },
+    });
+    const comentarios = buildInstructionComments({
+      taskId,
+      createdById: task?.createdById ?? null,
+      ativadas: [linhaInicial],
+    });
+    if (comentarios.length > 0) await tx.taskComment.createMany({ data: comentarios });
   }
 
   return { initialAssigned };

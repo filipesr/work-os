@@ -299,3 +299,89 @@ describe("isEffectiveTeamMember — elegibilidade pelo time efetivo", () => {
     expect(isEffectiveTeamMember(vazio, "ana")).toBe(false);
   });
 });
+
+describe("createTaskStages — a instrução da PRIMEIRA etapa também é entregue", () => {
+  // A primeira etapa nasce ACTIVE aqui e nunca passa por `activateNextStages`, que é onde a
+  // instrução vira comentário. Sem esta entrega, dentro da MESMA demanda algumas etapas tinham a
+  // instrução na conversa e a etapa 1 não tinha — a promessa da spec ("quando uma etapa é
+  // liberada e tem instrução, nasce um comentário") ficava sem cumprir logo na primeira.
+  const stages = [
+    { id: "s1", optional: false, order: 1, defaultTeamId: null, defaultTeam: null },
+    { id: "s2", optional: false, order: 2, defaultTeamId: null, defaultTeam: null },
+  ];
+
+  function makeTx(createdById: string | null = "gestor1") {
+    const create = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
+      id: `as-${data.stageId}`,
+      ...data,
+      instructions: data.instructions ?? null,
+    }));
+    const createMany = vi.fn().mockResolvedValue({});
+    const tx = {
+      templateStage: { findMany: vi.fn().mockResolvedValue(stages) },
+      taskActiveStage: { create },
+      taskStageLog: { create: vi.fn().mockResolvedValue({}) },
+      stageTransition: {
+        create: vi.fn().mockResolvedValue({}),
+        createMany: vi.fn().mockResolvedValue({}),
+      },
+      task: { findUnique: vi.fn().mockResolvedValue({ createdById }) },
+      taskComment: { createMany },
+    };
+    return { tx: tx as unknown as Prisma.TransactionClient, createMany };
+  }
+
+  it("primeira etapa com instrução: nasce o comentário assinado por quem criou a demanda", async () => {
+    const { tx, createMany } = makeTx();
+    await createTaskStages(tx, {
+      taskId: "t1",
+      templateId: "tpl",
+      userId: "gestor1",
+      instructions: { s1: "Gravar no estúdio B" },
+    });
+    expect(createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          taskId: "t1",
+          userId: "gestor1",
+          activeStageId: "as-s1",
+          kind: "STAGE_INSTRUCTION",
+          content: "Gravar no estúdio B",
+        },
+      ],
+    });
+  });
+
+  it("primeira etapa sem instrução: nada é escrito, nem consulta feita", async () => {
+    const { tx, createMany } = makeTx();
+    await createTaskStages(tx, { taskId: "t1", templateId: "tpl", userId: "gestor1" });
+    expect(createMany).not.toHaveBeenCalled();
+  });
+
+  it("só a PRIMEIRA: a instrução da etapa 2 espera a liberação dela", async () => {
+    // Entregar aqui a instrução de uma etapa INACTIVE seria direção sem trabalho a fazer — e ela
+    // chegaria duas vezes, porque `activateNextStages` a entrega quando a etapa abre de verdade.
+    const { tx, createMany } = makeTx();
+    await createTaskStages(tx, {
+      taskId: "t1",
+      templateId: "tpl",
+      userId: "gestor1",
+      instructions: { s1: "Gravar no estúdio B", s2: "Editar em 9:16" },
+    });
+    expect(createMany.mock.calls[0][0].data).toHaveLength(1);
+    expect(createMany.mock.calls[0][0].data[0].activeStageId).toBe("as-s1");
+  });
+
+  it("demanda sem criador registrado: instrução escrita, comentário nenhum", async () => {
+    // Mesma regra de `buildInstructionComments` — assinar em nome de ninguém seria inventar
+    // autoria. Vale para as demandas legadas, criadas antes de `Task.createdById` existir.
+    const { tx, createMany } = makeTx(null);
+    await createTaskStages(tx, {
+      taskId: "t1",
+      templateId: "tpl",
+      userId: "gestor1",
+      instructions: { s1: "Gravar no estúdio B" },
+    });
+    expect(createMany).not.toHaveBeenCalled();
+  });
+});
