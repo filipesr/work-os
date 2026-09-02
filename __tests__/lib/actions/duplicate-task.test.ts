@@ -76,6 +76,26 @@ describe("duplicateTask", () => {
     expect(args.instructions).toEqual({ s2: "Revisar o roteiro" });
   });
 
+  it("grava quem duplicou como autor da cópia — não o criador da original", async () => {
+    // A cópia é uma demanda NOVA, e ela repassa as `instructions` das etapas originais para
+    // createTaskStages: sem autor aqui, uma instrução viva viajaria sem ninguém que a assine.
+    // E quem assina é quem clicou em duplicar (mock de requireManagerOrAdmin: "gestor1"),
+    // nunca o criador da demanda original — que não decidiu nada para ESTA cópia.
+    db.task.findUnique.mockResolvedValue({
+      title: "Vídeo demo",
+      description: null,
+      priority: "MEDIUM",
+      projectId: "p1",
+      activeStages: [
+        { stageId: "s1", teamId: null, instructions: null, stage: { templateId: "tpl" } },
+      ],
+    });
+
+    await duplicateTask("t1", { dueDate: "2026-09-30", noDueDate: false });
+
+    expect(tx.task.create.mock.calls[0][0].data).toMatchObject({ createdById: "gestor1" });
+  });
+
   it("NÃO copia responsável — é o que mantém a cópia virgem e corrigível", async () => {
     db.task.findUnique.mockResolvedValue({
       title: "Vídeo demo",

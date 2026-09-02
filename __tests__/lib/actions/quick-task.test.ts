@@ -104,6 +104,11 @@ describe("createQuickTask", () => {
     expect(saida.at.toISOString()).toBe(task.completedAt.toISOString());
   });
 
+  it("grava quem registrou como autor da demanda", async () => {
+    await createQuickTask(form());
+    expect(tx.task.create.mock.calls[0][0].data).toMatchObject({ createdById: "u1" });
+  });
+
   it("grava as horas no dia informado, em HORAS", async () => {
     await createQuickTask(form({ minutes: "90" }));
     const log = tx.timeLog.create.mock.calls[0][0].data;

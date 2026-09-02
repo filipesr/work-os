@@ -90,6 +90,9 @@ export async function createQuickTask(formData: FormData) {
           createdAt,
           startedAt,
           completedAt,
+          // Etapa única já concluída baixa o risco de instrução sem dono, mas a demanda ainda
+          // precisa nascer com autor — mesma promessa dos outros caminhos de criação.
+          createdById: userId,
         },
         select: { id: true },
       });

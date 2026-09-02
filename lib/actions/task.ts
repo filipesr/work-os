@@ -216,6 +216,9 @@ export async function createTasksBatch(input: {
           projectId,
           workflowTemplateId: input.templateId,
           calendarOccurrenceId: input.calendarOccurrenceId ?? null,
+          // Este lote hoje não repassa teams/instructions, mas a demanda ainda precisa nascer
+          // com autor — a promessa é "toda demanda nova", sem exceção por caminho de criação.
+          createdById: userId,
         },
       });
       await createTaskStages(tx, { taskId: task.id, templateId: input.templateId, userId });
@@ -2347,6 +2350,11 @@ export async function duplicateTask(
           projectId: original.projectId,
           dueDate: prazo.date,
           workflowTemplateId: templateId,
+          // A duplicata é uma demanda NOVA: quem a colocou em jogo — com as instruções que ela
+          // carrega das etapas originais — foi quem clicou em duplicar, não quem criou a
+          // original. Assinar pelo criador original atribuiria a outra pessoa um direcionamento
+          // que ela não deu para ESTA demanda.
+          createdById: userId,
         },
       });
       await createTaskStages(tx, {
