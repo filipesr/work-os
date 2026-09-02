@@ -406,7 +406,17 @@ export async function pullStageToMe(activeStageId: string, dateISO: string) {
   try {
     await prisma.taskActiveStage.update({
       where: { id: activeStageId },
-      data: { plannedDate, plannedOrder: await fimDaFila(me.id, plannedDate) },
+      // A janela fixa NÃO é herdada do poço. Ela é um compromisso combinado com alguém de fora
+      // PARA AQUELE dia e AQUELA pessoa — a que largou a etapa. Puxada para cá com a hora intacta,
+      // a etapa nasceria na minha semana já "agendada" num horário que ninguém marcou comigo, e
+      // ancorado num dia que não é mais o dela. Mesma limpeza de `unscheduleStage`: quem perde o
+      // dia perde o compromisso.
+      data: {
+        plannedDate,
+        plannedOrder: await fimDaFila(me.id, plannedDate),
+        scheduledStart: null,
+        scheduledEnd: null,
+      },
     });
   } catch (error) {
     console.error("pullStageToMe error:", error);

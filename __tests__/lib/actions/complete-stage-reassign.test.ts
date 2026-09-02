@@ -136,6 +136,22 @@ describe("completeStageAndAdvance — remanejar responsável", () => {
     expect(data.plannedOrder).toBeNull();
   });
 
+  it("[CRÍTICO] a troca de dono limpa também o compromisso — janela não muda de dono sozinha", async () => {
+    // A janela é um compromisso PARA AQUELE DIA e AQUELA pessoa. Sobrevivendo ao remanejamento,
+    // ela voltaria ao poço "agendada" num horário que ninguém marcou — e a próxima programação a
+    // entregaria a um terceiro com a hora de um dia que já não é dela. Ver `unscheduleStage`.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const prisma = (await import("@/lib/prisma")).default as any;
+    setup(prisma, "ana");
+
+    const { completeStageAndAdvance } = await import("@/lib/actions/task");
+    await completeStageAndAdvance("task1", "s1", { s2: "bruno" });
+
+    const data = dadosDaAtribuicao(prisma);
+    expect(data.scheduledStart).toBeNull();
+    expect(data.scheduledEnd).toBeNull();
+  });
+
   it("reafirmar o MESMO responsável não desmancha a programação já feita", async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const prisma = (await import("@/lib/prisma")).default as any;

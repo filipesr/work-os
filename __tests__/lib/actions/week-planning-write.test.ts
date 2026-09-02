@@ -290,6 +290,66 @@ describe("scheduleStage", () => {
     expect(db.taskActiveStage.update).not.toHaveBeenCalled();
   });
 
+  it("[CRÍTICO] linha SEM dia e COM janela: o compromisso fantasma é limpo, não herdado", async () => {
+    // A reprodução inteira, pela UI: marcar quinta 14h–16h para a Ana, desatribuir a etapa pela
+    // tela da tarefa (ela volta ao poço), e programá-la para o Bruno na quinta. Com `plannedDate`
+    // nulo tratado como "não mudou de dia", a janela velha era PRESERVADA e a checagem de colisão
+    // do destino consultava `plannedDate: null` — que não casa com a agenda de ninguém e passa
+    // sempre. O resultado eram dois compromissos das 14h no mesmo dia do Bruno, gravados.
+    //
+    // Sem dia não existe compromisso: o dia é a âncora da hora. Então chegar sem dia É mudar de
+    // dia, e a janela cai.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: null,
+      status: "ACTIVE",
+      stageId: "s1",
+      plannedDate: null,
+      scheduledStart: new Date("2026-09-04T17:00:00Z"), // 14h
+      scheduledEnd: new Date("2026-09-04T19:00:00Z"), // 16h
+      ...timeDe("u2"),
+    });
+    vi.mocked(getStageReferences).mockResolvedValue(new Map());
+
+    const r = await scheduleStage({ activeStageId: "as1", userId: "u2", dateISO: "2026-09-04" });
+
+    expect(r).toEqual({ success: true });
+    expect(db.taskActiveStage.update.mock.calls[0][0].data).toMatchObject({
+      scheduledStart: null,
+      scheduledEnd: null,
+    });
+    // E nenhuma consulta de agenda pode ter sido feita com o dia NULO: uma checagem de colisão
+    // ancorada em `null` não protege ninguém — ela só aprova tudo em silêncio.
+    for (const [args] of db.taskActiveStage.findMany.mock.calls) {
+      expect(args.where.plannedDate).not.toBeNull();
+    }
+  });
+
+  it("[CRÍTICO] a checagem de colisão do destino é ancorada no dia de DESTINO", async () => {
+    // O dia que importa é para onde a etapa VAI, não de onde ela veio. Consultar a agenda do dia
+    // de origem responderia a pergunta errada — e a pergunta certa é "o Bruno está livre nesta
+    // faixa NA QUINTA?".
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      stageId: "s1",
+      plannedDate: new Date("2026-09-04T00:00:00Z"),
+      scheduledStart: new Date("2026-09-04T17:00:00Z"),
+      scheduledEnd: new Date("2026-09-04T19:00:00Z"),
+      ...timeDe("u2"),
+    });
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+    vi.mocked(getStageReferences).mockResolvedValue(new Map());
+
+    await scheduleStage({ activeStageId: "as1", userId: "u2", dateISO: "2026-09-04" });
+
+    expect(db.taskActiveStage.findMany.mock.calls[0][0].where).toMatchObject({
+      assigneeId: "u2",
+      plannedDate: new Date("2026-09-04T00:00:00Z"),
+    });
+  });
+
   it("etapa SEM janela transfere normalmente, sem consultar agenda", async () => {
     // A trava é sobre compromissos com hora. O resto da mesa continua sendo fila ordenada, e exigir
     // agenda livre para item sem hora inventaria uma grade de horários — o que a spec proíbe.

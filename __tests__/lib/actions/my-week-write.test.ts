@@ -114,6 +114,24 @@ describe("pullStageToMe", () => {
     expect(data.plannedOrder).toBe(4);
   });
 
+  it("[CRÍTICO] puxar para si limpa qualquer compromisso que a etapa trouxe do poço", async () => {
+    // A janela do poço é de OUTRO dia e de OUTRA pessoa — o compromisso foi combinado com quem já
+    // não a executa. Herdá-la calada faria a etapa nascer na minha semana "agendada" numa hora que
+    // ninguém marcou comigo, e a hora ainda apontaria para o dia antigo. Ver `unscheduleStage`.
+    vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue(
+      livre({ scheduledStart: new Date("2026-09-04T17:00:00Z") }) as never
+    );
+
+    await pullStageToMe("as1", amanha());
+
+    const data = vi.mocked(prisma.taskActiveStage.update).mock.calls[0][0].data as {
+      scheduledStart: Date | null;
+      scheduledEnd: Date | null;
+    };
+    expect(data.scheduledStart).toBeNull();
+    expect(data.scheduledEnd).toBeNull();
+  });
+
   it("devolve a recusa de quem reivindica como está — a mensagem dela é a melhor", async () => {
     // Dono, etapa não liberada e limite de WIP são recusas do caminho canônico. A dele diz, por
     // exemplo, quantos itens já estão em andamento; uma genérica daqui perderia isso.

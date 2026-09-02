@@ -1045,6 +1045,12 @@ export async function completeStageAndAdvance(
             // ninguém escolheu. Zerados, ele volta ao poço e o gestor o põe no dia de quem passou
             // a fazê-lo. Só quando o dono MUDA: reafirmar o mesmo responsável não é remanejamento
             // e não pode desmanchar a programação já feita.
+            //
+            // A JANELA FIXA sai junto, e por um motivo mais forte: ela é compromisso combinado com
+            // alguém de fora (o estúdio às 14h), para AQUELE dia e AQUELA pessoa. Sobrevivendo ao
+            // remanejamento, o item chegaria ao novo dono já "agendado" numa hora que ninguém
+            // marcou com ele — e como o dia foi zerado, a hora ficaria ancorada em nada. É a mesma
+            // limpeza que `unscheduleStage` faz ao devolver a etapa ao poço.
             const donoAnterior = donoAtualByStage.get(stageId) ?? null;
             const remanejou = donoAnterior !== null && donoAnterior !== requested;
             await prisma.taskActiveStage.update({
@@ -1052,7 +1058,14 @@ export async function completeStageAndAdvance(
               data: {
                 assigneeId: requested,
                 assignedAt: new Date(),
-                ...(remanejou ? { plannedDate: null, plannedOrder: null } : {}),
+                ...(remanejou
+                  ? {
+                      plannedDate: null,
+                      plannedOrder: null,
+                      scheduledStart: null,
+                      scheduledEnd: null,
+                    }
+                  : {}),
               },
             });
           }
@@ -1568,7 +1581,18 @@ export async function unassignActiveStage(taskId: string, stageId: string) {
       // posição na fila de UMA pessoa, e sem dono o item ficaria ordenado na fila de quem não o
       // tem mais — invisível na grade (que só monta dia de quem tem responsável) e fora do poço se
       // este filtrasse por data. Limpando aqui, a etapa volta inteira para o poço.
-      data: { assigneeId: null, plannedDate: null, plannedOrder: null },
+      //
+      // A JANELA FIXA também: ela é um compromisso PARA AQUELE DIA e AQUELA pessoa, e o dia acabou
+      // de ser apagado. Deixada para trás, a etapa volta do poço já "agendada" num horário que
+      // ninguém marcou — e a próxima programação a entrega a OUTRA pessoa com essa hora fantasma,
+      // que a trava de sobreposição nunca examinou. Mesma limpeza de `unscheduleStage`.
+      data: {
+        assigneeId: null,
+        plannedDate: null,
+        plannedOrder: null,
+        scheduledStart: null,
+        scheduledEnd: null,
+      },
     });
 
     // Update Task status if no more active assigned stages
@@ -1875,7 +1899,10 @@ export async function revertTaskStage(
       // 4c. Reativar a etapa-alvo (volta ao backlog: assignee preservado pode confundir → limpa).
       // A programação semanal sai junto com o assignee: dia e ordem são posição na fila de UMA
       // pessoa: mantê-los sem dono deixaria o item ordenado na fila de quem não o tem mais, e sem
-      // responsável ele não é montado em célula nenhuma da mesa semanal.
+      // responsável ele não é montado em célula nenhuma da mesa semanal. A janela fixa sai pelo
+      // mesmo motivo, um degrau acima: é compromisso combinado com alguém de fora PARA AQUELE dia
+      // e AQUELA pessoa, e sobreviveria à reversão como uma hora marcada para ninguém — que a
+      // próxima programação levaria intacta para a agenda de um terceiro.
       await tx.taskActiveStage.update({
         where: { taskId_stageId: { taskId, stageId: revertToStageId } },
         data: {
@@ -1883,6 +1910,8 @@ export async function revertTaskStage(
           assigneeId: null,
           plannedDate: null,
           plannedOrder: null,
+          scheduledStart: null,
+          scheduledEnd: null,
           completedAt: null,
         },
       });

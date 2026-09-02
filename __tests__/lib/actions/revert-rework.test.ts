@@ -136,18 +136,36 @@ describe("revertTaskStage — preserva o que foi determinado na criação", () =
     // Um `create` aqui perderia o roteamento; o `update` preserva a linha. A lista é fechada de
     // propósito: `teamId` e `instructions` NÃO podem entrar. `plannedDate`/`plannedOrder` entram
     // porque são posição na fila de uma pessoa e saem junto com o assignee — sem isso a etapa
-    // revertida ficaria com dia marcado e sem dono, fora da grade e fora do poço.
+    // revertida ficaria com dia marcado e sem dono, fora da grade e fora do poço. `scheduledStart`
+    // /`scheduledEnd` entram pelo mesmo motivo, um degrau acima: são compromisso combinado com
+    // alguém de fora, para AQUELE dia e AQUELA pessoa, e não podem sobreviver aos dois.
     expect(Object.keys(call![0].data).sort()).toEqual([
       "assigneeId",
       "completedAt",
       "plannedDate",
       "plannedOrder",
+      "scheduledEnd",
+      "scheduledStart",
       "status",
     ]);
     expect(call![0].data.status).toBe("ACTIVE");
     // Assignee limpo de propósito (volta ao backlog) — o TIME continua o mesmo,
     // então a etapa coringa reaparece na fila do time roteado na criação.
     expect(call![0].data.assigneeId).toBeNull();
+  });
+
+  it("[CRÍTICO] reverter limpa o compromisso da etapa-alvo junto com o dono", async () => {
+    // Reverter devolve a etapa ao backlog sem dono. Um `scheduledStart` sobrevivente faria a etapa
+    // reaparecer "agendada" às 14h de um dia que já passou, para ninguém — e a próxima programação
+    // levaria essa hora fantasma para a agenda de outra pessoa.
+    setupValidRevert();
+    await revertTaskStage("t1", "sTarget", "brief incompleto", "INTERNAL");
+
+    const call = tx.taskActiveStage.update.mock.calls.find(
+      (c) => c[0].where?.taskId_stageId?.stageId === "sTarget"
+    );
+    expect(call![0].data.scheduledStart).toBeNull();
+    expect(call![0].data.scheduledEnd).toBeNull();
   });
 
   it("reset das posteriores é por UPDATE em linha existente — não ressuscita etapa excluída", async () => {

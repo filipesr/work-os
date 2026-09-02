@@ -374,7 +374,14 @@ export async function scheduleStage(input: {
   // Mudar de dia derruba o compromisso: ele foi combinado PARA AQUELE DIA. Deslizar sozinho seria o
   // sistema remarcando uma locação, que é conversa com o estúdio e não `UPDATE`. Trocar só a
   // pessoa, no mesmo dia, preserva a hora — é uma das saídas do diálogo de sobreposição.
-  const mudouDeDia = row.plannedDate ? formatISODate(row.plannedDate) !== input.dateISO : false;
+  //
+  // SEM DIA também é mudar de dia. Uma linha que chega com `plannedDate` nulo perdeu o dia em
+  // algum outro caminho (voltou ao poço, foi desatribuída, foi revertida) e qualquer hora que ela
+  // ainda carregue é fantasma: não existe compromisso sem o dia que o ancora. Tratar isso como
+  // "não mudou" PRESERVAVA a janela velha e ainda mandava a checagem de colisão consultar o dia
+  // nulo — que não casa com a agenda de ninguém e aprovava tudo. Duas marcações das 14h chegavam
+  // ao banco pela única porta que a spec inteira promete que ninguém atravessa.
+  const mudouDeDia = row.plannedDate ? formatISODate(row.plannedDate) !== input.dateISO : true;
 
   if (row.assigneeId && row.assigneeId !== input.userId) {
     // Transferir dentro do MESMO dia é uma das saídas do diálogo de sobreposição — a etapa muda de
@@ -418,7 +425,10 @@ export async function scheduleStage(input: {
     const doDestino = await prisma.taskActiveStage.findMany({
       where: {
         assigneeId: input.userId,
-        plannedDate: row.plannedDate,
+        // O dia de DESTINO, nunca o de origem: a pergunta é "esta pessoa está livre nesta faixa NO
+        // DIA PARA ONDE a etapa vai". `row.plannedDate` é de onde ela veio — e podia ser nulo, que
+        // não casa com agenda nenhuma e transformava a trava num carimbo.
+        plannedDate,
         scheduledStart: { not: null },
         status: { not: "COMPLETED" },
       },

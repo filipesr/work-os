@@ -47,7 +47,18 @@ export async function updateUserRoleAndTeams(formData: FormData) {
       // posição na fila de UMA pessoa, e sem dono o item ficaria ordenado na fila de quem não o
       // tem mais — a mesa semanal só monta o dia de quem tem responsável, então ele sumiria da
       // grade. Zerados, os itens voltam para o poço e o gestor os redistribui no novo time.
-      data: { assigneeId: null, plannedDate: null, plannedOrder: null },
+      //
+      // A JANELA FIXA sai junto pelo mesmo motivo, mais forte: ela é compromisso combinado com
+      // alguém de fora do sistema, PARA AQUELE dia e AQUELA pessoa — que acabou de sair do time.
+      // Deixada para trás, ela volta ao poço como hora marcada para ninguém, e a próxima
+      // programação a entrega a um terceiro sem nunca passar pela trava de sobreposição.
+      data: {
+        assigneeId: null,
+        plannedDate: null,
+        plannedOrder: null,
+        scheduledStart: null,
+        scheduledEnd: null,
+      },
     });
 
     // Also update task status if needed
