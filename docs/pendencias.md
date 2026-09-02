@@ -25,6 +25,26 @@ respeitar. Enquanto isso, o `select` já leva só o que o consumidor usa (`taskI
 
 ---
 
+## 2. Dois testes da janela fixa não discriminam
+
+**O que é:** a revisão final da janela fixa aprovou o código e apontou dois testes que passariam
+igual se ele estivesse errado — o que os torna decoração, não rede.
+
+- Em `week-planning-write.test.ts`, "checagem ancorada no dia de DESTINO" usa o MESMO dia como
+  origem e destino, então não distingue as duas coisas que o nome promete distinguir.
+- No teste do compromisso fantasma, o laço `expect(args.where.plannedDate).not.toBeNull()` é vazio:
+  naquele caminho nenhuma consulta chega a rodar. A outra asserção do mesmo teste (o `data` gravado
+  com a janela limpa) é forte e é ela que segura a regra.
+
+**Por que importa:** o código está correto hoje — os dois foram conferidos por rastreio, não por
+teste. Mas um teste que não falha quando deveria dá a impressão de cobertura onde não há, e é
+exatamente na borda do fantasma (dia nulo virando dia real) que uma regressão futura passaria batido.
+
+**Direção:** dar ao primeiro dias diferentes para origem e destino, e trocar o laço vazio por uma
+asserção sobre o que aquele caminho de fato faz.
+
+---
+
 ## Limitações conhecidas, registradas em outro lugar
 
 Não são pendências desta lista, mas quem lê aqui costuma precisar delas:
