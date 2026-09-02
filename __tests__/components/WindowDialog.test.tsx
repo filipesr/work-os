@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 
 const setStageWindow = vi.fn().mockResolvedValue({ success: true });
 const listWindowCandidates = vi.fn();
@@ -22,6 +22,14 @@ import { WindowDialog } from "@/app/[locale]/(protected)/planning/week/WindowDia
 
 beforeEach(() => vi.clearAllMocks());
 
+// Todo clique que dispara uma server action mocada (`setStageWindow`/`scheduleStage`/
+// `listWindowCandidates`) vai dentro de `await act(async () => { fireEvent... })`, nunca solto.
+// `act` com callback assíncrono drena a fila de microtasks — incluindo cadeias de VÁRIOS hops
+// (ex.: `adiarOcupante` chamando `marcar` no próprio `onSuccess`) — antes de devolver, então a
+// asserção que segue lê o estado final por construção, não por ter esperado o bastante. Um
+// `waitFor`/`findBy` com timeout (1s por padrão) faz o oposto: sob contenção de CPU — a suíte
+// inteira tem 128 arquivos disputando os mesmos núcleos, bem mais devagar que este arquivo sozinho
+// — a cadeia pode não terminar dentro do orçamento, e o teste falha por relógio, não por lógica.
 describe("WindowDialog", () => {
   it("reabre com a hora que já está marcada", () => {
     // Editar um compromisso de 14h–16h num formulário vazio o transformaria em outro compromisso.
@@ -43,7 +51,7 @@ describe("WindowDialog", () => {
     expect((screen.getByLabelText("windowEnd") as HTMLInputElement).value).toBe("16:00");
   });
 
-  it("envia início e fim", () => {
+  it("envia início e fim", async () => {
     render(
       <WindowDialog
         activeStageId="as1"
@@ -57,7 +65,9 @@ describe("WindowDialog", () => {
     fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
       target: { value: "09:30" },
     });
-    fireEvent.submit(screen.getByTestId("window-form"));
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
+    });
     expect(setStageWindow).toHaveBeenCalledWith({
       activeStageId: "as1",
       startTime: "09:30",
@@ -65,7 +75,7 @@ describe("WindowDialog", () => {
     });
   });
 
-  it("desmarcar manda startTime nulo", () => {
+  it("desmarcar manda startTime nulo", async () => {
     // Limpar é a mesma porta, sem uma segunda ação no servidor.
     render(
       <WindowDialog
@@ -77,7 +87,9 @@ describe("WindowDialog", () => {
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
-    fireEvent.click(screen.getByRole("button", { name: "windowClear" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "windowClear" }));
+    });
     expect(setStageWindow).toHaveBeenCalledWith({ activeStageId: "as1", startTime: null });
   });
 
@@ -97,12 +109,13 @@ describe("WindowDialog", () => {
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
-    fireEvent.click(screen.getByRole("button", { name: "windowClear" }));
 
-    // `fecharEAtualizar` roda dentro do `useTransition` do `useServerAction` — assíncrono. Espera
-    // o diálogo fechar de verdade antes de simular o `router.refresh()`, senão a reabertura abaixo
-    // não passaria por `handleOpenChange` com o diálogo já aberto.
-    await waitFor(() => expect(screen.queryByTestId("window-form")).not.toBeInTheDocument());
+    // `desmarcar.run` -> `setStageWindow` -> `onSuccess` (`fecharEAtualizar`: `setOpen(false)` +
+    // `router.refresh()`) — `act` drena a cadeia inteira antes de devolver.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "windowClear" }));
+    });
+    expect(screen.queryByTestId("window-form")).not.toBeInTheDocument();
 
     // O que `router.refresh()` traria de volta: as mesmas props, agora nulas.
     rerender(
@@ -158,9 +171,11 @@ describe("WindowDialog", () => {
     fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
       target: { value: "15:00" },
     });
-    fireEvent.submit(screen.getByTestId("window-form"));
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
+    });
 
-    expect(await screen.findByText(/Institucional Acme/)).toBeInTheDocument();
+    expect(screen.getByText(/Institucional Acme/)).toBeInTheDocument();
     // Prioridade não autoriza: adiar a ocupante não é oferecido.
     expect(screen.queryByRole("button", { name: "overlapPostpone" })).not.toBeInTheDocument();
   });
@@ -180,27 +195,24 @@ describe("WindowDialog", () => {
     fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
       target: { value: "15:00" },
     });
-    fireEvent.submit(screen.getByTestId("window-form"));
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
+    });
 
-    fireEvent.click(await screen.findByRole("button", { name: "overlapPostpone" }));
+    // O clique fecha DOIS elos: `adiarOcupante.run` resolve, e o `onSuccess` dele dispara um
+    // SEGUNDO `setStageWindow` (via `marcar.run`) que fecha o diálogo (`fecharEAtualizar`). `act`
+    // drena os dois hops antes de devolver.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "overlapPostpone" }));
+    });
 
     // 2026-09-04T20:00Z = 17h em São Paulo.
-    await waitFor(() =>
-      expect(setStageWindow).toHaveBeenCalledWith({
-        activeStageId: "as9",
-        startTime: "17:00",
-        endTime: null,
-      })
-    );
-
-    // O clique fecha só UM elo da cadeia: `adiarOcupante.run` resolve, e o `onSuccess` dele dispara
-    // um SEGUNDO `setStageWindow` (via `marcar.run`) que ainda está em voo quando o `waitFor` acima
-    // se satisfaz. Sem esperar o fim de verdade — o diálogo fechando —, esse segundo envio (e o
-    // `fecharEAtualizar` que o segue) resolve durante o `cleanup()`/`render()` do PRÓXIMO teste,
-    // vazando um `act()` fora de hora e às vezes derrubando a asserção de outro teste.
-    await waitFor(() =>
-      expect(screen.queryByRole("button", { name: "overlapCancel" })).not.toBeInTheDocument()
-    );
+    expect(setStageWindow).toHaveBeenCalledWith({
+      activeStageId: "as9",
+      startTime: "17:00",
+      endTime: null,
+    });
+    expect(screen.queryByRole("button", { name: "overlapCancel" })).not.toBeInTheDocument();
   });
 
   it("com dois ocupantes, adiar não é oferecido", async () => {
@@ -239,9 +251,11 @@ describe("WindowDialog", () => {
     fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
       target: { value: "15:00" },
     });
-    fireEvent.submit(screen.getByTestId("window-form"));
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
+    });
 
-    expect(await screen.findByText(/Institucional Acme/)).toBeInTheDocument();
+    expect(screen.getByText(/Institucional Acme/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "overlapPostpone" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "overlapMoveOccupant" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "overlapRetime" })).toBeInTheDocument();
@@ -270,11 +284,17 @@ describe("WindowDialog", () => {
     fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
       target: { value: "15:00" },
     });
-    fireEvent.submit(screen.getByTestId("window-form"));
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
+    });
 
-    fireEvent.click(await screen.findByRole("button", { name: "overlapMoveOccupant" }));
+    // `escolherPessoa` (via `startChoosing`) busca `listWindowCandidates` e só então preenche
+    // `picker` — outro hop assíncrono que `act` drena antes de devolver.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "overlapMoveOccupant" }));
+    });
 
-    const bruno = await screen.findByRole("option", { name: /Bruno/ });
+    const bruno = screen.getByRole("option", { name: /Bruno/ });
     expect(bruno).toBeDisabled();
     expect(screen.getByRole("option", { name: /Carla/ })).not.toBeDisabled();
   });
@@ -303,11 +323,15 @@ describe("WindowDialog", () => {
     fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
       target: { value: "15:00" },
     });
-    fireEvent.submit(screen.getByTestId("window-form"));
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
+    });
 
-    fireEvent.click(await screen.findByRole("button", { name: "overlapMoveOccupant" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "overlapMoveOccupant" }));
+    });
 
-    expect(await screen.findByText("overlapNoOneFree")).toBeInTheDocument();
+    expect(screen.getByText("overlapNoOneFree")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "overlapPickPersonSubmit" })).toBeDisabled();
   });
 
@@ -329,26 +353,27 @@ describe("WindowDialog", () => {
     fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
       target: { value: "15:00" },
     });
-    fireEvent.submit(screen.getByTestId("window-form"));
-    fireEvent.click(await screen.findByRole("button", { name: "overlapMoveOccupant" }));
-    fireEvent.change(await screen.findByLabelText("overlapPickPerson"), {
-      target: { value: "u3" },
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
     });
-    fireEvent.click(screen.getByRole("button", { name: "overlapPickPersonSubmit" }));
 
-    await waitFor(() =>
-      expect(scheduleStage).toHaveBeenCalledWith({
-        activeStageId: "as9", // a OCUPANTE, não a nova
-        userId: "u3",
-        dateISO: "2026-09-04",
-      })
-    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "overlapMoveOccupant" }));
+    });
 
-    // Mesmo problema do teste de adiar: `scheduleStage` já foi chamado, mas o `onSuccess` de
-    // `moverOcupante` (`setPicker(null)` + `fecharEAtualizar`) ainda está em voo nesse ponto — só
-    // esperar a chamada não esvazia a cadeia. Espera o diálogo fechar de verdade.
-    await waitFor(() =>
-      expect(screen.queryByRole("button", { name: "overlapCancel" })).not.toBeInTheDocument()
-    );
+    fireEvent.change(screen.getByLabelText("overlapPickPerson"), { target: { value: "u3" } });
+
+    // `moverOcupante.run` -> `scheduleStage` -> `onSuccess` (`setPicker(null)` +
+    // `fecharEAtualizar`) — outra cadeia de dois hops que `act` drena por inteiro.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "overlapPickPersonSubmit" }));
+    });
+
+    expect(scheduleStage).toHaveBeenCalledWith({
+      activeStageId: "as9", // a OCUPANTE, não a nova
+      userId: "u3",
+      dateISO: "2026-09-04",
+    });
+    expect(screen.queryByRole("button", { name: "overlapCancel" })).not.toBeInTheDocument();
   });
 });
