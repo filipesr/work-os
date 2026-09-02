@@ -21,7 +21,7 @@ vi.mock("@/lib/prisma", () => ({
 
 import prisma from "@/lib/prisma";
 import { getStageReferences } from "@/lib/planning/stage-reference";
-import { setStageWindow } from "@/lib/actions/week-planning";
+import { listWindowCandidates, setStageWindow } from "@/lib/actions/week-planning";
 
 const db = prisma as unknown as {
   taskActiveStage: {
@@ -240,5 +240,70 @@ describe("setStageWindow — a trava de sobreposição", () => {
       scheduledStart: { not: null },
       id: { not: "as1" },
     });
+  });
+});
+
+describe("listWindowCandidates", () => {
+  it("lista o time efetivo marcando quem já tem compromisso na faixa", async () => {
+    // Quem está ocupado aparece DESABILITADO, não sumido: "some da lista" não se distingue de "não
+    // é do time", e o gestor precisa saber que a pessoa existe e está comprometida.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      stageId: "s1",
+      plannedDate: new Date("2026-09-04T00:00:00Z"),
+      scheduledStart: new Date("2026-09-04T17:00:00Z"),
+      scheduledEnd: new Date("2026-09-04T19:00:00Z"),
+      teamId: null,
+      team: null,
+      stage: {
+        name: "Gravação",
+        defaultTeam: {
+          id: "video",
+          name: "Vídeo",
+          members: [
+            { id: "u1", name: "Ana" },
+            { id: "u2", name: "Bruno" },
+            { id: "u3", name: "Carla" },
+          ],
+        },
+      },
+    });
+    // Bruno tem 15h–17h; Carla não tem nada.
+    db.taskActiveStage.findMany.mockResolvedValue([
+      {
+        id: "as9",
+        stageId: "s9",
+        assigneeId: "u2",
+        scheduledStart: new Date("2026-09-04T18:00:00Z"),
+        scheduledEnd: new Date("2026-09-04T20:00:00Z"),
+      },
+    ]);
+    vi.mocked(getStageReferences).mockResolvedValue(new Map());
+
+    const r = await listWindowCandidates("as1");
+
+    expect(r).toEqual({
+      candidates: [
+        { id: "u1", name: "Ana", busy: false },
+        { id: "u2", name: "Bruno", busy: true },
+        { id: "u3", name: "Carla", busy: false },
+      ],
+    });
+  });
+
+  it("etapa sem janela não tem candidatos a calcular", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      stageId: "s1",
+      plannedDate: new Date("2026-09-04T00:00:00Z"),
+      scheduledStart: null,
+      scheduledEnd: null,
+      teamId: null,
+      team: null,
+      stage: { name: "Gravação", defaultTeam: { id: "video", name: "Vídeo", members: [] } },
+    });
+    expect(await listWindowCandidates("as1")).toEqual({ error: "stageNotFound" });
   });
 });

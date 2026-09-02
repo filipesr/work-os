@@ -647,6 +647,93 @@ export async function setStageWindow(input: {
   return { success: true as const };
 }
 
+/**
+ * Para as duas saídas de troca de colaborador: quem, no time EFETIVO da etapa, pode receber um
+ * compromisso naquela faixa.
+ *
+ * Devolve todo mundo do time com a marca `busy` em vez de esconder os ocupados — sumir da lista não
+ * se distingue de "não é do time", e o gestor precisa saber que a pessoa existe e está comprometida.
+ */
+export async function listWindowCandidates(
+  activeStageId: string
+): Promise<{ error: string } | { candidates: { id: string; name: string; busy: boolean }[] }> {
+  await requireManagerOrAdmin();
+  const t = await getTranslations("errors.weekPlanning");
+
+  const row = await prisma.taskActiveStage.findUnique({
+    where: { id: activeStageId },
+    select: {
+      id: true,
+      assigneeId: true,
+      stageId: true,
+      plannedDate: true,
+      scheduledStart: true,
+      scheduledEnd: true,
+      teamId: true,
+      team: { select: { id: true, name: true, members: { select: { id: true, name: true } } } },
+      stage: {
+        select: {
+          name: true,
+          defaultTeam: {
+            select: { id: true, name: true, members: { select: { id: true, name: true } } },
+          },
+        },
+      },
+    },
+  });
+  if (!row || !row.scheduledStart || !row.plannedDate) return { error: t("stageNotFound") };
+
+  const refs = await getStageReferences([row.stageId]);
+  const faixa = occupiedRange({
+    scheduledStart: row.scheduledStart,
+    scheduledEnd: row.scheduledEnd,
+    referenceHours: refs.get(row.stageId)?.hours ?? 0,
+  }) as Range;
+
+  const membros = (row.teamId ? row.team?.members : row.stage.defaultTeam?.members) ?? [];
+
+  // Ver `getWeekPlanning`: uma consulta para todo o time, nunca uma por pessoa.
+  const agendasDoDia = await prisma.taskActiveStage.findMany({
+    where: {
+      assigneeId: { in: membros.map((m) => m.id) },
+      plannedDate: row.plannedDate,
+      scheduledStart: { not: null },
+      status: { not: "COMPLETED" },
+      id: { not: row.id },
+    },
+    select: {
+      id: true,
+      stageId: true,
+      assigneeId: true,
+      scheduledStart: true,
+      scheduledEnd: true,
+    },
+  });
+  const refsOutras = await getStageReferences(agendasDoDia.map((a) => a.stageId));
+
+  return {
+    candidates: membros.map((m) => {
+      const ocupadas = agendasDoDia
+        .filter((a) => a.assigneeId === m.id)
+        .flatMap((a) => {
+          const range = occupiedRange({
+            scheduledStart: a.scheduledStart,
+            scheduledEnd: a.scheduledEnd,
+            referenceHours: refsOutras.get(a.stageId)?.hours ?? 0,
+          });
+          return range ? [{ id: a.id, range }] : [];
+        });
+      return {
+        id: m.id,
+        // `name ?? id`, a convenção do projeto (`name ?? email ?? id`) sem o e-mail — esta consulta
+        // não o busca, porque a lista serve para marcar ocupado, não para contatar ninguém.
+        name: m.name ?? m.id,
+        busy: collidingWith(faixa, ocupadas).length > 0,
+      };
+    }),
+  };
+}
+
 /** Sobe ou desce um item dentro do dia. As regras moram em `lib/planning/reorder.ts`, porque a
  *  tela da pessoa (fatia 2) reordena com exatamente as mesmas — e duas cópias divergiriam. */
 export async function moveStageOrder(activeStageId: string, direction: "up" | "down") {
