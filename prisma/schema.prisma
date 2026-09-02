@@ -124,6 +124,13 @@ enum ProjectStatus {
   INACTIVE // Project is deactivated (archived)
 }
 
+// `STAGE_INSTRUCTION` é direcionamento do gestor entregue no momento da liberação — tem título
+// próprio na tela e ninguém o edita. `USER` é conversa.
+enum CommentKind {
+  USER
+  STAGE_INSTRUCTION
+}
+
 // --- 1. Auth & Team Models ---
 
 model Account {
@@ -193,13 +200,16 @@ model User {
   weeklyCapacityHours Int?
 
   // Relations
-  activeStages        TaskActiveStage[] @relation("StageAssignee")
-  comments            TaskComment[]
+  activeStages         TaskActiveStage[]     @relation("StageAssignee")
+  comments             TaskComment[]
   stageCompletionNotes StageCompletionNote[]
-  artifacts           TaskArtifact[]    @relation("ArtifactCreator")
-  timeLogs            TimeLog[]
-  stageLogs           TaskStageLog[]
-  activityLogs        ActivityLog[]
+  // Demandas que esta pessoa criou. Nome próprio porque `User` já se relaciona com `Task` por
+  // outros caminhos (etapas atribuídas, comentários) — sem nome o Prisma não sabe qual é qual.
+  createdTasks         Task[]                @relation("TaskCreator")
+  artifacts            TaskArtifact[]        @relation("ArtifactCreator")
+  timeLogs             TimeLog[]
+  stageLogs            TaskStageLog[]
+  activityLogs         ActivityLog[]
 
   // Artifact / NAS relations
   uploadedArtifacts TaskArtifact[]      @relation("ArtifactUploader")
@@ -310,15 +320,15 @@ model TemplateStage {
   //
   // Renomear resolveria de vez, mas viraria a leitura de todo consumidor de uma vez só; o comentário
   // é a trava barata até que alguém faça a troca com calma.
-  dependencies         StageDependency[] @relation("DependsOn")
-  dependents           StageDependency[] @relation("Stage")
-  activeTasks          TaskActiveStage[] @relation("ActiveTasks")
+  dependencies         StageDependency[]     @relation("DependsOn")
+  dependents           StageDependency[]     @relation("Stage")
+  activeTasks          TaskActiveStage[]     @relation("ActiveTasks")
   stageLogs            TaskStageLog[]
   timeLogs             TimeLog[]
   activityLogs         ActivityLog[]
   stageArtifacts       TaskArtifact[]
   stageTransitions     StageTransition[]
-  reworkEvents         ReworkEvent[]     @relation("ReworkSource")
+  reworkEvents         ReworkEvent[]         @relation("ReworkSource")
   stageCompletionNotes StageCompletionNote[]
 }
 
@@ -399,6 +409,12 @@ model Task {
   calendarOccurrenceId String?
   calendarOccurrence   CalendarOccurrence? @relation(fields: [calendarOccurrenceId], references: [id], onDelete: SetNull)
 
+  // Quem criou a demanda. Nulo em toda demanda anterior a esta coluna — sem backfill, o chute pelo
+  // autor do primeiro comentário é exatamente o defeito que esta entrega remove do
+  // WorkflowHistoryModal.
+  createdById String?
+  createdBy   User?   @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
   @@index([workflowTemplateId, completedAt])
   @@index([calendarOccurrenceId])
 }
@@ -436,6 +452,9 @@ model TaskActiveStage {
   // É direcionamento do gestor para quem for pegar, não conversa — discussão
   // continua em TaskComment, que é datada e por autor.
   instructions String? @db.Text
+
+  // Conversa e instrução nascidas NESTA instância da etapa (ver `TaskComment.activeStageId`).
+  comments TaskComment[]
 
   // --- Programação semanal (docs/superpowers/specs/2026-08-28-programacao-semanal-design.md) ---
   // O DIA é guardado, não calculado: a referência de capacidade é semanal e quem distribui é o
@@ -491,6 +510,16 @@ model TaskComment {
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // A etapa em que o comentário nasceu. Aponta para a INSTÂNCIA porque a mesma etapa do template
+  // poderá ser executada duas vezes na mesma demanda (retrabalho). Nulo = conversa da demanda,
+  // escrita em /admin, e o caso de todo comentário anterior a esta coluna.
+  activeStageId String?
+  activeStage   TaskActiveStage? @relation(fields: [activeStageId], references: [id], onDelete: SetNull)
+
+  // `STAGE_INSTRUCTION` é direcionamento do gestor entregue no momento da liberação — tem título
+  // próprio na tela e ninguém o edita. `USER` é conversa.
+  kind CommentKind @default(USER)
 }
 
 model TaskArtifact {
