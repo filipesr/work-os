@@ -174,7 +174,7 @@ Server actions: `lib/actions/{client,project,task}.ts`.
 
 `components/dashboard/ActiveStagesWidget.tsx`, `components/my-stages/MyStagesPageClient.tsx`,
 `components/tasks/{ClaimActiveStage,AdvanceStage,Revert Stage,UnassignActiveStage,AddArtifact,AddComment}*.tsx`,
-`components/tasks/TaskActionsMenu.tsx`. Server actions: `lib/actions/task.ts`.
+`components/tasks/StageWorkView.tsx`. Server actions: `lib/actions/task.ts`.
 
 ---
 

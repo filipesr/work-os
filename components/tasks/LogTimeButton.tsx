@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
 import { LogTimeForm } from "./LogTimeForm";
@@ -19,6 +20,10 @@ export function LogTimeButton({
   onOpenChange,
   activeStageId,
 }: LogTimeButtonProps) {
+  // `tasks.actions` é o namespace dos rótulos de ação da demanda, e `logTime` já existia lá —
+  // criada para o menu suspenso que sumiu com a tela da etapa. O rótulo estava cravado em
+  // português aqui: a paridade de locales não o via, porque não estava em locale nenhum.
+  const t = useTranslations("tasks.actions");
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setIsOpen = (value: boolean) => {
@@ -37,7 +42,7 @@ export function LogTimeButton({
       {!isControlled && !isOpen && (
         <Button variant="outline" className="w-full" onClick={() => setIsOpen(true)}>
           <Clock className="h-4 w-4 mr-2" />
-          Registrar Tempo
+          {t("logTime")}
         </Button>
       )}
 

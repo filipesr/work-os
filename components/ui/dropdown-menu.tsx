@@ -42,8 +42,9 @@ DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayNam
    `popover`/`popover-foreground` no tema (nem em `tailwind.config.ts`, nem no CSS). A classe sai
    inválida, o menu fica SEM FUNDO e a página aparece através dele — foi assim que os dois primeiros
    consumidores acabaram remendando cada um por conta própria (`bg-background` no TaskActionsMenu,
-   `bg-card` no LanguageSwitcher). Se um dia o tema ganhar `popover`, dá para voltar atrás; até lá,
-   restaurar o padrão do shadcn aqui quebra todo menu do app de uma vez. */
+   componente desde então removido, e `bg-card` no LanguageSwitcher). Se um dia o tema ganhar
+   `popover`, dá para voltar atrás; até lá, restaurar o padrão do shadcn aqui quebra todo menu do
+   app de uma vez. */
 const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>

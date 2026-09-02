@@ -63,8 +63,13 @@ export function WorkflowHistoryModal({
     // `activeStageId: null` é comentário da DEMANDA (ex.: "o cliente adiou tudo"), não de etapa
     // nenhuma — corretamente ausente de todo bloco abaixo.
     const stageComments = comments.filter((c) => c.activeStageId === activeStageId);
-    // Artefatos continuam pelo palpite de autor: não há coluna de etapa em `TaskArtifact` ainda,
-    // então não há vínculo melhor para usar aqui (fora do escopo desta correção).
+    // Artefatos continuam pelo palpite de autor, e NÃO por falta de coluna: `TaskArtifact.stageId`
+    // existe (`prisma/schema.prisma`), `prepareArtifactUploadSchema` o aceita e a action o grava.
+    // O que falta é a ponta de cima — o painel de upload nunca envia o campo, então a coluna está
+    // nula em todo artefato e filtrar por ela não devolveria nada. Mandar a etapa no upload é o
+    // conserto de verdade; enquanto ele não vem, o palpite fica (fora do escopo desta correção).
+    // Vale lembrar que `stageId` aponta para TemplateStage, não para a instância — quando o
+    // upload passar a mandá-lo, este agrupamento por `stage.id` casa direto.
     const stageArtifacts = artifacts.filter((a) =>
       stageLogs.some((log) => log.stageId === stageId && log.userId === a.userId)
     );

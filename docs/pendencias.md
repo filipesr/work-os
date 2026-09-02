@@ -71,8 +71,9 @@ com `TaskActiveStage` — chegar à instância exigiria uma busca nova por `(tas
 que a consulta atual já traz.
 
 **Por que importa:** é a única das seis sem o link, e o motivo é estrutural (schema), não uma
-consulta que só faltou um campo — as outras quatro eram exatamente isso (bastou `id: true` a mais
-no `select`).
+consulta que só faltou um campo — três das outras cinco eram exatamente isso (`AgingQueue`,
+`BlockedQueue` e `TeamLoadBalanceClient`: bastou `id: true` a mais no `select`); as duas restantes
+— minhas etapas e dashboard — já tinham o id em mãos.
 
 **Direção:** decidir se vale a busca extra por `(taskId, stageId)` para este card, ou se a relação
 correta é acrescentar em `ActivityLog` uma referência à instância — o que também serviria de base
@@ -80,24 +81,20 @@ para outras leituras que hoje só têm o id do template.
 
 ---
 
-## 5. Restos da tela da etapa: um componente morto e duas strings sem `t()`
+## 5. O `not-found.tsx` da demanda com português cravado
 
-**O que é:** três achados pequenos, deixados de propósito fora do escopo da entrega que os expôs:
+**O que é:** `app/[locale]/(protected)/tasks/[taskId]/not-found.tsx` tem português cravado, sem
+`getTranslations`, ao contrário dos quatro irmãos conformes do mesmo padrão (o `not-found.tsx` da
+rota nova da etapa foi escrito certo desde o início).
 
-- `components/tasks/TaskActionsMenu.tsx` ficou sem consumidor — seu último uso era em
-  `/tasks/{id}`, que virou tela de leitura.
-- `app/[locale]/(protected)/tasks/[taskId]/not-found.tsx` tem português cravado, sem
-  `getTranslations`, ao contrário dos quatro irmãos conformes do mesmo padrão (o `not-found.tsx` da
-  rota nova da etapa foi escrito certo desde o início).
-- `LogTimeButton` tem a string "Registrar Tempo" sem passar por `t()`. Pré-existente; o componente
-  não foi tocado além de passar a receber a etapa certa.
+Era um item de três; os outros dois foram fechados na revisão final da tela da etapa —
+`components/tasks/TaskActionsMenu.tsx` (morto, e ainda chamando `LogTimeButton` sem etapa) foi
+removido, e o "Registrar Tempo" cravado em `LogTimeButton` virou `tasks.actions.logTime`.
 
-**Por que importa:** nenhum dos três quebra nada hoje, mas são o tipo de resto que se acumula —
-código morto pesando na leitura, e duas strings que a paridade de locales não pega porque não
-existe outro locale para comparar contra.
+**Por que importa:** não quebra nada hoje, mas é uma tela inteira que a paridade de locales não
+pega — porque a string não está em locale nenhum para comparar contra.
 
-**Direção:** remover `TaskActionsMenu.tsx`; migrar os dois `not-found.tsx` para `getTranslations`
-numa passada só; extrair "Registrar Tempo" para o locale.
+**Direção:** migrar o `not-found.tsx` da demanda para `getTranslations`, no padrão dos irmãos.
 
 ---
 
@@ -111,8 +108,10 @@ Não são pendências desta lista, mas quem lê aqui costuma precisar delas:
 - **Upload de artefato é LAN-only** — fora da rede, só o registro de link. Ver a spec da tarefa
   rápida, seção "Problema em aberto — foto do artefato fora da rede".
 - **Marcar demanda como obsoleta não apaga as horas apontadas nela.**
-- **Comentário e demanda de antes da tela da etapa não têm etapa nem criador.** `TaskComment.activeStageId`/`kind`
+- **Comentário e demanda de antes da tela da etapa não têm etapa nem criador.** `TaskComment.activeStageId`
   e `Task.createdById` nasceram sem backfill, de propósito: inventar o vínculo pelo autor era
   exatamente o defeito que a tela da etapa fechou, e gravar esse chute teria promovido palpite a
   dado. Quem consultar o banco direto — relatório, migração de dados, investigação — precisa saber
-  que `activeStageId`/`kind` nulo ou `createdById` nulo em registro antigo não é erro de gravação.
+  que `activeStageId` nulo ou `createdById` nulo em registro antigo não é erro de gravação.
+  `kind` NÃO entra nessa lista: a coluna é `NOT NULL DEFAULT 'USER'`, então comentário antigo
+  nenhum ficou sem ela — todos nasceram (retroativamente) `USER`, que é exatamente o que eram.
