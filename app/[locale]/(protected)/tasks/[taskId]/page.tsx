@@ -42,8 +42,12 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
         },
       },
       activeStages: {
+        // COMPLETED entra porque o modal de histórico do workflow precisa da linha da demanda de
+        // toda etapa já FECHADA, não só das em curso — é ela que liga comentário a etapa (ver
+        // `WorkflowHistoryModal`). INACTIVE fica de fora: etapa ainda não alcançada não tem
+        // comentário possível.
         where: {
-          status: { in: ["ACTIVE", "BLOCKED"] },
+          status: { in: ["ACTIVE", "BLOCKED", "COMPLETED"] },
         },
         include: {
           stage: {

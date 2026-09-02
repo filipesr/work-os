@@ -27,6 +27,11 @@ interface WorkflowHistoryModalProps {
   })[];
   comments: (TaskComment & { user: Pick<User, "id" | "name" | "email" | "image"> })[];
   artifacts: (TaskArtifact & { user: Pick<User, "id" | "name" | "email" | "image"> })[];
+  /** Linhas `TaskActiveStage` desta demanda (id + a etapa de template que executam). `allStages`/
+   *  `stageLogs` falam a língua do TEMPLATE (`TemplateStage.id`); `TaskComment.activeStageId`
+   *  aponta pra INSTÂNCIA (a linha desta demanda). Sem este mapa o componente teria que adivinhar
+   *  de novo — a página já tem `task.activeStages` em mãos, então ela entrega pronto. */
+  activeStages: { id: string; stageId: string }[];
   currentUserId: string;
   currentStageId: string | null;
 }
@@ -36,6 +41,7 @@ export function WorkflowHistoryModal({
   stageLogs,
   comments,
   artifacts,
+  activeStages,
   currentUserId,
   currentStageId,
 }: WorkflowHistoryModalProps) {
@@ -43,11 +49,22 @@ export function WorkflowHistoryModal({
   const t = useTranslations("tasks.workflowHistory");
   const locale = useLocale();
 
+  // Etapa de template -> linha da demanda (`TaskActiveStage.id`). É essa linha, não o autor, que
+  // liga um comentário à etapa (ver `TaskComment.activeStageId`).
+  const activeStageIdByStageId = new Map(activeStages.map((as) => [as.stageId, as.id]));
+
   // Group comments and artifacts by stage
   const getStageContent = (stageId: string) => {
-    const stageComments = comments.filter((c) =>
-      stageLogs.some((log) => log.stageId === stageId && log.userId === c.userId)
-    );
+    const activeStageId = activeStageIdByStageId.get(stageId);
+    // Pelo VÍNCULO, não pelo autor: `activeStageId` diz de qual etapa o comentário é. A versão
+    // anterior perguntava "o autor passou por esta etapa?", o que repetia o mesmo comentário em
+    // toda etapa por onde a pessoa passou e escondia o de quem nunca teve log — e ignorava a
+    // data, então um comentário de hoje podia aparecer sob uma etapa fechada há meses.
+    // `activeStageId: null` é comentário da DEMANDA (ex.: "o cliente adiou tudo"), não de etapa
+    // nenhuma — corretamente ausente de todo bloco abaixo.
+    const stageComments = comments.filter((c) => c.activeStageId === activeStageId);
+    // Artefatos continuam pelo palpite de autor: não há coluna de etapa em `TaskArtifact` ainda,
+    // então não há vínculo melhor para usar aqui (fora do escopo desta correção).
     const stageArtifacts = artifacts.filter((a) =>
       stageLogs.some((log) => log.stageId === stageId && log.userId === a.userId)
     );

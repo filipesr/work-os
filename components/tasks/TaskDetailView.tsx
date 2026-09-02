@@ -12,6 +12,7 @@ import {
   TaskComment,
   TaskArtifact,
   TaskStageLog,
+  TaskActiveStage,
   TimeLog,
   UserRole,
 } from "@prisma/client";
@@ -52,6 +53,9 @@ type TaskWithRelations = Task & {
   currentStageId: string | null;
   comments: (TaskComment & { user: Pick<User, "id" | "name" | "email" | "image"> })[];
   artifacts: (TaskArtifact & { user: Pick<User, "id" | "name" | "email" | "image"> })[];
+  /** Etapa de template -> linha da demanda, para o modal de histórico ligar comentário a etapa
+   *  pelo vínculo (`TaskComment.activeStageId`) em vez de adivinhar pelo autor. */
+  activeStages: Pick<TaskActiveStage, "id" | "stageId">[];
   stageLogs: (TaskStageLog & {
     stage: TemplateStage;
     user: Pick<User, "id" | "name" | "email" | "image">;
@@ -142,6 +146,7 @@ export function TaskDetailView({
               stageLogs={task.stageLogs}
               comments={task.comments}
               artifacts={task.artifacts}
+              activeStages={task.activeStages}
               currentUserId={currentUserId}
               currentStageId={task.currentStageId}
             />
