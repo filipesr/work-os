@@ -146,6 +146,8 @@ describe("WindowDialog", () => {
           priority: "HIGH",
           startISO: "2026-09-04T17:00:00.000Z",
           endISO: "2026-09-04T19:00:00.000Z",
+          // Fim DECLARADO: 14h às 16h foi combinado assim, não derivado da referência da etapa.
+          endDeclared: true,
         },
       ],
       firstFreeStartISO: "2026-09-04T20:00:00.000Z",
@@ -206,13 +208,54 @@ describe("WindowDialog", () => {
       fireEvent.click(screen.getByRole("button", { name: "overlapPostpone" }));
     });
 
-    // 2026-09-04T20:00Z = 17h em São Paulo.
+    // 2026-09-04T20:00Z = 17h em São Paulo. E o fim vai JUNTO: a ocupante declarou 14h-16h, duas
+    // horas — adiada para as 17h, ela termina às 19h. Mandar `endTime: null` aqui devolveria um
+    // compromisso de "17h + referência da etapa", encurtando (ou esticando) por conta própria algo
+    // que foi combinado com o estúdio. A spec é explícita: a duração declarada é preservada.
+    expect(setStageWindow).toHaveBeenCalledWith({
+      activeStageId: "as9",
+      startTime: "17:00",
+      endTime: "19:00",
+    });
+    expect(screen.queryByRole("button", { name: "overlapCancel" })).not.toBeInTheDocument();
+  });
+
+  it("adiar quem NÃO declarou fim continua sem fim — a faixa desliza com a referência", async () => {
+    // O outro lado da mesma regra: `endISO` também vem preenchido quando o fim foi DERIVADO da
+    // referência da etapa. Reenviá-lo como fim declarado inventaria um combinado que ninguém fez —
+    // e congelaria a duração de um item cuja faixa deve continuar acompanhando a referência.
+    setStageWindow.mockResolvedValueOnce({
+      overlap: {
+        ...OVERLAP.overlap,
+        occupants: [{ ...OVERLAP.overlap.occupants[0], endDeclared: false }],
+      },
+    });
+    render(
+      <WindowDialog
+        activeStageId="as1"
+        label="Natal · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
+      target: { value: "15:00" },
+    });
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "overlapPostpone" }));
+    });
+
     expect(setStageWindow).toHaveBeenCalledWith({
       activeStageId: "as9",
       startTime: "17:00",
       endTime: null,
     });
-    expect(screen.queryByRole("button", { name: "overlapCancel" })).not.toBeInTheDocument();
   });
 
   it("com dois ocupantes, adiar não é oferecido", async () => {

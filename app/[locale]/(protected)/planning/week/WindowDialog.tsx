@@ -226,10 +226,25 @@ export function WindowDialog({
                 disabled={isPending}
                 onClick={() => {
                   const [occupant] = overlap.occupants;
+                  const novoInicio = new Date(overlap.firstFreeStartISO);
+                  // A duração DECLARADA viaja junto: um compromisso combinado de 14h às 18h adiado
+                  // para as 17h termina às 21h, não em "17h + referência da etapa". Mandar
+                  // `endTime: null` fazia o servidor refazer o fim pela referência e o sistema
+                  // encurtava sozinho uma locação que alguém combinou com o estúdio.
+                  //
+                  // Quem NÃO declarou fim continua sem fim (`endDeclared: false`): ali `endISO` é
+                  // só a borda derivada da referência, e reenviá-la inventaria um combinado que
+                  // ninguém fez — a faixa dele deve seguir deslizando com a referência.
+                  const duracaoMs = occupant.endDeclared
+                    ? new Date(occupant.endISO).getTime() - new Date(occupant.startISO).getTime()
+                    : null;
                   adiarOcupante.run({
                     activeStageId: occupant.activeStageId,
-                    startTime: formatDisplayTime(new Date(overlap.firstFreeStartISO)),
-                    endTime: null,
+                    startTime: formatDisplayTime(novoInicio),
+                    endTime:
+                      duracaoMs === null
+                        ? null
+                        : formatDisplayTime(new Date(novoInicio.getTime() + duracaoMs)),
                   });
                 }}
               >

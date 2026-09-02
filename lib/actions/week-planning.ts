@@ -531,6 +531,14 @@ export type WindowOccupant = {
   /** Instantes reais, em ISO — a tela formata no fuso de SP. */
   startISO: string;
   endISO: string;
+  /** O fim foi DECLARADO pelo gestor, ou `endISO` é a borda derivada da referência da etapa?
+   *
+   *  `endISO` sozinho é ambíguo — ele vem preenchido nos dois casos (ver `occupiedRange`) — e a
+   *  saída "adiar a ocupante" precisa da diferença: a spec promete que "a duração declarada é
+   *  preservada", e quem não declarou fim continua sem fim, deslizando junto com a referência.
+   *  Sem esta marca, adiar um compromisso combinado de 14h às 18h o devolvia como início +
+   *  referência: o sistema encurtando uma locação por conta própria. */
+  endDeclared: boolean;
 };
 export type WindowOverlap = {
   occupants: WindowOccupant[];
@@ -640,11 +648,17 @@ export async function setStageWindow(input: {
           priority: b.task.priority,
           startISO: b.range.start.toISOString(),
           endISO: b.range.end.toISOString(),
+          endDeclared: b.scheduledEnd !== null,
         })),
         firstFreeStartISO: firstFreeStart(
           faixaNova.end,
           duracaoDaOcupante,
-          ocupadas.map((o) => o.range)
+          // A ocupante que vai SER ADIADA sai da lista de obstáculos: ela é o que está mudando de
+          // lugar, não algo a desviar. Deixá-la dentro fazia a faixa nova dela "colidir" com a
+          // faixa velha dela mesma, e o horário oferecido pulava para depois do próprio
+          // compromisso — 16h onde 15h estava livre. Os OUTROS continuam contando: adiar não pode
+          // trocar uma colisão por outra.
+          ocupadas.filter((o) => o.id !== batidas[0].id).map((o) => o.range)
         ).toISOString(),
       },
     };

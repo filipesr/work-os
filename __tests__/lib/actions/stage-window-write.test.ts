@@ -225,6 +225,50 @@ describe("setStageWindow — a trava de sobreposição", () => {
     expect(r).toMatchObject({ overlap: { firstFreeStartISO: "2026-09-04T21:00:00.000Z" } });
   });
 
+  it("o payload diz se o FIM da ocupante foi declarado — 14h-18h não vira 14h+referência", async () => {
+    // "A duração declarada é preservada", diz a spec da saída "adiar". A tela só sabe preservá-la
+    // se souber que existe: `endISO` sozinho é ambíguo, porque ele também vem preenchido quando o
+    // fim foi DERIVADO da referência da etapa. Sem esta marca, adiar um compromisso declarado de
+    // 14h às 18h o devolvia como início + referência, encolhendo um combinado com o estúdio.
+    db.taskActiveStage.findUnique.mockResolvedValue(linha());
+    db.taskActiveStage.findMany.mockResolvedValue([ocupante()]);
+
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "15:00" });
+
+    expect(r).toMatchObject({ overlap: { occupants: [{ endDeclared: true }] } });
+  });
+
+  it("ocupante SEM fim declarado é marcada como tal — a faixa dela veio da referência", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue(linha());
+    db.taskActiveStage.findMany.mockResolvedValue([ocupante({ scheduledEnd: null })]);
+    vi.mocked(getStageReferences).mockResolvedValue(
+      new Map([
+        ["s1", { hours: 3, source: "observed" }],
+        ["s9", { hours: 2, source: "observed" }],
+      ])
+    );
+
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "15:00" });
+
+    expect(r).toMatchObject({ overlap: { occupants: [{ endDeclared: false }] } });
+  });
+
+  it("[IMPORTANTE] a ocupante não é obstáculo de si mesma no primeiro horário livre", async () => {
+    // Nova das 14h às 15h contra uma ocupante das 14h às 16h: o lugar livre para a ocupante é 15h,
+    // logo depois da nova. Passando a lista INTEIRA de ocupadas, a própria ocupante entrava como
+    // obstáculo — 15h-17h "colide" com ela mesma às 14h-16h — e a tela oferecia 16h, uma hora a
+    // mais de atraso que ninguém precisava.
+    db.taskActiveStage.findUnique.mockResolvedValue(
+      linha({ task: { priority: "URGENT", title: "Campanha Natal" } })
+    );
+    db.taskActiveStage.findMany.mockResolvedValue([ocupante()]);
+
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "14:00", endTime: "15:00" });
+
+    // 2026-09-04T18:00Z = 15h em São Paulo.
+    expect(r).toMatchObject({ overlap: { firstFreeStartISO: "2026-09-04T18:00:00.000Z" } });
+  });
+
   it("a consulta das ocupantes é da MESMA pessoa, no MESMO dia, e ignora a própria linha", async () => {
     // Sem excluir a si mesma, remarcar um compromisso existente colidiria com ele próprio.
     db.taskActiveStage.findUnique.mockResolvedValue(
