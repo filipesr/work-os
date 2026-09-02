@@ -21,7 +21,15 @@ vi.mock("@/components/tasks/AddCommentForm", () => ({
 // já testada em separado. Aqui só a PRESENÇA do painel na etapa importa (Task 9), não o miolo dele
 // — igual ao que `TaskDetailView.test.tsx` já faz.
 vi.mock("@/components/artifacts/UnifiedArtifactsPanel", () => ({
-  UnifiedArtifactsPanel: () => <div data-testid="artifacts-panel-stub" />,
+  // O stub carrega `canAdd`/`canRemove` para fora: é o PORTÃO que estes testes examinam, e ele
+  // vive na chamada do painel, não dentro dele.
+  UnifiedArtifactsPanel: ({ canAdd, canRemove }: { canAdd: boolean; canRemove: boolean }) => (
+    <div
+      data-testid="artifacts-panel-stub"
+      data-can-add={String(canAdd)}
+      data-can-remove={String(canRemove)}
+    />
+  ),
 }));
 
 // Task 9: os botões de ação (antes só na demanda) passam a morar aqui. As Server Actions por trás
@@ -121,15 +129,20 @@ describe("StageWorkView", () => {
     expect(screen.getByTestId("comment-c1")).toHaveAttribute("data-this-stage", "false");
   });
 
-  it("etapa concluída não oferece caixa de escrever", () => {
-    // A tela da etapa concluída é leitura: a conversa dela já aconteceu.
+  it("etapa concluída AINDA oferece caixa de escrever", () => {
+    // Invertido de propósito na revisão final. A regra "etapa concluída é leitura" foi inventada
+    // pelo plano — ninguém pediu, e `addComment` só exige MEMBER+. Duas razões para removê-la:
+    // uma conversa não deixa de ser útil quando a etapa fecha (é justamente aí que se combina o
+    // que ficou faltando); e, numa demanda terminada, TODA etapa está COMPLETED — com /tasks/{id}
+    // em leitura e /admin restrito a MANAGER+, esconder a caixa aqui deixava MEMBER e SUPERVISOR
+    // sem NENHUM lugar para falar sobre a demanda.
     render(
       <StageWorkView
         view={{ ...VIEW, stage: { ...VIEW.stage, status: "COMPLETED" } }}
         currentUserId="u1"
       />
     );
-    expect(screen.queryByTestId("add-comment")).not.toBeInTheDocument();
+    expect(screen.getByTestId("add-comment")).toBeInTheDocument();
   });
 
   it("a etapa ativa oferece as ações dela", () => {
@@ -163,6 +176,47 @@ describe("StageWorkView", () => {
     expect(screen.getByRole("button", { name: /triggerButton/ })).toBeInTheDocument();
     expect(screen.queryByTestId("advance-stage")).not.toBeInTheDocument();
     expect(screen.queryByTestId("activity-button")).not.toBeInTheDocument();
+  });
+
+  it("reverter NÃO mora no bloco de ações desta etapa — é poder da DEMANDA", () => {
+    // `revertTaskStage` reverte a demanda inteira: sob fork/join ela derruba também uma etapa
+    // paralela que não está nesta tela. Dentro do card "ações desta etapa" o botão lia-se como
+    // "reverter esta etapa" — a mesma leitura falsa que o admin já corrigiu ao tirá-lo da lista
+    // por etapa e pô-lo junto do `CompleteTaskButton`. A tela da etapa passa a apresentá-lo do
+    // mesmo jeito.
+    render(
+      <StageWorkView
+        view={{ ...VIEW, previousStages: [{ id: "ts1", name: "Roteiro", order: 1 }] }}
+        currentUserId="u1"
+      />
+    );
+    const reverter = screen.getByRole("button", { name: /triggerButton/ });
+    expect(screen.getByTestId("stage-actions")).not.toContainElement(reverter);
+    expect(screen.getByTestId("demand-actions")).toContainElement(reverter);
+  });
+
+  it("etapa COMPLETED ainda oferece anexar artefato — prepareArtifactUpload não exige etapa ativa", () => {
+    // `prepareArtifactUpload` só checa `requireMemberOrHigher`: nem status de etapa, nem ser o
+    // responsável por ela. Prendendo `canAdd` ao ACTIVE, um SUPERVISOR perdia o único caminho que
+    // lhe restava para anexar numa demanda sem etapa ativa — /tasks/{id} virou leitura e /admin é
+    // MANAGER+. É o mesmo defeito já corrigido para `logTime`.
+    render(
+      <StageWorkView
+        view={{ ...VIEW, stage: { ...VIEW.stage, status: "COMPLETED" } }}
+        currentUserId="u1"
+      />
+    );
+    expect(screen.getByTestId("artifacts-panel-stub")).toHaveAttribute("data-can-add", "true");
+  });
+
+  it("quem não pode agir na etapa não anexa — o portão é o papel, não o status", () => {
+    render(
+      <StageWorkView
+        view={{ ...VIEW, stage: { ...VIEW.stage, canPerformActions: false } }}
+        currentUserId="u9"
+      />
+    );
+    expect(screen.getByTestId("artifacts-panel-stub")).toHaveAttribute("data-can-add", "false");
   });
 
   it("etapa COMPLETED ainda oferece apontar hora — logTime não exige etapa ativa nenhuma", () => {

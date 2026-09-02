@@ -74,7 +74,9 @@
   "stageView": {
     "instructionTitle": "Instrucción de la etapa",
     "backToDemand": "Volver a la demanda",
-    "thisStage": "Esta etapa"
+    "thisStage": "Esta etapa",
+    "demandActionsTitle": "Acciones de la demanda",
+    "revertScopeHint": "Revertir devuelve la DEMANDA entera a una etapa anterior — incluidas las etapas paralelas que no aparecen en esta pantalla."
   },
   "stages": {
     "title": "Etapas del Flujo de Trabajo",

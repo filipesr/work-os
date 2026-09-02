@@ -49,12 +49,20 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
     COMPLETED: tStages("completed"),
   };
 
-  // O portão da TELA espelha o guarda do SERVIDOR, botão a botão — divergir em qualquer direção
-  // é defeito: largo demais engana (mostra um botão que o servidor sempre vai recusar), estreito
-  // demais esconde função que a pessoa tinha antes.
+  // O portão da TELA acompanha o guarda do SERVIDOR no que diz respeito ao STATUS da etapa: é aí
+  // que os dois lados podem divergir por engano, e divergir esconde função que a pessoa tinha
+  // antes (foi o que aconteceu com `logTime` e com anexar artefato).
   //
-  // Avançar/desatribuir/anexar: o servidor só aceita `stageId` (TemplateStage) de uma
-  // `TaskActiveStage` ACTIVE (`completeStageAndAdvance`/`unassignActiveStage` recusam fora disso).
+  // No que diz respeito ao PAPEL, porém, o portão da tela é declaradamente MAIS LARGO: o servidor
+  // exige `isAdmin || isManager || isAssignee` em `completeStageAndAdvance`, `unassignActiveStage`
+  // e `revertTaskStage`, e `canPerformActions` (ver `stage-view.ts`) inclui também SUPERVISOR. Um
+  // supervisor que não seja o responsável vê esses três botões e recebe recusa do servidor ao
+  // clicar. Fica registrado como é, e não como se gostaria que fosse: apertar o portão da tela
+  // esconderia botão de quem talvez devesse tê-lo, e afrouxar o servidor mudaria a regra — as
+  // duas coisas são decisão de produto, não conserto de comentário.
+  //
+  // Avançar/desatribuir: o servidor só aceita `stageId` (TemplateStage) de uma `TaskActiveStage`
+  // ACTIVE (`completeStageAndAdvance`/`unassignActiveStage` recusam fora disso).
   const podeAvancar = stage.status === "ACTIVE" && stage.canPerformActions;
   // Reverter: `revertTaskStage` aceita a demanda ter etapa ACTIVE **ou** BLOCKED (o guarda olha
   // para TODAS as etapas ativas da demanda, não só esta) — exigir ACTIVE aqui escondia o botão
@@ -65,7 +73,13 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
   // responsável por ELA. Prender ao status ACTIVE tirava de um gestor o único caminho de lançar
   // (ou corrigir) hora numa demanda já concluída — perda de função, não reforço de regra.
   const podeApontarHora = stage.canPerformActions;
-  const mostraAcoes = podeAvancar || podeReverter || podeApontarHora;
+  // Anexar artefato: `prepareArtifactUpload` só exige `requireMemberOrHigher` — mesmo caso do
+  // apontamento de hora, e o mesmo defeito. Preso ao ACTIVE, um SUPERVISOR ficava sem NENHUM
+  // caminho para anexar numa demanda sem etapa ativa: `/tasks/{id}` passou a mandar `canAdd`
+  // falso e `/admin/tasks/{id}` é MANAGER+. A entrega tirava um poder que ninguém pediu para
+  // tirar.
+  const podeAnexar = stage.canPerformActions;
+  const mostraAcoes = podeAvancar || podeApontarHora;
 
   return (
     <div data-testid="stage-work-view" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -137,39 +151,56 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
             bloco só monta sob o portão que espelha o guarda do SERVIDOR daquele botão específico
             (ver os `pode*` acima) — não um portão único para a seção inteira. */}
         {mostraAcoes && (
-          <SectionCard title={tDetail("actionsTitle")} bodyClassName="space-y-3 p-6">
-            {podeAvancar && (
-              <>
-                <div data-testid="activity-button">
-                  <ActivityButton
+          <SectionCard title={tDetail("actionsTitle")} bodyClassName="p-6">
+            <div data-testid="stage-actions" className="space-y-3">
+              {podeAvancar && (
+                <>
+                  <div data-testid="activity-button">
+                    <ActivityButton
+                      taskId={task.id}
+                      taskTitle={task.title}
+                      currentStageId={stage.templateStageId}
+                      activeLog={activeLog}
+                    />
+                  </div>
+                  <Separator />
+                  <div data-testid="advance-stage">
+                    <AdvanceStageButton taskId={task.id} currentStageId={stage.templateStageId} />
+                  </div>
+                  <UnassignActiveStageButton
                     taskId={task.id}
-                    taskTitle={task.title}
-                    currentStageId={stage.templateStageId}
-                    activeLog={activeLog}
+                    stageId={stage.templateStageId}
+                    currentAssignee={stage.assignee?.name ?? null}
                   />
-                </div>
-                <Separator />
-                <div data-testid="advance-stage">
-                  <AdvanceStageButton taskId={task.id} currentStageId={stage.templateStageId} />
-                </div>
-              </>
-            )}
-            {podeReverter && <RevertStageButton taskId={task.id} previousStages={previousStages} />}
-            {podeAvancar && (
-              <UnassignActiveStageButton
-                taskId={task.id}
-                stageId={stage.templateStageId}
-                currentAssignee={stage.assignee?.name ?? null}
-              />
-            )}
-            {podeApontarHora && (
-              <>
-                <Separator />
-                <div data-testid="log-time">
-                  <LogTimeButton taskId={task.id} activeStageId={stage.activeStageId} />
-                </div>
-              </>
-            )}
+                </>
+              )}
+              {podeApontarHora && (
+                <>
+                  <Separator />
+                  <div data-testid="log-time">
+                    <LogTimeButton taskId={task.id} activeStageId={stage.activeStageId} />
+                  </div>
+                </>
+              )}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* Reverter é poder da DEMANDA, não desta etapa, e por isso mora fora do card acima —
+            do mesmo jeito que `/admin/tasks/{id}` o tirou da lista por etapa e o pôs junto do
+            `CompleteTaskButton`. `revertTaskStage` olha TODAS as etapas ativas da demanda de uma
+            vez: sob fork/join, reverter daqui derruba também a etapa paralela que quem clicou
+            nem está vendo. Dentro do bloco da etapa o botão prometia "reverter esta etapa" — uma
+            promessa que a action não cumpre. O subtítulo diz isso em palavras. */}
+        {podeReverter && (
+          <SectionCard
+            title={t("stageView.demandActionsTitle")}
+            subtitle={t("stageView.revertScopeHint")}
+            bodyClassName="p-6"
+          >
+            <div data-testid="demand-actions">
+              <RevertStageButton taskId={task.id} previousStages={previousStages} />
+            </div>
           </SectionCard>
         )}
 
@@ -188,16 +219,18 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
             highlightStageId={stage.activeStageId}
           />
 
-          {/* Etapa concluída é leitura: a conversa dela já aconteceu, não há o que escrever. */}
-          {stage.status !== "COMPLETED" && (
-            <div data-testid="add-comment">
-              <AddCommentForm
-                taskId={task.id}
-                userId={currentUserId}
-                activeStageId={stage.activeStageId}
-              />
-            </div>
-          )}
+          {/* A caixa aparece qualquer que seja o status da etapa. A regra anterior ("etapa
+              concluída é leitura") não veio da spec e cobrava caro: numa demanda terminada TODAS
+              as etapas estão COMPLETED, e como `/tasks/{id}` virou leitura e `/admin/tasks/{id}`
+              é MANAGER+, MEMBER e SUPERVISOR ficavam sem nenhum lugar para escrever — enquanto
+              `addComment` exige apenas MEMBER+. Conversa não fecha junto com a etapa. */}
+          <div data-testid="add-comment">
+            <AddCommentForm
+              taskId={task.id}
+              userId={currentUserId}
+              activeStageId={stage.activeStageId}
+            />
+          </div>
         </SectionCard>
 
         {/* Painel de artefatos operando A PARTIR DA ETAPA (Task 9) — a tela da demanda mantém o
@@ -208,7 +241,7 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
             scope="TASK"
             ownerIds={{ taskId: task.id, projectId: task.projectId, clientId: task.clientId }}
             currentTaskId={task.id}
-            canAdd={podeAvancar}
+            canAdd={podeAnexar}
             canRemove={canManageScoped}
           />
         </SectionCard>
