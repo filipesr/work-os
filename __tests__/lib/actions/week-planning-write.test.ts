@@ -189,6 +189,29 @@ describe("unscheduleStage", () => {
       plannedDate: null,
       plannedOrder: null,
       assigneeId: null,
+      scheduledStart: null,
+      scheduledEnd: null,
+    });
+  });
+
+  it("[CRÍTICO] devolver ao poço limpa o compromisso junto", async () => {
+    // Sem isto sobra uma janela órfã: a etapa volta ao poço, é programada outro dia para outra
+    // pessoa, e chega já "agendada" num horário que ninguém marcou — e num dia que não é o dela.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      scheduledStart: new Date("2026-09-04T17:00:00Z"),
+    });
+
+    await unscheduleStage("as1");
+
+    expect(db.taskActiveStage.update.mock.calls[0][0].data).toEqual({
+      plannedDate: null,
+      plannedOrder: null,
+      assigneeId: null,
+      scheduledStart: null,
+      scheduledEnd: null,
     });
   });
 });

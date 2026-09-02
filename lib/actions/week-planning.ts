@@ -414,7 +414,15 @@ export async function unscheduleStage(activeStageId: string) {
   try {
     await prisma.taskActiveStage.update({
       where: { id: activeStageId },
-      data: { plannedDate: null, plannedOrder: null, assigneeId: null },
+      data: {
+        plannedDate: null,
+        plannedOrder: null,
+        assigneeId: null,
+        // A janela sai junto: ela é um compromisso PARA AQUELE DIA e AQUELA pessoa. Deixá-la para
+        // trás faz a etapa voltar do poço já agendada num horário que ninguém marcou.
+        scheduledStart: null,
+        scheduledEnd: null,
+      },
     });
   } catch (error) {
     console.error("unscheduleStage error:", error);
