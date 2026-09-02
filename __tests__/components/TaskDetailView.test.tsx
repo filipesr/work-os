@@ -10,15 +10,16 @@ vi.mock("next-intl", () => ({
 }));
 
 // Stub every heavy child so the test targets TaskDetailView's own rendering.
+//
+// Task 9: ActivityButton/TaskActionsMenu/AddCommentForm SAÍRAM de TaskDetailView — não há mais
+// import nenhum deles aqui para mockar. O teste "a tela da demanda não age mais" abaixo prova
+// ausência de verdade (o componente real não é montado), não ausência por mock.
 vi.mock("@/components/tasks/CommentsList", () => ({ CommentsList: () => <div /> }));
 vi.mock("@/components/tasks/ArtifactsList", () => ({ ArtifactsList: () => <div /> }));
-vi.mock("@/components/tasks/AddCommentForm", () => ({ AddCommentForm: () => <div /> }));
 vi.mock("@/components/tasks/AddArtifactForm", () => ({ AddArtifactForm: () => <div /> }));
 vi.mock("@/components/artifacts/UnifiedArtifactsPanel", () => ({
   UnifiedArtifactsPanel: () => <div />,
 }));
-vi.mock("@/components/tasks/TaskActionsMenu", () => ({ TaskActionsMenu: () => <div /> }));
-vi.mock("@/components/tasks/ActivityButton", () => ({ ActivityButton: () => <div /> }));
 vi.mock("@/components/tasks/TimeLogsList", () => ({ TimeLogsList: () => <div /> }));
 vi.mock("@/components/tasks/WorkflowHistoryModal", () => ({
   WorkflowHistoryModal: () => <div data-testid="WorkflowHistoryModal" />,
@@ -55,14 +56,9 @@ function renderView(taskOver?: Record<string, unknown>, role: UserRole = UserRol
     <TaskDetailView
       task={makeTask(taskOver)}
       artifactRows={[]}
-      canManageScoped={false}
-      availableNextStages={[]}
-      previousStages={[]}
       currentUserId="u1"
       currentUserRole={role}
-      activeLog={null}
       allTemplateStages={[]}
-      canPerformActions={true}
     />
   );
 }
@@ -89,5 +85,14 @@ describe("TaskDetailView", () => {
     renderView({ currentStage: { id: "s1", name: "Design", order: 3 } });
     // StatusBadge joins order · stage name into a single node.
     expect(screen.getByText("3 · Design")).toBeInTheDocument();
+  });
+
+  it("a tela da demanda não age mais — é leitura", () => {
+    // Se a ação precisa saber QUAL etapa, ela mora na etapa. Com etapas paralelas, um botão aqui
+    // teria de escolher sozinho — que é o defeito que esta entrega remove.
+    renderView();
+    for (const testid of ["activity-button", "log-time", "advance-stage", "add-comment"]) {
+      expect(screen.queryByTestId(testid)).not.toBeInTheDocument();
+    }
   });
 });

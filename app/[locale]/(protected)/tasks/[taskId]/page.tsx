@@ -3,10 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { TaskDetailView } from "@/components/tasks/TaskDetailView";
 import { mapArtifactRow } from "@/lib/artifacts/unify";
-import { getAvailableNextStages, getPreviousStages } from "@/lib/actions/task";
 import { effectiveStageTeam } from "@/lib/stage-team";
-import { getCurrentActiveLog } from "@/lib/actions/activity";
-import { UserRole } from "@prisma/client";
 
 interface TaskDetailPageProps {
   params: Promise<{
@@ -142,8 +139,6 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
 
   // Add computed properties for backward compatibility
   const currentActiveStage = taskData.activeStages.find((as) => as.status === "ACTIVE");
-  const currentStageAssignee =
-    currentActiveStage?.assignee?.name || currentActiveStage?.assignee?.email || null;
   const task = {
     ...taskData,
     // O responsável da demanda É o da etapa em curso (igual a `getTaskById`). Havia um fallback
@@ -164,25 +159,6 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
       })
     : [];
 
-  // Get available next and previous stages for State Machine controls
-  // Also get the user's current active log (for activity tracking)
-  const [availableNextStages, previousStages, activeLog] = await Promise.all([
-    getAvailableNextStages(taskId),
-    getPreviousStages(taskId),
-    getCurrentActiveLog(session.user.id!),
-  ]);
-
-  // Permission: can perform actions if assignee of an active stage or has managerial role
-  const isStageAssignee = taskData.activeStages.some(
-    (as) => as.assigneeId === session.user.id && as.status === "ACTIVE"
-  );
-  const managerialRoles: UserRole[] = [UserRole.ADMIN, UserRole.MANAGER, UserRole.SUPERVISOR];
-  const isManagerialRole = managerialRoles.includes(session.user.role as UserRole);
-  const canPerformActions = isStageAssignee || isManagerialRole;
-  const canManageScoped = ([UserRole.ADMIN, UserRole.MANAGER] as UserRole[]).includes(
-    session.user.role as UserRole
-  );
-
   // Linhas unificadas: Tarefa + Projeto + Cliente (Origem por linha).
   const artifactRows = [
     ...task.artifacts.map((a) => mapArtifactRow(a, "TASK", { id: task.id, title: task.title })),
@@ -195,15 +171,9 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
       <TaskDetailView
         task={task}
         artifactRows={artifactRows}
-        canManageScoped={canManageScoped}
-        availableNextStages={availableNextStages}
-        previousStages={previousStages}
         currentUserId={session.user.id!}
         currentUserRole={session.user.role!}
-        activeLog={activeLog}
         allTemplateStages={allTemplateStages}
-        canPerformActions={canPerformActions}
-        currentStageAssignee={currentStageAssignee}
         currentStageTeam={currentActiveStage ? effectiveStageTeam(currentActiveStage) : null}
         currentStageInstructions={currentActiveStage?.instructions ?? null}
       />

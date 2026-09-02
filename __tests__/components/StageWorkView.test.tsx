@@ -17,6 +17,36 @@ vi.mock("@/components/tasks/AddCommentForm", () => ({
   AddCommentForm: () => <div data-testid="add-comment-form-stub" />,
 }));
 
+// Painel de artefatos tem sua própria árvore de hooks (useRouter, upload NAS, versionamento) —
+// já testada em separado. Aqui só a PRESENÇA do painel na etapa importa (Task 9), não o miolo dele
+// — igual ao que `TaskDetailView.test.tsx` já faz.
+vi.mock("@/components/artifacts/UnifiedArtifactsPanel", () => ({
+  UnifiedArtifactsPanel: () => <div data-testid="artifacts-panel-stub" />,
+}));
+
+// Task 9: os botões de ação (antes só na demanda) passam a morar aqui. As Server Actions por trás
+// deles são pesadas (prisma, next-intl/server, auth) e já têm teste próprio — aqui só a
+// MONTAGEM dos botões na tela da etapa importa.
+vi.mock("react-hot-toast", () => ({
+  default: { success: vi.fn(), error: vi.fn() },
+  __esModule: true,
+}));
+vi.mock("@/lib/actions/activity", () => ({
+  startWorkOnTask: vi.fn(),
+  stopWorkOnTask: vi.fn(),
+}));
+vi.mock("@/lib/actions/task", () => ({
+  logTime: vi.fn(),
+  completeStageAndAdvance: vi.fn(),
+  getStageCompletionContext: vi.fn().mockResolvedValue({ loggedHours: 0, referenceHours: 0 }),
+  revertTaskStage: vi.fn(),
+  unassignActiveStage: vi.fn(),
+}));
+vi.mock("@/lib/actions/stage-assignment", () => ({
+  previewNextStages: vi.fn().mockResolvedValue({ activated: [], blocked: [] }),
+  getTeamMembers: vi.fn().mockResolvedValue([]),
+}));
+
 /**
  * Mesma etapa e mesma demanda usadas em `__tests__/lib/actions/stage-view.test.ts`, para que
  * este teste e o do fetch fiquem falando da mesma etapa (`as2`) no mesmo vocabulário.
@@ -24,20 +54,28 @@ vi.mock("@/components/tasks/AddCommentForm", () => ({
 const VIEW: StageView = {
   stage: {
     activeStageId: "as2",
+    templateStageId: "ts2",
     name: "Gravação",
     order: 2,
     status: "ACTIVE",
     teamName: "Vídeo",
     assignee: { id: "u1", name: "Ana" },
     instruction: "Gravar no estúdio B",
+    canPerformActions: true,
   },
   task: {
     id: "t1",
     title: "Reels de setembro",
     dueDate: new Date("2026-09-10T00:00:00Z"),
+    projectId: "p1",
     projectName: "Campanha institucional",
+    clientId: "c1",
     clientName: "ACME",
   },
+  previousStages: [],
+  activeLog: null,
+  artifactRows: [],
+  canManageScoped: false,
   comments: [
     {
       id: "c1",
@@ -92,5 +130,15 @@ describe("StageWorkView", () => {
       />
     );
     expect(screen.queryByTestId("add-comment")).not.toBeInTheDocument();
+  });
+
+  it("a etapa ativa oferece as ações dela", () => {
+    // Estas ações moravam na tela da demanda, escolhendo sozinhas qual etapa ativa operar. Com
+    // fork/join várias etapas podem estar ACTIVE ao mesmo tempo — só a tela DESTA etapa sabe, sem
+    // adivinhar, qual delas é.
+    render(<StageWorkView view={VIEW} currentUserId="u1" />);
+    for (const testid of ["activity-button", "log-time", "advance-stage"]) {
+      expect(screen.getByTestId(testid)).toBeInTheDocument();
+    }
   });
 });

@@ -30,11 +30,8 @@ import {
   Clock,
 } from "lucide-react";
 import { CommentsList } from "./CommentsList";
-import { AddCommentForm } from "./AddCommentForm";
 import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
 import { type UnifiedArtifactRow } from "@/lib/artifacts/unify";
-import { TaskActionsMenu } from "./TaskActionsMenu";
-import { ActivityButton } from "./ActivityButton";
 import { TimeLogsList } from "./TimeLogsList";
 
 const WorkflowHistoryModal = dynamic(
@@ -65,27 +62,12 @@ type TaskWithRelations = Task & {
   })[];
 };
 
-interface ActiveLog {
-  id: string;
-  taskId: string;
-  task: {
-    id: string;
-    title: string;
-  };
-}
-
 interface TaskDetailViewProps {
   task: TaskWithRelations;
   artifactRows: UnifiedArtifactRow[];
-  canManageScoped: boolean;
-  availableNextStages: TemplateStage[];
-  previousStages: TemplateStage[];
   currentUserId: string;
   currentUserRole: UserRole;
-  activeLog: ActiveLog | null;
   allTemplateStages: (TemplateStage & { defaultTeam: { id: string; name: string } | null })[];
-  canPerformActions: boolean;
-  currentStageAssignee?: string | null;
   /** Time EFETIVO da etapa atual (roteado na criação, se for coringa). */
   currentStageTeam?: { id: string; name: string } | null;
   /** O que precisa ser feito nesta etapa — escrito na criação da demanda. */
@@ -109,15 +91,9 @@ function FieldMicroLabel({ children }: { children: ReactNode }) {
 export function TaskDetailView({
   task,
   artifactRows,
-  canManageScoped,
-  availableNextStages,
-  previousStages,
   currentUserId,
   currentUserRole,
-  activeLog,
   allTemplateStages,
-  canPerformActions,
-  currentStageAssignee,
   currentStageTeam,
   currentStageInstructions,
 }: TaskDetailViewProps) {
@@ -126,7 +102,6 @@ export function TaskDetailView({
     currentUserRole === UserRole.ADMIN || currentUserRole === UserRole.MANAGER;
   const totalHours = task.timeLogs.reduce((sum, log) => sum + log.hoursSpent, 0);
 
-  const t = useTranslations("tasks");
   const tDetail = useTranslations("tasks.detail");
   const tPriority = useTranslations("tasks.priority");
   const tStatus = useTranslations("tasks.status");
@@ -287,34 +262,15 @@ export function TaskDetailView({
             bodyClassName="space-y-4 p-6"
           >
             <CommentsList comments={task.comments} currentUserId={currentUserId} />
-            <Separator />
-            <AddCommentForm taskId={task.id} userId={currentUserId} activeStageId={null} />
+            {/* Escrever é ação de ETAPA (Task 9): a demanda mostra a conversa inteira, mas quem
+                quiser responder faz isso na tela da etapa que estiver operando. */}
           </SectionCard>
         </div>
 
         {/* Sidebar - Right Side */}
         <div className="space-y-6">
-          {/* Actions Card */}
-          {canPerformActions && (
-            <SectionCard title={tDetail("actionsTitle")} bodyClassName="space-y-4 p-6">
-              <ActivityButton
-                taskId={task.id}
-                taskTitle={task.title}
-                currentStageId={task.currentStageId}
-                activeLog={activeLog}
-              />
-              <Separator />
-              <TaskActionsMenu
-                taskId={task.id}
-                currentStageId={task.currentStageId}
-                taskStatus={task.status}
-                currentStageAssignee={currentStageAssignee}
-                previousStages={previousStages}
-              />
-            </SectionCard>
-          )}
-
-          {/* Artifacts Section */}
+          {/* Artifacts Section — leitura. Adicionar/remover são ações de ETAPA (Task 9); esta
+              tela só lista o que já existe (`canAdd`/`canRemove` sempre `false` aqui). */}
           <SectionCard
             title={tArtifacts("title")}
             icon={Paperclip}
@@ -329,8 +285,8 @@ export function TaskDetailView({
                 clientId: task.project.clientId,
               }}
               currentTaskId={task.id}
-              canAdd={canPerformActions}
-              canRemove={canManageScoped}
+              canAdd={false}
+              canRemove={false}
             />
             {/* §3: StorageBreakdown (bytes por mídia) removido do detalhe da tarefa —
                 é infra/capacidade, vive em Clientes/Projetos, não na tela de "fazer". */}

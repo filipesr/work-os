@@ -2,14 +2,21 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { format } from "date-fns";
-import { Calendar, User as UserIcon } from "lucide-react";
+import { Calendar, User as UserIcon, MessageSquare, Paperclip } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Separator } from "@/components/ui/separator";
 import { stageStatusTone } from "@/lib/status-tone";
 import { dateFnsLocale } from "@/lib/date-locale";
 import { CommentsList } from "./CommentsList";
 import { AddCommentForm } from "./AddCommentForm";
+import { ActivityButton } from "./ActivityButton";
+import { LogTimeButton } from "./LogTimeButton";
+import { AdvanceStageButton } from "./AdvanceStageButton";
+import { RevertStageButton } from "./RevertStageButton";
+import { UnassignActiveStageButton } from "./UnassignActiveStageButton";
+import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
 import type { StageView } from "@/lib/actions/stage-view";
 
 interface StageWorkViewProps {
@@ -19,7 +26,9 @@ interface StageWorkViewProps {
 
 /**
  * A tela de uma etapa: identidade da demanda e da etapa no cabeçalho, a instrução da etapa em
- * destaque (quando ela existe) e a conversa da DEMANDA com o bloco desta etapa realçado.
+ * destaque (quando ela existe), as AÇÕES desta etapa (Task 9 — antes moravam na tela da demanda,
+ * que tinha de adivinhar qual etapa ativa operar sob fork/join) e a conversa da DEMANDA com o
+ * bloco desta etapa realçado.
  *
  * A conversa nunca é filtrada pela etapa — só realçada. Quem opera precisa do contexto do que já
  * foi dito nas etapas anteriores; filtrar tiraria exatamente esse contexto.
@@ -29,8 +38,9 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
   const tDetail = useTranslations("tasks.detail");
   const tStages = useTranslations("tasks.stages");
   const tComments = useTranslations("tasks.comments");
+  const tArtifacts = useTranslations("tasks.artifacts");
   const locale = useLocale();
-  const { stage, task, comments } = view;
+  const { stage, task, comments, previousStages, activeLog, artifactRows, canManageScoped } = view;
 
   const stageStatusLabels: Record<StageView["stage"]["status"], string> = {
     INACTIVE: tStages("pending"),
@@ -38,6 +48,11 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
     BLOCKED: tStages("blocked"),
     COMPLETED: tStages("completed"),
   };
+
+  // As ações de transição (concluir/reverter/desatribuir) só existem para uma etapa ATIVA — o
+  // servidor já recusa `completeStageAndAdvance` fora disso (`stageNotActive`); esconder aqui
+  // evita levar quem opera a um clique que o servidor sempre vai recusar.
+  const podeAgir = stage.status === "ACTIVE" && stage.canPerformActions;
 
   return (
     <div data-testid="stage-work-view" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -104,8 +119,37 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
           </div>
         )}
 
+        {/* As ações desta etapa (Task 9). `templateStageId` — não `activeStageId` — é o que as
+            Server Actions por trás destes botões esperam como "stageId" (ver stage-view.ts). */}
+        {podeAgir && (
+          <SectionCard title={tDetail("actionsTitle")} bodyClassName="space-y-3 p-6">
+            <div data-testid="activity-button">
+              <ActivityButton
+                taskId={task.id}
+                taskTitle={task.title}
+                currentStageId={stage.templateStageId}
+                activeLog={activeLog}
+              />
+            </div>
+            <Separator />
+            <div data-testid="advance-stage">
+              <AdvanceStageButton taskId={task.id} currentStageId={stage.templateStageId} />
+            </div>
+            <RevertStageButton taskId={task.id} previousStages={previousStages} />
+            <UnassignActiveStageButton
+              taskId={task.id}
+              stageId={stage.templateStageId}
+              currentAssignee={stage.assignee?.name ?? null}
+            />
+            <Separator />
+            <div data-testid="log-time">
+              <LogTimeButton taskId={task.id} />
+            </div>
+          </SectionCard>
+        )}
+
         {/* A conversa INTEIRA da demanda — `highlightStageId` só realça, nunca filtra. */}
-        <SectionCard title={tComments("title")} bodyClassName="space-y-4 p-6">
+        <SectionCard title={tComments("title")} icon={MessageSquare} bodyClassName="space-y-4 p-6">
           <CommentsList
             comments={comments.map((c) => ({
               id: c.id,
@@ -129,6 +173,19 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
               />
             </div>
           )}
+        </SectionCard>
+
+        {/* Painel de artefatos operando A PARTIR DA ETAPA (Task 9) — a tela da demanda mantém o
+            mesmo painel, mas só em leitura (`canAdd`/`canRemove` sempre `false` lá). */}
+        <SectionCard title={tArtifacts("title")} icon={Paperclip} bodyClassName="p-6">
+          <UnifiedArtifactsPanel
+            rows={artifactRows}
+            scope="TASK"
+            ownerIds={{ taskId: task.id, projectId: task.projectId, clientId: task.clientId }}
+            currentTaskId={task.id}
+            canAdd={podeAgir}
+            canRemove={canManageScoped}
+          />
         </SectionCard>
       </div>
     </div>
