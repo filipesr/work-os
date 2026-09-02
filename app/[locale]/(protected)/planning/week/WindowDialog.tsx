@@ -130,10 +130,10 @@ export function WindowDialog({
     },
   });
   // `useServerAction` não serve aqui — `listWindowCandidates` não devolve `{ error } | { success }`,
-  // devolve a lista em si — mas a busca ainda é trabalho assíncrono disparado por clique, e o resto
-  // do arquivo passa esse tipo de trabalho por `startTransition` (via `useServerAction`). Fora dela,
-  // o `setPicker` do fim cai como uma atualização solta, fora do agrupamento que React e os testes
-  // esperam para este componente.
+  // devolve a lista em si. Mas é o mesmo tipo de trabalho assíncrono disparado por clique que o
+  // resto do arquivo passa por `startTransition` (via `useServerAction`), e `isChoosingPending`
+  // entra no `isPending` geral pelo mesmo motivo que os outros: desabilitar os botões enquanto a
+  // busca está em voo.
   const [isChoosingPending, startChoosing] = useTransition();
   const isPending =
     marcar.isPending ||
@@ -265,6 +265,13 @@ export function WindowDialog({
           </p>
           {picker && (
             <div className="space-y-2 border-t border-border pt-3">
+              {/* Igual ao `dialogNoOneInTeam` do `ScheduleDialog`: um `<select>` só com opções
+                  desabilitadas é um beco sem aviso — o botão fica preso em `disabled` para sempre
+                  e nada explica por quê. Mostra a saída real (outro horário, ou adiar) em vez de
+                  deixar o gestor decifrar um formulário morto. */}
+              {picker.candidates.length > 0 && picker.candidates.every((c) => c.busy) && (
+                <p className="text-xs text-danger">{t("overlapNoOneFree")}</p>
+              )}
               <select
                 aria-label={t("overlapPickPerson")}
                 value={picker.userId}

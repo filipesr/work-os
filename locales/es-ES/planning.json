@@ -167,7 +167,8 @@
     "overlapMoveNew": "Pasar esta a otra persona",
     "overlapPickPerson": "A quién va",
     "overlapPickPersonSubmit": "Transferir",
-    "overlapBusyPerson": "{name} — ya tiene un compromiso a esa hora"
+    "overlapBusyPerson": "{name} — ya tiene un compromiso a esa hora",
+    "overlapNoOneFree": "Nadie del equipo está libre a esa hora — elige otro horario, o aplaza la que ya estaba marcada."
   },
   "myWeek": {
     "kicker": "Mi trabajo",
