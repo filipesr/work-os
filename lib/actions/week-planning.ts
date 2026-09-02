@@ -2,11 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import type { TaskPriority } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { formatISODate, mondayOfWeek, realInstant, todayInSaoPaulo } from "@/lib/dates";
 import { buildDayQueue, type QueueItemInput, type QueueSlot } from "@/lib/planning/day-queue";
 import { getStageReferences } from "@/lib/planning/stage-reference";
+import {
+  canOverride,
+  collidingWith,
+  firstFreeStart,
+  occupiedRange,
+  type Range,
+} from "@/lib/planning/stage-window";
 import { getWeekDone, type DoneLine } from "@/lib/planning/week-done";
 import { effectiveStageTeam, stageTeamWhere } from "@/lib/stage-team";
 import { isEffectiveTeamMember } from "@/lib/stage-assignment-helpers";
@@ -434,6 +442,24 @@ function instanteNoDia(plannedDate: Date, hhmm: string): Date {
  * Não recebe data de propósito — ver `instanteNoDia`. `startTime` nulo limpa os dois campos: uma
  * janela com fim e sem começo não significa nada.
  */
+export type WindowOccupant = {
+  activeStageId: string;
+  taskTitle: string;
+  stageName: string;
+  priority: TaskPriority;
+  /** Instantes reais, em ISO — a tela formata no fuso de SP. */
+  startISO: string;
+  endISO: string;
+};
+export type WindowOverlap = {
+  occupants: WindowOccupant[];
+  /** A prioridade autoriza ocupar o horário? Quando falso, a tela só oferece as saídas que não
+   *  tocam na ocupante. */
+  canOverride: boolean;
+  /** Para onde a ocupante iria se o gestor escolher "adiar" — já pulando terceiros. */
+  firstFreeStartISO: string;
+};
+
 export async function setStageWindow(input: {
   activeStageId: string;
   startTime: string | null;
@@ -477,6 +503,71 @@ export async function setStageWindow(input: {
 
   // Duração zero não ocuparia nada e a trava de sobreposição viraria decorativa para esta linha.
   if (fim && fim.getTime() <= inicio.getTime()) return { error: t("windowEndBeforeStart") };
+
+  // As outras janelas DESTA pessoa NESTE dia. `id: { not: … }` porque remarcar um compromisso
+  // existente colidiria com ele próprio.
+  const outras = await prisma.taskActiveStage.findMany({
+    where: {
+      assigneeId: row.assigneeId,
+      plannedDate: row.plannedDate,
+      scheduledStart: { not: null },
+      id: { not: row.id },
+      status: { not: "COMPLETED" },
+    },
+    select: {
+      id: true,
+      stageId: true,
+      scheduledStart: true,
+      scheduledEnd: true,
+      task: { select: { priority: true, title: true } },
+      stage: { select: { name: true } },
+    },
+  });
+
+  // A referência da etapa fecha a faixa de quem não declarou fim — a da nova inclusive.
+  const refs = await getStageReferences([row.stageId, ...outras.map((o) => o.stageId)]);
+  const horasDe = (stageId: string) => refs.get(stageId)?.hours ?? 0;
+
+  const faixaNova = occupiedRange({
+    scheduledStart: inicio,
+    scheduledEnd: fim,
+    referenceHours: horasDe(row.stageId),
+  }) as Range;
+
+  const ocupadas = outras.flatMap((o) => {
+    const range = occupiedRange({
+      scheduledStart: o.scheduledStart,
+      scheduledEnd: o.scheduledEnd,
+      referenceHours: horasDe(o.stageId),
+    });
+    return range ? [{ ...o, range }] : [];
+  });
+
+  const batidas = collidingWith(faixaNova, ocupadas);
+  if (batidas.length > 0) {
+    // Autoriza se vence TODAS: passar por cima de uma e ignorar a outra deixaria uma sobreposição
+    // gravada, que é o que esta trava existe para impedir.
+    const autoriza = batidas.every((b) => canOverride(row.task.priority, b.task.priority));
+    const duracaoDaOcupante = batidas[0].range.end.getTime() - batidas[0].range.start.getTime();
+    return {
+      overlap: {
+        canOverride: autoriza,
+        occupants: batidas.map((b) => ({
+          activeStageId: b.id,
+          taskTitle: b.task.title,
+          stageName: b.stage.name,
+          priority: b.task.priority,
+          startISO: b.range.start.toISOString(),
+          endISO: b.range.end.toISOString(),
+        })),
+        firstFreeStartISO: firstFreeStart(
+          faixaNova.end,
+          duracaoDaOcupante,
+          ocupadas.map((o) => o.range)
+        ).toISOString(),
+      },
+    };
+  }
 
   await prisma.taskActiveStage.update({
     where: { id: input.activeStageId },

@@ -139,5 +139,106 @@ describe("setStageWindow — recusas", () => {
     db.taskActiveStage.findUnique.mockResolvedValue(linha());
     const r = await setStageWindow({ activeStageId: "as1", startTime: "14:00", endTime: "14:00" });
     expect(r).toEqual({ error: "windowEndBeforeStart" });
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+});
+
+/** Uma ocupante já marcada das 14h às 16h para a mesma pessoa, no mesmo dia. */
+function ocupante(over: Record<string, unknown> = {}) {
+  return {
+    id: "as9",
+    stageId: "s9",
+    scheduledStart: new Date("2026-09-04T17:00:00Z"),
+    scheduledEnd: new Date("2026-09-04T19:00:00Z"),
+    task: { priority: "HIGH", title: "Institucional Acme" },
+    stage: { name: "Gravação" },
+    ...over,
+  };
+}
+
+describe("setStageWindow — a trava de sobreposição", () => {
+  it("sem colisão, grava", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue(linha());
+    db.taskActiveStage.findMany.mockResolvedValue([ocupante()]);
+    // 17h–20h não encosta em 14h–16h.
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "17:00" });
+    expect(r).toEqual({ success: true });
+  });
+
+  it("colide e a prioridade NÃO autoriza: não grava, e diz quem está no caminho", async () => {
+    // MEDIUM contra HIGH. Uma recusa que não nomeia a ocupante obriga o gestor a caçar na grade.
+    db.taskActiveStage.findUnique.mockResolvedValue(linha());
+    db.taskActiveStage.findMany.mockResolvedValue([ocupante()]);
+
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "15:00" });
+
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+    expect(r).toMatchObject({
+      overlap: {
+        canOverride: false,
+        occupants: [
+          {
+            activeStageId: "as9",
+            taskTitle: "Institucional Acme",
+            stageName: "Gravação",
+            priority: "HIGH",
+            startISO: "2026-09-04T17:00:00.000Z",
+            endISO: "2026-09-04T19:00:00.000Z",
+          },
+        ],
+      },
+    });
+  });
+
+  it("colide e a prioridade autoriza: AINDA NÃO grava — a saída é do gestor", async () => {
+    // A regra é "sempre avisa, e só permite se a prioridade autorizar". Permitir não é gravar por
+    // cima: gravar deixaria duas janelas no mesmo horário, que é exatamente o que esta trava
+    // existe para impedir. Quem escolhe a saída é o gestor, no diálogo.
+    db.taskActiveStage.findUnique.mockResolvedValue(
+      linha({ task: { priority: "URGENT", title: "Campanha Natal" } })
+    );
+    db.taskActiveStage.findMany.mockResolvedValue([ocupante()]);
+
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "15:00" });
+
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+    expect(r).toMatchObject({ overlap: { canOverride: true } });
+  });
+
+  it("o horário oferecido para adiar pula um terceiro compromisso", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue(
+      linha({ task: { priority: "URGENT", title: "Campanha Natal" } })
+    );
+    db.taskActiveStage.findMany.mockResolvedValue([
+      ocupante(),
+      ocupante({
+        id: "as8",
+        scheduledStart: new Date("2026-09-04T20:00:00Z"), // 17h–18h
+        scheduledEnd: new Date("2026-09-04T21:00:00Z"),
+      }),
+    ]);
+
+    // Nova das 15h às 17h (2h de referência). A ocupante das 14h–16h seria empurrada para 17h,
+    // onde há outro compromisso — então o primeiro livre de verdade é 18h.
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "15:00", endTime: "17:00" });
+
+    expect(r).toMatchObject({ overlap: { firstFreeStartISO: "2026-09-04T21:00:00.000Z" } });
+  });
+
+  it("a consulta das ocupantes é da MESMA pessoa, no MESMO dia, e ignora a própria linha", async () => {
+    // Sem excluir a si mesma, remarcar um compromisso existente colidiria com ele próprio.
+    db.taskActiveStage.findUnique.mockResolvedValue(
+      linha({ scheduledStart: new Date("2026-09-04T17:00:00Z") })
+    );
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+
+    await setStageWindow({ activeStageId: "as1", startTime: "15:00" });
+
+    expect(db.taskActiveStage.findMany.mock.calls[0][0].where).toMatchObject({
+      assigneeId: "u1",
+      plannedDate: new Date("2026-09-04T00:00:00Z"),
+      scheduledStart: { not: null },
+      id: { not: "as1" },
+    });
   });
 });
