@@ -40,7 +40,7 @@ export function AddCommentForm({ taskId, userId, activeStageId }: AddCommentForm
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} data-testid="add-comment" className="space-y-3">
       <div className="flex items-center gap-2 mb-2">
         <MessageSquare className="h-4 w-4" />
         <h3 className="font-medium text-sm">{t("addComment")}</h3>

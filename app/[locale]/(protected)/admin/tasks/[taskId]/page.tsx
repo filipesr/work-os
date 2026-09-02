@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { getTaskById, getPreviousStages, getTaskTimeTracking } from "@/lib/actions/task";
+import { auth } from "@/lib/auth";
 import { AdminTaskStages } from "@/components/tasks/AdminTaskStages";
 import { CompleteTaskButton } from "@/components/tasks/CompleteTaskButton";
+import { CommentsList } from "@/components/tasks/CommentsList";
+import { AddCommentForm } from "@/components/tasks/AddCommentForm";
 import prisma from "@/lib/prisma";
 import { mapArtifactRow } from "@/lib/artifacts/unify";
 import { UnifiedArtifactsPanel } from "@/components/artifacts/UnifiedArtifactsPanel";
@@ -32,16 +35,14 @@ interface StageLogRow {
   exitedAt: Date | null;
 }
 
-interface CommentRow {
-  id: string;
-  content: string;
-  user: { name: string | null; email: string | null };
-  createdAt: Date;
-}
-
 export default async function TaskDetailPage({ params }: { params: Promise<{ taskId: string }> }) {
   const t = await getTranslations("admin.tasks.detail");
   const { taskId } = await params;
+  const session = await auth();
+  if (!session?.user) {
+    return null;
+  }
+  const currentUserId = session.user.id!;
   const [task, previousStages, timeTracking] = await Promise.all([
     getTaskById(taskId),
     getPreviousStages(taskId),
@@ -325,35 +326,17 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
             )}
           </SectionCard>
 
-          {/* Comments */}
-          {task.comments.length > 0 && (
-            <SectionCard title={t("comments")}>
-              <div className="space-y-4">
-                {task.comments.map((comment: CommentRow) => (
-                  <div
-                    key={comment.id}
-                    className={`border-l-4 pl-4 py-2 rounded-r-lg ${
-                      comment.content.startsWith("**REVERTED")
-                        ? "border-warning/40 bg-warning-subtle"
-                        : "border-border bg-muted/30"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="text-sm text-foreground whitespace-pre-wrap font-medium">
-                          {comment.content}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {t("by")} {comment.user.name || comment.user.email} •{" "}
-                          {formatDisplayDateTime(comment.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-          )}
+          {/* A conversa da DEMANDA (Task 11): com a tela da demanda só de leitura, "o cliente
+              adiou tudo" não tinha mais onde ser escrito — não é conversa de etapa nenhuma, é o
+              caso que dá sentido a `activeStageId` opcional em `addComment`. A caixa fica sempre
+              visível, mesmo sem comentário algum, porque escrever o primeiro é exatamente o que
+              ela existe para permitir. */}
+          <SectionCard title={t("comments")}>
+            <div className="space-y-4">
+              <CommentsList comments={task.comments} currentUserId={currentUserId} />
+              <AddCommentForm taskId={task.id} userId={currentUserId} activeStageId={null} />
+            </div>
+          </SectionCard>
         </div>
 
         {/* Artifacts + time tracking sidebar */}
