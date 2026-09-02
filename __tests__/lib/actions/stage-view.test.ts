@@ -97,6 +97,14 @@ describe("getStageView", () => {
     expect(await getStageView("nao-existe", "t1")).toBeNull();
   });
 
+  it("[CRÍTICO] recusa etapa que não pertence à demanda da URL", async () => {
+    // `/tasks/t1/stages/as-de-outra-demanda` não pode abrir: o id existir não basta. Sem esta
+    // checagem, trocar o taskId na barra de endereço mostraria a conversa de OUTRA demanda no
+    // cabeçalho de uma que não é dela.
+    db.taskActiveStage.findUnique.mockResolvedValue({ ...stageRow(), taskId: "OUTRA" });
+    expect(await getStageView("as2", "t1")).toBeNull();
+  });
+
   it("recusa quem não está autenticado", async () => {
     // Rota nova é onde se esquece a porta. `getSessionUser` é a mesma que /tasks/{id} usa, e este
     // teste é o que impede a tela da etapa de nascer aberta.
