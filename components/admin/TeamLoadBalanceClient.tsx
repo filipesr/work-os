@@ -14,6 +14,7 @@ import {
 import { getMemberActiveStages } from "@/lib/actions/member-drill";
 import { formatDisplayDate } from "@/lib/dates";
 import type { MemberLoad } from "@/lib/actions/team-health";
+import { stagePath } from "@/lib/navigation";
 
 const TIER_COLOR: Record<LoadTier, string> = {
   idle: "bg-muted-foreground/30",
@@ -198,11 +199,8 @@ export function TeamLoadBalanceClient({ rows, summary }: { rows: MemberLoad[]; s
             <ul className="divide-y divide-border">
               {stages.map((s) => (
                 <li key={`${s.taskId}-${s.stageName}`} className="py-3">
-                  {/* MemberStage (getMemberActiveStages) não carrega o id da instância da
-                      etapa (TaskActiveStage.id) — buscá-lo exigiria uma consulta nova em
-                      lib/actions/member-drill.ts. Fica na demanda. */}
                   <Link
-                    href={`/tasks/${s.taskId}`}
+                    href={stagePath(s.taskId, s.activeStageId)}
                     className="block rounded-md px-2 py-1.5 -mx-2 hover:bg-accent"
                   >
                     <div className="flex items-center gap-2">

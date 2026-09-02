@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getAgingStages, QUEUE_LIMIT } from "@/lib/actions/team-health";
 import { formatAge } from "@/lib/team-health-format";
+import { stagePath } from "@/lib/navigation";
 
 const DUE_BADGE: Record<"overdue" | "dueSoon", string> = {
   overdue: "bg-danger-subtle text-danger border-danger/40",
@@ -29,11 +30,8 @@ export default async function AgingQueue() {
         <ul className="divide-y divide-border">
           {items.map((i) => (
             <li key={`${i.taskId}-${i.stageName}`} className="py-2">
-              {/* AgingItem (getAgingStages) não carrega o id da instância da etapa
-                  (TaskActiveStage.id), só dados do template — buscá-lo exigiria uma
-                  consulta nova em lib/actions/team-health.ts. Fica na demanda. */}
               <Link
-                href={`/tasks/${i.taskId}`}
+                href={stagePath(i.taskId, i.activeStageId)}
                 className="block hover:bg-accent rounded-md px-2 py-1 -mx-2"
               >
                 <div className="flex items-center justify-between gap-2">

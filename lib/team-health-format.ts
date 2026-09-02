@@ -126,6 +126,9 @@ export function stageAgingRatio(
 /** A collaborator's active stage, for the load drill-down drawer. */
 export interface MemberStage {
   taskId: string;
+  /** `TaskActiveStage.id` — a instância desta etapa NESTA demanda, não o id do template. Precisa
+   *  viajar até o componente para montar o link para a tela da etapa (`stagePath`). */
+  activeStageId: string;
   taskTitle: string;
   stageName: string;
   /** Task creation date (ISO string). */

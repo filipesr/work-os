@@ -37,6 +37,9 @@ export interface MemberLoad {
 
 export interface AgingItem {
   taskId: string;
+  /** `TaskActiveStage.id` — a instância desta etapa NESTA demanda, não o id do template. Precisa
+   *  viajar até o componente para montar o link para a tela da etapa (`stagePath`). */
+  activeStageId: string;
   taskTitle: string;
   stageName: string;
   assigneeName: string | null;
@@ -48,6 +51,8 @@ export interface AgingItem {
 
 export interface BlockedItem {
   taskId: string;
+  /** `TaskActiveStage.id` — mesma instância, mesmo motivo do campo em `AgingItem`. */
+  activeStageId: string;
   taskTitle: string;
   stageName: string;
   assigneeName: string | null;
@@ -178,6 +183,7 @@ export async function getAgingStages(teamIds?: string[]): Promise<AgingItem[]> {
     // Time EFETIVO — inclui as etapas coringa roteadas para o time na criação.
     where: { status: "ACTIVE", ...stageTeamWhere(scope) },
     select: {
+      id: true,
       activatedAt: true,
       task: { select: { id: true, title: true, dueDate: true } },
       stage: { select: { name: true, expectedDurationHours: true } },
@@ -191,6 +197,7 @@ export async function getAgingStages(teamIds?: string[]): Promise<AgingItem[]> {
       const slaHours = s.stage.expectedDurationHours ?? DEFAULT_SLA_HOURS;
       return {
         taskId: s.task.id,
+        activeStageId: s.id,
         taskTitle: s.task.title,
         stageName: s.stage.name,
         assigneeName: s.assignee?.name ?? null,
@@ -212,6 +219,7 @@ export async function getBlockedStages(teamIds?: string[]): Promise<BlockedItem[
   const blocked = await prisma.taskActiveStage.findMany({
     where: { status: "BLOCKED", ...stageTeamWhere(scope) },
     select: {
+      id: true,
       stageId: true,
       activatedAt: true,
       blockedAt: true,
@@ -268,6 +276,7 @@ export async function getBlockedStages(teamIds?: string[]): Promise<BlockedItem[
         .map((depId) => nameById.get(depId) ?? "—");
       return {
         taskId: b.task.id,
+        activeStageId: b.id,
         taskTitle: b.task.title,
         stageName: b.stage.name,
         assigneeName: b.assignee?.name ?? null,

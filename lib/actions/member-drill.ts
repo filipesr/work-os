@@ -24,6 +24,7 @@ export async function getMemberActiveStages(userId: string): Promise<MemberStage
   const stages = await prisma.taskActiveStage.findMany({
     where: { status: "ACTIVE", assigneeId: userId },
     select: {
+      id: true,
       activatedAt: true,
       assignedAt: true,
       task: { select: { id: true, title: true, createdAt: true, dueDate: true } },
@@ -34,6 +35,7 @@ export async function getMemberActiveStages(userId: string): Promise<MemberStage
 
   return stages.map((s) => ({
     taskId: s.task.id,
+    activeStageId: s.id,
     taskTitle: s.task.title,
     stageName: s.stage.name,
     createdAt: s.task.createdAt.toISOString(),

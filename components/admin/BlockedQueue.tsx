@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getBlockedStages, QUEUE_LIMIT } from "@/lib/actions/team-health";
 import { formatAge, dependencyRiskLevel } from "@/lib/team-health-format";
+import { stagePath } from "@/lib/navigation";
 
 const RISK_CLASS: Record<"low" | "medium" | "high", string> = {
   low: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
@@ -22,11 +23,8 @@ export default async function BlockedQueue() {
         <ul className="divide-y divide-border">
           {items.map((i) => (
             <li key={`${i.taskId}-${i.stageName}`} className="py-2">
-              {/* BlockedItem (getBlockedStages) não carrega o id da instância da etapa
-                  (TaskActiveStage.id), só dados do template — buscá-lo exigiria uma
-                  consulta nova em lib/actions/team-health.ts. Fica na demanda. */}
               <Link
-                href={`/tasks/${i.taskId}`}
+                href={stagePath(i.taskId, i.activeStageId)}
                 className="block hover:bg-accent rounded-md px-2 py-1 -mx-2"
               >
                 <div className="flex items-center justify-between gap-2">
