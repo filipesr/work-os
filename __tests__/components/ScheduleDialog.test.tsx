@@ -72,6 +72,27 @@ describe("ScheduleDialog — hoje é fila, dia futuro tem hora", () => {
     expect(horaInicio()).not.toBeDisabled();
   });
 
+  it("limpar o campo de data volta para HOJE, não para vazio", () => {
+    // O navegador deixa esvaziar um `<input type="date">`. Como o campo é obrigatório, "vazio" não
+    // é um estado que a tela deva ter: sem dia, a hora reabilitaria sobre coisa nenhuma e o envio
+    // só falharia lá no servidor. Voltar para hoje é o padrão que o próprio diálogo já abre.
+    abrir();
+    fireEvent.change(dia(), { target: { value: AMANHA } });
+    fireEvent.change(dia(), { target: { value: "" } });
+
+    expect(dia().value).toBe(HOJE);
+    expect(horaInicio()).toBeDisabled();
+  });
+
+  it("limpar a data também descarta a hora que estava digitada", () => {
+    abrir();
+    fireEvent.change(dia(), { target: { value: AMANHA } });
+    fireEvent.change(horaInicio(), { target: { value: "14:00" } });
+    fireEvent.change(dia(), { target: { value: "" } });
+
+    expect(horaInicio().value).toBe("");
+  });
+
   it("voltar para hoje LIMPA a hora já digitada", () => {
     // Só desabilitar deixaria o valor no estado e ele seria enviado ao servidor — uma hora que o
     // gestor não vê mais na tela.

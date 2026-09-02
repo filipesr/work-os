@@ -96,10 +96,14 @@ export function ScheduleDialog({
   };
 
   const escolherDia = (novo: string) => {
-    setDateISO(novo);
+    // O navegador deixa esvaziar um `<input type="date">`, mas o campo é OBRIGATÓRIO: "sem dia" não
+    // é um estado que este diálogo deva ter. Vazio volta para hoje — o mesmo padrão com que ele
+    // abre —, senão a hora reabilitaria sobre dia nenhum e o envio só falharia lá no servidor.
+    const dia = novo || todayISO;
+    setDateISO(dia);
     // Hoje não tem hora. Limpar em vez de só desabilitar evita mandar ao servidor uma hora que o
     // gestor digitou antes de trocar a data e não vê mais na tela.
-    if (novo === todayISO) {
+    if (dia === todayISO) {
       setStart("");
       setEnd("");
     }
