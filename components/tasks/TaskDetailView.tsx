@@ -288,7 +288,7 @@ export function TaskDetailView({
           >
             <CommentsList comments={task.comments} currentUserId={currentUserId} />
             <Separator />
-            <AddCommentForm taskId={task.id} userId={currentUserId} />
+            <AddCommentForm taskId={task.id} userId={currentUserId} activeStageId={null} />
           </SectionCard>
         </div>
 

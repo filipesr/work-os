@@ -1985,7 +1985,13 @@ export async function revertTaskStage(
 
 // ========== Task Comments & Artifacts ==========
 
-export async function addComment(taskId: string, content: string) {
+export async function addComment(
+  taskId: string,
+  content: string,
+  /** A etapa em que a conversa acontece. Nulo é conversa da DEMANDA (escrita em /admin): nem toda
+   *  conversa é de etapa, e forçar uma escolha seria o chute que esta feature existe para remover. */
+  activeStageId?: string | null
+) {
   const user = await requireMemberOrHigher();
   const userId = user.id as string;
 
@@ -1999,6 +2005,8 @@ export async function addComment(taskId: string, content: string) {
         taskId,
         userId,
         content: content.trim(),
+        activeStageId: activeStageId ?? null,
+        kind: "USER",
       },
       include: {
         user: {

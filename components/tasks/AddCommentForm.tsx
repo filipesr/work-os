@@ -11,9 +11,10 @@ import { useTranslations } from "next-intl";
 interface AddCommentFormProps {
   taskId: string;
   userId: string;
+  activeStageId: string | null;
 }
 
-export function AddCommentForm({ taskId, userId }: AddCommentFormProps) {
+export function AddCommentForm({ taskId, userId, activeStageId }: AddCommentFormProps) {
   const [content, setContent] = useState("");
   const [isPending, startTransition] = useTransition();
   const t = useTranslations("tasks.comments");
@@ -27,7 +28,7 @@ export function AddCommentForm({ taskId, userId }: AddCommentFormProps) {
     }
 
     startTransition(async () => {
-      const result = await addComment(taskId, content);
+      const result = await addComment(taskId, content, activeStageId);
 
       if (result.error) {
         toast.error(result.error);
