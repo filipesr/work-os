@@ -27,6 +27,7 @@ import { needsReason, type StageNoteReasonValue } from "@/lib/stage-completion-n
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { closeActivityLog, hoursBetween } from "@/lib/activity-close";
 import { realInstant } from "@/lib/dates";
+import { buildInstructionComments } from "@/lib/stage-instruction";
 import type { ActiveStageWithDetails, MyAllStagesResult } from "@/types/task";
 
 // Re-export types for backward compatibility
@@ -746,6 +747,24 @@ export async function activateNextStages(taskId: string, completedStageId: strin
       if (!stage) continue;
       if (next === "ACTIVE") activated.push(stage);
       else blocked.push(stage);
+    }
+
+    // 6. A instrução vira conversa AQUI, e não na criação da demanda: é neste instante que alguém
+    //    passa a poder executar a etapa, e é para essa pessoa que o direcionamento foi escrito.
+    if (activated.length > 0) {
+      const [task, linhas] = await Promise.all([
+        prisma.task.findUnique({ where: { id: taskId }, select: { createdById: true } }),
+        prisma.taskActiveStage.findMany({
+          where: { taskId, stageId: { in: activated.map((s) => s.id) } },
+          select: { id: true, instructions: true },
+        }),
+      ]);
+      const comentarios = buildInstructionComments({
+        taskId,
+        createdById: task?.createdById ?? null,
+        ativadas: linhas.map((l) => ({ activeStageId: l.id, instructions: l.instructions })),
+      });
+      if (comentarios.length > 0) await prisma.taskComment.createMany({ data: comentarios });
     }
 
     return { activated, blocked };

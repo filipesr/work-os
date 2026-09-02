@@ -7,6 +7,11 @@ vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
 vi.mock("@/lib/prisma", () => ({
   default: {
+    // Sem criador registrado: o comentário de instrução (Task 4) não é o que este arquivo testa,
+    // e `createdById: null` faz `buildInstructionComments` devolver [] sem tocar `taskComment`.
+    task: {
+      findUnique: vi.fn().mockResolvedValue({ createdById: null }),
+    },
     taskActiveStage: {
       updateMany: vi.fn().mockResolvedValue({}),
       findMany: vi.fn().mockResolvedValue([]),
@@ -17,6 +22,9 @@ vi.mock("@/lib/prisma", () => ({
     },
     stageTransition: {
       create: vi.fn().mockResolvedValue({}),
+      createMany: vi.fn().mockResolvedValue({}),
+    },
+    taskComment: {
       createMany: vi.fn().mockResolvedValue({}),
     },
   },

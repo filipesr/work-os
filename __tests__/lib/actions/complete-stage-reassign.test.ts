@@ -19,7 +19,13 @@ vi.mock("@/lib/planning/stage-reference", () => ({
 
 vi.mock("@/lib/prisma", () => {
   const db = {
-    task: { update: vi.fn().mockResolvedValue({}), updateMany: vi.fn().mockResolvedValue({}) },
+    task: {
+      update: vi.fn().mockResolvedValue({}),
+      updateMany: vi.fn().mockResolvedValue({}),
+      // Sem criador registrado: o comentário de instrução (Task 4) não é o que este arquivo testa,
+      // e `createdById: null` faz `buildInstructionComments` devolver [] sem tocar `taskComment`.
+      findUnique: vi.fn().mockResolvedValue({ createdById: null }),
+    },
     taskActiveStage: {
       updateMany: vi.fn().mockResolvedValue({}),
       update: vi.fn().mockResolvedValue({}),
@@ -34,7 +40,10 @@ vi.mock("@/lib/prisma", () => {
       update: vi.fn(),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
-    taskComment: { create: vi.fn().mockResolvedValue({}) },
+    taskComment: {
+      create: vi.fn().mockResolvedValue({}),
+      createMany: vi.fn().mockResolvedValue({}),
+    },
     stageTransition: {
       create: vi.fn().mockResolvedValue({}),
       createMany: vi.fn().mockResolvedValue({}),
