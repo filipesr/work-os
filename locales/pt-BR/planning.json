@@ -147,15 +147,9 @@
     "unscheduled_toast": "Etapa devolvida ao poço.",
     "noCapacity": "Sem capacidade semanal cadastrada — usando o padrão de {hours}h.",
     "queued": "sem dia · na fila",
-    "windowOpen": "Marcar horário",
-    "windowTitle": "Horário do compromisso",
     "windowStart": "Início",
     "windowEnd": "Fim",
     "windowEndHint": "Sem o fim, o sistema reserva a duração de referência da etapa.",
-    "windowSubmit": "Marcar",
-    "windowClear": "Desmarcar",
-    "windowSet_toast": "Horário marcado.",
-    "windowCleared_toast": "Horário desmarcado.",
     "overlapTitle": "Já há compromisso nesse horário",
     "overlapOccupant": "{task} · {stage} · {from} às {to}",
     "overlapBlocked": "Esta demanda não tem prioridade sobre a que já está marcada. Escolha outro horário ou outra pessoa.",
@@ -175,7 +169,8 @@
     "teamsCount": "{count} times",
     "teamsDefaultHint": "sem os times de apoio",
     "overlapFreeSpace": "Há mais de um compromisso no caminho, e remarcar vários em cadeia é decisão de tomar um a um.",
-    "overlapFreeSpaceLink": "Abrir espaço na semana"
+    "overlapFreeSpaceLink": "Abrir espaço na semana",
+    "windowTodayHint": "Hoje é fila: a etapa entra na vez, sem horário marcado."
   },
   "myWeek": {
     "kicker": "Meu trabalho",

@@ -26,7 +26,6 @@ import prisma from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { ScheduleDialog } from "./ScheduleDialog";
-import { WindowDialog } from "./WindowDialog";
 import { DayDone } from "@/components/planning/DayDone";
 import { WeekControls } from "./WeekControls";
 import { OrderControls } from "./OrderControls";
@@ -73,6 +72,10 @@ export default async function WeekPlanningPage({
   // Um instante só para a tela inteira: cada célula recalculando `Date.now()` faria dois itens
   // idênticos imprimirem números diferentes no mesmo render.
   const agora = Date.now();
+  // Hoje no fuso de SÃO PAULO, resolvido no servidor: o diálogo de programar usa como piso da data
+  // e como gatilho da regra "hoje é fila". O relógio do navegador é o do visitante, e usá-lo faria
+  // a trava mudar de significado conforme o fuso de quem abre a tela.
+  const hojeISO = formatISODate(todayInSaoPaulo());
 
   // Conflito é a primeira coisa que o gestor precisa ver: agendamento que não vai acontecer só
   // aparece a tempo se estiver no topo. Traz o rótulo (tarefa/etapa) e o motivo (derivado do status
@@ -289,29 +292,10 @@ export default async function WeekPlanningPage({
                                       )}
                                     </div>
                                     <div className="flex items-center gap-1">
-                                      <WindowDialog
+                                      <OrderControls
                                         activeStageId={s.item.id}
-                                        label={`${s.item.taskTitle} · ${s.item.stageName}`}
-                                        startTime={
-                                          s.item.scheduledStart
-                                            ? formatDisplayTime(s.item.scheduledStart)
-                                            : null
-                                        }
-                                        endTime={
-                                          s.item.scheduledEnd
-                                            ? formatDisplayTime(s.item.scheduledEnd)
-                                            : null
-                                        }
-                                        // O dia do ITEM, não o da coluna: o atrasado de semanas
-                                        // anteriores é ROLADO para a primeira coluna visível
-                                        // (exibição, não reprogramação — no banco ele segue no dia
-                                        // antigo). Com o dia da coluna, `scheduleStage` enxergaria
-                                        // mudança de dia e as duas trocas de colaborador morreriam
-                                        // em `alreadyAssigned`. Cai na coluna quando o item não
-                                        // tem dia nenhum — o reivindicado, que aparece em hoje.
-                                        dayISO={s.item.plannedDateISO ?? d}
+                                        canReorder={dia.slots.length > 1}
                                       />
-                                      <OrderControls activeStageId={s.item.id} />
                                     </div>
                                   </div>
                                 </li>
@@ -349,7 +333,7 @@ export default async function WeekPlanningPage({
                     // Só quem é da equipe da etapa. A etapa coringa que ninguém roteou não tem
                     // equipe, e aí vale a lista inteira — não há regra a violar.
                     people={item.eligible.length > 0 ? item.eligible : pessoas}
-                    days={plan.days}
+                    todayISO={hojeISO}
                   />
                 </div>
               </div>

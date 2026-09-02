@@ -7,7 +7,15 @@ import { moveStageOrder, unscheduleStage } from "@/lib/actions/week-planning";
 import { useServerAction } from "@/lib/hooks/useServerAction";
 
 /** Reordenar por setas e tirar da semana. Sem arrastar nesta fatia — ver ScheduleDialog. */
-export function OrderControls({ activeStageId }: { activeStageId: string }) {
+export function OrderControls({
+  activeStageId,
+  canReorder,
+}: {
+  activeStageId: string;
+  /** Falso quando o dia tem UM item só. Ordenar uma coisa sozinha não muda nada, e botão que não
+   *  faz nada ensina a ignorar botão — inclusive os que fazem. */
+  canReorder: boolean;
+}) {
   const t = useTranslations("planning.week");
   const router = useRouter();
 
@@ -22,26 +30,31 @@ export function OrderControls({ activeStageId }: { activeStageId: string }) {
 
   return (
     <div className="inline-flex items-center">
-      <button
-        type="button"
-        className={btn}
-        disabled={mover.isPending}
-        aria-label={t("moveUp")}
-        title={t("moveUp")}
-        onClick={() => mover.run(activeStageId, "up")}
-      >
-        <ChevronUp className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        className={btn}
-        disabled={mover.isPending}
-        aria-label={t("moveDown")}
-        title={t("moveDown")}
-        onClick={() => mover.run(activeStageId, "down")}
-      >
-        <ChevronDown className="h-3.5 w-3.5" />
-      </button>
+      {canReorder && (
+        <>
+          <button
+            type="button"
+            className={btn}
+            disabled={mover.isPending}
+            aria-label={t("moveUp")}
+            title={t("moveUp")}
+            onClick={() => mover.run(activeStageId, "up")}
+          >
+            <ChevronUp className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            className={btn}
+            disabled={mover.isPending}
+            aria-label={t("moveDown")}
+            title={t("moveDown")}
+            onClick={() => mover.run(activeStageId, "down")}
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+        </>
+      )}
+
       <button
         type="button"
         className={btn}

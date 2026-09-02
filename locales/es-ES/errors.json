@@ -216,7 +216,9 @@
     "windowNeedsDay": "Marca el día antes de la hora: el compromiso es \"jueves a las 14h\".",
     "invalidTime": "Indica una hora válida, con el formato 14:00.",
     "windowEndBeforeStart": "El fin tiene que ser posterior al inicio.",
-    "windowBusyPerson": "Esta persona ya tiene un compromiso a esa hora."
+    "windowBusyPerson": "Esta persona ya tiene un compromiso a esa hora.",
+    "pastDate": "Esa fecha ya pasó. Programa de hoy en adelante.",
+    "windowNotToday": "Hoy es cola, no horario fijo: el compromiso vale para un día futuro."
   },
   "myWeek": {
     "stageNotFound": "Etapa no encontrada.",

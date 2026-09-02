@@ -354,6 +354,10 @@ export async function scheduleStage(input: {
   const t = await getTranslations("errors.weekPlanning");
 
   if (!DATE_ONLY.test(input.dateISO)) return { error: t("invalidDate") };
+  // A mesa distribui trabalho que ainda vai acontecer. Um dia que já passou não é planejamento —
+  // é digitação errada, e o item cairia numa coluna que ninguém está olhando. HOJE entra: é a fila
+  // de agora, o lugar do urgente que chega às 10h e sai no mesmo dia.
+  if (input.dateISO < formatISODate(todayInSaoPaulo())) return { error: t("pastDate") };
 
   const row = await prisma.taskActiveStage.findUnique({
     where: { id: input.activeStageId },
@@ -605,6 +609,12 @@ export async function setStageWindow(input: {
   // O dia é a âncora da hora: sem ele o compromisso não tem onde existir, e o item nem está numa
   // coluna da grade.
   if (!row.plannedDate) return { error: t("windowNeedsDay") };
+  // HOJE é fila, não compromisso. O que entra no dia de alguém agora se faz na vez; marcar "hoje
+  // às 14h" nasceria vencido metade das vezes, e a tela teria de validar contra o relógio a cada
+  // minuto. Restringir compromisso a dia FUTURO fecha o buraco na origem em vez de na borda.
+  if (formatISODate(row.plannedDate) <= formatISODate(todayInSaoPaulo())) {
+    return { error: t("windowNotToday") };
+  }
   if (!HORA.test(input.startTime)) return { error: t("invalidTime") };
   if (input.endTime && !HORA.test(input.endTime)) return { error: t("invalidTime") };
 

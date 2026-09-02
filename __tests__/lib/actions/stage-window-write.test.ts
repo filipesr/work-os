@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next-intl/server", () => ({
@@ -55,6 +55,55 @@ beforeEach(() => {
   vi.mocked(getStageReferences).mockResolvedValue(
     new Map([["s1", { hours: 3, source: "observed" }]])
   );
+});
+
+/** Relógio congelado: as datas dos casos são fixas e a regra "hoje é fila" compara com o dia
+ *  corrente. Sem isto, o arquivo passaria hoje e falharia sozinho em 04/09. */
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-09-01T15:00:00.000Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("setStageWindow — hoje não recebe compromisso", () => {
+  it("recusa marcar hora numa etapa cujo dia é HOJE", async () => {
+    // Hoje é ordem de FILA: o que entra no dia de alguém agora se faz na vez, não às 14h em ponto.
+    // Compromisso é coisa de dia futuro — e uma hora marcada para hoje nasceria metade das vezes
+    // já vencida, que é o defeito que esta regra fecha na origem.
+    vi.setSystemTime(new Date("2026-09-04T15:00:00.000Z"));
+    db.taskActiveStage.findUnique.mockResolvedValue(linha());
+
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "14:00" });
+
+    expect(r).toEqual({ error: "windowNotToday" });
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("DESMARCAR continua valendo mesmo no dia de hoje", async () => {
+    // Limpar é sempre permitido: um compromisso preso numa etapa que não pode mais recebê-lo é
+    // pior que a limpeza. Vale para o legado marcado antes desta regra existir.
+    vi.setSystemTime(new Date("2026-09-04T15:00:00.000Z"));
+    db.taskActiveStage.findUnique.mockResolvedValue(
+      linha({ scheduledStart: new Date("2026-09-04T17:00:00Z") })
+    );
+
+    const r = await setStageWindow({ activeStageId: "as1", startTime: null });
+
+    expect(r).toEqual({ success: true });
+    expect(db.taskActiveStage.update.mock.calls[0][0].data).toEqual({
+      scheduledStart: null,
+      scheduledEnd: null,
+    });
+  });
+
+  it("dia FUTURO recebe compromisso normalmente", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue(linha());
+    const r = await setStageWindow({ activeStageId: "as1", startTime: "14:00" });
+    expect(r).toEqual({ success: true });
+  });
 });
 
 describe("setStageWindow", () => {

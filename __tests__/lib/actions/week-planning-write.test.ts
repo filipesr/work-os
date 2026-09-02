@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next-intl/server", () => ({
@@ -44,6 +44,98 @@ function timeDe(userId: string) {
     stage: { defaultTeam: { id: "video", name: "Vídeo", members: [{ id: userId }] } },
   };
 }
+
+/**
+ * Relógio congelado no arquivo inteiro.
+ *
+ * As datas dos casos são fixas (31/08, 04/09…) e a mesa passou a recusar dia que já passou: sem
+ * congelar, estes testes passariam em agosto e começariam a falhar sozinhos em setembro, sem
+ * ninguém ter tocado no código. Teste que depende do dia em que roda é bomba-relógio, não rede.
+ */
+beforeEach(() => {
+  vi.useFakeTimers();
+  // Meio-dia em São Paulo (15h UTC), antes de todas as datas usadas aqui.
+  vi.setSystemTime(new Date("2026-08-30T15:00:00.000Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("scheduleStage — a data não anda para trás", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    db.taskActiveStage.aggregate.mockResolvedValue({ _max: { plannedOrder: 2 } });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function hojeEh(iso: string) {
+    vi.useFakeTimers();
+    // 15h UTC = meio-dia em São Paulo: longe das duas viradas de dia.
+    vi.setSystemTime(new Date(`${iso}T15:00:00.000Z`));
+  }
+
+  it("recusa dia que já passou", async () => {
+    // Programar para ontem não é planejamento, é digitação errada — e o item cairia numa coluna
+    // que o gestor nem está olhando. A tela desabilita, esta linha garante.
+    hojeEh("2026-09-10");
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: null,
+      status: "ACTIVE",
+      stageId: "s1",
+      plannedDate: null,
+      scheduledStart: null,
+      ...timeDe("u1"),
+    });
+
+    const r = await scheduleStage({ activeStageId: "as1", userId: "u1", dateISO: "2026-09-09" });
+
+    expect(r).toEqual({ error: "pastDate" });
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("HOJE é aceito — é a fila de agora", async () => {
+    // O urgente que chega às 10h entra no dia de alguém pela mesa, sem hora: hoje é ordem de fila,
+    // não compromisso marcado.
+    hojeEh("2026-09-10");
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: null,
+      status: "ACTIVE",
+      stageId: "s1",
+      plannedDate: null,
+      scheduledStart: null,
+      ...timeDe("u1"),
+    });
+
+    const r = await scheduleStage({ activeStageId: "as1", userId: "u1", dateISO: "2026-09-10" });
+
+    expect(r).toEqual({ success: true });
+  });
+
+  it("aceita data MUITO além da semana em tela", async () => {
+    // O seletor deixou de ser os seis dias da semana: dá para comprometer uma gravação de outubro
+    // sem navegar até lá primeiro.
+    hojeEh("2026-09-10");
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: null,
+      status: "ACTIVE",
+      stageId: "s1",
+      plannedDate: null,
+      scheduledStart: null,
+      ...timeDe("u1"),
+    });
+
+    const r = await scheduleStage({ activeStageId: "as1", userId: "u1", dateISO: "2026-10-30" });
+
+    expect(r).toEqual({ success: true });
+  });
+});
 
 describe("scheduleStage", () => {
   beforeEach(() => {
