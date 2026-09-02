@@ -23,24 +23,26 @@ export function WeekControls({
   isCurrentWeek,
   teams,
   mode,
-  selectedIds,
 }: {
   monday: Date;
   isCurrentWeek: boolean;
   teams: { id: string; name: string }[];
-  /** O estado LIDO da URL: padrão, todas, ou uma escolha explícita. */
+  /** O modo EFETIVO, já resolvido no servidor: padrão, todas, ou a escolha explícita que sobrou
+   *  depois de descartar equipe que não existe mais. */
   mode: TeamFilterMode;
-  /** O recorte EFETIVO, já resolvido no servidor. É ele que marca as caixas: o que está marcado
-   *  tem de ser exatamente o que a grade ao lado está mostrando. */
-  selectedIds: string[];
 }) {
   const t = useTranslations("planning.week");
   const { setParam } = useUrlFilters({ replace: true });
 
+  // As caixas marcam ESCOLHA EXPLÍCITA, não o conteúdo do modo. Nos dois modos do topo nenhuma
+  // fica marcada: marcá-las obrigaria quem quer ver duas equipes a desmarcar todas as outras uma a
+  // uma, e o atalho de filtrar viraria trabalho. O que cada modo mostra está dito no próprio item.
+  const escolhidos = Array.isArray(mode) ? mode : [];
+
   const marcar = (id: string) => {
-    const proximo = selectedIds.includes(id)
-      ? selectedIds.filter((x) => x !== id)
-      : [...selectedIds, id];
+    const proximo = escolhidos.includes(id)
+      ? escolhidos.filter((x) => x !== id)
+      : [...escolhidos, id];
     // Desmarcar o último volta ao PADRÃO em vez de deixar a grade em branco — "vazio" já é o
     // padrão, e uma semana inteira escondida por um clique a mais seria trabalho sumindo de vista.
     setParam("team", proximo.length > 0 ? proximo.join(",") : null);
@@ -51,7 +53,7 @@ export function WeekControls({
       ? t("teamsDefault")
       : mode === "all"
         ? t("teamsAll")
-        : t("teamsCount", { count: selectedIds.length });
+        : t("teamsCount", { count: mode.length });
 
   return (
     <WeekNav
@@ -85,7 +87,7 @@ export function WeekControls({
           {teams.map((team) => (
             <DropdownMenuCheckboxItem
               key={team.id}
-              checked={selectedIds.includes(team.id)}
+              checked={escolhidos.includes(team.id)}
               // Sem isto o menu fecha a cada clique, e escolher três equipes vira três aberturas.
               onSelect={(e) => e.preventDefault()}
               onCheckedChange={() => marcar(team.id)}

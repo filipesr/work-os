@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { AlertTriangle } from "lucide-react";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getWeekPlanning } from "@/lib/actions/week-planning";
-import { parseTeamParam, resolveTeamIds } from "@/lib/planning/team-filter";
+import { effectiveTeamMode, parseTeamParam, resolveTeamIds } from "@/lib/planning/team-filter";
 // Não vêm de `week-planning.ts`: aquele arquivo é `"use server"`, que só pode exportar função
 // assíncrona — um `export const` lá quebra `next build` em runtime. Ver lib/planning/week-capacity.ts.
 import { DAY_VISUAL_HOURS, DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
@@ -56,7 +56,9 @@ export default async function WeekPlanningPage({
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
-  const modoDeEquipe = parseTeamParam(sp.team);
+  // O modo EFETIVO, não o que a URL pediu: um link antigo com equipe apagada cai no padrão, e o
+  // controle precisa marcar o que está aplicado — senão exibe caixas que não correspondem à grade.
+  const modoDeEquipe = effectiveTeamMode(parseTeamParam(sp.team), teams);
   // Os nomes das equipes de apoio moram no locale, como em `reports.liveActivity` — configuração,
   // não lista em inglês cravada no código. Ver `lib/planning/team-filter.ts`.
   const teamIds = resolveTeamIds(
@@ -112,9 +114,6 @@ export default async function WeekPlanningPage({
             isCurrentWeek={semanaCorrente}
             teams={teams}
             mode={modoDeEquipe}
-            // Sem recorte (`all`, ou nenhuma equipe oculta de fato) todas estão à vista, e é isso
-            // que as caixas precisam dizer.
-            selectedIds={teamIds ?? teams.map((time) => time.id)}
           />
         }
       />

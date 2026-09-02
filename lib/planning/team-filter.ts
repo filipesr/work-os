@@ -42,6 +42,24 @@ export function parseTeamParam(raw: string | string[] | undefined): TeamFilterMo
 }
 
 /**
+ * O modo que de fato vale, depois de descartar id que não existe mais (link antigo, equipe apagada)
+ * e de cair no padrão quando a seleção inteira morreu.
+ *
+ * Existe porque a TELA precisa marcar o que está APLICADO, não o que a URL pediu: uma caixa marcada
+ * para um time que sumiu do banco, ou uma lista de caixas marcadas enquanto a grade mostra o
+ * padrão, é o controle contradizendo a grade ao lado.
+ */
+export function effectiveTeamMode(
+  mode: TeamFilterMode,
+  teams: { id: string; name: string }[]
+): TeamFilterMode {
+  if (mode === "default" || mode === "all") return mode;
+  const existentes = new Set(teams.map((t) => t.id));
+  const validos = mode.filter((id) => existentes.has(id));
+  return validos.length > 0 ? validos : "default";
+}
+
+/**
  * O recorte que a consulta recebe. `undefined` significa SEM recorte — é o que as consultas já
  * entendem, e evita trocar um `where` ausente por um `IN` com todos os ids à toa.
  *

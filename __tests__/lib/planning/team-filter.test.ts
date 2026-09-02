@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-import { parseTeamParam, resolveTeamIds, TEAM_PARAM_ALL } from "@/lib/planning/team-filter";
+import {
+  effectiveTeamMode,
+  parseTeamParam,
+  resolveTeamIds,
+  TEAM_PARAM_ALL,
+} from "@/lib/planning/team-filter";
 
 const TIMES = [
   { id: "t-video", name: "Video" },
@@ -86,5 +91,25 @@ describe("resolveTeamIds", () => {
 
   it("sem equipes ocultas configuradas, o padrão é não filtrar", () => {
     expect(resolveTeamIds("default", TIMES, [])).toBeUndefined();
+  });
+});
+
+describe("effectiveTeamMode", () => {
+  it("devolve o modo pedido quando ele se sustenta", () => {
+    expect(effectiveTeamMode("default", TIMES)).toBe("default");
+    expect(effectiveTeamMode("all", TIMES)).toBe("all");
+    expect(effectiveTeamMode(["t-video"], TIMES)).toEqual(["t-video"]);
+  });
+
+  it("some com o id que não existe mais, em vez de propagá-lo para a tela", () => {
+    // O controle marca o que está APLICADO. Um id morto marcado seria uma caixa que não
+    // corresponde a nada na grade.
+    expect(effectiveTeamMode(["t-video", "t-apagada"], TIMES)).toEqual(["t-video"]);
+  });
+
+  it("seleção inteiramente morta vira o padrão — e o controle precisa saber disso", () => {
+    // Se a tela continuasse achando que há seleção explícita, mostraria caixas marcadas enquanto a
+    // grade exibe o padrão. É a contradição que este modo efetivo existe para evitar.
+    expect(effectiveTeamMode(["t-apagada"], TIMES)).toBe("default");
   });
 });

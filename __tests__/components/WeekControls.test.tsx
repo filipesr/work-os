@@ -26,7 +26,6 @@ function abrir(props: Partial<React.ComponentProps<typeof WeekControls>> = {}) {
       isCurrentWeek
       teams={TIMES}
       mode="default"
-      selectedIds={["t-video", "t-trafego"]}
       {...props}
     />
   );
@@ -38,31 +37,46 @@ function abrir(props: Partial<React.ComponentProps<typeof WeekControls>> = {}) {
 beforeEach(() => vi.clearAllMocks());
 
 describe("WeekControls — filtro múltiplo de times", () => {
-  it("no padrão, os times de produção já aparecem marcados", () => {
-    // O que está marcado é o que se está vendo. Abrir o menu com tudo desmarcado enquanto a grade
-    // mostra os operacionais faria o controle contradizer a tela.
+  it("no padrão, NENHUMA equipe aparece marcada", () => {
+    // As caixas representam escolha explícita, não o conteúdo do padrão. Marcá-las no padrão
+    // obrigaria quem quer ver duas equipes a desmarcar todas as outras uma a uma — e o atalho de
+    // filtrar viraria trabalho. O que o padrão mostra está dito na dica do próprio item.
     abrir();
-    expect(screen.getByRole("menuitemcheckbox", { name: "Video" })).toHaveAttribute(
-      "data-state",
-      "checked"
-    );
+    for (const nome of ["Video", "HR", "Traffic"]) {
+      expect(screen.getByRole("menuitemcheckbox", { name: nome })).toHaveAttribute(
+        "data-state",
+        "unchecked"
+      );
+    }
+  });
+
+  it("no modo `todos` também não marca nada — ele é um modo, não uma seleção", () => {
+    abrir({ mode: "all" });
     expect(screen.getByRole("menuitemcheckbox", { name: "HR" })).toHaveAttribute(
       "data-state",
       "unchecked"
     );
   });
 
-  it("marcar um time a partir do padrão vira seleção específica com o conjunto visível", () => {
-    // O clique ajusta o que está à vista: produção + HR, e não "só HR".
+  it("marcar um time a partir do padrão filtra SÓ por ele", () => {
+    // O gesto de quem abre o menu no padrão e clica numa equipe é "quero ver esta", não "quero o
+    // padrão mais esta".
     abrir();
     fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "HR" }));
-    expect(setParam).toHaveBeenCalledWith("team", "t-video,t-trafego,t-hr");
+    expect(setParam).toHaveBeenCalledWith("team", "t-hr");
+  });
+
+  it("dentro de uma seleção explícita, o clique acumula", () => {
+    // Aí sim as caixas dizem o que está aplicado, e clicar ajusta esse conjunto.
+    abrir({ mode: ["t-video"] });
+    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Traffic" }));
+    expect(setParam).toHaveBeenCalledWith("team", "t-video,t-trafego");
   });
 
   it("desmarcar o último time volta ao padrão em vez de esvaziar a grade", () => {
     // "Vazio" já significa padrão; deixar a semana inteira em branco por desmarcar tudo seria
     // esconder trabalho sem que ninguém tenha pedido.
-    abrir({ mode: ["t-video"], selectedIds: ["t-video"] });
+    abrir({ mode: ["t-video"] });
     fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Video" }));
     expect(setParam).toHaveBeenCalledWith("team", null);
   });
@@ -74,7 +88,7 @@ describe("WeekControls — filtro múltiplo de times", () => {
   });
 
   it("`Times de produção` limpa o parâmetro", () => {
-    abrir({ mode: "all", selectedIds: ["t-video", "t-hr", "t-trafego"] });
+    abrir({ mode: "all" });
     fireEvent.click(screen.getByRole("menuitem", { name: /teamsDefault/ }));
     expect(setParam).toHaveBeenCalledWith("team", null);
   });
@@ -88,7 +102,6 @@ describe("WeekControls — filtro múltiplo de times", () => {
         isCurrentWeek
         teams={TIMES}
         mode="default"
-        selectedIds={["t-video", "t-trafego"]}
       />
     );
     expect(screen.getByRole("button", { name: /teamFilter/ })).toHaveTextContent("teamsDefault");
@@ -99,7 +112,6 @@ describe("WeekControls — filtro múltiplo de times", () => {
         isCurrentWeek
         teams={TIMES}
         mode={["t-video"]}
-        selectedIds={["t-video"]}
       />
     );
     expect(screen.getByRole("button", { name: /teamFilter/ })).toHaveTextContent("teamsCount");
