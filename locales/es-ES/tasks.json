@@ -69,7 +69,12 @@
     "pendingStages": "Etapas Pendientes",
     "blockedStages": "Etapas Bloqueadas",
     "stageInstructions": "Qué hacer en {stage} · {team}",
-    "revertInstruction": "Retrabajo solicitado: {reason}"
+    "revertInstruction": "Retrabajo solicitado: {reason}",
+    "systemStageCompletedByManager": "Etapa completada manualmente por {role}, que no era su responsable.",
+    "systemTaskAutoCompleted": "Demanda completada automáticamente: esta era la última etapa abierta.",
+    "systemStageClaimed": "Etapa asumida.",
+    "systemStageUnassigned": "Etapa liberada. Responsable anterior: {previous}.",
+    "systemStageUnassignedNoPrevious": "Etapa liberada. Todavía no tenía responsable."
   },
   "stageView": {
     "instructionTitle": "Instrucción de la etapa",

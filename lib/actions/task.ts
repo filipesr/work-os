@@ -819,6 +819,11 @@ export async function completeStageAndAdvance(
   const currentUserId = currentUser.id as string;
   const tTask = await getTranslations("errors.task");
   const tCommon = await getTranslations("errors.common");
+  // Copy de caminho feliz (o que o sistema registrou na conversa), não mensagem de falha — mesmo
+  // endereço que `revertInstruction` já usa. `account.roles` é o dicionário de papéis que a tela
+  // de conta já mantém nos dois idiomas; reusá-lo evita um segundo lugar para traduzir "Gerente".
+  const tDetail = await getTranslations("tasks.detail");
+  const tRoles = await getTranslations("account.roles");
 
   try {
     // 1. Get current active stage + current user's role in parallel
@@ -1101,15 +1106,21 @@ export async function completeStageAndAdvance(
       }
     }
 
-    // 6. Add comment if admin/manager moved without being assignee
+    // 6. Add comment if admin/manager moved without being assignee.
+    // Quem concluiu e QUANDO já estão no autor e na data do próprio comentário; QUAL etapa está
+    // agora no vínculo (`activeStageId`), que é o que o histórico filtra. Sobra o que só este
+    // comentário conta: a conclusão foi manual, por um papel de gestão, e não por quem executava.
+    // O texto vem do locale — a action não monta frase, e a data não sai mais em pt-BR para quem
+    // lê em espanhol.
     if ((isAdmin || isManager) && !isAssignee) {
-      const userName = currentUser.name || currentUser.email;
-      const userRole = userWithRole?.role;
       await prisma.taskComment.create({
         data: {
           taskId,
           userId: currentUserId,
-          content: `**ETAPA CONCLUÍDA POR ${userRole}** ${userName}\nEtapa: ${activeStage.stage.name}\nData: ${new Date().toLocaleString("pt-BR")}\n\n⚠️ Esta etapa foi concluída manualmente por um ${userRole === "ADMIN" ? "administrador" : "gerente"}.`,
+          activeStageId: activeStage.id,
+          content: tDetail("systemStageCompletedByManager", {
+            role: tRoles(userWithRole?.role ?? "MANAGER"),
+          }),
         },
       });
     }
@@ -1139,12 +1150,16 @@ export async function completeStageAndAdvance(
         data: { status: "COMPLETED", completedAt: new Date() },
       });
 
-      const userName = currentUser.name || currentUser.email;
+      // Mesmo raciocínio do comentário acima: autor, data e etapa saem do próprio registro. O que
+      // resta é o fato — a demanda se fechou sozinha porque esta era a última etapa aberta —, e
+      // ele mora no locale. O vínculo é com a etapa que acabou de fechar: é ela que provocou o
+      // encerramento, e é sob ela que a linha faz sentido no histórico.
       await prisma.taskComment.create({
         data: {
           taskId,
           userId: currentUserId,
-          content: `**TAREFA CONCLUÍDA AUTOMATICAMENTE** ao encerrar a última etapa (${activeStage.stage.name})\nPor: ${userName}\nData: ${new Date().toLocaleString("pt-BR")}`,
+          activeStageId: activeStage.id,
+          content: tDetail("systemTaskAutoCompleted"),
         },
       });
     }
@@ -1453,6 +1468,8 @@ export async function claimActiveStage(taskId: string, stageId: string) {
   const currentUserId = currentUser.id as string;
   const tTask = await getTranslations("errors.task");
   const tCommon = await getTranslations("errors.common");
+  // Corpo do comentário de sistema — caminho feliz, mesmo endereço de `revertInstruction`.
+  const tDetail = await getTranslations("tasks.detail");
 
   try {
     const activeStage = await prisma.taskActiveStage.findUnique({
@@ -1524,13 +1541,14 @@ export async function claimActiveStage(taskId: string, stageId: string) {
     // Write-once — reivindicar outra etapa depois não reinicia a contagem.
     await markTaskStarted(prisma, taskId);
 
-    // Add comment
-    const userName = currentUser.name || currentUser.email;
+    // Add comment. Quem assumiu, quando e qual etapa: autor, data e `activeStageId` do próprio
+    // registro. O corpo guarda só o FATO, e vem do locale.
     await prisma.taskComment.create({
       data: {
         taskId,
         userId: currentUserId,
-        content: `**ETAPA REIVINDICADA** por ${userName}\nEtapa: ${activeStage.stage.name}\nData: ${new Date().toLocaleString("pt-BR")}`,
+        activeStageId: activeStage.id,
+        content: tDetail("systemStageClaimed"),
       },
     });
 
@@ -1574,6 +1592,8 @@ export async function unassignActiveStage(taskId: string, stageId: string) {
   const currentUserId = currentUser.id as string;
   const tTask = await getTranslations("errors.task");
   const tCommon = await getTranslations("errors.common");
+  // Corpo do comentário de sistema — caminho feliz, mesmo endereço de `revertInstruction`.
+  const tDetail = await getTranslations("tasks.detail");
 
   try {
     // Fetch active stage + current user's role in parallel (independent queries)
@@ -1647,16 +1667,20 @@ export async function unassignActiveStage(taskId: string, stageId: string) {
       });
     }
 
-    // Add comment
-    const userName = currentUser.name || currentUser.email;
-    const previousAssignee =
-      activeStage.assignee?.name || activeStage.assignee?.email || "Não atribuído";
+    // Add comment. O responsável ANTERIOR é a única coisa que este registro guarda e nenhum outro
+    // recupera — depois do UPDATE acima, a linha da etapa não sabe mais quem era. Ele entra como
+    // PARÂMETRO (é dado, não frase); quando não havia ninguém, a frase é outra, do locale, em vez
+    // de um "Não atribuído" cravado em português no meio do corpo.
+    const responsavelAnterior = activeStage.assignee?.name || activeStage.assignee?.email || null;
 
     await prisma.taskComment.create({
       data: {
         taskId,
         userId: currentUserId,
-        content: `**ETAPA DESATRIBUÍDA** por ${userName}\nEtapa: ${activeStage.stage.name}\nAnterior: ${previousAssignee}\nData: ${new Date().toLocaleString("pt-BR")}`,
+        activeStageId: activeStage.id,
+        content: responsavelAnterior
+          ? tDetail("systemStageUnassigned", { previous: responsavelAnterior })
+          : tDetail("systemStageUnassignedNoPrevious"),
       },
     });
 

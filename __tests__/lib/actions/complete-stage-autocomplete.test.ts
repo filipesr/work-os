@@ -112,9 +112,12 @@ describe("completeStageAndAdvance auto-completes the task", () => {
     expect(updateCall?.data?.status).toBe("COMPLETED");
     expect(updateCall?.data?.completedAt).toBeInstanceOf(Date);
 
-    // An audit comment is logged for the auto-completion.
+    // An audit comment is logged for the auto-completion — pela CHAVE de locale, não pela frase:
+    // o corpo saiu do código na revisão final (o mock de i18n devolve a chave), e ele nasce
+    // vinculado à etapa que fechou por último, que é o que o histórico filtra.
     const comment = prisma.taskComment.create.mock.calls.at(-1)?.[0];
-    expect(comment?.data?.content).toMatch(/CONCLU[IÍ]DA AUTOMATICAMENTE/i);
+    expect(comment?.data?.content).toBe("systemTaskAutoCompleted");
+    expect(comment?.data?.activeStageId).toBe("as1");
   });
 
   it("keeps the task IN_PROGRESS when open stage rows remain", async () => {
@@ -132,8 +135,8 @@ describe("completeStageAndAdvance auto-completes the task", () => {
     expect(updateCall?.data?.status).toBe("IN_PROGRESS");
 
     // No auto-completion comment when the task is not finished.
-    const autoComment = prisma.taskComment.create.mock.calls.find((c: any[]) =>
-      /CONCLU[IÍ]DA AUTOMATICAMENTE/i.test(c?.[0]?.data?.content ?? "")
+    const autoComment = prisma.taskComment.create.mock.calls.find(
+      (c: any[]) => c?.[0]?.data?.content === "systemTaskAutoCompleted"
     );
     expect(autoComment).toBeUndefined();
   });
