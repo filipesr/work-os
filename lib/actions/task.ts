@@ -1928,7 +1928,9 @@ export async function revertTaskStage(
       // mesmo motivo, um degrau acima: é compromisso combinado com alguém de fora PARA AQUELE dia
       // e AQUELA pessoa, e sobreviveria à reversão como uma hora marcada para ninguém — que a
       // próxima programação levaria intacta para a agenda de um terceiro.
-      await tx.taskActiveStage.update({
+      // `linhaAlvo` é a linha de TaskActiveStage da etapa para onde se reverteu — o próprio UPDATE
+      // que a reativa devolve a linha, então o `id` sai daqui, sem consulta extra.
+      const linhaAlvo = await tx.taskActiveStage.update({
         where: { taskId_stageId: { taskId, stageId: revertToStageId } },
         data: {
           status: "ACTIVE",
@@ -1965,15 +1967,19 @@ export async function revertTaskStage(
         },
       });
 
-      // 4e. Add comment explaining the reversion
-      const userName = userWithRole?.name || user.email;
-      const stageNames = currentActiveStages.map((as) => as.stage.name).join(", ");
-
+      // 4e. O motivo da reversão É a instrução da etapa que volta a ser executada: quem vai
+      // refazer precisa dele no lugar onde vai trabalhar, não numa linha perdida da conversa da
+      // demanda. Quem reverteu, de onde veio e quando já estão gravados em TaskStageLog/
+      // StageTransition e no autor/data do próprio comentário — repeti-los aqui duplicaria dado,
+      // e era isso que produzia as frases em português cravadas no código (a paridade de locales
+      // não via, porque a string não estava em locale nenhum).
       await tx.taskComment.create({
         data: {
           taskId,
           userId: currentUserId,
-          content: `**TAREFA REVERTIDA** por ${userName}\n\nDe: ${stageNames}\nPara: ${targetStage.name}\n\n**Motivo:** ${comment.trim()}\n\nData: ${new Date().toLocaleString("pt-BR")}`,
+          activeStageId: linhaAlvo.id,
+          kind: "STAGE_INSTRUCTION",
+          content: tTask("revertInstruction", { reason: comment.trim() }),
         },
       });
 
