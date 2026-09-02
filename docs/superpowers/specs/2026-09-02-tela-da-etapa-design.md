@@ -1,6 +1,6 @@
 # A tela da etapa
 
-**Data:** 2026-09-02 · **Estado:** desenho conversado, aguardando revisão da spec
+**Data:** 2026-09-02 · **Estado:** implementada
 **Fecha:** o agrupamento de comentários por autor (`WorkflowHistoryModal.tsx:48`) e a instrução de
 etapa que ninguém lê no momento certo
 **Prepara:** [as instâncias de etapa](#o-caminho-seguinte-instâncias-de-etapa), a spec seguinte

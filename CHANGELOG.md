@@ -218,6 +218,56 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   por `Task.assigneeId`, campo que nenhum caminho do fluxo escreve — devolviam sempre vazio. Agora
   filtram pelo responsável da etapa.
 
+#### A tela da etapa
+
+- **Toda etapa da demanda ganhou tela própria**, em `/tasks/{taskId}/stages/{activeStageId}`. A
+  regra cabe numa frase: se a ação precisa saber QUAL etapa, ela mora na etapa. Antes, `/tasks/{id}`
+  era ao mesmo tempo onde se lê a demanda e onde se aciona cronômetro, avanço, reversão e
+  apontamento de hora de UMA etapa vestida de tela de demanda — e o schema já permite etapas
+  ativas em paralelo (fork/join), então cada botão precisava adivinhar qual delas. A rota chaveia
+  pela linha da INSTÂNCIA (`TaskActiveStage.id`), não pela etapa do template: hoje o par
+  `(taskId, stageId)` é único e o id do template seria igualmente válido e mais bonito de ler, mas
+  a escolha olha para a frente — é o que faz esta tela atravessar sem reescrita a spec seguinte, que
+  remove essa unicidade e deixa uma demanda executar a mesma etapa duas vezes. Etapa ainda não
+  alcançada, ativa e concluída são a mesma URL em três leituras: a primeira mostra instrução e o que
+  virá, a segunda opera, a terceira abre em leitura — um link mandado no chat continua válido depois
+  que a etapa fecha.
+- **`/tasks/{id}` virou leitura.** Saíram `ActivityButton`, `AdvanceStageButton`,
+  `RevertStageButton`, `UnassignActiveStageButton`, `LogTimeButton` e `AddCommentForm` — cada um já
+  era ação de uma etapa, só morava no lugar errado. O painel de artefatos fica, sem os botões de
+  adicionar ou remover.
+- **`/admin/tasks/{id}` parou de eleger uma etapa sozinha.** A tela usava `task.currentStageId`, que
+  com etapas paralelas escolhe uma e esconde as demais; agora lista toda etapa ativa ou bloqueada,
+  cada uma com as próprias ações de avançar e desatribuir. Concluir a demanda e reverter continuam
+  ali, uma vez só, como poderes de nível demanda — reverter olha para todas as etapas ativas ao
+  mesmo tempo, então repeti-lo por etapa multiplicaria o botão sem multiplicar o efeito. A tela
+  também ganhou a caixa de comentário da demanda, que antes só existia em `/tasks/{id}`.
+- **O comentário passou a saber de que etapa ele é.** `TaskComment.activeStageId` (nulo = conversa
+  da demanda) e `TaskComment.kind` (`USER` ou `STAGE_INSTRUCTION`) substituem o desempate que o
+  modal de histórico fazia sozinho por conta própria. `Task.createdById` registra quem gerou a
+  demanda — dado que o modelo nunca guardou. Sem backfill: comentário e demanda anteriores a esta
+  entrega ficam sem etapa e sem criador, de propósito — inventar o vínculo agora é o próprio defeito
+  que esta entrega fecha (ver `docs/pendencias.md`).
+- **A instrução da etapa coringa passou a chegar na hora certa.** Escrita na criação, ela aparecia
+  em três telas e nunca no momento em que alguém podia agir sobre ela. Agora, quando a etapa é
+  LIBERADA, nasce um comentário `STAGE_INSTRUCTION` assinado por quem criou a demanda — em destaque
+  no topo da tela da etapa e na posição cronológica certa da conversa. Uma etapa reaberta por
+  reversão recebe a instrução de novo, de propósito: retrabalho não pode começar cego.
+- **O motivo da reversão deixou de ser português cravado em código.** `revertTaskStage` montava o
+  corpo do comentário à mão — texto fixo em pt-BR, invisível à paridade de locales porque não vinha
+  de arquivo nenhum, data formatada com `toLocaleString("pt-BR")` para quem lê em espanhol, e um
+  comentário de sistema fingindo ser de usuário, editável e preso à demanda em vez da etapa que
+  precisava dele. Agora é um `STAGE_INSTRUCTION` como o da coringa: texto do locale nos dois
+  idiomas, assinado por quem reverteu, e ligado à etapa que volta a ser executada.
+- **O histórico do fluxo parou de adivinhar pelo autor.** `WorkflowHistoryModal` atribuía cada
+  comentário à etapa perguntando se o AUTOR já tinha passado por ela — quem trabalhou em três
+  etapas via o mesmo comentário repetido nas três, e o comentário de um gestor que nunca executou
+  etapa nenhuma não aparecia em lugar algum. Agora filtra pelo vínculo real (`activeStageId`).
+- **Cinco das seis listagens em formato de etapa** — minhas etapas, dashboard, fila de envelhecendo,
+  fila de bloqueadas e balanceamento de carga do time — passaram a linkar para a etapa em vez da
+  demanda. `logTime` parou de gravar sempre em `activeStages[0]`: recebe a etapa que a tela onde foi
+  clicado está mostrando, e valida que ela pertence à demanda antes de usar.
+
 ### 🐛 Corrigido
 
 #### Três arestas da linha do tempo do projeto
