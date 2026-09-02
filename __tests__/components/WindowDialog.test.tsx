@@ -2,8 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const setStageWindow = vi.fn().mockResolvedValue({ success: true });
+const listWindowCandidates = vi.fn();
+const scheduleStage = vi.fn().mockResolvedValue({ success: true });
 vi.mock("@/lib/actions/week-planning", () => ({
   setStageWindow: (...a: unknown[]) => setStageWindow(...a),
+  listWindowCandidates: (...a: unknown[]) => listWindowCandidates(...a),
+  scheduleStage: (...a: unknown[]) => scheduleStage(...a),
 }));
 // Igual ao mock de CalendarToolbar.test.tsx: com `vals`, embute o JSON na saída — é como
 // `screen.findByText(/Institucional Acme/)` enxerga o `task` interpolado sem precisar de um
@@ -27,6 +31,7 @@ describe("WindowDialog", () => {
         label="Reels · Gravação"
         startTime="14:00"
         endTime="16:00"
+        dayISO="2026-09-04"
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
@@ -40,7 +45,13 @@ describe("WindowDialog", () => {
 
   it("envia início e fim", () => {
     render(
-      <WindowDialog activeStageId="as1" label="Reels · Gravação" startTime={null} endTime={null} />
+      <WindowDialog
+        activeStageId="as1"
+        label="Reels · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
     );
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
     fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
@@ -57,7 +68,13 @@ describe("WindowDialog", () => {
   it("desmarcar manda startTime nulo", () => {
     // Limpar é a mesma porta, sem uma segunda ação no servidor.
     render(
-      <WindowDialog activeStageId="as1" label="Reels · Gravação" startTime="14:00" endTime={null} />
+      <WindowDialog
+        activeStageId="as1"
+        label="Reels · Gravação"
+        startTime="14:00"
+        endTime={null}
+        dayISO="2026-09-04"
+      />
     );
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
     fireEvent.click(screen.getByRole("button", { name: "windowClear" }));
@@ -76,6 +93,7 @@ describe("WindowDialog", () => {
         label="Reels · Gravação"
         startTime="14:00"
         endTime="16:00"
+        dayISO="2026-09-04"
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
@@ -88,7 +106,13 @@ describe("WindowDialog", () => {
 
     // O que `router.refresh()` traria de volta: as mesmas props, agora nulas.
     rerender(
-      <WindowDialog activeStageId="as1" label="Reels · Gravação" startTime={null} endTime={null} />
+      <WindowDialog
+        activeStageId="as1"
+        label="Reels · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
     );
 
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
@@ -122,7 +146,13 @@ describe("WindowDialog", () => {
       overlap: { ...OVERLAP.overlap, canOverride: false },
     });
     render(
-      <WindowDialog activeStageId="as1" label="Natal · Gravação" startTime={null} endTime={null} />
+      <WindowDialog
+        activeStageId="as1"
+        label="Natal · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
     );
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
     fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
@@ -138,7 +168,13 @@ describe("WindowDialog", () => {
   it("com prioridade autorizada, adiar a ocupante manda o horário já calculado", async () => {
     setStageWindow.mockResolvedValueOnce(OVERLAP);
     render(
-      <WindowDialog activeStageId="as1" label="Natal · Gravação" startTime={null} endTime={null} />
+      <WindowDialog
+        activeStageId="as1"
+        label="Natal · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
     );
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
     fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
@@ -146,14 +182,24 @@ describe("WindowDialog", () => {
     });
     fireEvent.submit(screen.getByTestId("window-form"));
 
-    fireEvent.click(await screen.findByRole("button", { name: "overlapPostpone" }));
+    // Espera o botão existir e só então busca a referência de novo antes de clicar — o handle que
+    // `findByRole` devolve pode ter ficado obsoleto se algo re-renderizou entre o `await` e o clique
+    // (o `DismissableLayer` do Radix reage a montagem de forma assíncrona), e clicar num nó
+    // desconectado não dispara o handler do React.
+    await screen.findByRole("button", { name: "overlapPostpone" });
+    fireEvent.click(screen.getByRole("button", { name: "overlapPostpone" }));
 
+    // O clique roda `adiarOcupante.run` dentro de um `useTransition` — a chamada a `setStageWindow`
+    // não é garantida antes deste ponto da mesma task síncrona, então a asserção espera por ela em
+    // vez de presumir que já aconteceu.
     // 2026-09-04T20:00Z = 17h em São Paulo.
-    expect(setStageWindow).toHaveBeenCalledWith({
-      activeStageId: "as9",
-      startTime: "17:00",
-      endTime: null,
-    });
+    await waitFor(() =>
+      expect(setStageWindow).toHaveBeenCalledWith({
+        activeStageId: "as9",
+        startTime: "17:00",
+        endTime: null,
+      })
+    );
   });
 
   it("com dois ocupantes, adiar não é oferecido", async () => {
@@ -179,7 +225,13 @@ describe("WindowDialog", () => {
       },
     });
     render(
-      <WindowDialog activeStageId="as1" label="Natal · Gravação" startTime={null} endTime={null} />
+      <WindowDialog
+        activeStageId="as1"
+        label="Natal · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
     );
     fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
     fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
@@ -191,5 +243,77 @@ describe("WindowDialog", () => {
     expect(screen.queryByRole("button", { name: "overlapPostpone" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "overlapRetime" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "overlapCancel" })).toBeInTheDocument();
+  });
+
+  it("oferece só quem está livre, e mostra o ocupado desabilitado", async () => {
+    // Sumir da lista não se distingue de "não é do time".
+    setStageWindow.mockResolvedValueOnce(OVERLAP);
+    listWindowCandidates.mockResolvedValue({
+      candidates: [
+        { id: "u2", name: "Bruno", busy: true },
+        { id: "u3", name: "Carla", busy: false },
+      ],
+    });
+    render(
+      <WindowDialog
+        activeStageId="as1"
+        label="Natal · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
+      target: { value: "15:00" },
+    });
+    fireEvent.submit(screen.getByTestId("window-form"));
+
+    // Mesma cautela do teste de adiar: espera existir e busca de novo antes de clicar, para
+    // não usar um handle que ficou obsoleto entre o `await` e o clique.
+    await screen.findByRole("button", { name: "overlapMoveOccupant" });
+    fireEvent.click(screen.getByRole("button", { name: "overlapMoveOccupant" }));
+
+    const bruno = await screen.findByRole("option", { name: /Bruno/ });
+    expect(bruno).toBeDisabled();
+    expect(screen.getByRole("option", { name: /Carla/ })).not.toBeDisabled();
+  });
+
+  it("transferir a OCUPANTE chama scheduleStage com o dia da coluna", async () => {
+    setStageWindow.mockResolvedValueOnce(OVERLAP);
+    listWindowCandidates.mockResolvedValue({
+      candidates: [{ id: "u3", name: "Carla", busy: false }],
+    });
+    render(
+      <WindowDialog
+        activeStageId="as1"
+        label="Natal · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
+      target: { value: "15:00" },
+    });
+    fireEvent.submit(screen.getByTestId("window-form"));
+    // Mesma cautela do teste de adiar: espera existir e busca de novo antes de clicar, para
+    // não usar um handle que ficou obsoleto entre o `await` e o clique.
+    await screen.findByRole("button", { name: "overlapMoveOccupant" });
+    fireEvent.click(screen.getByRole("button", { name: "overlapMoveOccupant" }));
+    await screen.findByLabelText("overlapPickPerson");
+    fireEvent.change(screen.getByLabelText("overlapPickPerson"), { target: { value: "u3" } });
+    fireEvent.click(screen.getByRole("button", { name: "overlapPickPersonSubmit" }));
+
+    // Mesmo motivo do teste de adiar: o clique roda `moverOcupante.run` dentro de um
+    // `useTransition`, então a asserção espera em vez de presumir a chamada síncrona.
+    await waitFor(() =>
+      expect(scheduleStage).toHaveBeenCalledWith({
+        activeStageId: "as9", // a OCUPANTE, não a nova
+        userId: "u3",
+        dateISO: "2026-09-04",
+      })
+    );
   });
 });

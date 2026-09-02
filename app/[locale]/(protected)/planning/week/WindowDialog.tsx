@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
@@ -9,7 +9,12 @@ import { FormDialog } from "@/components/ui/FormDialog";
 import { FieldLabel } from "@/components/ui/FieldLabel";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
-import { setStageWindow, type WindowOverlap } from "@/lib/actions/week-planning";
+import {
+  setStageWindow,
+  listWindowCandidates,
+  scheduleStage,
+  type WindowOverlap,
+} from "@/lib/actions/week-planning";
 import { useServerAction } from "@/lib/hooks/useServerAction";
 import { formatDisplayTime } from "@/lib/dates";
 
@@ -24,12 +29,16 @@ export function WindowDialog({
   label,
   startTime,
   endTime,
+  dayISO,
 }: {
   activeStageId: string;
   label: string;
   /** "14:00" no relógio de São Paulo, ou nula se a etapa não tem compromisso. */
   startTime: string | null;
   endTime: string | null;
+  /** O dia da coluna — `scheduleStage` exige a data, e as duas trocas de colaborador reprogramam
+   *  para o MESMO dia (só a pessoa muda; a hora combinada viaja junto ou é reenviada). */
+  dayISO: string;
 }) {
   const t = useTranslations("planning.week");
   const router = useRouter();
@@ -40,6 +49,17 @@ export function WindowDialog({
   // aqui — não é erro, então `useServerAction` chama `onSuccess` do mesmo jeito, e é o
   // componente que precisa reconhecer a forma `{ overlap }` e desviar da UI de sucesso.
   const [overlap, setOverlap] = useState<WindowOverlap | null>(null);
+  // A escolha de pessoa das duas trocas de colaborador (mover a OCUPANTE, ou mover a NOVA). Só uma
+  // por vez — abrir a segunda descarta a primeira, que é rascunho da mesma forma que `overlap`.
+  const [picker, setPicker] = useState<{
+    /** A etapa que vai mudar de dono: a da ocupante escolhida, ou a própria `activeStageId`. */
+    activeStageId: string;
+    /** Só a NOVA precisa reenviar `setStageWindow` depois — a ocupante já tem hora própria, que
+     *  `scheduleStage` preserva ao trocar de dono no mesmo dia. */
+    isNew: boolean;
+    candidates: { id: string; name: string; busy: boolean }[];
+    userId: string;
+  } | null>(null);
 
   // O estado local é rascunho de edição; a verdade é a prop, e reabrir tem de recomeçar dela. O
   // `<li>` da célula é estável entre um "Desmarcar" e o `router.refresh()` que o segue — React
@@ -54,6 +74,7 @@ export function WindowDialog({
       setEnd(endTime ?? "");
     }
     setOverlap(null);
+    setPicker(null);
     setOpen(next);
   };
 
@@ -82,17 +103,72 @@ export function WindowDialog({
   });
   // Reenvia a MESMA ocupante (índice fixo — só existe quando `occupants.length === 1`) com o
   // horário que o servidor já calculou; ao terminar, reenvia a janela nova pedida — mesmo
-  // caminho de `marcar`, que decide sozinho entre fechar ou mostrar um novo conflito.
+  // caminho de `marcar`, que decide sozinho entre fechar ou mostrar um novo conflito. O reenvio
+  // não checa se ESTE resultado também veio com `{ overlap }` porque o servidor recalcula o
+  // horário livre contra TODAS as outras faixas ocupadas do dia antes de responder — um novo
+  // conflito aqui só aconteceria se outra faixa tivesse mudado entre o adiamento e este envio, e
+  // `setStageWindow` nunca grava por cima de uma colisão, então o pior caso é um novo painel de
+  // conflito, nunca um horário incorreto persistido.
   const adiarOcupante = useServerAction(setStageWindow, {
     onSuccess: () => marcar.run({ activeStageId, startTime: start, endTime: end || null }),
   });
-  const isPending = marcar.isPending || desmarcar.isPending || adiarOcupante.isPending;
+  // Move a OCUPANTE para outra pessoa, no mesmo dia — a hora combinada viaja junto porque
+  // `scheduleStage` preserva a janela quando só o dono muda. Sem reenvio de `setStageWindow`.
+  const moverOcupante = useServerAction(scheduleStage, {
+    onSuccess: () => {
+      setPicker(null);
+      fecharEAtualizar();
+    },
+  });
+  // Move a NOVA para outra pessoa primeiro (ela ainda não tem hora — foi por isso que caiu aqui),
+  // e só então reenvia a janela pedida — mesmo caminho de `marcar`, que decide sozinho entre
+  // fechar ou mostrar um novo conflito (agora contra a agenda do novo dono).
+  const moverNova = useServerAction(scheduleStage, {
+    onSuccess: () => {
+      setPicker(null);
+      marcar.run({ activeStageId, startTime: start, endTime: end || null });
+    },
+  });
+  // `useServerAction` não serve aqui — `listWindowCandidates` não devolve `{ error } | { success }`,
+  // devolve a lista em si — mas a busca ainda é trabalho assíncrono disparado por clique, e o resto
+  // do arquivo passa esse tipo de trabalho por `startTransition` (via `useServerAction`). Fora dela,
+  // o `setPicker` do fim cai como uma atualização solta, fora do agrupamento que React e os testes
+  // esperam para este componente.
+  const [isChoosingPending, startChoosing] = useTransition();
+  const isPending =
+    marcar.isPending ||
+    desmarcar.isPending ||
+    adiarOcupante.isPending ||
+    moverOcupante.isPending ||
+    moverNova.isPending ||
+    isChoosingPending;
 
-  // Adiar troca um compromisso alheio de lugar — decisão que o gestor toma UMA ocupante por vez.
-  // Com dois ou mais no caminho, `firstFreeStartISO` é dimensionado só para o caso de um único
-  // ocupante, e oferecer o botão aqui empurraria uma remarcação em cadeia sem o gestor decidir
-  // cada uma. Por isso as saídas ficam restritas a remarcar a NOVA janela ou cancelar.
-  const podeAdiar = overlap !== null && overlap.canOverride && overlap.occupants.length === 1;
+  // Adiar e mover-a-ocupante trocam um compromisso ALHEIO de lugar — decisão que o gestor toma
+  // UMA ocupante por vez. Com dois ou mais no caminho, "a ocupante" fica ambíguo (`firstFreeStartISO`
+  // também é dimensionado só para o caso de um único ocupante), e oferecer os botões aqui empurraria
+  // uma decisão em cadeia sem o gestor escolher cada uma. Mover a NOVA não tem essa restrição: ela
+  // não toca em nenhum compromisso de terceiros, só muda de dono antes de pedir hora de novo.
+  const umaOcupanteAutorizada =
+    overlap !== null && overlap.canOverride && overlap.occupants.length === 1;
+
+  const escolherPessoa = (alvoActiveStageId: string, isNew: boolean) => {
+    startChoosing(async () => {
+      const result = await listWindowCandidates(alvoActiveStageId);
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      // Pré-seleciona a primeira pessoa livre — nunca uma ocupada, que a lista mostra desabilitada
+      // mas não pode ser o valor inicial de um `<select>` que o gestor ainda não tocou.
+      const livre = result.candidates.find((c) => !c.busy);
+      setPicker({
+        activeStageId: alvoActiveStageId,
+        isNew,
+        candidates: result.candidates,
+        userId: livre?.id ?? "",
+      });
+    });
+  };
 
   return (
     <FormDialog
@@ -123,11 +199,14 @@ export function WindowDialog({
               type="button"
               variant="outline"
               disabled={isPending}
-              onClick={() => setOverlap(null)}
+              onClick={() => {
+                setOverlap(null);
+                setPicker(null);
+              }}
             >
               {t("overlapRetime")}
             </Button>
-            {podeAdiar && (
+            {umaOcupanteAutorizada && (
               <Button
                 type="button"
                 disabled={isPending}
@@ -143,6 +222,26 @@ export function WindowDialog({
                 {t("overlapPostpone")}
               </Button>
             )}
+            {umaOcupanteAutorizada && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => escolherPessoa(overlap.occupants[0].activeStageId, false)}
+              >
+                {t("overlapMoveOccupant")}
+              </Button>
+            )}
+            {/* Sempre disponível — mover a NOVA não pede autoridade sobre a ocupante, só troca de
+                dono e pede a hora de novo. */}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => escolherPessoa(activeStageId, true)}
+            >
+              {t("overlapMoveNew")}
+            </Button>
           </DialogFooter>
         ) : undefined
       }
@@ -164,6 +263,36 @@ export function WindowDialog({
           <p className="text-muted-foreground">
             {t(overlap.canOverride ? "overlapAllowed" : "overlapBlocked")}
           </p>
+          {picker && (
+            <div className="space-y-2 border-t border-border pt-3">
+              <select
+                aria-label={t("overlapPickPerson")}
+                value={picker.userId}
+                onChange={(e) => setPicker({ ...picker, userId: e.target.value })}
+                className="h-10 w-full rounded-md border border-input-border bg-input px-3 text-sm text-foreground"
+              >
+                {picker.candidates.map((c) => (
+                  <option key={c.id} value={c.id} disabled={c.busy}>
+                    {c.busy ? t("overlapBusyPerson", { name: c.name }) : c.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                type="button"
+                disabled={isPending || !picker.userId}
+                onClick={() => {
+                  const runner = picker.isNew ? moverNova : moverOcupante;
+                  runner.run({
+                    activeStageId: picker.activeStageId,
+                    userId: picker.userId,
+                    dateISO: dayISO,
+                  });
+                }}
+              >
+                {t("overlapPickPersonSubmit")}
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         <form

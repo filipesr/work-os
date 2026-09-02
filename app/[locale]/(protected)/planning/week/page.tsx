@@ -288,6 +288,7 @@ export default async function WeekPlanningPage({
                                             ? formatDisplayTime(s.item.scheduledEnd)
                                             : null
                                         }
+                                        dayISO={d}
                                       />
                                       <OrderControls activeStageId={s.item.id} />
                                     </div>

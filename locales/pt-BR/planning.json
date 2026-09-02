@@ -162,7 +162,12 @@
     "overlapAllowed": "Esta demanda tem prioridade. Escolha o que fazer com a que já estava marcada.",
     "overlapPostpone": "Adiar a que estava marcada",
     "overlapRetime": "Escolher outro horário",
-    "overlapCancel": "Cancelar"
+    "overlapCancel": "Cancelar",
+    "overlapMoveOccupant": "Passar a que estava marcada para outra pessoa",
+    "overlapMoveNew": "Passar esta para outra pessoa",
+    "overlapPickPerson": "Para quem vai",
+    "overlapPickPersonSubmit": "Transferir",
+    "overlapBusyPerson": "{name} — já tem compromisso nesse horário"
   },
   "myWeek": {
     "kicker": "Meu trabalho",
