@@ -155,7 +155,14 @@
     "windowSubmit": "Marcar",
     "windowClear": "Desmarcar",
     "windowSet_toast": "Horário marcado.",
-    "windowCleared_toast": "Horário desmarcado."
+    "windowCleared_toast": "Horário desmarcado.",
+    "overlapTitle": "Já há compromisso nesse horário",
+    "overlapOccupant": "{task} · {stage} · {from} às {to}",
+    "overlapBlocked": "Esta demanda não tem prioridade sobre a que já está marcada. Escolha outro horário ou outra pessoa.",
+    "overlapAllowed": "Esta demanda tem prioridade. Escolha o que fazer com a que já estava marcada.",
+    "overlapPostpone": "Adiar a que estava marcada",
+    "overlapRetime": "Escolher outro horário",
+    "overlapCancel": "Cancelar"
   },
   "myWeek": {
     "kicker": "Meu trabalho",

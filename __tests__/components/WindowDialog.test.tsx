@@ -5,7 +5,13 @@ const setStageWindow = vi.fn().mockResolvedValue({ success: true });
 vi.mock("@/lib/actions/week-planning", () => ({
   setStageWindow: (...a: unknown[]) => setStageWindow(...a),
 }));
-vi.mock("next-intl", () => ({ useTranslations: () => (k: string) => k }));
+// Igual ao mock de CalendarToolbar.test.tsx: com `vals`, embute o JSON na saída — é como
+// `screen.findByText(/Institucional Acme/)` enxerga o `task` interpolado sem precisar de um
+// next-intl de verdade rodando no teste.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (k: string, vals?: Record<string, unknown>) =>
+    vals ? `${k}:${JSON.stringify(vals)}` : k,
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 import { WindowDialog } from "@/app/[locale]/(protected)/planning/week/WindowDialog";
@@ -90,5 +96,100 @@ describe("WindowDialog", () => {
       ""
     );
     expect((screen.getByLabelText("windowEnd") as HTMLInputElement).value).toBe("");
+  });
+
+  const OVERLAP = {
+    overlap: {
+      canOverride: true,
+      occupants: [
+        {
+          activeStageId: "as9",
+          taskTitle: "Institucional Acme",
+          stageName: "Gravação",
+          priority: "HIGH",
+          startISO: "2026-09-04T17:00:00.000Z",
+          endISO: "2026-09-04T19:00:00.000Z",
+        },
+      ],
+      firstFreeStartISO: "2026-09-04T20:00:00.000Z",
+    },
+  };
+
+  it("mostra quem está no caminho em vez de um erro genérico", async () => {
+    // Uma recusa que não diz o que está no caminho obriga o gestor a caçar na grade.
+    setStageWindow.mockResolvedValueOnce({
+      ...OVERLAP,
+      overlap: { ...OVERLAP.overlap, canOverride: false },
+    });
+    render(
+      <WindowDialog activeStageId="as1" label="Natal · Gravação" startTime={null} endTime={null} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
+      target: { value: "15:00" },
+    });
+    fireEvent.submit(screen.getByTestId("window-form"));
+
+    expect(await screen.findByText(/Institucional Acme/)).toBeInTheDocument();
+    // Prioridade não autoriza: adiar a ocupante não é oferecido.
+    expect(screen.queryByRole("button", { name: "overlapPostpone" })).not.toBeInTheDocument();
+  });
+
+  it("com prioridade autorizada, adiar a ocupante manda o horário já calculado", async () => {
+    setStageWindow.mockResolvedValueOnce(OVERLAP);
+    render(
+      <WindowDialog activeStageId="as1" label="Natal · Gravação" startTime={null} endTime={null} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
+      target: { value: "15:00" },
+    });
+    fireEvent.submit(screen.getByTestId("window-form"));
+
+    fireEvent.click(await screen.findByRole("button", { name: "overlapPostpone" }));
+
+    // 2026-09-04T20:00Z = 17h em São Paulo.
+    expect(setStageWindow).toHaveBeenCalledWith({
+      activeStageId: "as9",
+      startTime: "17:00",
+      endTime: null,
+    });
+  });
+
+  it("com dois ocupantes, adiar não é oferecido", async () => {
+    // Ruling do controlador (fora do brief): adiar mexe em UM compromisso por vez — decidir em
+    // cadeia é do gestor, uma ocupante de cada vez — e o `firstFreeStartISO` que o servidor manda
+    // é dimensionado só para o caso de um único ocupante. Com dois ou mais, só as saídas que não
+    // tocam nos ocupantes ficam de pé: escolher outro horário, ou cancelar.
+    setStageWindow.mockResolvedValueOnce({
+      overlap: {
+        canOverride: true,
+        occupants: [
+          OVERLAP.overlap.occupants[0],
+          {
+            activeStageId: "as10",
+            taskTitle: "Reels Natal",
+            stageName: "Edição",
+            priority: "HIGH",
+            startISO: "2026-09-04T19:00:00.000Z",
+            endISO: "2026-09-04T20:00:00.000Z",
+          },
+        ],
+        firstFreeStartISO: "2026-09-04T21:00:00.000Z",
+      },
+    });
+    render(
+      <WindowDialog activeStageId="as1" label="Natal · Gravação" startTime={null} endTime={null} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
+      target: { value: "15:00" },
+    });
+    fireEvent.submit(screen.getByTestId("window-form"));
+
+    expect(await screen.findByText(/Institucional Acme/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "overlapPostpone" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "overlapRetime" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "overlapCancel" })).toBeInTheDocument();
   });
 });
