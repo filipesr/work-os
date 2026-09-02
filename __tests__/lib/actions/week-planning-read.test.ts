@@ -126,6 +126,29 @@ describe("getWeekPlanning", () => {
     expect(r.people[0].byDay["2026-08-31"].slots).toHaveLength(1);
   });
 
+  it("[IMPORTANTE] o item rolado carrega o DIA DELE, não o da coluna em que é mostrado", async () => {
+    // A rolagem é de EXIBIÇÃO: o item continua planejado para 20/08, e só aparece na segunda
+    // visível para não sumir da tela. Quem for marcar a hora dele precisa do dia REAL — o
+    // compromisso é ancorado em `plannedDate`, e usar o dia da coluna gravaria "14h de segunda"
+    // num item cuja âncora é 20/08. Ver `instanteNoDia`.
+    db.taskActiveStage.findMany.mockResolvedValue([
+      stageRow({ plannedDate: new Date("2026-08-20T00:00:00Z") }),
+    ]);
+    const r = await getWeekPlanning("2026-08-31");
+    expect(r.people[0].byDay["2026-08-31"].slots[0].item.plannedDateISO).toBe("2026-08-20");
+  });
+
+  it("item reivindicado SEM dia não inventa um: `plannedDateISO` fica nulo", async () => {
+    // Ele entra na fila de hoje por LEITURA, sem nada gravado. Devolver o dia de hoje aqui seria
+    // afirmar uma programação que não existe no banco — a tela cai no dia da coluna.
+    const hoje = formatISODate(todayInSaoPaulo());
+    db.taskActiveStage.findMany.mockResolvedValue([
+      stageRow({ plannedDate: null, plannedOrder: null, assignedAt: new Date("2026-08-31") }),
+    ]);
+    const r = await getWeekPlanning(formatISODate(mondayOfWeek(todayInSaoPaulo())));
+    expect(r.people[0].byDay[hoje].slots[0].item.plannedDateISO).toBeNull();
+  });
+
   it("o poço traz etapas ativas e sem dono", async () => {
     db.taskActiveStage.findMany.mockImplementation((args: { where?: Record<string, unknown> }) =>
       args.where?.assigneeId === null

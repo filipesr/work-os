@@ -205,6 +205,8 @@ export async function getMyWeek(mondayISO: string): Promise<MyWeek> {
       referenceSource: sourceDe(row.stageId),
       scheduledStart: row.scheduledStart,
       scheduledEnd: row.scheduledEnd,
+      // O dia REAL, que pode não ser a coluna `dia` acima — ver `QueueItemInput.plannedDateISO`.
+      plannedDateISO: row.plannedDate ? formatISODate(row.plannedDate) : null,
       taskTitle: row.task.title,
       stageName: row.stage.name,
       stageStatus: row.status,

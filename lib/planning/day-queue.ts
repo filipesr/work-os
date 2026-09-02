@@ -47,6 +47,18 @@ export type QueueItemInput = {
   /** Quando a etapa foi reivindicada (`assignedAt`). Ordena os `semDia` entre si: quem pegou
    *  primeiro faz primeiro. */
   claimedAt?: Date | null;
+  /** O dia REAL do item (`plannedDate`, em `YYYY-MM-DD`), que nem sempre é a coluna em que ele
+   *  aparece. Passthrough puro, como os rótulos: a fila não o lê.
+   *
+   *  Existe porque as duas leituras ROLAM o item atrasado de semanas anteriores para a primeira
+   *  coluna visível — exibição, não reprogramação: no banco ele continua em 20/08. A janela fixa é
+   *  ancorada em `plannedDate` (ver `instanteNoDia`), então a tela que oferece "marcar hora" tem de
+   *  mandar o dia do ITEM e não o da coluna: com o da coluna, `scheduleStage` enxerga mudança de
+   *  dia e as duas saídas de troca de colaborador morrem em `alreadyAssigned`, sem explicação.
+   *
+   *  Nulo no item reivindicado SEM dia: ele entra na fila de hoje por leitura, sem nada gravado, e
+   *  devolver o dia de hoje aqui afirmaria uma programação que não existe. A tela cai na coluna. */
+  plannedDateISO?: string | null;
 };
 
 export type QueueKind =

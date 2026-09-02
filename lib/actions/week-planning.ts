@@ -263,6 +263,8 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
       referenceSource: sourceDe(row.stageId),
       scheduledStart: row.scheduledStart,
       scheduledEnd: row.scheduledEnd,
+      // O dia REAL, que pode não ser a coluna `dia` acima — ver `QueueItemInput.plannedDateISO`.
+      plannedDateISO: row.plannedDate ? formatISODate(row.plannedDate) : null,
       // Rótulos para a lista de conflitos: sem eles a tela sabe QUE algo está em risco, mas não O
       // QUE remarcar. Vêm de campos que a consulta acima já busca.
       taskTitle: row.task.title,

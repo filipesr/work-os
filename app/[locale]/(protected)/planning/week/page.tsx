@@ -288,7 +288,14 @@ export default async function WeekPlanningPage({
                                             ? formatDisplayTime(s.item.scheduledEnd)
                                             : null
                                         }
-                                        dayISO={d}
+                                        // O dia do ITEM, não o da coluna: o atrasado de semanas
+                                        // anteriores é ROLADO para a primeira coluna visível
+                                        // (exibição, não reprogramação — no banco ele segue no dia
+                                        // antigo). Com o dia da coluna, `scheduleStage` enxergaria
+                                        // mudança de dia e as duas trocas de colaborador morreriam
+                                        // em `alreadyAssigned`. Cai na coluna quando o item não
+                                        // tem dia nenhum — o reivindicado, que aparece em hoje.
+                                        dayISO={s.item.plannedDateISO ?? d}
                                       />
                                       <OrderControls activeStageId={s.item.id} />
                                     </div>

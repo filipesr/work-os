@@ -174,6 +174,9 @@ describe("getMyWeek", () => {
 
     const semana = await getMyWeek(SEGUNDA);
     expect(semana.byDay["2026-09-07"].slots).toHaveLength(1);
+    // E ele carrega o DIA DELE, não o da coluna: a rolagem é de exibição, e as duas telas têm de
+    // devolver o mesmo campo — a mesa do gestor usa `plannedDateISO` para ancorar a hora.
+    expect(semana.byDay["2026-09-07"].slots[0].item.plannedDateISO).toBe("2026-08-31");
   });
 
   it("o reconhecimento não aparece sem amostra suficiente", async () => {
