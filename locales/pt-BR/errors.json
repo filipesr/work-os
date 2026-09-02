@@ -215,7 +215,8 @@
     "notYours": "Esta etapa não é sua.",
     "windowNeedsDay": "Marque o dia antes da hora: o compromisso é \"quinta às 14h\".",
     "invalidTime": "Informe uma hora válida, no formato 14:00.",
-    "windowEndBeforeStart": "O fim precisa vir depois do início."
+    "windowEndBeforeStart": "O fim precisa vir depois do início.",
+    "windowBusyPerson": "Esta pessoa já tem compromisso nesse horário."
   },
   "myWeek": {
     "stageNotFound": "Etapa não encontrada.",

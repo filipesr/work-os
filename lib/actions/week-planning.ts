@@ -362,6 +362,8 @@ export async function scheduleStage(input: {
       },
       plannedDate: true,
       scheduledStart: true,
+      stageId: true,
+      scheduledEnd: true,
     },
   });
   if (!row) return { error: t("stageNotFound") };
@@ -398,6 +400,46 @@ export async function scheduleStage(input: {
 
   const limpaJanela =
     mudouDeDia && row.scheduledStart ? { scheduledStart: null, scheduledEnd: null } : {};
+
+  // A janela viaja junto com a etapa quando só a pessoa muda — então a agenda do DESTINO precisa
+  // estar livre na faixa. Sem escape por prioridade aqui: transferir é como se RESOLVE uma
+  // sobreposição, e não pode criar outra.
+  const janelaQueViaja = mudouDeDia ? null : row.scheduledStart;
+  if (janelaQueViaja && input.userId !== row.assigneeId) {
+    const refs = await getStageReferences([row.stageId]);
+    const faixa = occupiedRange({
+      scheduledStart: janelaQueViaja,
+      scheduledEnd: row.scheduledEnd,
+      referenceHours: refs.get(row.stageId)?.hours ?? 0,
+    }) as Range;
+
+    const doDestino = await prisma.taskActiveStage.findMany({
+      where: {
+        assigneeId: input.userId,
+        plannedDate: row.plannedDate,
+        scheduledStart: { not: null },
+        status: { not: "COMPLETED" },
+      },
+      select: {
+        id: true,
+        stageId: true,
+        scheduledStart: true,
+        scheduledEnd: true,
+        task: { select: { title: true } },
+        stage: { select: { name: true } },
+      },
+    });
+    const refsDestino = await getStageReferences(doDestino.map((d) => d.stageId));
+    const ocupadas = doDestino.flatMap((d) => {
+      const range = occupiedRange({
+        scheduledStart: d.scheduledStart,
+        scheduledEnd: d.scheduledEnd,
+        referenceHours: refsDestino.get(d.stageId)?.hours ?? 0,
+      });
+      return range ? [{ ...d, range }] : [];
+    });
+    if (collidingWith(faixa, ocupadas).length > 0) return { error: t("windowBusyPerson") };
+  }
 
   try {
     await prisma.taskActiveStage.update({

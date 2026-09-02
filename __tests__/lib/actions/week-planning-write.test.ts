@@ -23,6 +23,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import prisma from "@/lib/prisma";
+import { getStageReferences } from "@/lib/planning/stage-reference";
 import { scheduleStage, unscheduleStage, moveStageOrder } from "@/lib/actions/week-planning";
 
 const db = prisma as unknown as {
@@ -200,10 +201,15 @@ describe("scheduleStage", () => {
       id: "as1",
       assigneeId: "u1",
       status: "ACTIVE",
+      stageId: "s1",
       plannedDate: new Date("2026-09-04T00:00:00Z"),
       scheduledStart: new Date("2026-09-04T17:00:00Z"),
+      scheduledEnd: new Date("2026-09-04T19:00:00Z"),
       ...timeDe("u2"),
     });
+    // Agenda do destino livre: a checagem de colisão da transferência não pode achar nada aqui.
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+    vi.mocked(getStageReferences).mockResolvedValue(new Map());
 
     await scheduleStage({ activeStageId: "as1", userId: "u2", dateISO: "2026-09-04" });
 
@@ -249,6 +255,57 @@ describe("scheduleStage", () => {
     ).toEqual({
       success: true,
     });
+  });
+
+  it("[CRÍTICO] não transfere etapa COM janela para quem já tem compromisso na faixa", async () => {
+    // Trocar o colaborador é uma das saídas para RESOLVER uma sobreposição. Se pudesse criar outra na
+    // agenda do colega, o problema mudaria de tela em vez de acabar — e nasceria pela porta dos
+    // fundos, sem nunca ter passado pela trava.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      stageId: "s1",
+      plannedDate: new Date("2026-09-04T00:00:00Z"),
+      scheduledStart: new Date("2026-09-04T17:00:00Z"), // 14h
+      scheduledEnd: new Date("2026-09-04T19:00:00Z"), // 16h
+      ...timeDe("u2"),
+    });
+    // u2 já tem 15h–17h.
+    db.taskActiveStage.findMany.mockResolvedValue([
+      {
+        id: "as9",
+        stageId: "s9",
+        scheduledStart: new Date("2026-09-04T18:00:00Z"),
+        scheduledEnd: new Date("2026-09-04T20:00:00Z"),
+        task: { title: "Campanha Natal" },
+        stage: { name: "Edição" },
+      },
+    ]);
+    vi.mocked(getStageReferences).mockResolvedValue(new Map());
+
+    const r = await scheduleStage({ activeStageId: "as1", userId: "u2", dateISO: "2026-09-04" });
+
+    expect(r).toEqual({ error: "windowBusyPerson" });
+    expect(db.taskActiveStage.update).not.toHaveBeenCalled();
+  });
+
+  it("etapa SEM janela transfere normalmente, sem consultar agenda", async () => {
+    // A trava é sobre compromissos com hora. O resto da mesa continua sendo fila ordenada, e exigir
+    // agenda livre para item sem hora inventaria uma grade de horários — o que a spec proíbe.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: null,
+      status: "ACTIVE",
+      stageId: "s1",
+      plannedDate: null,
+      scheduledStart: null,
+      ...timeDe("u2"),
+    });
+
+    const r = await scheduleStage({ activeStageId: "as1", userId: "u2", dateISO: "2026-09-04" });
+
+    expect(r).toEqual({ success: true });
   });
 });
 
