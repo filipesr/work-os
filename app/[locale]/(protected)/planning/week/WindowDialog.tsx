@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { Clock } from "lucide-react";
@@ -292,6 +293,24 @@ export function WindowDialog({
           <p className="text-muted-foreground">
             {t(overlap.canOverride ? "overlapAllowed" : "overlapBlocked")}
           </p>
+          {/* Duas ocupantes ou mais: nenhuma saída automática serve. "Adiar" e "passar a que estava
+              marcada" agem sobre UMA — com várias, "a que estava marcada" não tem referente, e
+              adiar em cadeia seria o sistema remarcando compromissos combinados fora dele. O que
+              resta é reorganizar a semana, então o diálogo entrega a mesa já recortada: a SEMANA
+              DA LINHA (item atrasado aparece na primeira coluna mas pertence a outra) e a equipe
+              efetiva da etapa. */}
+          {overlap.occupants.length > 1 && (
+            <p className="text-muted-foreground">
+              {t("overlapFreeSpace")}{" "}
+              <Link
+                href={`/planning/week?week=${dayISO}${overlap.teamId ? `&team=${overlap.teamId}` : ""}`}
+                onClick={() => setOpen(false)}
+                className="font-medium text-primary hover:underline"
+              >
+                {t("overlapFreeSpaceLink")}
+              </Link>
+            </p>
+          )}
           {picker && (
             <div className="space-y-2 border-t border-border pt-3">
               {/* Igual ao `dialogNoOneInTeam` do `ScheduleDialog`: um `<select>` só com opções

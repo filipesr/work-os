@@ -288,6 +288,41 @@ describe("getWeekPlanning", () => {
     );
   });
 
+  it("o recorte de equipes é MÚLTIPLO — pessoas, etapas e poço na mesma lista", async () => {
+    // O filtro da mesa passou a aceitar várias equipes de uma vez. As três consultas precisam
+    // concordar sobre o recorte: uma delas ficando no `id` único mostraria a semana de gente que a
+    // grade não lista, ou um poço com trabalho de equipe que o gestor tirou da tela.
+    await getWeekPlanning("2026-08-31", ["t-video", "t-trafego"]);
+
+    const pessoas = (
+      vi.mocked(prisma.user.findMany).mock.calls[0][0] as never as {
+        where: { teams?: { some?: { id?: unknown } } };
+      }
+    ).where;
+    expect(pessoas.teams?.some?.id).toEqual({ in: ["t-video", "t-trafego"] });
+
+    const semana = argsDaSemana().where as { assignee?: { teams?: { some?: { id?: unknown } } } };
+    expect(semana.assignee?.teams?.some?.id).toEqual({ in: ["t-video", "t-trafego"] });
+
+    // O poço recorta pelo time EFETIVO (roteamento da tarefa, senão o padrão do modelo), e
+    // `stageTeamWhere` já aceitava lista desde que foi escrito.
+    expect(JSON.stringify(argsDoPoco().where)).toContain("t-trafego");
+  });
+
+  it("sem recorte, nenhuma das três consultas fala de equipe", async () => {
+    // `undefined` é o "sem filtro" que a função pura devolve para o modo `all`. Um `IN` com todos
+    // os ids daria o mesmo resultado por um caminho mais caro e mais fácil de errar.
+    await getWeekPlanning("2026-08-31");
+
+    const pessoas = (
+      vi.mocked(prisma.user.findMany).mock.calls[0][0] as never as {
+        where: Record<string, unknown>;
+      }
+    ).where;
+    expect(pessoas).not.toHaveProperty("teams");
+    expect(argsDaSemana().where).not.toHaveProperty("assignee");
+  });
+
   it("demanda descartada não ocupa dia na mesa", () => {
     // Mesma regra da tela da pessoa e da carga por cliente, na mesma fonte compartilhada.
     return getWeekPlanning("2026-08-31").then(() => {

@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { AlertTriangle } from "lucide-react";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getWeekPlanning } from "@/lib/actions/week-planning";
+import { parseTeamParam, resolveTeamIds } from "@/lib/planning/team-filter";
 // Não vêm de `week-planning.ts`: aquele arquivo é `"use server"`, que só pode exportar função
 // assíncrona — um `export const` lá quebra `next build` em runtime. Ver lib/planning/week-capacity.ts.
 import { DAY_VISUAL_HOURS, DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
@@ -48,12 +49,23 @@ export default async function WeekPlanningPage({
 
   const [t, sp] = await Promise.all([getTranslations("planning.week"), searchParams]);
   const monday = mondayOfWeek(parseWeekParam(sp.week));
-  const teamId = Array.isArray(sp.team) ? sp.team[0] : sp.team;
+  // As equipes vêm ANTES do plano, e não em paralelo com ele: é a lista que resolve o que "sem
+  // filtro" significa (o padrão esconde as equipes de apoio). Consultar as duas juntas faria a
+  // grade nascer de um recorte e o controle exibir outro.
+  const teams = await prisma.team.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  const modoDeEquipe = parseTeamParam(sp.team);
+  // Os nomes das equipes de apoio moram no locale, como em `reports.liveActivity` — configuração,
+  // não lista em inglês cravada no código. Ver `lib/planning/team-filter.ts`.
+  const teamIds = resolveTeamIds(
+    modoDeEquipe,
+    teams,
+    (t.raw("defaultHiddenTeams") as string[] | undefined) ?? []
+  );
 
-  const [plan, teams] = await Promise.all([
-    getWeekPlanning(formatISODate(monday), teamId),
-    prisma.team.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
-  ]);
+  const plan = await getWeekPlanning(formatISODate(monday), teamIds);
   const pessoas = plan.people.map((p) => ({ id: p.userId, name: p.name }));
   const semanaCorrente = formatISODate(mondayOfWeek(todayInSaoPaulo())) === formatISODate(monday);
   // Um instante só para a tela inteira: cada célula recalculando `Date.now()` faria dois itens
@@ -99,7 +111,10 @@ export default async function WeekPlanningPage({
             monday={monday}
             isCurrentWeek={semanaCorrente}
             teams={teams}
-            teamId={teamId}
+            mode={modoDeEquipe}
+            // Sem recorte (`all`, ou nenhuma equipe oculta de fato) todas estão à vista, e é isso
+            // que as caixas precisam dizer.
+            selectedIds={teamIds ?? teams.map((time) => time.id)}
           />
         }
       />

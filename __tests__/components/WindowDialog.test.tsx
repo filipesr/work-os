@@ -154,6 +154,104 @@ describe("WindowDialog", () => {
     },
   };
 
+  /** Duas ocupantes: 14h–16h e 15h–17h. Nenhuma saída automática serve aqui — ver o teste abaixo. */
+  const OVERLAP_DUPLO = {
+    overlap: {
+      canOverride: true,
+      teamId: "t-video",
+      occupants: [
+        OVERLAP.overlap.occupants[0],
+        {
+          activeStageId: "as8",
+          taskTitle: "Campanha Natal",
+          stageName: "Edição",
+          priority: "MEDIUM",
+          startISO: "2026-09-04T18:00:00.000Z",
+          endISO: "2026-09-04T20:00:00.000Z",
+          endDeclared: true,
+        },
+      ],
+      firstFreeStartISO: "2026-09-04T20:00:00.000Z",
+    },
+  };
+
+  it("com DUAS ocupantes, aponta para a mesa com equipe e semana já escolhidas", async () => {
+    // Sem saída automática, o gestor precisa abrir espaço reorganizando a semana — e chegar lá com
+    // o recorte certo é a diferença entre um atalho e uma caça. A data é a DA LINHA (item atrasado
+    // é exibido na primeira coluna, mas pertence a outra semana), e a equipe é a efetiva da etapa.
+    setStageWindow.mockResolvedValueOnce(OVERLAP_DUPLO);
+    render(
+      <WindowDialog
+        activeStageId="as1"
+        label="Natal · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
+      target: { value: "15:00" },
+    });
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
+    });
+
+    const link = screen.getByRole("link", { name: "overlapFreeSpaceLink" });
+    expect(link).toHaveAttribute("href", "/planning/week?week=2026-09-04&team=t-video");
+  });
+
+  it("sem equipe efetiva, o link vai sem o filtro em vez de inventar um time", async () => {
+    // Etapa coringa que ninguém roteou: mostrar a semana inteira é honesto; filtrar por um time
+    // que não existe devolveria uma grade vazia sem explicar por quê.
+    setStageWindow.mockResolvedValueOnce({
+      overlap: { ...OVERLAP_DUPLO.overlap, teamId: null },
+    });
+    render(
+      <WindowDialog
+        activeStageId="as1"
+        label="Natal · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
+      target: { value: "15:00" },
+    });
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
+    });
+
+    expect(screen.getByRole("link", { name: "overlapFreeSpaceLink" })).toHaveAttribute(
+      "href",
+      "/planning/week?week=2026-09-04"
+    );
+  });
+
+  it("com UMA ocupante o link não aparece — o adiar resolve em um clique", async () => {
+    setStageWindow.mockResolvedValueOnce(OVERLAP);
+    render(
+      <WindowDialog
+        activeStageId="as1"
+        label="Natal · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
+      target: { value: "15:00" },
+    });
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
+    });
+
+    expect(screen.queryByRole("link", { name: "overlapFreeSpaceLink" })).not.toBeInTheDocument();
+  });
+
   it("mostra quem está no caminho em vez de um erro genérico", async () => {
     // Uma recusa que não diz o que está no caminho obriga o gestor a caçar na grade.
     setStageWindow.mockResolvedValueOnce({

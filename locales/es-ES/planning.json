@@ -168,7 +168,14 @@
     "overlapPickPerson": "A quién va",
     "overlapPickPersonSubmit": "Transferir",
     "overlapBusyPerson": "{name} — ya tiene un compromiso a esa hora",
-    "overlapNoOneFree": "Nadie del equipo está libre a esa hora — elige otro horario, o aplaza la que ya estaba marcada."
+    "overlapNoOneFree": "Nadie del equipo está libre a esa hora — elige otro horario, o aplaza la que ya estaba marcada.",
+    "defaultHiddenTeams": ["HR", "Coordination"],
+    "teamsDefault": "Equipos de producción",
+    "teamsAll": "Todos los equipos",
+    "teamsCount": "{count} equipos",
+    "teamsDefaultHint": "sin los equipos de apoyo",
+    "overlapFreeSpace": "Hay más de un compromiso en el camino, y reprogramar varios en cadena es una decisión que se toma de a uno.",
+    "overlapFreeSpaceLink": "Abrir espacio en la semana"
   },
   "myWeek": {
     "kicker": "Mi trabajo",

@@ -88,7 +88,13 @@ export type SchedulablePoolItem = PoolItem & {
 
 export type WeekPlanning = { days: string[]; people: PersonWeek[]; pool: SchedulablePoolItem[] };
 
-export async function getWeekPlanning(mondayISO: string, teamId?: string): Promise<WeekPlanning> {
+export async function getWeekPlanning(
+  mondayISO: string,
+  /** Recorte de equipes, JÁ RESOLVIDO por `lib/planning/team-filter.ts` — a tela decide o que
+   *  "sem filtro" significa (o padrão esconde as equipes de apoio) e passa a lista pronta.
+   *  `undefined` é sem recorte nenhum. */
+  teamIds?: string[]
+): Promise<WeekPlanning> {
   await requireManagerOrAdmin();
 
   const days = weekDays(mondayISO);
@@ -110,7 +116,7 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
         // atribuição no diálogo de programar.
         role: { not: "CLIENT" },
         disabledAt: null,
-        ...(teamId ? { teams: { some: { id: teamId } } } : {}),
+        ...(teamIds ? { teams: { some: { id: { in: teamIds } } } } : {}),
       },
       select: { id: true, name: true, email: true, weeklyCapacityHours: true },
       orderBy: { name: "asc" },
@@ -123,7 +129,7 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
         status: { not: "COMPLETED" },
         // Demanda descartada não ocupa dia de ninguém — ver lib/task-availability.ts.
         ...notDiscardedStageWhere(),
-        ...(teamId ? { assignee: { teams: { some: { id: teamId } } } } : {}),
+        ...(teamIds ? { assignee: { teams: { some: { id: { in: teamIds } } } } } : {}),
         OR: [
           { plannedDate: { not: null, lte: fim, ...(inicio ? { gte: inicio } : {}) } },
           // Reivindicada e SEM dia: entra na fila de HOJE por leitura, sem gravar nada. Sem isto,
@@ -172,11 +178,11 @@ export async function getWeekPlanning(mondayISO: string, teamId?: string): Promi
         // a linha com data e sem dono não apareceria nem aqui nem na grade (que descarta item sem
         // responsável) e o trabalho sumiria da mesa sem volta.
         //
-        // Sem `teamId`, o poço continua trazendo tudo, como hoje. Com a mesa filtrada por time,
-        // restringe ao time EFETIVO (`stageTeamWhere`) — não a `teamId` puro, porque uma etapa
-        // coringa (`teamId: null`) herda `stage.defaultTeamId`; filtrar só por `teamId` deixaria
+        // Sem recorte, o poço continua trazendo tudo. Com a mesa filtrada por equipes,
+        // restringe ao time EFETIVO (`stageTeamWhere`) — não ao `teamId` da linha, porque uma etapa
+        // coringa (`teamId: null`) herda `stage.defaultTeamId`; filtrar só pela coluna deixaria
         // essas de fora e o gestor nem saberia que existem para o time dele.
-        ...(teamId ? stageTeamWhere(teamId) : {}),
+        ...(teamIds ? stageTeamWhere(teamIds) : {}),
       },
       select: {
         id: true,
@@ -554,6 +560,10 @@ export type WindowOverlap = {
   canOverride: boolean;
   /** Para onde a ocupante iria se o gestor escolher "adiar" — já pulando terceiros. */
   firstFreeStartISO: string;
+  /** Equipe EFETIVA da etapa sendo marcada, para a tela apontar a mesa já recortada quando não há
+   *  saída automática (duas ocupantes ou mais). Nula na etapa coringa que ninguém roteou — aí o
+   *  link vai sem filtro, porque a semana inteira é honesta e um time inexistente não é. */
+  teamId: string | null;
 };
 
 export async function setStageWindow(input: {
@@ -572,8 +582,12 @@ export async function setStageWindow(input: {
       status: true,
       stageId: true,
       plannedDate: true,
+      // A mesma regra de time efetivo de `lib/stage-team.ts`, aqui pelas COLUNAS de FK que a
+      // consulta já tem: o helper exige os objetos do time (dois joins) e este payload só precisa
+      // do id, para montar o link da mesa.
+      teamId: true,
       task: { select: { priority: true, title: true } },
-      stage: { select: { name: true } },
+      stage: { select: { name: true, defaultTeamId: true } },
     },
   });
   if (!row) return { error: t("stageNotFound") };
@@ -662,6 +676,7 @@ export async function setStageWindow(input: {
           endISO: b.range.end.toISOString(),
           endDeclared: b.scheduledEnd !== null,
         })),
+        teamId: row.teamId ?? row.stage.defaultTeamId,
         firstFreeStartISO: firstFreeStart(
           faixaNova.end,
           duracaoDaOcupante,
