@@ -38,3 +38,15 @@ export function occupiedRange(item: WindowInput): Range | null {
   const duracao = item.referenceHours > 0 ? item.referenceHours * 3_600_000 : NO_REFERENCE_MS;
   return { start: item.scheduledStart, end: new Date(item.scheduledStart.getTime() + duracao) };
 }
+
+/** Duas faixas se atropelam? Encostar NÃO é colidir: 14h–16h e 16h–17h convivem, e tratar a borda
+ *  como conflito proibiria a agenda cheia e legítima. */
+export function rangesOverlap(a: Range, b: Range): boolean {
+  return a.start.getTime() < b.end.getTime() && b.start.getTime() < a.end.getTime();
+}
+
+/** Quem, entre os já ocupados, está no caminho da faixa nova. Devolve os objetos de origem — o
+ *  chamador precisa dizer ao gestor QUAL demanda está ali, não só que existe uma. */
+export function collidingWith<T extends { range: Range }>(nova: Range, ocupadas: T[]): T[] {
+  return ocupadas.filter((o) => rangesOverlap(nova, o.range));
+}
