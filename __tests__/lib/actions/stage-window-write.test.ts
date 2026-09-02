@@ -307,6 +307,116 @@ describe("listWindowCandidates", () => {
     });
   });
 
+  it("[CRÍTICO] etapa SEM janela armazenada, com a faixa PEDIDA explícita: calcula mesmo assim", async () => {
+    // É a saída "passar ESTA para outra pessoa" do diálogo de sobreposição, e ela só existe para a
+    // demanda NOVA — cuja escrita acabou de ser recusada pela colisão, então ela não tem janela
+    // gravada nenhuma. Exigir `scheduledStart` matava a única saída construtiva que a spec promete
+    // quando a prioridade NÃO autoriza tomar o horário: o gestor recebia "etapa não encontrada".
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      stageId: "s1",
+      plannedDate: new Date("2026-09-04T00:00:00Z"),
+      scheduledStart: null,
+      scheduledEnd: null,
+      teamId: null,
+      team: null,
+      stage: {
+        name: "Gravação",
+        defaultTeam: {
+          id: "video",
+          name: "Vídeo",
+          members: [
+            { id: "u2", name: "Bruno", email: "bruno@example.com" },
+            { id: "u3", name: "Carla", email: "carla@example.com" },
+          ],
+        },
+      },
+    });
+    // Bruno tem 15h–17h (colide com a faixa pedida de 14h–16h); Carla tem 17h–18h (não colide).
+    db.taskActiveStage.findMany.mockResolvedValue([
+      {
+        id: "as9",
+        stageId: "s9",
+        assigneeId: "u2",
+        scheduledStart: new Date("2026-09-04T18:00:00Z"),
+        scheduledEnd: new Date("2026-09-04T20:00:00Z"),
+      },
+      {
+        id: "as10",
+        stageId: "s10",
+        assigneeId: "u3",
+        scheduledStart: new Date("2026-09-04T20:00:00Z"),
+        scheduledEnd: new Date("2026-09-04T21:00:00Z"),
+      },
+    ]);
+    vi.mocked(getStageReferences).mockResolvedValue(new Map());
+
+    const r = await listWindowCandidates("as1", { startTime: "14:00", endTime: "16:00" });
+
+    expect(r).toEqual({
+      candidates: [
+        { id: "u2", name: "Bruno", busy: true },
+        { id: "u3", name: "Carla", busy: false },
+      ],
+    });
+  });
+
+  it("[CRÍTICO] a faixa PEDIDA vence a janela armazenada", async () => {
+    // Reabrir o diálogo de um compromisso das 14h e pedir 17h: quem decide quem está livre é a
+    // hora que o gestor acabou de digitar, não a que está no banco. Inferir da janela guardada
+    // listava gente livre às 14h como se estivesse livre às 17h — e o contrário.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      stageId: "s1",
+      plannedDate: new Date("2026-09-04T00:00:00Z"),
+      scheduledStart: new Date("2026-09-04T17:00:00Z"), // 14h
+      scheduledEnd: new Date("2026-09-04T19:00:00Z"), // 16h
+      teamId: null,
+      team: null,
+      stage: {
+        name: "Gravação",
+        defaultTeam: {
+          id: "video",
+          name: "Vídeo",
+          members: [
+            { id: "u2", name: "Bruno", email: "bruno@example.com" },
+            { id: "u3", name: "Carla", email: "carla@example.com" },
+          ],
+        },
+      },
+    });
+    // Bruno ocupa 14h–15h (colide com a janela ARMAZENADA, livre na pedida);
+    // Carla ocupa 17h30–18h (colide com a faixa PEDIDA de 17h–19h, livre na armazenada).
+    db.taskActiveStage.findMany.mockResolvedValue([
+      {
+        id: "as9",
+        stageId: "s9",
+        assigneeId: "u2",
+        scheduledStart: new Date("2026-09-04T17:00:00Z"),
+        scheduledEnd: new Date("2026-09-04T18:00:00Z"),
+      },
+      {
+        id: "as10",
+        stageId: "s10",
+        assigneeId: "u3",
+        scheduledStart: new Date("2026-09-04T20:30:00Z"),
+        scheduledEnd: new Date("2026-09-04T21:00:00Z"),
+      },
+    ]);
+    vi.mocked(getStageReferences).mockResolvedValue(new Map());
+
+    const r = await listWindowCandidates("as1", { startTime: "17:00", endTime: "19:00" });
+
+    expect(r).toEqual({
+      candidates: [
+        { id: "u2", name: "Bruno", busy: false },
+        { id: "u3", name: "Carla", busy: true },
+      ],
+    });
+  });
+
   it("etapa sem janela não tem candidatos a calcular", async () => {
     db.taskActiveStage.findUnique.mockResolvedValue({
       id: "as1",
@@ -319,6 +429,8 @@ describe("listWindowCandidates", () => {
       team: null,
       stage: { name: "Gravação", defaultTeam: { id: "video", name: "Vídeo", members: [] } },
     });
+    // Sem janela guardada E sem faixa pedida não há faixa nenhuma contra a qual medir "ocupado" —
+    // é o único caso que continua recusando.
     expect(await listWindowCandidates("as1")).toEqual({ error: "stageNotFound" });
   });
 });

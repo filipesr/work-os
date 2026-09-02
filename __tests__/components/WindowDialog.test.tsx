@@ -335,6 +335,80 @@ describe("WindowDialog", () => {
     expect(screen.getByRole("button", { name: "overlapPickPersonSubmit" })).toBeDisabled();
   });
 
+  it("[CRÍTICO] mover a NOVA pede os candidatos com a faixa DO FORMULÁRIO", async () => {
+    // A nova não tem janela gravada — a escrita dela acabou de ser recusada pela colisão, que é o
+    // motivo de este painel estar aberto. Pedir os candidatos sem dizer a faixa fazia o servidor
+    // procurá-la no banco, não achar, e responder "etapa não encontrada": a saída que a spec
+    // promete quando a prioridade NÃO autoriza morria com um erro que não explica nada.
+    setStageWindow.mockResolvedValueOnce({
+      ...OVERLAP,
+      overlap: { ...OVERLAP.overlap, canOverride: false },
+    });
+    listWindowCandidates.mockResolvedValue({
+      candidates: [{ id: "u3", name: "Carla", busy: false }],
+    });
+    render(
+      <WindowDialog
+        activeStageId="as1"
+        label="Natal · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
+      target: { value: "15:00" },
+    });
+    fireEvent.change(screen.getByLabelText("windowEnd"), { target: { value: "17:00" } });
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "overlapMoveNew" }));
+    });
+
+    expect(listWindowCandidates).toHaveBeenCalledWith("as1", {
+      startTime: "15:00",
+      endTime: "17:00",
+    });
+    expect(screen.getByRole("option", { name: /Carla/ })).toBeInTheDocument();
+  });
+
+  it("mover a OCUPANTE pede os candidatos pela janela DELA, não pela do formulário", async () => {
+    // A ocupante viaja com a hora que ela já tem (`scheduleStage` a preserva na troca de dono no
+    // mesmo dia), e é contra ESSA faixa que o servidor checa a agenda do destino. Mandar aqui a
+    // hora do formulário — que é da outra demanda — listaria como livre alguém que `scheduleStage`
+    // recusaria em seguida com `windowBusyPerson`: um beco sem explicação.
+    setStageWindow.mockResolvedValueOnce(OVERLAP);
+    listWindowCandidates.mockResolvedValue({
+      candidates: [{ id: "u3", name: "Carla", busy: false }],
+    });
+    render(
+      <WindowDialog
+        activeStageId="as1"
+        label="Natal · Gravação"
+        startTime={null}
+        endTime={null}
+        dayISO="2026-09-04"
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "windowOpen" }));
+    fireEvent.change(screen.getByLabelText("windowStart", { exact: false }), {
+      target: { value: "15:00" },
+    });
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId("window-form"));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "overlapMoveOccupant" }));
+    });
+
+    expect(listWindowCandidates).toHaveBeenCalledWith("as9");
+  });
+
   it("transferir a OCUPANTE chama scheduleStage com o dia da coluna", async () => {
     setStageWindow.mockResolvedValueOnce(OVERLAP);
     listWindowCandidates.mockResolvedValue({

@@ -153,7 +153,21 @@ export function WindowDialog({
 
   const escolherPessoa = (alvoActiveStageId: string, isNew: boolean) => {
     startChoosing(async () => {
-      const result = await listWindowCandidates(alvoActiveStageId);
+      // A NOVA manda a faixa DO FORMULÁRIO, explícita. Ela não tem janela gravada — a escrita dela
+      // acabou de ser recusada pela colisão, que é o motivo de este painel existir —, então pedir
+      // ao servidor que a infira do banco devolvia "etapa não encontrada" e matava a saída. E
+      // mesmo quando ela TEM hora velha gravada, quem vale é a que o gestor acabou de digitar.
+      //
+      // A OCUPANTE não manda faixa: ela viaja com a hora que já tem (`scheduleStage` preserva a
+      // janela na troca de dono dentro do mesmo dia), e é contra ESSA faixa que o servidor checa a
+      // agenda do destino. Mandar a hora do formulário — que é de outra demanda — listaria como
+      // livre alguém que `scheduleStage` recusaria logo depois, sem o gestor entender por quê.
+      const result = isNew
+        ? await listWindowCandidates(alvoActiveStageId, {
+            startTime: start,
+            endTime: end || null,
+          })
+        : await listWindowCandidates(alvoActiveStageId);
       if ("error" in result) {
         toast.error(result.error);
         return;

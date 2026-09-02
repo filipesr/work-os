@@ -665,9 +665,24 @@ export async function setStageWindow(input: {
  *
  * Devolve todo mundo do time com a marca `busy` em vez de esconder os ocupados — sumir da lista não
  * se distingue de "não é do time", e o gestor precisa saber que a pessoa existe e está comprometida.
+ *
+ * `range` é a faixa PEDIDA — "HH:MM" no relógio de São Paulo, a mesma forma que `setStageWindow`
+ * recebe —, e existe porque a faixa não pode ser inferida do que está gravado:
+ *
+ *   - a demanda NOVA não tem janela gravada nenhuma: a escrita dela acabou de ser RECUSADA pela
+ *     colisão, que é o motivo de este diálogo estar aberto. Exigir `scheduledStart` respondia
+ *     "etapa não encontrada" e matava a única saída construtiva que a spec promete quando a
+ *     prioridade não autoriza tomar o horário;
+ *   - e quando ela TEM janela velha, o gestor pode ter acabado de digitar outra hora. Medir
+ *     "ocupado" contra a hora do banco listaria gente livre no horário errado.
+ *
+ * Sem `range`, vale a janela gravada — é o caso de quem já tem compromisso e vai só trocar de dono
+ * com a hora intacta. Recusa só quando não há nenhuma das duas: aí não existe faixa contra a qual
+ * medir nada.
  */
 export async function listWindowCandidates(
-  activeStageId: string
+  activeStageId: string,
+  range?: { startTime: string; endTime?: string | null }
 ): Promise<{ error: string } | { candidates: { id: string; name: string; busy: boolean }[] }> {
   await requireManagerOrAdmin();
   const t = await getTranslations("errors.weekPlanning");
@@ -703,12 +718,26 @@ export async function listWindowCandidates(
       },
     },
   });
-  if (!row || !row.scheduledStart || !row.plannedDate) return { error: t("stageNotFound") };
+  // O dia continua obrigatório: ele é a âncora da hora, aqui pelo MESMO `instanteNoDia` que
+  // `setStageWindow` usa — a conversão SP→instante real mora num lugar só, senão as duas metades
+  // do diálogo divergiriam em três horas.
+  if (!row || !row.plannedDate) return { error: t("stageNotFound") };
+
+  let inicio: Date | null = row.scheduledStart;
+  let fim: Date | null = row.scheduledEnd;
+  if (range) {
+    if (!HORA.test(range.startTime)) return { error: t("invalidTime") };
+    if (range.endTime && !HORA.test(range.endTime)) return { error: t("invalidTime") };
+    inicio = instanteNoDia(row.plannedDate, range.startTime);
+    fim = range.endTime ? instanteNoDia(row.plannedDate, range.endTime) : null;
+    if (fim && fim.getTime() <= inicio.getTime()) return { error: t("windowEndBeforeStart") };
+  }
+  if (!inicio) return { error: t("stageNotFound") };
 
   const refs = await getStageReferences([row.stageId]);
   const faixa = occupiedRange({
-    scheduledStart: row.scheduledStart,
-    scheduledEnd: row.scheduledEnd,
+    scheduledStart: inicio,
+    scheduledEnd: fim,
     referenceHours: refs.get(row.stageId)?.hours ?? 0,
   }) as Range;
 
