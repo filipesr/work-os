@@ -146,7 +146,16 @@
     "scheduled_toast": "Etapa programada.",
     "unscheduled_toast": "Etapa devuelta a la reserva.",
     "noCapacity": "Sin capacidad semanal registrada: se usa el valor por defecto de {hours}h.",
-    "queued": "sin día · en la cola"
+    "queued": "sin día · en la cola",
+    "windowOpen": "Marcar horario",
+    "windowTitle": "Horario del compromiso",
+    "windowStart": "Inicio",
+    "windowEnd": "Fin",
+    "windowEndHint": "Sin el fin, el sistema reserva la duración de referencia de la etapa.",
+    "windowSubmit": "Marcar",
+    "windowClear": "Quitar horario",
+    "windowSet_toast": "Horario marcado.",
+    "windowCleared_toast": "Horario quitado."
   },
   "myWeek": {
     "kicker": "Mi trabajo",

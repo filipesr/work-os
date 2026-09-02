@@ -146,7 +146,16 @@
     "scheduled_toast": "Etapa programada.",
     "unscheduled_toast": "Etapa devolvida ao poço.",
     "noCapacity": "Sem capacidade semanal cadastrada — usando o padrão de {hours}h.",
-    "queued": "sem dia · na fila"
+    "queued": "sem dia · na fila",
+    "windowOpen": "Marcar horário",
+    "windowTitle": "Horário do compromisso",
+    "windowStart": "Início",
+    "windowEnd": "Fim",
+    "windowEndHint": "Sem o fim, o sistema reserva a duração de referência da etapa.",
+    "windowSubmit": "Marcar",
+    "windowClear": "Desmarcar",
+    "windowSet_toast": "Horário marcado.",
+    "windowCleared_toast": "Horário desmarcado."
   },
   "myWeek": {
     "kicker": "Meu trabalho",

@@ -25,6 +25,7 @@ import prisma from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { ScheduleDialog } from "./ScheduleDialog";
+import { WindowDialog } from "./WindowDialog";
 import { DayDone } from "@/components/planning/DayDone";
 import { WeekControls } from "./WeekControls";
 import { OrderControls } from "./OrderControls";
@@ -273,7 +274,23 @@ export default async function WeekPlanningPage({
                                         </p>
                                       )}
                                     </div>
-                                    <OrderControls activeStageId={s.item.id} />
+                                    <div className="flex items-center gap-1">
+                                      <WindowDialog
+                                        activeStageId={s.item.id}
+                                        label={`${s.item.taskTitle} · ${s.item.stageName}`}
+                                        startTime={
+                                          s.item.scheduledStart
+                                            ? formatDisplayTime(s.item.scheduledStart)
+                                            : null
+                                        }
+                                        endTime={
+                                          s.item.scheduledEnd
+                                            ? formatDisplayTime(s.item.scheduledEnd)
+                                            : null
+                                        }
+                                      />
+                                      <OrderControls activeStageId={s.item.id} />
+                                    </div>
                                   </div>
                                 </li>
                               );
