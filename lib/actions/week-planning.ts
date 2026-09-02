@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
-import { formatISODate, mondayOfWeek, todayInSaoPaulo } from "@/lib/dates";
+import { formatISODate, mondayOfWeek, realInstant, todayInSaoPaulo } from "@/lib/dates";
 import { buildDayQueue, type QueueItemInput, type QueueSlot } from "@/lib/planning/day-queue";
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { getWeekDone, type DoneLine } from "@/lib/planning/week-done";
@@ -412,6 +412,66 @@ export async function unscheduleStage(activeStageId: string) {
     console.error("unscheduleStage error:", error);
     return { error: t("scheduleFailed") };
   }
+
+  revalidatePath("/planning/week");
+  return { success: true as const };
+}
+
+const HORA = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** "14:00" no relógio de São Paulo → instante real, ancorado no dia de `plannedDate`.
+ *
+ *  `plannedDate` guarda meia-noite SP codificada em UTC, então `formatISODate` devolve o dia SP
+ *  direto. Montar o instante em cima dele é o que torna o invariante ESTRUTURAL: não existe caminho
+ *  para gravar um compromisso num dia diferente da coluna em que o item está. */
+function instanteNoDia(plannedDate: Date, hhmm: string): Date {
+  return realInstant(new Date(`${formatISODate(plannedDate)}T${hhmm}:00.000Z`));
+}
+
+/**
+ * Marca (ou desmarca) o compromisso de uma etapa já programada.
+ *
+ * Não recebe data de propósito — ver `instanteNoDia`. `startTime` nulo limpa os dois campos: uma
+ * janela com fim e sem começo não significa nada.
+ */
+export async function setStageWindow(input: {
+  activeStageId: string;
+  startTime: string | null;
+  endTime?: string | null;
+}) {
+  await requireManagerOrAdmin();
+  const t = await getTranslations("errors.weekPlanning");
+
+  const row = await prisma.taskActiveStage.findUnique({
+    where: { id: input.activeStageId },
+    select: {
+      id: true,
+      assigneeId: true,
+      status: true,
+      stageId: true,
+      plannedDate: true,
+      task: { select: { priority: true, title: true } },
+      stage: { select: { name: true } },
+    },
+  });
+  if (!row) return { error: t("stageNotFound") };
+
+  if (input.startTime === null) {
+    await prisma.taskActiveStage.update({
+      where: { id: input.activeStageId },
+      data: { scheduledStart: null, scheduledEnd: null },
+    });
+    revalidatePath("/planning/week");
+    return { success: true as const };
+  }
+
+  const inicio = instanteNoDia(row.plannedDate as Date, input.startTime);
+  const fim = input.endTime ? instanteNoDia(row.plannedDate as Date, input.endTime) : null;
+
+  await prisma.taskActiveStage.update({
+    where: { id: input.activeStageId },
+    data: { scheduledStart: inicio, scheduledEnd: fim },
+  });
 
   revalidatePath("/planning/week");
   return { success: true as const };
