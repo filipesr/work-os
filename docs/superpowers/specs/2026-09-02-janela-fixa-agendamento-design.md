@@ -148,8 +148,12 @@ mentiria exatamente no caso que a janela existe para servir.
 
 **Nenhuma migração.** Os dois campos existem desde a fatia 1, anuláveis, sem backfill.
 
-A leitura da mesa (`getWeekPlanning`) passa a trazer `task.priority`, que hoje **não** carrega — o
-veredito precisa da prioridade da nova e a da ocupante.
+A leitura da mesa (`getWeekPlanning`) ganha **`scheduledEnd`**, que hoje não carrega: sem ele, reabrir
+o diálogo de um compromisso de 14h–16h o transformaria num de "14h + referência".
+
+Ela **não** ganha `task.priority`: o veredito roda no servidor, dentro da ação, que faz a própria
+consulta e devolve a prioridade da ocupante no payload do conflito. Carregar prioridade em toda a
+grade seria dado que ninguém lê.
 
 ## Onde mora cada parte
 
@@ -170,9 +174,9 @@ veredito precisa da prioridade da nova e a da ocupante.
 - o veredito em todas as combinações do enum, com atenção ao empate e ao urgente-contra-urgente;
 - "primeiro horário livre" pulando uma terceira janela no meio.
 
-**Da ação:** o invariante de dia recusa hora de outro dia; a recusa nomeia a ocupante; `unschedule`
-limpa a janela; mudar o dia limpa a janela; a transferência recusa quem tem compromisso na faixa —
-mesmo sendo do time — e recusa quem não é do time; `getWeekPlanning` carrega `priority`.
+**Da ação:** a hora é ancorada no dia da coluna (o invariante é estrutural — a ação não recebe data);
+a recusa nomeia a ocupante; `unschedule` limpa a janela; mudar o dia limpa a janela; a transferência
+recusa quem tem compromisso na faixa, mesmo sendo do time.
 
 **Da fila:** dois agendados no mesmo dia saem em ordem de hora, e `nextRunnableId` aponta para o mais
 cedo.
