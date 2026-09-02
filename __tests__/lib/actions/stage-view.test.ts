@@ -1,0 +1,95 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+vi.mock("@/lib/permissions", () => ({
+  getSessionUser: vi.fn().mockResolvedValue({ id: "gestor1", role: "MANAGER" }),
+}));
+vi.mock("@/lib/prisma", () => ({
+  default: {
+    taskActiveStage: { findUnique: vi.fn() },
+    taskComment: { findMany: vi.fn() },
+  },
+}));
+
+import prisma from "@/lib/prisma";
+import { getSessionUser } from "@/lib/permissions";
+import { getStageView } from "@/lib/actions/stage-view";
+
+const db = prisma as unknown as {
+  taskActiveStage: { findUnique: ReturnType<typeof vi.fn> };
+  taskComment: { findMany: ReturnType<typeof vi.fn> };
+};
+
+function stageRow(over: Record<string, unknown> = {}) {
+  return {
+    id: "as2",
+    status: "ACTIVE",
+    instructions: "Gravar no estúdio B",
+    taskId: "t1",
+    stage: { name: "Gravação", order: 2 },
+    team: { name: "Vídeo" },
+    assignee: { id: "u1", name: "Ana", email: "ana@exemplo.com" },
+    task: {
+      id: "t1",
+      title: "Reels de setembro",
+      dueDate: new Date("2026-09-10T00:00:00Z"),
+      project: { name: "Campanha institucional", client: { name: "ACME" } },
+    },
+    ...over,
+  };
+}
+
+function commentRow(over: Record<string, unknown> = {}) {
+  return {
+    id: "c1",
+    content: "oi",
+    createdAt: new Date("2026-09-01T09:00:00Z"),
+    kind: "USER",
+    activeStageId: null,
+    user: { id: "u2", name: "Beto", email: "beto@exemplo.com" },
+    ...over,
+  };
+}
+
+describe("getStageView", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getSessionUser).mockResolvedValue({ id: "gestor1", role: "MANAGER" } as never);
+    db.taskActiveStage.findUnique.mockResolvedValue(stageRow());
+    db.taskComment.findMany.mockResolvedValue([
+      commentRow({ id: "c1", createdAt: new Date("2026-09-01T09:00:00Z") }),
+      commentRow({
+        id: "c2",
+        createdAt: new Date("2026-09-01T10:00:00Z"),
+        kind: "STAGE_INSTRUCTION",
+        activeStageId: "as2",
+        content: "Gravar no estúdio B",
+      }),
+      commentRow({ id: "c3", createdAt: new Date("2026-09-01T11:00:00Z") }),
+    ]);
+  });
+
+  it("devolve a etapa, a demanda e a conversa INTEIRA", async () => {
+    // A conversa não é filtrada pela etapa: a tela realça o bloco dela, mas quem opera precisa do
+    // contexto todo — foi a decisão explícita da spec.
+    const v = await getStageView("as2", "t1");
+    expect(v?.stage.activeStageId).toBe("as2");
+    expect(v?.comments.map((c) => c.id)).toEqual(["c1", "c2", "c3"]);
+  });
+
+  it("a instrução da etapa vem separada, para o destaque do topo", async () => {
+    const v = await getStageView("as2", "t1");
+    expect(v?.stage.instruction).toBe("Gravar no estúdio B");
+  });
+
+  it("etapa inexistente devolve nulo, e a rota vira 404", async () => {
+    db.taskActiveStage.findUnique.mockResolvedValue(null);
+    expect(await getStageView("nao-existe", "t1")).toBeNull();
+  });
+
+  it("recusa quem não está autenticado", async () => {
+    // Rota nova é onde se esquece a porta. `getSessionUser` é a mesma que /tasks/{id} usa, e este
+    // teste é o que impede a tela da etapa de nascer aberta.
+    vi.mocked(getSessionUser).mockRejectedValueOnce(new Error("Access Denied"));
+    await expect(getStageView("as2", "t1")).rejects.toThrow(/Access Denied/i);
+  });
+});
