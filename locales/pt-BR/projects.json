@@ -2,23 +2,6 @@
   "client": "Cliente",
   "boardKicker": "Projeto",
   "backToProjects": "Voltar para Projetos",
-  "team": "Time",
-  "taskCount": "{count} tarefa",
-  "tasksCount": "{count} tarefas",
-  "noTasks": "Nenhuma tarefa",
-  "noStages": "Nenhuma etapa encontrada. Crie tarefas para este projeto.",
-  "filters": {
-    "title": "Filtros:",
-    "allAssignees": "Todos os responsáveis",
-    "allPriorities": "Todas as prioridades"
-  },
-  "priority": {
-    "LOW": "Baixa",
-    "MEDIUM": "Média",
-    "HIGH": "Alta",
-    "URGENT": "Urgente"
-  },
-  "unassigned": "Não atribuído",
   "timeline": {
     "today": "hoje",
     "dateColumn": "dia",

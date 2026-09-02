@@ -183,6 +183,25 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### 🐛 Corrigido
 
+#### Três arestas da linha do tempo do projeto
+
+- **O tooltip da linha "sem etapa" era um `" · "` solto.** Hora apontada na demanda inteira: a
+  célula mostrava "sem etapa" com o rótulo certo, mas o `title` era montado à parte, a partir de
+  campos que nessa linha são vazios. Agora o rótulo é montado **uma vez** e serve aos dois — o
+  tooltip existe para dizer inteiro o que a célula corta, e dois textos montados em separado
+  divergem. De quebra, ele passa a trazer o número da etapa (que a célula mostra e ele omitia) e o
+  nome do responsável **completo**, já que na célula ele é cortado em dois pedaços para caber.
+- **O helper `diasAtras` dos testes ancorava no dia UTC**, não no de São Paulo: entre 00h e 03h UTC
+  os dois calendários discordam e ele devolvia um dia a mais. Nenhuma asserção existente invertia
+  com isso, mas um teste novo escrito em cima dele piscaria de madrugada — e piscar é pior que
+  falhar. Agora a contagem parte de `todayInSaoPaulo`, com dois testes de relógio congelado.
+- **O dicionário `projects` carregava treze chaves mortas do kanban** (`filters.*`, `priority.*`,
+  `noTasks`, `noStages`, `unassigned`, `team`, `taskCount`, `tasksCount`) — texto que ainda pedia
+  tradução e revisão meses depois da tela ter sido substituída. Saíram dos dois locales, com um
+  **guarda novo** (`projects-orphan-keys`) que descobre os consumidores pelo mesmo grep que um
+  humano faria e falha listando qualquer chave sem leitor: a paridade de locales responde "as duas
+  línguas dizem o mesmo?", e nenhuma respondia "alguém ainda lê isto?".
+
 #### `availableTaskWhere()` passou a ser ESTENDIDO, não sobrescrito
 
 - **A armadilha:** a coluna do parado em `/planning/client-load` precisa descartar `COMPLETED` além

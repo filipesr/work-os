@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 
 vi.mock("next-intl/server", () => ({
@@ -34,12 +34,46 @@ import { formatISODate, nowInSaoPaulo, todayInSaoPaulo } from "@/lib/dates";
 const HOJE = formatISODate(todayInSaoPaulo());
 
 /** N dias atrás, como instante REAL (não SP-local): meio-dia em São Paulo (15h UTC), longe da
- *  virada de dia, para o cálculo de "dia" não depender de que horas são agora quando o teste roda. */
+ *  virada de dia, para o cálculo de "dia" não depender de que horas são agora quando o teste roda.
+ *
+ *  A contagem parte do dia de SÃO PAULO — o mesmo que o código sob teste usa —, e não do dia UTC:
+ *  entre 00h e 03h UTC os dois calendários discordam, e ancorar no de Greenwich deslocava tudo um
+ *  dia para frente justamente nessa faixa. */
 function diasAtras(n: number): Date {
-  const hoje = new Date();
-  hoje.setUTCHours(15, 0, 0, 0);
-  return new Date(hoje.getTime() - n * 86_400_000);
+  const hojeSP = formatISODate(todayInSaoPaulo());
+  return new Date(Date.parse(`${hojeSP}T15:00:00.000Z`) - n * 86_400_000);
 }
+
+describe("o helper diasAtras — a régua dos testes deste arquivo", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("ancora no dia de SÃO PAULO, não no dia UTC", () => {
+    // Entre 00h e 03h UTC já virou o dia em Greenwich e ainda é ontem em São Paulo. O helper
+    // montava o instante a partir do dia UTC, então nessa faixa ele devolvia um dia A MAIS do que
+    // o `todayInSaoPaulo` que o código de produção usa. Nenhuma asserção existente inverte com
+    // isso — foram conferidas uma a uma —, mas um teste novo escrito em cima dele piscaria de
+    // madrugada, e piscar é pior do que falhar: some da atenção de quem lê o verde.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-02T01:00:00.000Z")); // 22h de 01/09 em São Paulo
+
+    expect(formatISODate(nowInSaoPaulo(diasAtras(0)))).toBe(formatISODate(todayInSaoPaulo()));
+    expect(formatISODate(nowInSaoPaulo(diasAtras(0)))).toBe("2026-09-01");
+    expect(formatISODate(nowInSaoPaulo(diasAtras(3)))).toBe("2026-08-29");
+  });
+
+  it("cai no meio do dia, longe das duas viradas", () => {
+    // A outra metade da promessa: o instante tem que estar longe da borda do dia nos DOIS fusos,
+    // senão o helper só troca de hora ruim.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-02T18:30:00.000Z"));
+
+    const d = diasAtras(1);
+    expect(nowInSaoPaulo(d).getUTCHours()).toBe(12); // meio-dia em São Paulo
+    expect(d.getUTCHours()).toBe(15); // 15h UTC — nenhuma das duas viradas por perto
+  });
+});
 
 function etapa(over: Record<string, unknown> = {}) {
   return {

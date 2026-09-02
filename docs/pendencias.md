@@ -7,24 +7,21 @@ Item resolvido sai daqui e vira commit; item que virar feature grande vira spec 
 
 ---
 
-## 1. Linha do tempo do projeto — arestas deixadas de propósito
+## 1. Linha do tempo do projeto — o teto de tamanho da grade
 
-**O que é:** a revisão final da linha do tempo (`/projects/{id}`) levantou quinze pontos. Os nove que
-mudavam comportamento foram corrigidos na entrega; estes quatro ficaram, cada um com o motivo.
+**O que é:** a revisão final da linha do tempo (`/projects/{id}`) levantou quinze pontos. Nove foram
+corrigidos na entrega, três na varredura de 02/set/2026 (tooltip, `diasAtras`, chaves mortas) e este
+segue aberto, de propósito.
 
-- **Tooltip vazio na linha "sem etapa".** Quando alguém aponta hora fora de qualquer etapa, a célula
-  mostra a hora com o rótulo certo, mas o `title` do item vira `" · "`. Cosmético.
-- **O helper `diasAtras` dos testes ancora no dia UTC**, não no dia de São Paulo: entre 00h e 03h UTC
-  ele desloca um dia. Nenhuma asserção existente inverte com isso — foram conferidas uma a uma —, mas
-  um teste novo escrito em cima dele pode piscar.
-- **O dicionário `projects` guarda chaves mortas** herdadas do kanban (`filters.*`, `priority.*`,
-  `noTasks`, `noStages`, `unassigned`, `team`…). As sete que a entrega criou ou deixou órfãs foram
-  apagadas; a limpeza do resto é varredura própria, e o guarda de paridade não pega chave sem
-  consumidor.
-- **`stageTransition.findMany` cresce com a história do projeto**, não com a janela desenhada: é
-  consulta em lote (não é N+1), mas num projeto muito antigo traz uma linha por transição só para
-  extrair o dia em que cada etapa foi liberada. Vira problema junto com o teto de tamanho da grade,
-  que a spec adiou de propósito.
+**`stageTransition.findMany` cresce com a história do projeto**, não com a janela desenhada: é
+consulta em lote (não é N+1), mas num projeto muito antigo traz uma linha por transição só para
+extrair os dias em que houve liberação de etapa. Não dá para estreitar sozinho: `distinct` por
+(demanda, etapa) apagaria a reativação de uma etapa que voltou atrás — retrabalho é movimento real,
+e a grade ficaria mentindo por omissão. E a janela só se conhece DEPOIS de ler o que teve movimento.
+
+**Direção:** vira problema junto com o **teto de tamanho da grade**, que a spec adiou de propósito —
+e é lá que os dois se resolvem de uma vez: com um teto, a consulta ganha um limite de data para
+respeitar. Enquanto isso, o `select` já leva só o que o consumidor usa (`taskId`, `at`).
 
 ---
 

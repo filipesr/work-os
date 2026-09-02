@@ -121,37 +121,51 @@ export async function ProjectTimeline({ data }: { data: Timeline }) {
                           <span className="text-muted-foreground">—</span>
                         ) : (
                           <ul className="space-y-0.5">
-                            {cel.lines.map((l, i) => (
-                              <li key={`${l.stageId}-${i}`} className="flex justify-between gap-2">
-                                <span
-                                  className="truncate"
-                                  title={`${l.stageName} · ${l.assigneeName ?? ""}`}
+                            {cel.lines.map((l, i) => {
+                              /* Hora apontada na demanda inteira, sem etapa (item 3 do ledger):
+                                 a leitura não traduz, a tela decide o rótulo. Ele é montado UMA
+                                 vez porque o tooltip existe para dizer inteiro o que a célula
+                                 corta — dois textos montados em separado divergem, e foi assim
+                                 que o tooltip da linha sem etapa virou um " · " sozinho. */
+                              const rotulo =
+                                l.stageOrder === 0
+                                  ? t("noStage")
+                                  : `${l.stageOrder}. ${l.stageName}`;
+                              return (
+                                <li
+                                  key={`${l.stageId}-${i}`}
+                                  className="flex justify-between gap-2"
                                 >
-                                  {l.state === "done" && <span className="text-success">✓ </span>}
-                                  {l.state === "pending" && (
-                                    <span className="text-primary">▶ </span>
-                                  )}
-                                  {l.state === "waiting" && <span title={t("waiting")}>· </span>}
-                                  {/* Hora apontada na demanda inteira, sem etapa (item 3 do
-                                      ledger): a leitura não traduz, a tela decide o rótulo. */}
-                                  {l.stageOrder === 0
-                                    ? t("noStage")
-                                    : `${l.stageOrder}. ${l.stageName}`}
-                                  {l.assigneeName && ` · ${curto(l.assigneeName)}`}
-                                </span>
-                                <span className="shrink-0 whitespace-nowrap tabular-nums">
-                                  {fmtH(l.hours)}
-                                  {l.estimated && (
-                                    <span
-                                      className="ml-1 text-[10px] text-muted-foreground"
-                                      title={t("estimatedMark")}
-                                    >
-                                      ~
-                                    </span>
-                                  )}
-                                </span>
-                              </li>
-                            ))}
+                                  <span
+                                    className="truncate"
+                                    /* O nome vai INTEIRO aqui: na célula ele é cortado para caber,
+                                     e apontar é o gesto de pedir o que foi cortado. */
+                                    title={
+                                      l.assigneeName ? `${rotulo} · ${l.assigneeName}` : rotulo
+                                    }
+                                  >
+                                    {l.state === "done" && <span className="text-success">✓ </span>}
+                                    {l.state === "pending" && (
+                                      <span className="text-primary">▶ </span>
+                                    )}
+                                    {l.state === "waiting" && <span title={t("waiting")}>· </span>}
+                                    {rotulo}
+                                    {l.assigneeName && ` · ${curto(l.assigneeName)}`}
+                                  </span>
+                                  <span className="shrink-0 whitespace-nowrap tabular-nums">
+                                    {fmtH(l.hours)}
+                                    {l.estimated && (
+                                      <span
+                                        className="ml-1 text-[10px] text-muted-foreground"
+                                        title={t("estimatedMark")}
+                                      >
+                                        ~
+                                      </span>
+                                    )}
+                                  </span>
+                                </li>
+                              );
+                            })}
                           </ul>
                         )}
                       </td>

@@ -171,7 +171,9 @@ export async function getProjectTimeline(
   const liberacoes = idsVisiveis.length
     ? await prisma.stageTransition.findMany({
         where: { taskId: { in: idsVisiveis }, status: "ACTIVE" },
-        select: { taskId: true, stageId: true, at: true },
+        // Só (demanda, instante): a liberação vira uma MARCA DE DIA na coluna da demanda, e a
+        // etapa em que ela aconteceu não aparece em lugar nenhum da grade.
+        select: { taskId: true, at: true },
       })
     : [];
 
