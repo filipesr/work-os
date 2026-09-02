@@ -69,11 +69,22 @@ describe("getStageView", () => {
   });
 
   it("devolve a etapa, a demanda e a conversa INTEIRA", async () => {
-    // A conversa não é filtrada pela etapa: a tela realça o bloco dela, mas quem opera precisa do
-    // contexto todo — foi a decisão explícita da spec.
+    // O mock de `findMany` devolve as três linhas incondicionalmente — não aplica o próprio
+    // `where`. Então o que prova que a busca não é recortada pela etapa é o ARGUMENTO passado ao
+    // Prisma, verificado abaixo, e não este retorno: quem operar precisa do contexto todo.
     const v = await getStageView("as2", "t1");
     expect(v?.stage.activeStageId).toBe("as2");
     expect(v?.comments.map((c) => c.id)).toEqual(["c1", "c2", "c3"]);
+  });
+
+  it("busca os comentários pela DEMANDA, não pela etapa", async () => {
+    // Esta é a asserção que de fato protege contra a regressão: se alguém acrescentar
+    // `activeStageId` ao `where` da implementação, o mock acima continuaria devolvendo as três
+    // linhas (mocks não filtram sozinhos) e o teste anterior passaria verde do mesmo jeito. Só a
+    // checagem do argumento pego pelo Prisma pega essa regressão.
+    await getStageView("as2", "t1");
+    const chamada = db.taskComment.findMany.mock.calls[0][0] as { where: unknown };
+    expect(chamada.where).toEqual({ taskId: "t1" });
   });
 
   it("a instrução da etapa vem separada, para o destaque do topo", async () => {
