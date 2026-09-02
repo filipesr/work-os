@@ -9,12 +9,15 @@ interface LogTimeButtonProps {
   taskId: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Repassada ao formulário — ver `LogTimeForm`/`logTime`. */
+  activeStageId?: string;
 }
 
 export function LogTimeButton({
   taskId,
   open: controlledOpen,
   onOpenChange,
+  activeStageId,
 }: LogTimeButtonProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
@@ -32,11 +35,7 @@ export function LogTimeButton({
   return (
     <div className="space-y-3">
       {!isControlled && !isOpen && (
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => setIsOpen(true)}
-        >
+        <Button variant="outline" className="w-full" onClick={() => setIsOpen(true)}>
           <Clock className="h-4 w-4 mr-2" />
           Registrar Tempo
         </Button>
@@ -44,7 +43,11 @@ export function LogTimeButton({
 
       {isOpen && (
         <div className="border rounded-lg p-4 bg-card">
-          <LogTimeForm taskId={taskId} onClose={() => setIsOpen(false)} />
+          <LogTimeForm
+            taskId={taskId}
+            onClose={() => setIsOpen(false)}
+            activeStageId={activeStageId}
+          />
         </div>
       )}
     </div>

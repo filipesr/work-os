@@ -14,6 +14,7 @@ vi.mock("@/lib/permissions", () => ({
 vi.mock("@/lib/prisma", () => ({
   default: {
     task: { findUnique: vi.fn() },
+    taskActiveStage: { findUnique: vi.fn() },
     timeLog: { create: vi.fn().mockResolvedValue({ id: "tl1" }) },
   },
   prisma: {},
@@ -29,9 +30,12 @@ function diaEscolhido(iso: string): Date {
   return new Date(`${iso}T00:00:00.000Z`);
 }
 
-function logGravado(): { logDate: Date } {
-  return (vi.mocked(prisma.timeLog.create).mock.calls[0][0] as never as { data: { logDate: Date } })
-    .data;
+function logGravado(): { logDate: Date; stageId: string | null } {
+  return (
+    vi.mocked(prisma.timeLog.create).mock.calls[0][0] as never as {
+      data: { logDate: Date; stageId: string | null };
+    }
+  ).data;
 }
 
 beforeEach(() => {
@@ -71,5 +75,50 @@ describe("logTime — o dia informado vira INSTANTE REAL", () => {
     expect(logDate.getTime()).toBeGreaterThanOrEqual(inicioReal.getTime());
     expect(logDate.getTime()).toBeLessThanOrEqual(fimReal.getTime());
     expect(logDate.getTime()).toBeGreaterThan(fimDaSemanaAnterior.getTime());
+  });
+});
+
+describe("logTime — a etapa vem da TELA, não da adivinhação (fix round 1, Task 9)", () => {
+  // `activeStages[0]` era uma etapa qualquer entre as ACTIVE da demanda — com fork/join (duas
+  // etapas ACTIVE ao mesmo tempo) apontar hora pela tela da Edição podia gravar na Gravação.
+
+  it("com etapa informada, grava o TemplateStage DAQUELA etapa (não a primeira ACTIVE)", async () => {
+    vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue({
+      taskId: "t1",
+      stageId: "ts-edicao",
+    } as never);
+    // A primeira ACTIVE da demanda é outra etapa — se a função ainda adivinhasse, gravaria "s1".
+    vi.mocked(prisma.task.findUnique).mockResolvedValue({
+      id: "t1",
+      projectId: "p1",
+      activeStages: [{ stageId: "s1" }],
+    } as never);
+
+    await logTime("t1", 2, diaEscolhido("2026-09-08"), undefined, "as-edicao");
+
+    expect(prisma.taskActiveStage.findUnique).toHaveBeenCalledWith({
+      where: { id: "as-edicao" },
+      select: { taskId: true, stageId: true },
+    });
+    expect(logGravado().stageId).toBe("ts-edicao");
+  });
+
+  it("etapa informada de OUTRA demanda é ignorada — cai no comportamento antigo, não grava errado", async () => {
+    vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue({
+      taskId: "OUTRA-DEMANDA",
+      stageId: "ts-de-outra-demanda",
+    } as never);
+
+    await logTime("t1", 2, diaEscolhido("2026-09-08"), undefined, "as-de-outra-demanda");
+
+    // Não usa o stageId da etapa alheia — cai no fallback (activeStages[0] do mock global: "s1").
+    expect(logGravado().stageId).toBe("s1");
+  });
+
+  it("sem etapa informada, cai no comportamento de hoje (primeira ACTIVE da demanda)", async () => {
+    await logTime("t1", 2, diaEscolhido("2026-09-08"));
+
+    expect(prisma.taskActiveStage.findUnique).not.toHaveBeenCalled();
+    expect(logGravado().stageId).toBe("s1");
   });
 });

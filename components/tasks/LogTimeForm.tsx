@@ -13,9 +13,13 @@ import toast from "react-hot-toast";
 interface LogTimeFormProps {
   taskId: string;
   onClose?: () => void;
+  /** A etapa (TaskActiveStage) sendo mostrada na tela que abriu este formulário — repassada a
+   *  `logTime` para não adivinhar a etapa (ver `lib/actions/task.ts#logTime`). `undefined` quando
+   *  o formulário é aberto sem contexto de etapa (ex.: fora da tela da etapa). */
+  activeStageId?: string;
 }
 
-export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
+export function LogTimeForm({ taskId, onClose, activeStageId }: LogTimeFormProps) {
   const t = useTranslations("tasks.timeLogs.form");
   const tCommon = useTranslations("common");
   const [hoursSpent, setHoursSpent] = useState("");
@@ -41,7 +45,13 @@ export function LogTimeForm({ taskId, onClose }: LogTimeFormProps) {
     }
 
     startTransition(async () => {
-      const result = await logTime(taskId, hours, new Date(logDate), description || undefined);
+      const result = await logTime(
+        taskId,
+        hours,
+        new Date(logDate),
+        description || undefined,
+        activeStageId
+      );
 
       if (result.error) {
         toast.error(result.error);

@@ -49,10 +49,23 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
     COMPLETED: tStages("completed"),
   };
 
-  // As ações de transição (concluir/reverter/desatribuir) só existem para uma etapa ATIVA — o
-  // servidor já recusa `completeStageAndAdvance` fora disso (`stageNotActive`); esconder aqui
-  // evita levar quem opera a um clique que o servidor sempre vai recusar.
-  const podeAgir = stage.status === "ACTIVE" && stage.canPerformActions;
+  // O portão da TELA espelha o guarda do SERVIDOR, botão a botão — divergir em qualquer direção
+  // é defeito: largo demais engana (mostra um botão que o servidor sempre vai recusar), estreito
+  // demais esconde função que a pessoa tinha antes.
+  //
+  // Avançar/desatribuir/anexar: o servidor só aceita `stageId` (TemplateStage) de uma
+  // `TaskActiveStage` ACTIVE (`completeStageAndAdvance`/`unassignActiveStage` recusam fora disso).
+  const podeAvancar = stage.status === "ACTIVE" && stage.canPerformActions;
+  // Reverter: `revertTaskStage` aceita a demanda ter etapa ACTIVE **ou** BLOCKED (o guarda olha
+  // para TODAS as etapas ativas da demanda, não só esta) — exigir ACTIVE aqui escondia o botão
+  // numa demanda travada em BLOCKED, mesmo com o servidor pronto para aceitar a reversão.
+  const podeReverter =
+    (stage.status === "ACTIVE" || stage.status === "BLOCKED") && stage.canPerformActions;
+  // Apontar hora: `logTime` só exige `requireMemberOrHigher` — nem status de etapa, nem ser o
+  // responsável por ELA. Prender ao status ACTIVE tirava de um gestor o único caminho de lançar
+  // (ou corrigir) hora numa demanda já concluída — perda de função, não reforço de regra.
+  const podeApontarHora = stage.canPerformActions;
+  const mostraAcoes = podeAvancar || podeReverter || podeApontarHora;
 
   return (
     <div data-testid="stage-work-view" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -120,31 +133,43 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
         )}
 
         {/* As ações desta etapa (Task 9). `templateStageId` — não `activeStageId` — é o que as
-            Server Actions por trás destes botões esperam como "stageId" (ver stage-view.ts). */}
-        {podeAgir && (
+            Server Actions por trás destes botões esperam como "stageId" (ver stage-view.ts). Cada
+            bloco só monta sob o portão que espelha o guarda do SERVIDOR daquele botão específico
+            (ver os `pode*` acima) — não um portão único para a seção inteira. */}
+        {mostraAcoes && (
           <SectionCard title={tDetail("actionsTitle")} bodyClassName="space-y-3 p-6">
-            <div data-testid="activity-button">
-              <ActivityButton
+            {podeAvancar && (
+              <>
+                <div data-testid="activity-button">
+                  <ActivityButton
+                    taskId={task.id}
+                    taskTitle={task.title}
+                    currentStageId={stage.templateStageId}
+                    activeLog={activeLog}
+                  />
+                </div>
+                <Separator />
+                <div data-testid="advance-stage">
+                  <AdvanceStageButton taskId={task.id} currentStageId={stage.templateStageId} />
+                </div>
+              </>
+            )}
+            {podeReverter && <RevertStageButton taskId={task.id} previousStages={previousStages} />}
+            {podeAvancar && (
+              <UnassignActiveStageButton
                 taskId={task.id}
-                taskTitle={task.title}
-                currentStageId={stage.templateStageId}
-                activeLog={activeLog}
+                stageId={stage.templateStageId}
+                currentAssignee={stage.assignee?.name ?? null}
               />
-            </div>
-            <Separator />
-            <div data-testid="advance-stage">
-              <AdvanceStageButton taskId={task.id} currentStageId={stage.templateStageId} />
-            </div>
-            <RevertStageButton taskId={task.id} previousStages={previousStages} />
-            <UnassignActiveStageButton
-              taskId={task.id}
-              stageId={stage.templateStageId}
-              currentAssignee={stage.assignee?.name ?? null}
-            />
-            <Separator />
-            <div data-testid="log-time">
-              <LogTimeButton taskId={task.id} />
-            </div>
+            )}
+            {podeApontarHora && (
+              <>
+                <Separator />
+                <div data-testid="log-time">
+                  <LogTimeButton taskId={task.id} activeStageId={stage.activeStageId} />
+                </div>
+              </>
+            )}
           </SectionCard>
         )}
 
@@ -183,7 +208,7 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
             scope="TASK"
             ownerIds={{ taskId: task.id, projectId: task.projectId, clientId: task.clientId }}
             currentTaskId={task.id}
-            canAdd={podeAgir}
+            canAdd={podeAvancar}
             canRemove={canManageScoped}
           />
         </SectionCard>

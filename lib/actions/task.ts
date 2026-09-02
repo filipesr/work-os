@@ -2137,7 +2137,12 @@ export async function logTime(
   taskId: string,
   hoursSpent: number,
   logDate: Date,
-  description?: string
+  description?: string,
+  /** A etapa (linha `TaskActiveStage`, o `stage.activeStageId` da tela) que estava sendo
+   *  mostrada ao apontar. Sem isto a função adivinhava a primeira etapa ACTIVE da demanda — com
+   *  fork/join (mais de uma etapa ACTIVE ao mesmo tempo) podia gravar a hora na etapa ERRADA.
+   *  Opcional só para não quebrar quem ainda não passa nada (cai no comportamento antigo). */
+  activeStageId?: string
 ) {
   const user = await requireMemberOrHigher();
   const userId = user.id as string;
@@ -2156,23 +2161,40 @@ export async function logTime(
   }
 
   try {
-    // Get the task to find its project
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      select: {
-        id: true,
-        projectId: true,
-        activeStages: {
-          where: { status: "ACTIVE" },
-          select: { stageId: true },
-          take: 1,
+    // Get the task to find its project — e, se uma etapa foi informada, a linha dela (em paralelo:
+    // são buscas independentes).
+    const [activeStageRow, task] = await Promise.all([
+      activeStageId
+        ? prisma.taskActiveStage.findUnique({
+            where: { id: activeStageId },
+            select: { taskId: true, stageId: true },
+          })
+        : Promise.resolve(null),
+      prisma.task.findUnique({
+        where: { id: taskId },
+        select: {
+          id: true,
+          projectId: true,
+          activeStages: {
+            where: { status: "ACTIVE" },
+            select: { stageId: true },
+            take: 1,
+          },
         },
-      },
-    });
+      }),
+    ]);
 
     if (!task) {
       return { error: (await getTranslations("errors.common"))("taskNotFound") };
     }
+
+    // `TemplateStage.id` a gravar: a etapa informada — validada contra ESTA demanda, para que um
+    // id de outra tarefa não grave a hora no lugar errado, silenciosamente — ou, na ausência dela,
+    // a primeira etapa ACTIVE (comportamento de antes, preservado para quem não passa nada).
+    const templateStageId =
+      activeStageRow && activeStageRow.taskId === taskId
+        ? activeStageRow.stageId
+        : (task.activeStages[0]?.stageId ?? null);
 
     // O dia informado vira o instante real da meia-noite daquele dia em São Paulo — ver o
     // cabeçalho desta função.
@@ -2186,7 +2208,7 @@ export async function logTime(
         hoursSpent,
         logDate: instanteDoDia,
         description: description || null,
-        stageId: task.activeStages[0]?.stageId || null, // Associate with first active stage
+        stageId: templateStageId,
       },
       include: {
         user: {

@@ -141,4 +141,40 @@ describe("StageWorkView", () => {
       expect(screen.getByTestId(testid)).toBeInTheDocument();
     }
   });
+
+  // Fix round 1: o portão da tela precisa espelhar o guarda de CADA botão no servidor, não um
+  // portão único largo (esconde `revertTaskStage` aceitando BLOCKED) nem um único estreito
+  // (esconde `logTime`, que não exige etapa ACTIVE nenhuma).
+
+  it("etapa BLOCKED mostra reverter, mas não avançar/desatribuir — mesma regra de revertTaskStage", () => {
+    // `revertTaskStage` aceita a demanda ter etapa ACTIVE OU BLOCKED; `completeStageAndAdvance` e
+    // `unassignActiveStage` só aceitam ACTIVE. Exigir ACTIVE para reverter também escondia o botão
+    // exatamente na situação em que ele mais serve: uma etapa travada.
+    render(
+      <StageWorkView
+        view={{
+          ...VIEW,
+          stage: { ...VIEW.stage, status: "BLOCKED" },
+          previousStages: [{ id: "ts1", name: "Roteiro", order: 1 }],
+        }}
+        currentUserId="u1"
+      />
+    );
+    expect(screen.getByRole("button", { name: /triggerButton/ })).toBeInTheDocument();
+    expect(screen.queryByTestId("advance-stage")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("activity-button")).not.toBeInTheDocument();
+  });
+
+  it("etapa COMPLETED ainda oferece apontar hora — logTime não exige etapa ativa nenhuma", () => {
+    // `logTime` só checa `requireMemberOrHigher`. Prender ao status ACTIVE tirava de um gestor o
+    // único caminho de lançar/corrigir hora numa demanda já concluída — perda de função pura.
+    render(
+      <StageWorkView
+        view={{ ...VIEW, stage: { ...VIEW.stage, status: "COMPLETED" } }}
+        currentUserId="u1"
+      />
+    );
+    expect(screen.getByTestId("log-time")).toBeInTheDocument();
+    expect(screen.queryByTestId("advance-stage")).not.toBeInTheDocument();
+  });
 });
