@@ -262,14 +262,21 @@ describe("listWindowCandidates", () => {
           id: "video",
           name: "Vídeo",
           members: [
-            { id: "u1", name: "Ana" },
-            { id: "u2", name: "Bruno" },
-            { id: "u3", name: "Carla" },
+            { id: "u1", name: "Ana", email: "ana@example.com" },
+            { id: "u2", name: "Bruno", email: "bruno@example.com" },
+            { id: "u3", name: "Carla", email: "carla@example.com" },
+            // Sem nome preenchido: o rótulo tem de cair para o e-mail, não para o cuid cru — a
+            // convenção `name ?? email ?? id` do resto do arquivo.
+            { id: "u4", name: null, email: "dara@example.com" },
           ],
         },
       },
     });
-    // Bruno tem 15h–17h; Carla não tem nada.
+    // Bruno tem 15h–17h, dentro da faixa da etapa (14h–16h): colide, fica ocupado.
+    // Carla tem 17h–18h, no MESMO DIA mas FORA da faixa: é o caso que separa "ocupado NA FAIXA" de
+    // "tem compromisso naquele dia" — sem ele, uma implementação que marcasse ocupado só por ter
+    // algo no dia passaria batido.
+    // Dara não tem nada.
     db.taskActiveStage.findMany.mockResolvedValue([
       {
         id: "as9",
@@ -277,6 +284,13 @@ describe("listWindowCandidates", () => {
         assigneeId: "u2",
         scheduledStart: new Date("2026-09-04T18:00:00Z"),
         scheduledEnd: new Date("2026-09-04T20:00:00Z"),
+      },
+      {
+        id: "as10",
+        stageId: "s10",
+        assigneeId: "u3",
+        scheduledStart: new Date("2026-09-04T20:00:00Z"),
+        scheduledEnd: new Date("2026-09-04T21:00:00Z"),
       },
     ]);
     vi.mocked(getStageReferences).mockResolvedValue(new Map());
@@ -288,6 +302,7 @@ describe("listWindowCandidates", () => {
         { id: "u1", name: "Ana", busy: false },
         { id: "u2", name: "Bruno", busy: true },
         { id: "u3", name: "Carla", busy: false },
+        { id: "u4", name: "dara@example.com", busy: false },
       ],
     });
   });

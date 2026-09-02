@@ -670,12 +670,22 @@ export async function listWindowCandidates(
       scheduledStart: true,
       scheduledEnd: true,
       teamId: true,
-      team: { select: { id: true, name: true, members: { select: { id: true, name: true } } } },
+      team: {
+        select: {
+          id: true,
+          name: true,
+          members: { select: { id: true, name: true, email: true } },
+        },
+      },
       stage: {
         select: {
           name: true,
           defaultTeam: {
-            select: { id: true, name: true, members: { select: { id: true, name: true } } },
+            select: {
+              id: true,
+              name: true,
+              members: { select: { id: true, name: true, email: true } },
+            },
           },
         },
       },
@@ -725,9 +735,9 @@ export async function listWindowCandidates(
         });
       return {
         id: m.id,
-        // `name ?? id`, a convenção do projeto (`name ?? email ?? id`) sem o e-mail — esta consulta
-        // não o busca, porque a lista serve para marcar ocupado, não para contatar ninguém.
-        name: m.name ?? m.id,
+        // `name ?? email ?? id`, a convenção do projeto: sem isto, uma conta sem nome preenchido
+        // deixaria a linha da lista sem rótulo — e a linha é a pessoa.
+        name: m.name ?? m.email ?? m.id,
         busy: collidingWith(faixa, ocupadas).length > 0,
       };
     }),
