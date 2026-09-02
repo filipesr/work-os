@@ -72,6 +72,12 @@ export function buildDayQueue(items: QueueItemInput[]): {
       const tb = b.claimedAt?.getTime() ?? 0;
       return ta - tb || porId(a, b);
     }
+    // Entre DOIS compromissos, quem manda é o relógio — a ordem manual não tem o que dizer sobre
+    // qual das duas locações acontece primeiro. Só entre eles: um agendado não fura a fila de quem
+    // não tem hora, senão a fila ordenada viraria grade de horários.
+    if (a.scheduledStart && b.scheduledStart) {
+      return a.scheduledStart.getTime() - b.scheduledStart.getTime() || porId(a, b);
+    }
     return a.plannedOrder - b.plannedOrder || porId(a, b);
   });
 

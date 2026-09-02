@@ -140,6 +140,28 @@ describe("buildDayQueue — item agendado", () => {
     ]);
     expect(r.nextRunnableId).toBe("b");
   });
+
+  it("dois compromissos no mesmo dia saem em ordem de HORA, não de posição", () => {
+    // A ordem manual manda no que não tem hora. Entre compromissos, quem manda é o relógio: com a
+    // ordem manual decidindo, o "o que fazer agora" apontaria para o das 16h antes do das 10h — e a
+    // fila mentiria exatamente no caso que a janela existe para servir.
+    const r = buildDayQueue([
+      item({ id: "tarde", plannedOrder: 1, scheduledStart: new Date("2026-08-31T19:00:00Z") }),
+      item({ id: "cedo", plannedOrder: 2, scheduledStart: new Date("2026-08-31T13:00:00Z") }),
+    ]);
+    expect(r.slots.map((s) => s.item.id)).toEqual(["cedo", "tarde"]);
+    expect(r.nextRunnableId).toBe("cedo");
+  });
+
+  it("o compromisso não fura a fila de quem não tem hora", () => {
+    // A janela ordena os agendados ENTRE SI. Ela não promove o item para o topo do dia: promover
+    // seria transformar a fila ordenada numa grade de horários, que a spec proíbe.
+    const r = buildDayQueue([
+      item({ id: "primeiro", plannedOrder: 1, scheduledStart: null }),
+      item({ id: "agendado", plannedOrder: 2, scheduledStart: new Date("2026-08-31T13:00:00Z") }),
+    ]);
+    expect(r.slots.map((s) => s.item.id)).toEqual(["primeiro", "agendado"]);
+  });
 });
 
 describe("buildDayQueue — dia vazio", () => {
