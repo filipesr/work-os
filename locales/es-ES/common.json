@@ -113,9 +113,11 @@
     "project": "Proyecto no encontrado.",
     "team": "Equipo no encontrado.",
     "user": "Usuario no encontrado.",
+    "stage": "Etapa no encontrada.",
     "backToClients": "Volver a Clientes",
     "backToTeams": "Volver a Equipos",
-    "backToUsers": "Volver a Usuarios"
+    "backToUsers": "Volver a Usuarios",
+    "backToTasks": "Volver a Tareas"
   },
   "flow": {
     "sla": "SLA",
