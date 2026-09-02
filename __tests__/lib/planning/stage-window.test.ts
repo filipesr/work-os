@@ -4,6 +4,7 @@ import {
   rangesOverlap,
   collidingWith,
   canOverride,
+  firstFreeStart,
 } from "@/lib/planning/stage-window";
 import type { Range } from "@/lib/planning/stage-window";
 import type { TaskPriority } from "@prisma/client";
@@ -102,5 +103,34 @@ describe("canOverride", () => {
     // A regra tem duas metades exatamente para ele: duas urgentes, e o desempate é de quem
     // classificou as duas como urgentes.
     expect(canOverride("URGENT", "URGENT")).toBe(true);
+  });
+});
+
+const H = 3_600_000;
+
+describe("firstFreeStart", () => {
+  it("sem nada no caminho, é o próprio instante", () => {
+    const desde = new Date("2026-09-04T19:00:00Z");
+    expect(firstFreeStart(desde, 2 * H, [])).toEqual(desde);
+  });
+
+  it("pula uma terceira janela que estava no meio", () => {
+    // Adiar a ocupante não pode trocar uma colisão por outra: se às 16h já existe outro
+    // compromisso, o "primeiro livre" é depois DELE.
+    const desde = new Date("2026-09-04T19:00:00Z"); // 16h SP
+    const ocupadas = [
+      { start: new Date("2026-09-04T19:00:00Z"), end: new Date("2026-09-04T20:00:00Z") },
+    ];
+    expect(firstFreeStart(desde, 2 * H, ocupadas)).toEqual(new Date("2026-09-04T20:00:00Z"));
+  });
+
+  it("pula janelas encadeadas, uma atrás da outra", () => {
+    const desde = new Date("2026-09-04T19:00:00Z");
+    const ocupadas = [
+      { start: new Date("2026-09-04T20:00:00Z"), end: new Date("2026-09-04T21:00:00Z") },
+      { start: new Date("2026-09-04T19:00:00Z"), end: new Date("2026-09-04T20:00:00Z") },
+    ];
+    // Fora de ordem de propósito: quem chama monta a lista pela consulta, não ordenada.
+    expect(firstFreeStart(desde, H, ocupadas)).toEqual(new Date("2026-09-04T21:00:00Z"));
   });
 });

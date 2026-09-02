@@ -65,3 +65,23 @@ const RANK: Record<TaskPriority, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, URGENT:
 export function canOverride(nova: TaskPriority, ocupante: TaskPriority): boolean {
   return RANK[nova] > RANK[ocupante] || nova === "URGENT";
 }
+
+/**
+ * O primeiro instante, a partir de `desde`, em que uma faixa de `duracaoMs` não encosta em nenhuma
+ * das já ocupadas. Serve à saída "adiar a ocupante": empurrar para o fim da nova não basta, porque
+ * pode haver um terceiro compromisso logo ali — e trocar uma colisão por outra seria pior que não
+ * oferecer a saída.
+ *
+ * NÃO inventa fim de expediente: o workos não tem escala cadastrada (a barra de 8h do dia é régua
+ * visual, e a spec da fatia 1 diz isso). "Livre" significa sem outra janela, não dentro de um turno
+ * que o sistema não conhece.
+ */
+export function firstFreeStart(desde: Date, duracaoMs: number, ocupadas: Range[]): Date {
+  const ordenadas = [...ocupadas].sort((a, b) => a.start.getTime() - b.start.getTime());
+  let inicio = desde;
+  for (const o of ordenadas) {
+    const candidata = { start: inicio, end: new Date(inicio.getTime() + duracaoMs) };
+    if (rangesOverlap(candidata, o)) inicio = o.end;
+  }
+  return inicio;
+}
