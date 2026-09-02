@@ -65,8 +65,7 @@
     "invalidDueDate": "Data de vencimento inválida.",
     "hoursRequired": "Informe quantas horas você trabalhou nesta etapa.",
     "hoursBelowLogged": "O cronômetro já registrou mais horas do que isso. Para reduzir, corrija o apontamento.",
-    "reasonRequired": "O tempo ficou fora da referência desta etapa — diga o que aconteceu.",
-    "revertInstruction": "Retrabalho pedido: {reason}"
+    "reasonRequired": "O tempo ficou fora da referência desta etapa — diga o que aconteceu."
   },
   "user": {
     "notFound": "Usuário não encontrado",

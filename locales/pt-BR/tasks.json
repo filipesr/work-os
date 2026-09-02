@@ -68,7 +68,8 @@
     "completedStages": "Etapas Concluídas",
     "pendingStages": "Etapas Pendentes",
     "blockedStages": "Etapas Bloqueadas",
-    "stageInstructions": "O que fazer em {stage} · {team}"
+    "stageInstructions": "O que fazer em {stage} · {team}",
+    "revertInstruction": "Retrabalho pedido: {reason}"
   },
   "stages": {
     "title": "Etapas do Fluxo de Trabalho",

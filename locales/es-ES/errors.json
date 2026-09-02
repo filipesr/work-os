@@ -65,8 +65,7 @@
     "invalidDueDate": "La fecha de vencimiento no es válida.",
     "hoursRequired": "Indica cuántas horas has trabajado en esta etapa.",
     "hoursBelowLogged": "El cronómetro ya ha registrado más horas de las que indicas. Para reducirlas, corrige el registro de horas.",
-    "reasonRequired": "El tiempo ha quedado fuera de la referencia de esta etapa: cuenta qué ha pasado.",
-    "revertInstruction": "Retrabajo solicitado: {reason}"
+    "reasonRequired": "El tiempo ha quedado fuera de la referencia de esta etapa: cuenta qué ha pasado."
   },
   "user": {
     "notFound": "Usuario no encontrado",

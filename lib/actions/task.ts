@@ -1810,6 +1810,9 @@ export async function revertTaskStage(
   const currentUserId = user.id as string;
   const userRole = user.role;
   const tTask = await getTranslations("errors.task");
+  // Copy de caminho feliz (instrução mostrada a quem vai refazer o trabalho), não mensagem de
+  // falha — por isso mora em `tasks.detail`, junto de `stageInstructions`, e não em `errors.task`.
+  const tDetail = await getTranslations("tasks.detail");
 
   if (!comment || comment.trim().length === 0) {
     return { error: tTask("revertCommentRequired") };
@@ -1979,7 +1982,7 @@ export async function revertTaskStage(
           userId: currentUserId,
           activeStageId: linhaAlvo.id,
           kind: "STAGE_INSTRUCTION",
-          content: tTask("revertInstruction", { reason: comment.trim() }),
+          content: tDetail("revertInstruction", { reason: comment.trim() }),
         },
       });
 
