@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getTaskById, getPreviousStages, getTaskTimeTracking } from "@/lib/actions/task";
 import { auth } from "@/lib/auth";
 import { AdminTaskStages } from "@/components/tasks/AdminTaskStages";
+import { RevertStageButton } from "@/components/tasks/RevertStageButton";
 import { CompleteTaskButton } from "@/components/tasks/CompleteTaskButton";
 import { CommentsList } from "@/components/tasks/CommentsList";
 import { AddCommentForm } from "@/components/tasks/AddCommentForm";
@@ -205,17 +206,21 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
           {/* Active stage actions (Task 10): a demanda não elege mais "a" etapa sozinha via
               `currentStageId` — fork/join deixa mais de uma `TaskActiveStage` ACTIVE ou BLOCKED
               ao mesmo tempo, e cada uma ganha o próprio bloco de ações abaixo.
-              `CompleteTaskButton` fica de fora: concluir a demanda é poder de nível DEMANDA, não
-              de etapa. */}
+              Fix round 1: `RevertStageButton` saiu da lista por etapa. Ele recebe só `taskId` +
+              `previousStages` — nenhum `stageId` — porque `revertTaskStage` é ação de DEMANDA
+              (olha todas as etapas ativas de uma vez). Repeti-lo por etapa produzia cópias
+              idênticas sugerindo, falsamente, que cada uma reverte "a sua" etapa. Ele mora aqui,
+              junto do `CompleteTaskButton` — os dois são poderes de nível demanda, não de etapa. */}
           <SectionCard
             title={t("currentStage")}
-            action={<CompleteTaskButton taskId={task.id} taskStatus={task.status} />}
+            action={
+              <div className="flex gap-2 flex-wrap">
+                <RevertStageButton taskId={task.id} previousStages={previousStages} />
+                <CompleteTaskButton taskId={task.id} taskStatus={task.status} />
+              </div>
+            }
           >
-            <AdminTaskStages
-              taskId={task.id}
-              stages={task.activeStages}
-              previousStages={previousStages}
-            />
+            <AdminTaskStages taskId={task.id} stages={task.activeStages} />
           </SectionCard>
 
           {/* All stages pipeline (status + responsible per stage) */}

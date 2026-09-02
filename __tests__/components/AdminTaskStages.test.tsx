@@ -24,6 +24,7 @@ vi.mock("@/lib/actions/stage-assignment", () => ({
 }));
 
 import { AdminTaskStages, type AdminActiveStageRow } from "@/components/tasks/AdminTaskStages";
+import { RevertStageButton } from "@/components/tasks/RevertStageButton";
 
 // Duas `TaskActiveStage` ACTIVE ao mesmo tempo — o cenário de fork/join que `task.currentStageId`
 // não sabia representar: só uma das duas era "a" etapa atual, e a outra ficava sem ações.
@@ -31,7 +32,7 @@ const ATIVA_A: AdminActiveStageRow = {
   id: "as1",
   stageId: "ts1",
   status: "ACTIVE",
-  stage: { name: "Roteiro", order: 1 },
+  stage: { name: "Roteiro", order: 1, template: { name: "Vídeo institucional" } },
   assignee: { name: "Ana", email: "ana@x.com" },
 };
 
@@ -39,14 +40,15 @@ const ATIVA_B: AdminActiveStageRow = {
   id: "as2",
   stageId: "ts2",
   status: "ACTIVE",
-  stage: { name: "Arte", order: 2 },
+  stage: { name: "Arte", order: 2, template: { name: "Vídeo institucional" } },
   assignee: { name: "Beto", email: "beto@x.com" },
 };
 
 const PROPS = {
   taskId: "t1",
-  previousStages: [{ id: "ts0", name: "Briefing", order: 0 }],
 };
+
+const PREVIOUS_STAGES = [{ id: "ts0", name: "Briefing", order: 0 }];
 
 describe("AdminTaskStages", () => {
   it("com DUAS etapas ativas, cada uma tem as próprias ações", () => {
@@ -62,13 +64,32 @@ describe("AdminTaskStages", () => {
     expect(screen.getByText("Arte")).toBeInTheDocument();
   });
 
-  it("etapa BLOCKED mostra reverter, mas não avançar — mesma regra de revertTaskStage", () => {
-    // `revertTaskStage` aceita a demanda ter etapa ACTIVE OU BLOCKED; `completeStageAndAdvance` e
-    // `unassignActiveStage` só aceitam ACTIVE. Portão largo demais esconderia esse recuo válido;
-    // estreito demais deixaria a etapa BLOCKED sem nenhuma ação.
+  // Fix round 1: `RevertStageButton` recebe só `taskId` + `previousStages` — nenhum `stageId`.
+  // Repeti-lo por etapa produz cópias idênticas que não sabem em que bloco estão, e sugerem
+  // (falsamente) que cada uma reverte "a sua" etapa — quando na verdade reverte a DEMANDA. Ele
+  // não mora mais dentro do bloco por etapa: fica junto do `CompleteTaskButton`, fora da lista.
+  it("etapa BLOCKED não ganha reverter dentro do bloco — reverter é ação de demanda, não de etapa", () => {
     render(<AdminTaskStages stages={[{ ...ATIVA_A, status: "BLOCKED" }]} {...PROPS} />);
     expect(screen.queryByTestId("advance-stage")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /triggerButton/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /triggerButton/ })).not.toBeInTheDocument();
+  });
+
+  it("com DUAS etapas ativas, existe UM botão de reverter na tela — a mesma cópia do cabeçalho da demanda, não uma por etapa", () => {
+    // Simula a composição real da página: `RevertStageButton` fora da lista (junto do
+    // `CompleteTaskButton`) e `AdminTaskStages` ao lado. Se `AdminTaskStages` tivesse voltado a
+    // renderizar o próprio Reverter por etapa, este teste veria 2 (ou mais) botões, não 1.
+    render(
+      <>
+        <RevertStageButton taskId={PROPS.taskId} previousStages={PREVIOUS_STAGES} />
+        <AdminTaskStages stages={[ATIVA_A, ATIVA_B]} {...PROPS} />
+      </>
+    );
+    expect(screen.getAllByRole("button", { name: /triggerButton/ })).toHaveLength(1);
+  });
+
+  it("mostra o template de cada etapa ao lado do nome", () => {
+    render(<AdminTaskStages stages={[ATIVA_A]} {...PROPS} />);
+    expect(screen.getByText(/Vídeo institucional/)).toBeInTheDocument();
   });
 
   it("sem etapa ativa nenhuma, mostra o estado vazio em vez de uma lista sem itens", () => {

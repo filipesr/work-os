@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { AdvanceStageButton } from "@/components/tasks/AdvanceStageButton";
-import { RevertStageButton } from "@/components/tasks/RevertStageButton";
 import { UnassignActiveStageButton } from "@/components/tasks/UnassignActiveStageButton";
 
 /** Forma mínima que cada bloco precisa de uma `TaskActiveStage` ACTIVE ou BLOCKED. */
@@ -10,14 +9,8 @@ export interface AdminActiveStageRow {
   id: string;
   stageId: string;
   status: "ACTIVE" | "BLOCKED" | "COMPLETED" | "INACTIVE";
-  stage: { name: string; order: number };
+  stage: { name: string; order: number; template: { name: string } };
   assignee: { name: string | null; email: string | null } | null;
-}
-
-interface PreviousStageOption {
-  id: string;
-  name: string;
-  order: number;
 }
 
 interface AdminTaskStagesProps {
@@ -26,7 +19,6 @@ interface AdminTaskStagesProps {
    *  etapa só, escolhida por `currentStageId`. Fork/join deixa mais de uma nesse estado ao
    *  mesmo tempo, e cada uma precisa das PRÓPRIAS ações. */
   stages: AdminActiveStageRow[];
-  previousStages: PreviousStageOption[];
 }
 
 /**
@@ -34,13 +26,17 @@ interface AdminTaskStagesProps {
  * na tela da própria etapa. Aqui a lista inteira de etapas ativas/bloqueadas ganha um bloco cada,
  * com o nome da etapa ao lado das ações QUE SÃO DELA.
  *
- * O portão de cada botão espelha o guarda do SERVIDOR daquele botão — mesmo split que
- * `StageWorkView` já usa, copiado daqui em vez de reinventado: avançar/desatribuir só sob ACTIVE
- * (`completeStageAndAdvance`/`unassignActiveStage` recusam fora disso); reverter aceita ACTIVE
- * OU BLOCKED (`revertTaskStage` olha para TODAS as etapas ativas da demanda, não só a que está
- * sendo desenhada neste bloco).
+ * O portão de cada botão espelha o guarda do SERVIDOR daquele botão: avançar/desatribuir só sob
+ * ACTIVE (`completeStageAndAdvance`/`unassignActiveStage` recusam fora disso).
+ *
+ * Fix round 1: `RevertStageButton` NÃO mora aqui. Ele recebe só `taskId` + `previousStages` —
+ * nenhum `stageId` — porque `revertTaskStage` é ação de DEMANDA (olha para todas as etapas ativas
+ * de uma vez, não a que está sendo desenhada neste bloco). Repeti-lo por etapa produziria cópias
+ * idênticas que não sabem em que bloco estão, e sugeririam (falsamente) que cada uma reverte "a
+ * sua" etapa. Ele vive junto do `CompleteTaskButton`, no cabeçalho do `SectionCard` da página —
+ * ambos são poderes de nível demanda.
  */
-export function AdminTaskStages({ taskId, stages, previousStages }: AdminTaskStagesProps) {
+export function AdminTaskStages({ taskId, stages }: AdminTaskStagesProps) {
   const t = useTranslations("admin.tasks.detail");
 
   if (stages.length === 0) {
@@ -51,7 +47,6 @@ export function AdminTaskStages({ taskId, stages, previousStages }: AdminTaskSta
     <div className="space-y-4">
       {stages.map((s) => {
         const podeAvancar = s.status === "ACTIVE";
-        const podeReverter = s.status === "ACTIVE" || s.status === "BLOCKED";
         const responsible = s.assignee?.name || s.assignee?.email || null;
 
         return (
@@ -63,6 +58,9 @@ export function AdminTaskStages({ taskId, stages, previousStages }: AdminTaskSta
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-foreground">{s.stage.name}</h3>
                 <p className="text-sm text-muted-foreground">
+                  {t("template")} {s.stage.template.name}
+                </p>
+                <p className="text-sm text-muted-foreground">
                   {responsible ? `${t("assignee")}: ${responsible}` : t("unassigned")}
                 </p>
               </div>
@@ -73,9 +71,6 @@ export function AdminTaskStages({ taskId, stages, previousStages }: AdminTaskSta
                 <div data-testid="advance-stage">
                   <AdvanceStageButton taskId={taskId} currentStageId={s.stageId} />
                 </div>
-              )}
-              {podeReverter && (
-                <RevertStageButton taskId={taskId} previousStages={previousStages} />
               )}
               {podeAvancar && (
                 <UnassignActiveStageButton
