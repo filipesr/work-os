@@ -2667,6 +2667,15 @@ describe("isPrivateAddress", () => {
       expect(isPrivateAddress(ip), ip).toBe(false);
     }
   });
+
+  it("não confunde NOME com endereço", () => {
+    // As regras de prefixo IPv6 são de endereço, não de string. Sem a guarda do dois-pontos,
+    // `fdic.gov` casa com /^f[cd]/ e `febraban.com.br` com /^fe[89ab]/ — domínios reais recusados
+    // como "host privado", que é o defeito inverso do que a trava existe para impedir.
+    for (const nome of ["febraban.com.br", "fdic.gov", "fcuk.com", "fe80.exemplo.com"]) {
+      expect(isPrivateAddress(nome), nome).toBe(false);
+    }
+  });
 });
 ```
 
@@ -2815,6 +2824,9 @@ export function isPrivateAddress(ip: string): boolean {
     if (a >= 224) return true; // multicast e reservados
     return false;
   }
+  // Sem dois-pontos não é endereço IPv6 — é nome. Sem esta linha, as regras de prefixo abaixo
+  // recusam domínio de verdade: `fdic.gov` cai em /^f[cd]/ e `febraban.com.br` cai em /^fe[89ab]/.
+  if (!host.includes(":")) return false;
   if (host === "::1" || host === "::") return true;
   // fe80::/10 — o terceiro nibble vai de 8 a b. `startsWith("fe80")` deixaria passar fe90/fea0/febf.
   if (/^fe[89ab]/.test(host)) return true;
