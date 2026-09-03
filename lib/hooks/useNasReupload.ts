@@ -53,7 +53,12 @@ export function useNasReupload({ scope, ownerIds, startTransition }: UseNasReupl
       taskId: ownerIds.taskId,
       projectId: ownerIds.projectId,
       clientId: ownerIds.clientId,
-      mediaType: guessMediaType(file.name) ?? "OUTROS",
+      // Sem palpite (extensão fora de toda allowlist): usa DOCUMENTOS só para produzir a
+      // recusa certa — o servidor rejeita pela EXTENSÃO, não porque "DOCUMENTOS" signifique
+      // algo aqui. Nunca cai em tipo só-de-link (OUTROS/FIGMA): esses recusam antes de olhar
+      // pra extensão, e a pessoa nunca escolheu esse tipo — a mensagem tem que apontar pro
+      // arquivo, não falar de um tipo que ela não viu.
+      mediaType: guessMediaType(file.name) ?? "DOCUMENTOS",
     });
     setReenviarBusy(null);
     if (res.ok) {
