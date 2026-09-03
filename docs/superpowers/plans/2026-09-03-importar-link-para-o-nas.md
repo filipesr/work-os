@@ -2651,9 +2651,13 @@ describe("isPrivateAddress", () => {
       "::1",
       "::",
       "fe80::1",
+      "fe90::1",
+      "febf::1",
       "fc00::1",
       "fd12:3456::1",
       "::ffff:192.168.0.1",
+      "::ffff:7f00:1",
+      "::ffff:a9fe:a9fe",
     ];
     for (const ip of privados) expect(isPrivateAddress(ip), ip).toBe(true);
   });
@@ -2812,10 +2816,21 @@ export function isPrivateAddress(ip: string): boolean {
     return false;
   }
   if (host === "::1" || host === "::") return true;
-  if (host.startsWith("fe80")) return true;
-  if (/^f[cd]/.test(host)) return true;
-  const mapped = /^::ffff:(.+)$/.exec(host);
-  if (mapped) return isPrivateAddress(mapped[1]);
+  // fe80::/10 — o terceiro nibble vai de 8 a b. `startsWith("fe80")` deixaria passar fe90/fea0/febf.
+  if (/^fe[89ab]/.test(host)) return true;
+  if (/^f[cd]/.test(host)) return true; // unique-local fc00::/7
+  // IPv4 mapeado, NAS DUAS FORMAS. O parser de URL normaliza "::ffff:127.0.0.1" para
+  // "::ffff:7f00:1" — reconhecer só a forma decimal deixa o literal passar como público, que é
+  // um bypass de SSRF conhecido.
+  const dec = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(host);
+  if (dec) return isPrivateAddress(dec[1]);
+  const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(host);
+  if (hex) {
+    const n = ((parseInt(hex[1], 16) << 16) >>> 0) + parseInt(hex[2], 16);
+    return isPrivateAddress(
+      [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join(".")
+    );
+  }
   return false;
 }
 
