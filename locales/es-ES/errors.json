@@ -150,7 +150,13 @@
     "removeFailed": "Error al quitar el artefacto.",
     "newVersionFailed": "Error al crear la nueva versión.",
     "onlyClientShareable": "Solo los artefactos CLIENTE pueden compartirse externamente.",
-    "fileTooLarge": "El archivo supera el límite de {limit} MB para {mediaType}."
+    "fileTooLarge": "El archivo supera el límite de {limit} MB para {mediaType}.",
+    "importNotConfigured": "La importación al NAS no está configurada en este entorno.",
+    "importMalformedUrl": "La dirección indicada no es una URL válida.",
+    "importSchemeNotAllowed": "Solo se puede importar desde direcciones http o https.",
+    "importPrivateHost": "Esa dirección apunta al interior de la red y no se puede importar.",
+    "importNoFileName": "El enlace debe apuntar directamente al archivo (terminando en su nombre, con extensión). Los enlaces de carpeta o de vista previa no sirven.",
+    "importFailed": "No se ha podido poner la importación en cola."
   },
   "calendar": {
     "invalidYear": "Año inválido.",

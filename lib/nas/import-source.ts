@@ -98,3 +98,11 @@ export function checkImportUrl(
   }
   return { ok: true, url: u };
 }
+
+/** Chave de i18n (em `errors.artifact`) para cada recusa de URL. */
+export const URL_PROBLEM_KEY: Record<ImportUrlProblem, string> = {
+  MALFORMED: "importMalformedUrl",
+  SCHEME: "importSchemeNotAllowed",
+  PRIVATE_HOST: "importPrivateHost",
+  NO_FILE_NAME: "importNoFileName",
+};

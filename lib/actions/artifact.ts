@@ -89,8 +89,14 @@ interface VersionParams {
   /** DeliverablePurpose label; "" quando sem propósito (omitido do nome). */
   purposeLabel: string;
   originalFileName: string;
-  mimeType: string;
-  sizeBytes: number;
+  /** Null na importação: ninguém conhece o MIME antes de baixar. */
+  mimeType: string | null;
+  /** Null na importação: o tamanho real chega no finalize. */
+  sizeBytes: number | null;
+  /** Título exibido. Upload usa o nome do arquivo; importação usa o nome que a pessoa deu. */
+  title?: string;
+  /** Origem dos bytes (importação). Null no upload pelo navegador. */
+  sourceUrl?: string | null;
   sensitivity: Prisma.TaskArtifactCreateInput["sensitivity"];
   stageId?: string;
 }
@@ -99,7 +105,7 @@ interface VersionParams {
 // grupo (dono do escopo, fileKey) — MESMO nome de arquivo = nova versão; nome diferente = artefato
 // novo. Expirados/falhos/deletados contam, então nunca se reusa número. Encadeia com a versão
 // vigente (marca a anterior isCurrent=false). Reintenta na corrida de constraint única.
-async function createArtifactWithVersion(
+export async function createArtifactWithVersion(
   params: VersionParams
 ): Promise<{ id: string; nasPath: string; fileName: string; version: number }> {
   const ownerWhere =
@@ -156,9 +162,8 @@ async function createArtifactWithVersion(
             clientId: params.clientId,
             userId: params.userId,
             uploadedById: params.userId,
-            title: params.originalFileName,
-            url: null,
-            type: "OTHER",
+            title: params.title ?? params.originalFileName,
+            url: params.sourceUrl ?? null,
             storageKind: "NAS_UPLOAD",
             uploadStatus: "PENDING",
             mediaType: params.mediaType,
@@ -170,7 +175,7 @@ async function createArtifactWithVersion(
             fileName: built.fileName,
             originalFileName: params.originalFileName,
             mimeType: params.mimeType,
-            sizeBytes: BigInt(params.sizeBytes),
+            sizeBytes: params.sizeBytes != null ? BigInt(params.sizeBytes) : null,
             version,
             rootId,
             isCurrent: true,
@@ -186,6 +191,91 @@ async function createArtifactWithVersion(
     }
   }
   throw lastErr ?? new Error("Falha ao alocar versão do artefato");
+}
+
+export interface ArtifactOwnerContext {
+  folderName: string;
+  ownerName?: string;
+  ownerId?: string;
+  taskId: string | null;
+  projectId: string | null;
+  clientId: string | null;
+}
+
+export type OwnerErrorKey =
+  | "demandNotFound"
+  | "projectNotFound"
+  | "clientNotFound"
+  | "clientWithoutFolder";
+
+/**
+ * Resolve a raiz do cliente e o nome/id do dono conforme o escopo. Devolve a CHAVE do erro — quem
+ * chama sabe de qual dicionário traduzir (`demandNotFound`/`clientWithoutFolder` vivem em
+ * errors.artifact; `projectNotFound`/`clientNotFound`, em errors.common).
+ */
+export async function resolveArtifactOwner(data: {
+  scope: "TASK" | "PROJECT" | "CLIENT";
+  taskId?: string | null;
+  projectId?: string | null;
+  clientId?: string | null;
+}): Promise<{ ok: true; ctx: ArtifactOwnerContext } | { ok: false; errorKey: OwnerErrorKey }> {
+  if (data.scope === "TASK") {
+    const task = await prisma.task.findUnique({
+      where: { id: data.taskId ?? "" },
+      select: {
+        id: true,
+        title: true,
+        project: { select: { client: { select: { folderName: true } } } },
+      },
+    });
+    if (!task) return { ok: false, errorKey: "demandNotFound" };
+    if (!task.project.client.folderName) return { ok: false, errorKey: "clientWithoutFolder" };
+    return {
+      ok: true,
+      ctx: {
+        folderName: task.project.client.folderName,
+        ownerName: task.title,
+        ownerId: task.id,
+        taskId: task.id,
+        projectId: null,
+        clientId: null,
+      },
+    };
+  }
+  if (data.scope === "PROJECT") {
+    const project = await prisma.project.findUnique({
+      where: { id: data.projectId ?? "" },
+      select: { id: true, name: true, client: { select: { folderName: true } } },
+    });
+    if (!project) return { ok: false, errorKey: "projectNotFound" };
+    if (!project.client.folderName) return { ok: false, errorKey: "clientWithoutFolder" };
+    return {
+      ok: true,
+      ctx: {
+        folderName: project.client.folderName,
+        ownerName: project.name,
+        ownerId: project.id,
+        taskId: null,
+        projectId: project.id,
+        clientId: null,
+      },
+    };
+  }
+  const client = await prisma.client.findUnique({
+    where: { id: data.clientId ?? "" },
+    select: { id: true, folderName: true },
+  });
+  if (!client) return { ok: false, errorKey: "clientNotFound" };
+  if (!client.folderName) return { ok: false, errorKey: "clientWithoutFolder" };
+  return {
+    ok: true,
+    ctx: {
+      folderName: client.folderName,
+      taskId: null,
+      projectId: null,
+      clientId: client.id,
+    },
+  };
 }
 
 /**
@@ -215,48 +305,15 @@ export async function prepareArtifactUpload(input: unknown) {
       return { error: t("mediaTypeLinkOnly") };
     }
 
-    // Resolve folderName (raiz do cliente) + nome/id do dono conforme o escopo.
-    let folderName: string | null = null;
-    let ownerName: string | undefined;
-    let ownerId: string | undefined;
-    let taskId: string | null = null;
-    let projectId: string | null = null;
-    let clientId: string | null = null;
-
-    if (data.scope === "TASK") {
-      const task = await prisma.task.findUnique({
-        where: { id: data.taskId ?? "" },
-        select: {
-          id: true,
-          title: true,
-          project: { select: { client: { select: { folderName: true } } } },
-        },
-      });
-      if (!task) return { error: t("demandNotFound") };
-      folderName = task.project.client.folderName;
-      ownerName = task.title;
-      ownerId = task.id;
-      taskId = task.id;
-    } else if (data.scope === "PROJECT") {
-      const project = await prisma.project.findUnique({
-        where: { id: data.projectId ?? "" },
-        select: { id: true, name: true, client: { select: { folderName: true } } },
-      });
-      if (!project) return { error: tc("projectNotFound") };
-      folderName = project.client.folderName;
-      ownerName = project.name;
-      ownerId = project.id;
-      projectId = project.id;
-    } else {
-      const client = await prisma.client.findUnique({
-        where: { id: data.clientId ?? "" },
-        select: { id: true, folderName: true },
-      });
-      if (!client) return { error: tc("clientNotFound") };
-      folderName = client.folderName;
-      clientId = client.id;
+    const owner = await resolveArtifactOwner(data);
+    if (!owner.ok) {
+      const msg =
+        owner.errorKey === "projectNotFound" || owner.errorKey === "clientNotFound"
+          ? tc(owner.errorKey)
+          : t(owner.errorKey);
+      return { error: msg };
     }
-    if (!folderName) return { error: t("clientWithoutFolder") };
+    const { folderName, ownerName, ownerId, taskId, projectId, clientId } = owner.ctx;
 
     // Propósito é opcional: quando informado, valida; quando ausente, o nome sai sem esse segmento.
     let purposeId: string | null = null;

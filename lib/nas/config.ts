@@ -17,6 +17,11 @@ export function isNasTunnelConfigured(): boolean {
   return Boolean(env.NAS_AGENT_URL_TUNNEL && env.NAS_SHARE_BASE_URL);
 }
 
+/** True quando o agente consegue perguntar a fila de importação (mesmo segredo do finalize). */
+export function isNasImportConfigured(): boolean {
+  return Boolean(env.NAS_FINALIZE_SECRET);
+}
+
 export function getNasSigningConfig(): SigningConfig {
   if (!env.NAS_TOKEN_SIGNING_KEY || !env.NAS_TOKEN_KID) {
     throw new Error("NAS signing key/kid não configurados (NAS_TOKEN_SIGNING_KEY / NAS_TOKEN_KID)");

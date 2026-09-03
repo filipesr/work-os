@@ -119,6 +119,30 @@ export const prepareArtifactUploadSchema = z
     { message: "Escopo requer o id do dono correspondente.", path: ["scope"] }
   );
 
+// enqueueArtifactImport — o artefato nasce NAS_UPLOAD/PENDING com a ORIGEM em `url`. Sem
+// originalFileName/mimeType/sizeBytes: o nome sai da URL e o resto só se conhece depois de baixar.
+export const importArtifactSchema = z
+  .object({
+    scope: z.enum(["TASK", "PROJECT", "CLIENT"]).default("TASK"),
+    taskId: z.string().min(1).optional(),
+    projectId: z.string().min(1).optional(),
+    clientId: z.string().min(1).optional(),
+    title: z.string().min(1, "Nome do artefato é obrigatório").max(200),
+    url: z.string().url("URL inválida"),
+    mediaType: artifactMediaTypeEnum,
+    sensitivity: sensitivityEnum.default("INTERNO"),
+    stageId: z.string().optional(),
+  })
+  .refine(
+    (d) =>
+      (d.scope === "TASK" && !!d.taskId) ||
+      (d.scope === "PROJECT" && !!d.projectId) ||
+      (d.scope === "CLIENT" && !!d.clientId),
+    { message: "Escopo requer o id do dono correspondente.", path: ["scope"] }
+  );
+
+export type ImportArtifactInput = z.infer<typeof importArtifactSchema>;
+
 // ========== Scoped link artifacts (spec 2026-07-06) ==========
 // Artifacts carry a `scope` (TASK / PROJECT / CLIENT). v1 supports LINK artifacts only for the
 // PROJECT/CLIENT scopes. The invariant — enforced here in code, not in the DB — is that EXACTLY ONE

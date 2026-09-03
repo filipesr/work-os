@@ -526,7 +526,7 @@ model TaskComment {
 model TaskArtifact {
   id        String       @id @default(cuid())
   title     String
-  url       String? // Só para storageKind = LINK (legado/atual). NAS_UPLOAD não usa url.
+  url       String? // o link (LINK) ou a ORIGEM de onde os bytes vieram (NAS_UPLOAD importado)
   type      ArtifactType @default(OTHER) // legado; removido na fase 2 da migração (usar mediaType)
   createdAt DateTime     @default(now())
 
