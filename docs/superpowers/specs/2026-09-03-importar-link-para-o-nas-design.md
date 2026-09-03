@@ -89,20 +89,45 @@ formulário de quem já preencheu o primeiro.
 
 Duas consequências, ambas deliberadas:
 
-**A sensibilidade é inerte para link puro, e o rótulo precisa dizer isso.** Ela governa canais de
-download do arquivo NO NAS (`lib/nas/sensitivity.ts`: LAN, túnel, share). Um link não tem arquivo
-nosso — "baixar" é abrir a URL de outra pessoa. Perguntar mesmo assim se justifica porque o campo
-vale no instante em que o arquivo entra no NAS, e perguntar duas vezes seria pior; o que não se pode
-é apresentá-la como se já governasse alguma coisa. O texto de apoio diz que ela vale quando o
-arquivo estiver no NAS.
+**A sensibilidade vale para link também, e hoje ninguém a preenche.** Ela é a etiqueta que aparece
+no artefato e é o que vai definir o que o cliente enxerga — não é campo só de arquivo no NAS.
 
-**`ArtifactRow` precisa mudar junto.** Ele mostra `mediaType` para NAS e `type` para LINK
-(`ArtifactRow.tsx:95`). Se o formulário parar de gravar `type`, todo link novo apareceria com "—" na
-coluna de tipo. A regra passa a ser **`mediaType` quando houver, senão `type`**: link novo mostra o
-campo novo, link antigo continua mostrando o dele, e ninguém precisa de backfill.
+O levantamento achou um fato que muda a leitura: **nenhum dos dois caminhos de criação de link grava
+`sensitivity`** (`addLinkArtifact` em `lib/actions/task.ts:2116` e `addScopedLinkArtifact` em
+`lib/actions/artifact.ts`). Os dois caem no padrão do schema, `INTERNO`. Ou seja, todo link que
+existe hoje está marcado como interno **por omissão, não por decisão** — inclusive os que na prática
+são material de cliente.
 
-`addLinkArtifact` passa a receber `mediaType` e `sensitivity` no lugar de `type`. Artefatos de link
-já existentes não são tocados.
+Pedir o campo no formulário conserta isso daqui para frente. O que ele NÃO conserta, e esta spec não
+resolve de propósito, é o acervo: no dia em que a sensibilidade governar a visão do cliente, todo
+link anterior fica invisível para ele. A saída é uma decisão de dado — marcar em massa como CLIENTE
+o que for de cliente, ou deixar cada um remarcar o seu —, e ela é de quem conhece o acervo. Fica
+registrada em `docs/pendencias.md` para não virar surpresa no dia da virada.
+
+**O `type` para de ser gravado agora; a remoção é fatia própria.** `addLinkArtifact` e
+`addScopedLinkArtifact` passam a receber `mediaType` e `sensitivity` no lugar de `type`, e a coluna
+deixa de receber escrita nova. Ela CONTINUA no banco, lida apenas por artefato antigo — a remoção de
+verdade (ícones, rótulos, chaves `types.*` e `artifactTypes.*` nos dois locales, e o `DROP`) é
+entrega separada, porque apaga dado de forma irreversível e merece a própria revisão.
+
+O `type` tem mais consumidores do que a coluna sugere, e todos passam a precisar da regra "mostra
+`mediaType` quando houver, senão `type`": `lib/artifacts/unify.ts:59,83,114` (rótulo e chave de
+i18n), `components/tasks/ArtifactsList.tsx:55,120` (ícone e rótulo),
+`components/tasks/ActivityFeed.tsx:118,131` (ícone e o texto "adicionou {tipo}"),
+`components/artifacts/ArtifactRow.tsx:95` (a coluna de tipo) e `lib/actions/artifact.ts:754` (herda
+o tipo ao versionar um link). Sem essa regra, todo artefato criado daqui em diante aparece sem tipo
+em cinco lugares.
+
+**`ArtifactMediaType` ganha `FIGMA`.** Os dois enums não eram equivalentes — `ArtifactType` tinha
+FIGMA e `ArtifactMediaType` não —, e link de Figma é o que mais aparece numa agência: sem isso,
+aposentar o `type` custaria justamente o rótulo mais usado. É migração aditiva (`ALTER TYPE … ADD
+VALUE`), sem backfill.
+
+> **Suposição a confirmar na revisão:** `FIGMA` entra na `ALLOWLIST` do agente aceitando `fig`,
+> `pdf`, `png` e `svg`, com teto de 200 MB (o mesmo de LOGOS), e pasta `figma` no NAS. O valor do
+> enum não é só rótulo: ele decide a pasta e as extensões aceitas. "Figma" é procedência, não
+> formato — e o que se guarda de lá costuma ser uma exportação. Larga demais aceita qualquer coisa;
+> estreita demais recusa tudo, e o erro só aparece na primeira importação.
 
 ## A falha guarda o motivo, e a reedição
 
@@ -150,9 +175,12 @@ O agente tem suíte própria (`nas-poc/agent/test/`, com `sniff`, `nas-path`, `f
 - **Do `finalize`:** falha grava o motivo e deixa o artefato em FAILED; sucesso continua como hoje.
 - **Da reedição:** só existe em FAILED; devolve para PENDING; recusada em READY pelo SERVIDOR, não
   só escondida na tela.
-- **Do formulário:** as duas ações exigem `mediaType` e sensibilidade, e `addLinkArtifact` grava os
-  dois; um link antigo (sem `mediaType`) continua mostrando o `type` dele na lista, e um novo mostra
-  o `mediaType` — é a regra que impede a coluna de virar "—" para todo link criado daqui em diante.
+- **Do formulário:** as duas ações exigem `mediaType` e sensibilidade, e as duas ações de link as
+  gravam.
+- **Da regra de exibição, nos CINCO consumidores:** artefato novo (com `mediaType`) mostra o tipo
+  novo; artefato antigo (só com `type`) continua mostrando o dele. É a regra que impede o tipo de
+  sumir de cinco telas de uma vez, e cada consumidor precisa do seu próprio caso — um teste que
+  cubra só o `ArtifactRow` deixaria os outros quatro quebrarem em silêncio.
 
 ## Fora desta entrega
 
