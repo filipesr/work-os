@@ -271,6 +271,7 @@
       "PRIVATE_HOST": "La dirección apunta al interior de la red.",
       "TOO_MANY_REDIRECTS": "El enlace ha redirigido demasiadas veces.",
       "TIMEOUT": "El origen ha tardado demasiado en responder.",
+      "SOURCE_STALLED": "El origen ha dejado de enviar datos a mitad de la descarga.",
       "WRITE_FAILED": "No se ha podido guardar el archivo en el NAS."
     },
     "editImport": "Editar y volver a intentarlo",

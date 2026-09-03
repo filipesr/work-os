@@ -271,6 +271,7 @@
       "PRIVATE_HOST": "O endereço aponta para dentro da rede.",
       "TOO_MANY_REDIRECTS": "O link redirecionou vezes demais.",
       "TIMEOUT": "A origem demorou demais para responder.",
+      "SOURCE_STALLED": "A origem parou de mandar dados no meio do download.",
       "WRITE_FAILED": "Não foi possível gravar o arquivo no NAS."
     },
     "editImport": "Editar e tentar de novo",

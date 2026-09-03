@@ -20,7 +20,8 @@ export type FetchFailureCode =
   | "TOO_MANY_REDIRECTS"
   | "TIMEOUT"
   | "TOO_LARGE"
-  | "NOT_A_FILE";
+  | "NOT_A_FILE"
+  | "SOURCE_STALLED";
 
 export class FetchSourceError extends Error {
   constructor(
@@ -140,87 +141,163 @@ export async function fetchSource(
   opts: {
     maxBytes: number;
     maxRedirects?: number;
+    /** Prazo até os CABEÇALHOS chegarem (cobre a busca inteira, todos os saltos — não um por salto). */
     connectTimeoutMs?: number;
+    /** Prazo de OCIOSIDADE do corpo: aborta se nenhum pedaço novo chegar por este tanto de tempo.
+     *  NÃO é um teto de duração total — uma origem lenta mas viva (vídeo grande, rede ruim) tem
+     *  que conseguir terminar; só o silêncio mata. */
+    idleTimeoutMs?: number;
   } & FetchSourceDeps
 ): Promise<{ body: AsyncIterable<Uint8Array>; finalUrl: string }> {
   const maxRedirects = opts.maxRedirects ?? 3;
-  const timeout = opts.connectTimeoutMs ?? 15_000;
+  const connectTimeoutMs = opts.connectTimeoutMs ?? 15_000;
+  const idleTimeoutMs = opts.idleTimeoutMs ?? 15_000;
   const lookup = opts.lookup ?? defaultLookup;
   const doFetch = opts.fetchImpl ?? fetch;
-  // Um cronômetro para a busca inteira, não um por salto: senão o teto real vira
-  // maxRedirects × connectTimeoutMs em vez de connectTimeoutMs.
-  const signal = AbortSignal.timeout(timeout);
 
-  let current = rawUrl;
-  for (let hop = 0; hop <= maxRedirects; hop++) {
-    let u: URL;
-    try {
-      u = new URL(current);
-    } catch {
-      throw new FetchSourceError("PRIVATE_HOST", `URL inválida: ${current}`);
-    }
-    if (u.protocol !== "http:" && u.protocol !== "https:") {
-      throw new FetchSourceError("PRIVATE_HOST", `esquema não permitido: ${u.protocol}`);
-    }
+  // AbortController próprio (não AbortSignal.timeout): o prazo de cabeçalho é UM cronômetro para
+  // a busca inteira, não um por salto — senão o teto real vira maxRedirects × connectTimeoutMs.
+  // Ele é cancelado assim que os cabeçalhos da resposta final chegam; dali em diante quem manda é
+  // a ociosidade do CORPO (ver `withIdleTimeout`), rearmada a cada pedaço — nunca um teto absoluto
+  // de transferência, que mataria todo download que passasse de `connectTimeoutMs` no total.
+  const controller = new AbortController();
+  const headerTimer = setTimeout(() => controller.abort(), connectTimeoutMs);
+  headerTimer.unref?.();
 
-    // hostname de um literal IPv6 vem COM colchetes ("[2606:2800::1]"); tirá-los aqui é o que
-    // faz um endereço público literal resolver, em vez de estourar ENOTFOUND na DNS.
-    const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
-    // Literal já resolvido, ou nome — os dois passam pela mesma régua.
-    const enderecos = isPrivateAddress(host) ? [host] : await lookup(host).catch(() => null);
-    if (!enderecos || enderecos.length === 0) {
-      throw new FetchSourceError("SOURCE_UNREACHABLE", `não foi possível resolver ${host}`);
-    }
-    // UM endereço privado basta para recusar: um nome com dois A records, um público e um
-    // privado, é o truque mais barato que existe.
-    if (enderecos.some(isPrivateAddress)) {
-      throw new FetchSourceError("PRIVATE_HOST", `${host} aponta para dentro da rede`);
-    }
-
-    let res: Response;
-    try {
-      res = await doFetch(current, {
-        method: "GET",
-        redirect: "manual",
-        signal,
-      });
-    } catch (e) {
-      const err = e as Error;
-      if (err.name === "TimeoutError" || err.name === "AbortError") {
-        throw new FetchSourceError("TIMEOUT", `a origem não respondeu em ${timeout}ms`);
-      }
-      throw new FetchSourceError("SOURCE_UNREACHABLE", err.message);
-    }
-
-    if (res.status >= 300 && res.status < 400) {
-      const location = res.headers.get("location");
-      if (!location) {
-        throw new FetchSourceError("SOURCE_UNREACHABLE", "redirecionamento sem destino");
-      }
-      // A origem é hostil por definição: um Location malformado não pode escapar como TypeError
-      // cru, fora do contrato FetchSourceError que quem chama este módulo espera tratar.
+  try {
+    let current = rawUrl;
+    for (let hop = 0; hop <= maxRedirects; hop++) {
+      let u: URL;
       try {
-        current = new URL(location, current).toString();
+        u = new URL(current);
       } catch {
-        throw new FetchSourceError("SOURCE_UNREACHABLE", `Location inválido: ${location}`);
+        throw new FetchSourceError("PRIVATE_HOST", `URL inválida: ${current}`);
       }
-      continue;
-    }
+      if (u.protocol !== "http:" && u.protocol !== "https:") {
+        throw new FetchSourceError("PRIVATE_HOST", `esquema não permitido: ${u.protocol}`);
+      }
 
-    if (res.status === 429 || res.status >= 500) {
-      throw new FetchSourceError("SOURCE_UNREACHABLE", `a origem respondeu ${res.status}`);
-    }
-    if (!res.ok) {
-      throw new FetchSourceError("SOURCE_REFUSED", `a origem respondeu ${res.status}`);
-    }
+      // hostname de um literal IPv6 vem COM colchetes ("[2606:2800::1]"); tirá-los aqui é o que
+      // faz um endereço público literal resolver, em vez de estourar ENOTFOUND na DNS.
+      const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+      // Literal já resolvido, ou nome — os dois passam pela mesma régua.
+      const enderecos = isPrivateAddress(host) ? [host] : await lookup(host).catch(() => null);
+      if (!enderecos || enderecos.length === 0) {
+        throw new FetchSourceError("SOURCE_UNREACHABLE", `não foi possível resolver ${host}`);
+      }
+      // UM endereço privado basta para recusar: um nome com dois A records, um público e um
+      // privado, é o truque mais barato que existe.
+      if (enderecos.some(isPrivateAddress)) {
+        throw new FetchSourceError("PRIVATE_HOST", `${host} aponta para dentro da rede`);
+      }
 
-    const declarado = Number(res.headers.get("content-length") ?? "0");
-    if (declarado && declarado > opts.maxBytes) {
-      throw new FetchSourceError("TOO_LARGE", `origem declara ${declarado} bytes`);
-    }
-    if (!res.body) throw new FetchSourceError("SOURCE_UNREACHABLE", "resposta sem corpo");
+      let res: Response;
+      try {
+        res = await doFetch(current, {
+          method: "GET",
+          redirect: "manual",
+          signal: controller.signal,
+        });
+      } catch (e) {
+        const err = e as Error;
+        if (err.name === "TimeoutError" || err.name === "AbortError") {
+          throw new FetchSourceError("TIMEOUT", `a origem não respondeu em ${connectTimeoutMs}ms`);
+        }
+        throw new FetchSourceError("SOURCE_UNREACHABLE", err.message);
+      }
 
-    return { body: res.body as unknown as AsyncIterable<Uint8Array>, finalUrl: current };
+      if (res.status >= 300 && res.status < 400) {
+        const location = res.headers.get("location");
+        if (!location) {
+          throw new FetchSourceError("SOURCE_UNREACHABLE", "redirecionamento sem destino");
+        }
+        // A origem é hostil por definição: um Location malformado não pode escapar como TypeError
+        // cru, fora do contrato FetchSourceError que quem chama este módulo espera tratar.
+        try {
+          current = new URL(location, current).toString();
+        } catch {
+          throw new FetchSourceError("SOURCE_UNREACHABLE", `Location inválido: ${location}`);
+        }
+        continue;
+      }
+
+      if (res.status === 429 || res.status >= 500) {
+        throw new FetchSourceError("SOURCE_UNREACHABLE", `a origem respondeu ${res.status}`);
+      }
+      if (!res.ok) {
+        throw new FetchSourceError("SOURCE_REFUSED", `a origem respondeu ${res.status}`);
+      }
+
+      const declarado = Number(res.headers.get("content-length") ?? "0");
+      if (declarado && declarado > opts.maxBytes) {
+        throw new FetchSourceError("TOO_LARGE", `origem declara ${declarado} bytes`);
+      }
+      if (!res.body) throw new FetchSourceError("SOURCE_UNREACHABLE", "resposta sem corpo");
+
+      // Cabeçalhos da resposta final chegaram: o prazo de conexão cumpriu o papel dele. Cancela
+      // ANTES de devolver o corpo — dali em diante só a ociosidade (por pedaço) pode abortar, o
+      // corpo inteiro não tem mais teto absoluto de tempo.
+      clearTimeout(headerTimer);
+
+      const body = withIdleTimeout(
+        res.body as unknown as AsyncIterable<Uint8Array>,
+        idleTimeoutMs,
+        controller
+      );
+      return { body, finalUrl: current };
+    }
+    throw new FetchSourceError("TOO_MANY_REDIRECTS", `mais de ${maxRedirects} redirecionamentos`);
+  } finally {
+    clearTimeout(headerTimer);
   }
-  throw new FetchSourceError("TOO_MANY_REDIRECTS", `mais de ${maxRedirects} redirecionamentos`);
+}
+
+// Envolve o corpo com ociosidade: se nenhum pedaço novo chegar em `idleTimeoutMs`, aborta com
+// SOURCE_STALLED — não é um teto de duração total (uma origem lenta mas viva tem que conseguir
+// terminar), é um teto de SILÊNCIO (uma origem que travou tem que morrer rápido). O cronômetro é
+// rearmado a cada pedaço: só o intervalo ENTRE pedaços conta, nunca o tempo acumulado.
+function withIdleTimeout(
+  body: AsyncIterable<Uint8Array>,
+  idleTimeoutMs: number,
+  controller: AbortController
+): AsyncIterable<Uint8Array> {
+  return {
+    [Symbol.asyncIterator]() {
+      const iterator = body[Symbol.asyncIterator]();
+      return {
+        async next(): Promise<IteratorResult<Uint8Array>> {
+          const proximo = iterator.next();
+          let timer: ReturnType<typeof setTimeout>;
+          const ociosidade = new Promise<never>((_, reject) => {
+            timer = setTimeout(() => {
+              // Cancela a leitura de verdade (libera a conexão) — o fetch real trata isso como
+              // abort da requisição inteira, mas a essa altura os cabeçalhos já foram entregues e
+              // publicados; só o corpo é afetado.
+              controller.abort();
+              reject(
+                new FetchSourceError(
+                  "SOURCE_STALLED",
+                  `a origem parou de mandar bytes por ${idleTimeoutMs}ms`
+                )
+              );
+            }, idleTimeoutMs);
+          });
+          try {
+            return await Promise.race([proximo, ociosidade]);
+          } finally {
+            clearTimeout(timer!);
+            // A leitura original pode rejeitar mais tarde por causa do abort acima — isso não
+            // pode escapar como unhandled rejection, já que quem "venceu" foi o nosso erro.
+            proximo.catch(() => {});
+          }
+        },
+        async return(value?: unknown): Promise<IteratorResult<Uint8Array>> {
+          if (iterator.return) {
+            return (await iterator.return(value)) as IteratorResult<Uint8Array>;
+          }
+          return { done: true, value } as IteratorResult<Uint8Array>;
+        },
+      };
+    },
+  };
 }

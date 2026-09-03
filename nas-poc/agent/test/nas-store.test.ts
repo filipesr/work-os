@@ -4,6 +4,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { storeStreamToNas, StoreError } from "../src/nas-store";
+import { FetchSourceError } from "../src/fetch-source";
 
 let dir: string;
 beforeEach(() => {
@@ -166,6 +167,37 @@ describe("storeStreamToNas", () => {
     }
     expect(caught).toBeInstanceOf(StoreError);
     expect((caught as StoreError).code).toBe("ABORTED");
+    expect(existsSync(finalPath)).toBe(false);
+    expect(existsSync(tmpPath)).toBe(false);
+  });
+
+  // Revisão final, item crítico: uma origem de importação que trava no meio (ociosidade — ver
+  // fetch-source.ts) tem código PRÓPRIO, SOURCE_STALLED. Essa fonte não é "o cliente desistindo"
+  // (StoreError não conhece o código); precisa atravessar storeStreamToNas sem virar ABORTED, ou
+  // o worker que traduz para a tela nunca vai saber diferenciar as duas causas.
+  it("FetchSourceError da fonte (ex.: origem travou) atravessa sem virar StoreError ABORTED", async () => {
+    const finalPath = path.join(dir, "stalled.png");
+    const tmpPath = path.join(dir, "stalled.png.tmp");
+    async function* fonte() {
+      yield Buffer.alloc(10);
+      throw new FetchSourceError("SOURCE_STALLED", "a origem parou de mandar bytes por 15000ms");
+    }
+    let caught: unknown;
+    try {
+      await storeStreamToNas({
+        source: fonte(),
+        finalPath,
+        tmpPath,
+        maxBytes: 1000,
+        ext: "png",
+        hashMode: "off",
+      });
+      expect.unreachable("deveria ter lançado");
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeInstanceOf(FetchSourceError);
+    expect((caught as FetchSourceError).code).toBe("SOURCE_STALLED");
     expect(existsSync(finalPath)).toBe(false);
     expect(existsSync(tmpPath)).toBe(false);
   });

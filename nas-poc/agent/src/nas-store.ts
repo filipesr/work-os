@@ -12,6 +12,7 @@ import { once } from "node:events";
 import { finished } from "node:stream/promises";
 import path from "node:path";
 import { sniffUpload, SniffError } from "./sniff.js";
+import { FetchSourceError } from "./fetch-source.js";
 import type { HashMode } from "./config.js";
 
 export type StoreFailureCode =
@@ -76,12 +77,15 @@ export async function storeStreamToNas(input: StoreStreamInput): Promise<StoreSt
     await finished(ws);
   } catch (err) {
     if (err instanceof StoreError) throw err;
-    // A fonte (ou o próprio stream de escrita) falhou no meio — na prática isso é quase sempre o
-    // cliente desistindo (aba fechada, conexão caída). Marcamos com um código próprio (ABORTED)
-    // para não se confundir, lá no chamador, com um erro genérico do NAS (disco cheio, EMFILE,
-    // falha de I/O) — essas duas causas pedem reação bem diferente e não podem virar a mesma
-    // mensagem de log.
     await destroyAndUnlink(ws, tmpPath);
+    // A fonte já tem código PRÓPRIO (importação de link cuja origem parou de mandar bytes, p.ex.
+    // SOURCE_STALLED) — deixa atravessar como está. Sufocar isso em ABORTED faria o worker (que só
+    // vê o que sai daqui) achar que foi o cliente desistindo, quando é a origem que travou.
+    if (err instanceof FetchSourceError) throw err;
+    // Qualquer outra falha no meio — na prática isso é quase sempre o cliente desistindo (aba
+    // fechada, conexão caída) no caminho de upload. Marcamos com um código próprio (ABORTED) para
+    // não se confundir, lá no chamador, com um erro genérico do NAS (disco cheio, EMFILE, falha de
+    // I/O) — essas duas causas pedem reação bem diferente e não podem virar a mesma mensagem de log.
     throw new StoreError("ABORTED", (err as Error).message);
   }
   const msWrite = Date.now() - tWrite;

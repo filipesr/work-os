@@ -14,6 +14,7 @@ export const IMPORT_FAILURE_CODES = [
   "PRIVATE_HOST",
   "TOO_MANY_REDIRECTS",
   "TIMEOUT",
+  "SOURCE_STALLED",
   "WRITE_FAILED",
 ] as const;
 

@@ -179,18 +179,125 @@ describe("fetchSource", () => {
     expect(r.finalUrl).toBe("https://[2606:2800::1]/a.jpg");
   });
 
-  // Conserto 4: o timeout tem que valer para a busca inteira, não um cronômetro novo por salto —
-  // senão o teto real é maxRedirects × connectTimeoutMs.
-  it("usa um único cronômetro para a busca inteira, não um por salto", async () => {
-    const spy = vi.spyOn(AbortSignal, "timeout");
-    const fetchImpl = vi.fn(
-      async () =>
-        new Response(null, { status: 302, headers: { location: "https://outro.com/a.jpg" } })
-    );
+  // Conserto 4: o prazo de CABEÇALHO tem que valer para a busca inteira, não um cronômetro novo
+  // por salto — senão o teto real é maxRedirects × connectTimeoutMs. O mock de fetch honra o
+  // AbortSignal (como o fetch de verdade honraria), então se o cronômetro reiniciasse a cada
+  // salto, os três saltos de 30ms caberiam cada um dentro do prazo de 40ms próprio e a busca só
+  // falharia (por TOO_MANY_REDIRECTS) perto dos 90ms. Com UM cronômetro para a cadeia inteira, ela
+  // estoura por TIMEOUT bem antes disso, e não completa os 4 hops.
+  it("usa um único cronômetro de cabeçalho para a busca inteira, não um por salto", async () => {
+    let chamadas = 0;
+    const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
+      chamadas++;
+      await new Promise<void>((resolve, reject) => {
+        const t = setTimeout(resolve, 30);
+        init?.signal?.addEventListener("abort", () => {
+          clearTimeout(t);
+          reject(Object.assign(new Error("abortado"), { name: "AbortError" }));
+        });
+      });
+      return new Response(null, { status: 302, headers: { location: "https://outro.com/a.jpg" } });
+    });
+    const inicio = Date.now();
     await expect(
-      fetchSource("https://x.com/a.jpg", { ...base, maxRedirects: 2, fetchImpl })
-    ).rejects.toMatchObject({ code: "TOO_MANY_REDIRECTS" });
-    expect(spy).toHaveBeenCalledTimes(1);
-    spy.mockRestore();
+      fetchSource("https://x.com/a.jpg", {
+        ...base,
+        maxRedirects: 3,
+        connectTimeoutMs: 40,
+        fetchImpl,
+      })
+    ).rejects.toMatchObject({ code: "TIMEOUT" });
+    const decorrido = Date.now() - inicio;
+    expect(chamadas).toBeLessThanOrEqual(2); // não chegou nem perto dos 4 hops possíveis
+    expect(decorrido).toBeLessThan(80); // bem menos que 3×30ms = 90ms de saltos completos
+  });
+
+  // O TESTE QUE FALTAVA (item crítico da revisão final): o prazo de cabeçalho NÃO pode governar o
+  // corpo inteiro. Um corpo mais lento que connectTimeoutMs, mas nunca ocioso por mais que
+  // idleTimeoutMs, tem que terminar — prova de que o teto absoluto sumiu.
+  it("o corpo pode demorar mais que o prazo de cabeçalho e ainda assim terminar (sem teto absoluto)", async () => {
+    // O stream verifica o MESMO `signal` que foi passado ao fetch — como o fetch de verdade faz,
+    // onde o sinal da requisição também governa a leitura do corpo. É o que faz este teste falhar
+    // contra a implementação antiga: lá o cronômetro de 10ms aborta a busca inteira (corpo
+    // incluso); aqui só o cabeçalho usa esse prazo, e é cancelado assim que os cabeçalhos chegam.
+    function streamLento(signal?: AbortSignal): ReadableStream<Uint8Array> {
+      const partes: [Uint8Array, number][] = [
+        [new Uint8Array([1]), 0],
+        [new Uint8Array([2]), 40],
+        [new Uint8Array([3]), 40],
+      ];
+      let i = 0;
+      return new ReadableStream({
+        async pull(controller) {
+          if (i >= partes.length) {
+            controller.close();
+            return;
+          }
+          const [chunk, delay] = partes[i++];
+          if (delay) {
+            await new Promise<void>((resolve, reject) => {
+              if (signal?.aborted) {
+                reject(Object.assign(new Error("abortado"), { name: "AbortError" }));
+                return;
+              }
+              const t = setTimeout(resolve, delay);
+              signal?.addEventListener("abort", () => {
+                clearTimeout(t);
+                reject(Object.assign(new Error("abortado"), { name: "AbortError" }));
+              });
+            });
+          }
+          controller.enqueue(chunk);
+        },
+      });
+    }
+    const fetchImpl = async (_url: string, init?: RequestInit) =>
+      new Response(streamLento(init?.signal ?? undefined), { status: 200 });
+    // Cabeçalho responde na hora — o prazo de 10ms nem chega a ser testado por ele. O corpo leva
+    // ~80ms no total (bem mais que os 10ms de cabeçalho), mas cada intervalo (40ms) fica bem
+    // abaixo do teto de ociosidade (200ms).
+    const inicio = Date.now();
+    const r = await fetchSource("https://x.com/a.jpg", {
+      ...base,
+      connectTimeoutMs: 10,
+      idleTimeoutMs: 200,
+      fetchImpl,
+    });
+    const recebidos: number[] = [];
+    for await (const chunk of r.body) recebidos.push(chunk[0]);
+    expect(recebidos).toEqual([1, 2, 3]);
+    expect(Date.now() - inicio).toBeGreaterThanOrEqual(70);
+  });
+
+  // O outro lado do MESMO teste que faltava: um corpo que para no meio (ocioso) precisa morrer
+  // rápido, com um código PRÓPRIO — não pode virar ABORTED nem TIMEOUT.
+  it("aborta com SOURCE_STALLED quando a origem para de mandar bytes no meio (ociosidade, não teto absoluto)", async () => {
+    function streamQueTrava(): ReadableStream<Uint8Array> {
+      let entregueUmChunk = false;
+      return new ReadableStream({
+        async pull(controller) {
+          if (!entregueUmChunk) {
+            entregueUmChunk = true;
+            controller.enqueue(new Uint8Array([1]));
+            return;
+          }
+          // Nunca resolve: a origem parou de mandar bytes.
+          await new Promise(() => {});
+        },
+      });
+    }
+    const fetchImpl = async () => new Response(streamQueTrava(), { status: 200 });
+    const r = await fetchSource("https://x.com/a.jpg", {
+      ...base,
+      connectTimeoutMs: 5_000, // cabeçalho chegou na hora — não é ele quem aborta aqui
+      idleTimeoutMs: 30,
+      fetchImpl,
+    });
+    const consumir = async () => {
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of r.body) chunks.push(chunk);
+      return chunks;
+    };
+    await expect(consumir()).rejects.toMatchObject({ code: "SOURCE_STALLED" });
   });
 });
