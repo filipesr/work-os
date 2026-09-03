@@ -2,7 +2,7 @@
 // artifact, and uses a generous UPLOADING TTL so a slow finalize retry (agent offline -> queue) still
 // wins the race before we mark it FAILED. Protected by CRON_SECRET (Vercel sends it as a Bearer).
 //
-// Schedule (add to vercel.json at deploy):
+// Already scheduled (vercel.json), every 15 minutes:
 //   { "crons": [{ "path": "/api/cron/nas-reconcile", "schedule": "*/15 * * * *" }] }
 
 import { NextRequest, NextResponse } from "next/server";

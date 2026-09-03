@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { checkArtifactFiles } from "../src/reconcile";
+import { findOrphanTmps } from "../src/server";
 
 let root: string;
 beforeEach(() => {
@@ -56,5 +57,47 @@ describe("checkArtifactFiles", () => {
       { artifactId: "z", nasPath: "" },
     ] as never);
     expect(res).toEqual([]);
+  });
+});
+
+// Revisão final, item 3: o import grava em `${finalPath}.importing-${artifactId}.tmp`, mas nos
+// erros TRATADOS o arquivo já é apagado — o vazamento é quando o processo morre no meio (restart
+// de contêiner, reboot do NAS, `kill -9`). Se a varredura só reconhece `.uploading-*.tmp`, um
+// `.importing-*.tmp` de até 5 GB fica no disco e NENHUMA limpeza jamais o encontra.
+function tornarAntigo(p: string, ageMs: number) {
+  const t = new Date(Date.now() - ageMs);
+  utimesSync(p, t, t);
+}
+
+describe("findOrphanTmps", () => {
+  it("reconhece .uploading-*.tmp (upload de navegador), como sempre reconheceu", async () => {
+    const p = path.join(root, "arte.png.uploading-jti123.tmp");
+    writeFileSync(p, Buffer.alloc(10));
+    tornarAntigo(p, 1000);
+    const orphans = await findOrphanTmps(root, 500);
+    expect(orphans.map((o) => o.path)).toEqual([p]);
+  });
+
+  it("reconhece .importing-*.tmp (importação por link) — o padrão que a varredura hoje NÃO pega", async () => {
+    const p = path.join(root, "video.mp4.importing-art1.tmp");
+    writeFileSync(p, Buffer.alloc(10));
+    tornarAntigo(p, 1000);
+    const orphans = await findOrphanTmps(root, 500);
+    expect(orphans.map((o) => o.path)).toEqual([p]);
+  });
+
+  it("não pega tmp jovem demais, nem os dois padrões juntos deixam nada de fora", async () => {
+    const velhoUpload = path.join(root, "a.png.uploading-x.tmp");
+    const velhoImport = path.join(root, "b.mp4.importing-y.tmp");
+    const jovem = path.join(root, "c.png.uploading-z.tmp");
+    writeFileSync(velhoUpload, Buffer.alloc(1));
+    writeFileSync(velhoImport, Buffer.alloc(1));
+    writeFileSync(jovem, Buffer.alloc(1));
+    tornarAntigo(velhoUpload, 1000);
+    tornarAntigo(velhoImport, 1000);
+    // jovem fica com mtime atual (não envelhecido)
+
+    const orphans = await findOrphanTmps(root, 500);
+    expect(new Set(orphans.map((o) => o.path))).toEqual(new Set([velhoUpload, velhoImport]));
   });
 });

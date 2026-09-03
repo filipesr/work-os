@@ -81,6 +81,32 @@ describe("ArtifactRow — reedição de importação que falhou", () => {
     expect(screen.queryByRole("button", { name: /editar e tentar de novo/i })).toBeNull();
   });
 
+  // Revisão final, item 5: quem registrou o link está, por hipótese, fora da LAN — essa premissa
+  // vale nos TRÊS estados de importação (PENDING, UPLOADING, FAILED), não só em FAILED. "Reenviar"
+  // abre um seletor de arquivo LOCAL e cria um artefato NOVO (o hook não amarra o id existente),
+  // deixando a importação pendurada ao lado de uma duplicata.
+  it("importação PENDING não oferece reenviar nem editar (só remover)", () => {
+    renderRow({
+      storageKind: "NAS_UPLOAD",
+      uploadStatus: "PENDING",
+      url: "https://x/a.jpg",
+    });
+    expect(screen.queryByRole("button", { name: /^reenviar$/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /editar e tentar de novo/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /remover/i })).toBeInTheDocument();
+  });
+
+  it("importação UPLOADING não oferece reenviar nem editar (só remover)", () => {
+    renderRow({
+      storageKind: "NAS_UPLOAD",
+      uploadStatus: "UPLOADING",
+      url: "https://x/a.jpg",
+    });
+    expect(screen.queryByRole("button", { name: /^reenviar$/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /editar e tentar de novo/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /remover/i })).toBeInTheDocument();
+  });
+
   it("motivo desconhecido cai no texto cru em vez de sumir", () => {
     renderRow({
       storageKind: "NAS_UPLOAD",

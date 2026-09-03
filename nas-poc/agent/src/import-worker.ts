@@ -24,8 +24,20 @@ export interface ImportItem {
 // anterior terminar) peguem o MESMO artefato duas vezes.
 const emAndamento = new Set<string>();
 
-/** Pergunta a fila com o mesmo HMAC do finalize. */
-export async function pedirFila(cfg: AgentConfig): Promise<ImportItem[]> {
+export interface WarnLogger {
+  warn: (o: unknown, m: string) => void;
+}
+
+/**
+ * Pergunta a fila com o mesmo HMAC do finalize.
+ *
+ * Uma resposta que não é 2xx PRECISA deixar rastro: no dia da virada, `FINALIZE_SECRET` diferente
+ * entre a Vercel e o NAS dá 401, e sem log o sintoma é toda importação parada em "Pendente" para
+ * sempre — indistinguível de "fila vazia" e de um 404 (app antigo) ou 503 (segredo ausente na
+ * nuvem). O checklist de publicação manda conferir se o agente está sondando; sem este aviso não
+ * existe forma de distinguir "não sonda" de "sonda e apanha 401".
+ */
+export async function pedirFila(cfg: AgentConfig, log?: WarnLogger): Promise<ImportItem[]> {
   if (!cfg.cloudImportQueueUrl || !cfg.finalizeSecret) return [];
   const body = JSON.stringify({ agentId: cfg.agentId });
   const timestamp = String(Math.floor(Date.now() / 1000));
@@ -39,7 +51,13 @@ export async function pedirFila(cfg: AgentConfig): Promise<ImportItem[]> {
     body,
     signal: AbortSignal.timeout(15_000),
   });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    log?.warn(
+      { status: res.status, url: cfg.cloudImportQueueUrl },
+      "fila de importação recusou a sondagem"
+    );
+    return [];
+  }
   const json = (await res.json()) as { items?: ImportItem[] };
   return json.items ?? [];
 }
@@ -148,7 +166,7 @@ export function startImportWorker(
 ) {
   if (!cfg.cloudImportQueueUrl || !cfg.finalizeSecret || !cfg.cloudFinalizeUrl) return null;
   const deps: ImportDeps = {
-    pedirFila,
+    pedirFila: (c) => pedirFila(c, log),
     fetchSource,
     storeStreamToNas,
     callFinalize,

@@ -184,7 +184,11 @@ export function ArtifactRow({
                 >
                   {t("editImport")}
                 </button>
-              ) : (
+              ) : isImport ? // Importação PENDING/UPLOADING: "Reenviar" abre um seletor de arquivo LOCAL e cria
+              // um artefato NOVO (o hook não amarra o id existente) — a mesma premissa que troca
+              // "Reenviar" por "Editar" em FAILED (quem registrou o link está, por hipótese, fora
+              // da LAN) vale aqui também. Não soma botão nenhum; só "Remover" continua abaixo.
+              null : (
                 <button
                   type="button"
                   onClick={() => onReenviar(a.id)}

@@ -1,8 +1,13 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import type { AgentConfig } from "../src/config.js";
 import { FetchSourceError } from "../src/fetch-source.js";
 import { StoreError } from "../src/nas-store.js";
-import { runImportRound, type ImportItem, type ImportDeps } from "../src/import-worker.js";
+import {
+  runImportRound,
+  pedirFila,
+  type ImportItem,
+  type ImportDeps,
+} from "../src/import-worker.js";
 
 function cfgBase(): AgentConfig {
   return {
@@ -54,6 +59,44 @@ function depsBase(overrides: Partial<ImportDeps> = {}): ImportDeps {
     ...overrides,
   };
 }
+
+// Revisão final, item 2: a fila rejeitada é silenciosa hoje (`if (!res.ok) return [];`, sem log e
+// sem distinção). 401 (segredo diferente entre Vercel e NAS), 404 (app antigo) e 503 (segredo
+// ausente na nuvem) ficam indistinguíveis de "fila vazia" — e são o sintoma exato do dia da virada.
+describe("pedirFila", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("registra um aviso com o status quando a resposta não é 2xx (não fica muda)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 401 }) as Response)
+    );
+    const warn = vi.fn();
+    const itens = await pedirFila(cfgBase(), { warn });
+    expect(itens).toEqual([]);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(expect.objectContaining({ status: 401 }), expect.any(String));
+  });
+
+  it("fila vazia (2xx sem itens) não registra aviso — só o não-2xx é mudo demais para ficar quieto", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ items: [] }) }) as Response)
+    );
+    const warn = vi.fn();
+    const itens = await pedirFila(cfgBase(), { warn });
+    expect(itens).toEqual([]);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("sem logger, não quebra (o parâmetro é opcional)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 503 }) as Response)
+    );
+    await expect(pedirFila(cfgBase())).resolves.toEqual([]);
+  });
+});
 
 describe("runImportRound", () => {
   it("baixa, grava e reporta sucesso", async () => {
@@ -156,6 +199,27 @@ describe("runImportRound", () => {
     expect(finalize).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ reason: "NOT_A_FILE" }),
+      expect.anything()
+    );
+  });
+
+  // Revisão final, item crítico: a origem que trava DURANTE a gravação (a esteira consome o body
+  // de fetchSource dentro de storeStreamToNas) tem código PRÓPRIO — não pode virar ABORTED nem
+  // WRITE_FAILED, ou a tela mente sobre "não foi possível gravar" quando o problema é tempo.
+  it("SOURCE_STALLED da esteira (origem travou no meio do download) mantém o próprio código", async () => {
+    const finalize = vi.fn().mockResolvedValue({ ok: true });
+    await runImportRound(
+      cfgBase(),
+      depsBase({
+        storeStreamToNas: async () => {
+          throw new FetchSourceError("SOURCE_STALLED", "a origem parou de mandar bytes");
+        },
+        callFinalize: finalize,
+      })
+    );
+    expect(finalize).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ reason: "SOURCE_STALLED" }),
       expect.anything()
     );
   });

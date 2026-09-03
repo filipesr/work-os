@@ -263,8 +263,13 @@ function requireReconcileAuth(cfg: AgentConfig, req: FastifyRequest, reply: Fast
   return true;
 }
 
-// Varre NAS_ROOT por .uploading-*.tmp órfãos mais velhos que `olderThanMs`.
-async function findOrphanTmps(
+// Varre NAS_ROOT por tmps órfãos mais velhos que `olderThanMs`: `.uploading-*.tmp` (upload de
+// navegador) e `.importing-*.tmp` (importação por link — nas-store.ts é a MESMA esteira, e
+// import-worker.ts grava com esse padrão). Os dois só são apagados no caminho de erro TRATADO; um
+// processo que morre no meio (restart de contêiner, reboot, kill -9) deixa o tmp para trás, e sem
+// os dois padrões aqui nenhuma varredura jamais o encontra — um `.importing-*.tmp` pode chegar a
+// 5 GB (o teto de vídeo) parado no disco para sempre.
+export async function findOrphanTmps(
   dir: string,
   olderThanMs: number
 ): Promise<{ path: string; ageMs: number }[]> {
@@ -279,7 +284,7 @@ async function findOrphanTmps(
     for (const e of entries) {
       const p = path.join(d, e.name);
       if (e.isDirectory()) await walk(p);
-      else if (/\.uploading-.*\.tmp$/.test(e.name)) {
+      else if (/\.(uploading|importing)-.*\.tmp$/.test(e.name)) {
         try {
           const s = await stat(p);
           const age = Date.now() - s.mtimeMs;

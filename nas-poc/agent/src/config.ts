@@ -23,7 +23,8 @@ export interface AgentConfig {
   stateDir: string;
   // Token dos endpoints de reconcile (LAN, auth admin). Sem ele, reconcile fica desabilitado.
   reconcileToken?: string;
-  // TTL de arquivos .uploading-*.tmp órfãos (reconcile cleanup).
+  // TTL de arquivos .uploading-*.tmp e .importing-*.tmp órfãos (reconcile cleanup) — upload de
+  // navegador e importação por link usam a mesma esteira (nas-store.ts) e o mesmo TTL.
   tmpTtlMs: number;
   // Fila de importação (agente -> nuvem). Sem a URL, o laço nem começa: o agente antigo continua
   // servindo upload normalmente, que é o que permite publicar app e agente em dias diferentes.
