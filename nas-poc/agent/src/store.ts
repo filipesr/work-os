@@ -4,6 +4,7 @@
 
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { appendFile, rename, writeFile } from "node:fs/promises";
+import type { FinalizePayload } from "./finalize.js";
 
 function nowSeconds(): number {
   return Math.floor(Date.now() / 1000);
@@ -54,14 +55,16 @@ export class PersistentJtiStore {
 
 // ---------- fila de finalize (persistente, async) ----------
 
-export interface FinalizeJob {
-  artifactId: string;
-  checksum: string | null;
-  sizeBytes: number;
+// O job na fila é o MESMO payload que vai para callFinalize (sucesso OU falha — a variante com
+// `failed: true` é a que faz a promessa "a falha guarda o motivo" sobreviver a uma nuvem fora do
+// ar), mais os três campos de agendamento do worker que já drenava a fila. Um job gravado antes
+// desta variante existir não tem `failed` — ele cai por construção na variante de sucesso quando
+// lido de volta, então o formato novo não invalida o arquivo de fila existente.
+export type FinalizeJob = FinalizePayload & {
   attempts: number;
   nextAttemptAt: number; // epoch ms
   createdAt: number;
-}
+};
 
 export class FinalizeQueue {
   private jobs: FinalizeJob[] = [];
@@ -77,9 +80,9 @@ export class FinalizeQueue {
     }
   }
 
-  enqueue(job: { artifactId: string; checksum: string | null; sizeBytes: number }): Promise<void> {
+  enqueue(job: FinalizePayload): Promise<void> {
     const now = Date.now();
-    this.jobs.push({ ...job, attempts: 0, nextAttemptAt: now, createdAt: now });
+    this.jobs.push({ ...job, attempts: 0, nextAttemptAt: now, createdAt: now } as FinalizeJob);
     return this.persist();
   }
 
@@ -117,6 +120,22 @@ export class FinalizeQueue {
     });
     return this.writing;
   }
+}
+
+/**
+ * Despe os campos de agendamento (attempts/nextAttemptAt/createdAt) de um job da fila,
+ * devolvendo exatamente o payload que callFinalize espera. Um job antigo — gravado antes da
+ * variante de falha existir, sem o campo `failed` — sobra com {artifactId, checksum, sizeBytes}
+ * e cai naturalmente na variante de sucesso: nenhum código extra de migração é necessário.
+ */
+export function jobPayload(job: FinalizeJob): FinalizePayload {
+  const {
+    attempts: _attempts,
+    nextAttemptAt: _nextAttemptAt,
+    createdAt: _createdAt,
+    ...payload
+  } = job;
+  return payload;
 }
 
 // ---------- auditoria (append JSONL) ----------

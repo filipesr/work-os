@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { PersistentJtiStore, FinalizeQueue } from "../src/store";
+import { PersistentJtiStore, FinalizeQueue, jobPayload } from "../src/store";
 
 let dir: string;
 beforeEach(() => {
@@ -65,5 +65,44 @@ describe("FinalizeQueue", () => {
     await q.reschedule("a1", 2, future);
     expect(q.due(Date.now()).length).toBe(0); // adiado
     expect(q.due(future + 1)[0].attempts).toBe(2);
+  });
+
+  it("também enfileira a variante de falha (reason sobrevive à volta do disco)", async () => {
+    const file = path.join(dir, "qf.json");
+    const q1 = new FinalizeQueue(file);
+    await q1.enqueue({
+      artifactId: "a1",
+      failed: true,
+      reason: "PRIVATE_HOST",
+      detail: "10.0.0.1",
+    });
+    expect(q1.pending()).toBe(1);
+    expect(jobPayload(q1.due()[0])).toEqual({
+      artifactId: "a1",
+      failed: true,
+      reason: "PRIVATE_HOST",
+      detail: "10.0.0.1",
+    });
+
+    // Recarrega do disco — a variante de falha persiste como qualquer outro job.
+    const q2 = new FinalizeQueue(file);
+    expect(jobPayload(q2.due()[0])).toMatchObject({ failed: true, reason: "PRIVATE_HOST" });
+  });
+
+  it("um job no formato ANTIGO (gravado antes da variante de falha existir) continua virando payload de sucesso", () => {
+    const file = path.join(dir, "qold.json");
+    const jobAntigo = {
+      artifactId: "a9",
+      checksum: "cs9",
+      sizeBytes: 99,
+      attempts: 0,
+      nextAttemptAt: 0,
+      createdAt: 0,
+    };
+    writeFileSync(file, JSON.stringify([jobAntigo]));
+
+    const q = new FinalizeQueue(file);
+    const job = q.due(Number.MAX_SAFE_INTEGER)[0];
+    expect(jobPayload(job)).toEqual({ artifactId: "a9", checksum: "cs9", sizeBytes: 99 });
   });
 });

@@ -50,6 +50,7 @@ function depsBase(overrides: Partial<ImportDeps> = {}): ImportDeps {
       msHash: 0,
     })) as any,
     callFinalize: vi.fn().mockResolvedValue({ ok: true }),
+    enqueueFinalize: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -57,6 +58,7 @@ function depsBase(overrides: Partial<ImportDeps> = {}): ImportDeps {
 describe("runImportRound", () => {
   it("baixa, grava e reporta sucesso", async () => {
     const finalize = vi.fn().mockResolvedValue({ ok: true });
+    const enqueueFinalize = vi.fn().mockResolvedValue(undefined);
     const r = await runImportRound(
       cfgBase(),
       depsBase({
@@ -65,6 +67,7 @@ describe("runImportRound", () => {
         storeStreamToNas: async () =>
           ({ bytes: 42, checksum: "abc", msWrite: 1, msHash: 0 }) as any,
         callFinalize: finalize,
+        enqueueFinalize,
       })
     );
     expect(r.processados).toBe(1);
@@ -74,6 +77,8 @@ describe("runImportRound", () => {
       { artifactId: "art1", checksum: "abc", sizeBytes: 42 },
       expect.anything()
     );
+    // callFinalize teve sucesso — não há relato perdido, então nada vai para a fila persistente.
+    expect(enqueueFinalize).not.toHaveBeenCalled();
   });
 
   it("reporta falha com o código quando a origem é privada", async () => {
@@ -283,5 +288,75 @@ describe("runImportRound", () => {
     );
     expect(pedirFila).not.toHaveBeenCalled();
     expect(r).toEqual({ processados: 0, falhas: 0 });
+  });
+
+  // Rodada de conserto 1: nuvem fora do ar (os 3 retries do callFinalize se esgotam) não pode
+  // apagar o relato. O agente já resolveu isso para o upload com a fila persistente — o import
+  // reusa a MESMA fila via enqueueFinalize.
+  describe("callFinalize esgota os retries — o relato vai para a fila persistente", () => {
+    it("ramo de SUCESSO: enfileira o job com checksum e tamanho", async () => {
+      const enqueueFinalize = vi.fn().mockResolvedValue(undefined);
+      const callFinalize = vi.fn().mockResolvedValue({ ok: false, error: "nuvem fora do ar" });
+      const r = await runImportRound(
+        cfgBase(),
+        depsBase({
+          pedirFila: async () => [item],
+          fetchSource: async () => ({ body: corpo(), finalUrl: item.url }),
+          storeStreamToNas: async () =>
+            ({ bytes: 42, checksum: "abc", msWrite: 1, msHash: 0 }) as any,
+          callFinalize,
+          enqueueFinalize,
+        })
+      );
+      // O arquivo FOI gravado — não é uma falha de import, é um relato perdido.
+      expect(r.processados).toBe(1);
+      expect(enqueueFinalize).toHaveBeenCalledWith({
+        artifactId: "art1",
+        checksum: "abc",
+        sizeBytes: 42,
+      });
+    });
+
+    it("ramo de FALHA: enfileira o job com o motivo (reason)", async () => {
+      const enqueueFinalize = vi.fn().mockResolvedValue(undefined);
+      const callFinalize = vi.fn().mockResolvedValue({ ok: false, error: "nuvem fora do ar" });
+      const r = await runImportRound(
+        cfgBase(),
+        depsBase({
+          pedirFila: async () => [item],
+          fetchSource: async () => {
+            throw new FetchSourceError("PRIVATE_HOST", "x");
+          },
+          storeStreamToNas: vi.fn() as any,
+          callFinalize,
+          enqueueFinalize,
+        })
+      );
+      expect(r.falhas).toBe(1);
+      expect(enqueueFinalize).toHaveBeenCalledWith(
+        expect.objectContaining({ artifactId: "art1", failed: true, reason: "PRIVATE_HOST" })
+      );
+    });
+
+    it("depois de enfileirado, o emAndamento foi limpo — o item não fica travado para sempre", async () => {
+      const enqueueFinalize = vi.fn().mockResolvedValue(undefined);
+      const callFinalize = vi.fn().mockResolvedValue({ ok: false, error: "nuvem fora do ar" });
+      const fetchSourceMock = vi.fn(async () => ({ body: corpo(), finalUrl: item.url }));
+      const deps = depsBase({
+        pedirFila: async () => [item],
+        fetchSource: fetchSourceMock as any,
+        storeStreamToNas: async () => ({ bytes: 1, checksum: "z", msWrite: 0, msHash: 0 }) as any,
+        callFinalize,
+        enqueueFinalize,
+      });
+
+      await runImportRound(cfgBase(), deps); // 1ª rodada: callFinalize falha, item enfileirado
+      await runImportRound(cfgBase(), deps); // 2ª rodada: o MESMO item aparece na fila de novo
+
+      // Se emAndamento não tivesse sido limpo no `finally`, a 2ª rodada filtraria o item e
+      // fetchSource seria chamado só 1 vez.
+      expect(fetchSourceMock).toHaveBeenCalledTimes(2);
+      expect(enqueueFinalize).toHaveBeenCalledTimes(2);
+    });
   });
 });

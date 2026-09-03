@@ -9,7 +9,7 @@ import path from "node:path";
 import { safeResolve, type AgentConfig } from "./config.js";
 import { fetchSource, FetchSourceError } from "./fetch-source.js";
 import { storeStreamToNas, StoreError } from "./nas-store.js";
-import { callFinalize, finalizeSignature } from "./finalize.js";
+import { callFinalize, finalizeSignature, type FinalizePayload } from "./finalize.js";
 
 export interface ImportItem {
   artifactId: string;
@@ -68,6 +68,12 @@ export interface ImportDeps {
   fetchSource: typeof fetchSource;
   storeStreamToNas: typeof storeStreamToNas;
   callFinalize: typeof callFinalize;
+  // Nuvem fora do ar (deploy em andamento, rede instável) não pode apagar o relato: o mesmo
+  // padrão do upload (server.ts) — quando o callFinalize inline falha, enfileira na MESMA fila
+  // persistente, e o worker que já a drena (com backoff) reentrega depois. Vale para os dois
+  // ramos: sucesso perdido baixa tudo de novo na próxima expiração, mas falha perdida nunca se
+  // cura sozinha — é a metade que dói.
+  enqueueFinalize: (payload: FinalizePayload) => Promise<void>;
 }
 
 export async function runImportRound(
@@ -104,24 +110,24 @@ export async function runImportRound(
         ext: path.extname(item.fileName).slice(1).toLowerCase(),
         hashMode: cfg.hashMode,
       });
-      await deps.callFinalize(
-        finalizeCfg,
-        { artifactId: item.artifactId, checksum: stored.checksum, sizeBytes: stored.bytes },
-        { retries: 3 }
-      );
+      const okPayload: FinalizePayload = {
+        artifactId: item.artifactId,
+        checksum: stored.checksum,
+        sizeBytes: stored.bytes,
+      };
+      const rOk = await deps.callFinalize(finalizeCfg, okPayload, { retries: 3 });
+      if (!rOk.ok) await deps.enqueueFinalize(okPayload);
       processados++;
     } catch (err) {
       falhas++;
-      await deps.callFinalize(
-        finalizeCfg,
-        {
-          artifactId: item.artifactId,
-          failed: true,
-          reason: motivoDe(err),
-          detail: (err as Error).message,
-        },
-        { retries: 3 }
-      );
+      const failPayload: FinalizePayload = {
+        artifactId: item.artifactId,
+        failed: true,
+        reason: motivoDe(err),
+        detail: (err as Error).message,
+      };
+      const rFail = await deps.callFinalize(finalizeCfg, failPayload, { retries: 3 });
+      if (!rFail.ok) await deps.enqueueFinalize(failPayload);
     } finally {
       emAndamento.delete(item.artifactId);
     }
@@ -129,13 +135,25 @@ export async function runImportRound(
   return { processados, falhas };
 }
 
-/** Liga o laço. Sem URL de fila, não faz nada — é o que permite agente antigo e app novo. */
+/**
+ * Liga o laço. Sem URL de fila, não faz nada — é o que permite agente antigo e app novo.
+ * `queue` é a MESMA fila persistente do finalize de upload (server.ts a instancia uma vez e passa
+ * para os dois lados) — é o que faz um relato perdido aqui sobreviver a restart e ser drenado pelo
+ * mesmo worker, em vez de reescrever a persistência.
+ */
 export function startImportWorker(
   cfg: AgentConfig,
+  queue: { enqueue: (payload: FinalizePayload) => Promise<void> },
   log: { warn: (o: unknown, m: string) => void }
 ) {
   if (!cfg.cloudImportQueueUrl || !cfg.finalizeSecret || !cfg.cloudFinalizeUrl) return null;
-  const deps: ImportDeps = { pedirFila, fetchSource, storeStreamToNas, callFinalize };
+  const deps: ImportDeps = {
+    pedirFila,
+    fetchSource,
+    storeStreamToNas,
+    callFinalize,
+    enqueueFinalize: (payload) => queue.enqueue(payload),
+  };
   const timer = setInterval(() => {
     void runImportRound(cfg, deps).catch((e) =>
       log.warn({ err: (e as Error).message }, "rodada de importação falhou")

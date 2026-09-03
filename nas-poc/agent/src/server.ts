@@ -22,7 +22,7 @@ import {
   KeyStore,
 } from "./token.js";
 import { callFinalize, decideFinalize } from "./finalize.js";
-import { PersistentJtiStore, FinalizeQueue, AuditLog } from "./store.js";
+import { PersistentJtiStore, FinalizeQueue, AuditLog, jobPayload } from "./store.js";
 import { storeStreamToNas, StoreError, safeUnlink } from "./nas-store.js";
 import { startImportWorker } from "./import-worker.js";
 
@@ -345,11 +345,9 @@ function startFinalizeWorker(
 
   const tick = async () => {
     for (const job of queue.due()) {
-      const r = await callFinalize(
-        { url, secret, agentId: cfg.agentId },
-        { artifactId: job.artifactId, checksum: job.checksum, sizeBytes: job.sizeBytes },
-        { retries: 1 }
-      );
+      const r = await callFinalize({ url, secret, agentId: cfg.agentId }, jobPayload(job), {
+        retries: 1,
+      });
       const d = decideFinalize(job, r, Date.now());
       if (d.action === "remove" && d.reason === "ok") {
         await queue.remove(job.artifactId);
@@ -427,7 +425,7 @@ async function main() {
   await tunnel.listen({ host: cfg.tunnelHost, port: cfg.tunnelPort });
 
   const stopWorker = startFinalizeWorker(cfg, queue, audit, lan.log);
-  startImportWorker(cfg, lan.log);
+  startImportWorker(cfg, queue, lan.log);
 
   lan.log.info(
     { nasRoot: cfg.nasRoot, stateDir: cfg.stateDir, hashMode: cfg.hashMode, kids: store.kids },
