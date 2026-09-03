@@ -64,3 +64,8 @@ export const SHARE_EXPIRY = {
   defaultDays: 7,
   maxDays: 30, // exceção MANAGER+ tratada na action
 } as const;
+
+// Reserva da fila de importação. Generosa de propósito: um vídeo grande numa origem lenta pode
+// levar horas, e devolver à fila um download que ainda está andando é pior que esperar.
+export const IMPORT_LEASE_MS = 2 * 60 * 60 * 1000; // 2h
+export const IMPORT_QUEUE_MAX = 10;

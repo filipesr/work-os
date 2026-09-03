@@ -568,6 +568,10 @@ model TaskArtifact {
   sizeBytes        BigInt?
   checksum         String? // sha256 hex, preenchido pelo agente no finalize
 
+  // Reserva da importação: quando o agente pegou este item. Um item preso em UPLOADING por mais
+  // que IMPORT_LEASE_MS volta para a fila (agente reiniciado no meio do download).
+  importClaimedAt DateTime?
+
   // Versionamento (spec 2026-07-06): cadeia por raiz. `rootId` = raiz da cadeia (null = a própria
   // linha é a raiz); `isCurrent` marca a versão vigente (listagens filtram isCurrent=true).
   version   Int     @default(1)
