@@ -69,4 +69,21 @@ describe("checkImportUrl", () => {
     // encostada.
     expect(checkImportUrl("https://interno.exemplo.com/a.jpg").ok).toBe(true);
   });
+
+  it("não confunde nome de domínio com endereço IPv6", () => {
+    // isPrivateIpv6 applica regras de prefixo que casam padrões de endereço. Sem guardas,
+    // nomes de domínio que começam com /^f[cd]/ (fdic.gov, fcuk.com) ou /^fe[89ab]/
+    // (febraban.com.br) são recusados. A guarda é: um endereço IPv6 sempre tem dois-pontos;
+    // um nome de domínio nunca tem.
+    const publicDomains = [
+      "https://febraban.com.br/a.jpg",
+      "https://fdic.gov/a.pdf",
+      "https://fcuk.com/a.jpg",
+      "https://fe80.exemplo.com/a.jpg",
+    ];
+    for (const u of publicDomains) {
+      const r = checkImportUrl(u);
+      expect(r.ok, u).toBe(true);
+    }
+  });
 });

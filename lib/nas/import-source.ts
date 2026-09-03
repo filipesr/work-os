@@ -58,6 +58,9 @@ function isPrivateIpv4(host: string): boolean {
 
 function isPrivateIpv6(host: string): boolean {
   const h = host.replace(/^\[|\]$/g, "").toLowerCase();
+  // Sem dois-pontos não é endereço IPv6 — é nome. Sem esta linha, as regras de prefixo abaixo
+  // recusam domínio de verdade: `fdic.gov` casa com /^f[cd]/ e `febraban.com.br` com /^fe[89ab]/.
+  if (!h.includes(":")) return false;
   if (h === "::1" || h === "::") return true;
   // fe80::/10 — o terceiro nibble vai de 8 a b, não só 0.
   if (/^fe[89ab]/.test(h)) return true;
