@@ -98,6 +98,26 @@ pega — porque a string não está em locale nenhum para comparar contra.
 
 ---
 
+## Todo link existente está INTERNO por omissão
+
+**Onde:** `TaskArtifact.sensitivity` dos artefatos de link, criados antes de a aba pedir o campo.
+
+Os dois caminhos de criação de link — `addLinkArtifact` (`lib/actions/task.ts`) e
+`addScopedLinkArtifact` (`lib/actions/artifact.ts`) — nunca gravaram `sensitivity`. Os dois caíam no
+padrão do schema, `INTERNO`. A partir da importação para o NAS a aba passa a pedir o campo, o que
+conserta daqui para frente e não toca no que já existe.
+
+**Por que importa:** a sensibilidade é a etiqueta do artefato e é o que vai definir o que o cliente
+enxerga. No dia em que essa visão do cliente entrar no ar, **todo link anterior fica invisível para
+ele** — não porque alguém decidiu, mas porque ninguém foi perguntado. Um dado que nasce de omissão e
+depois governa acesso é a forma mais silenciosa de errar: não dá erro, só não mostra.
+
+**Direção:** é decisão de dado, não de código, e de quem conhece o acervo — marcar em massa como
+CLIENTE o que for material de cliente, ou deixar cada dono remarcar o seu. O que não pode é a virada
+da visão do cliente acontecer antes dessa decisão.
+
+---
+
 ## Limitações conhecidas, registradas em outro lugar
 
 Não são pendências desta lista, mas quem lê aqui costuma precisar delas:
