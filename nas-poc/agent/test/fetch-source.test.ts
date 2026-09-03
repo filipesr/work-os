@@ -25,12 +25,29 @@ describe("isPrivateAddress", () => {
       "::ffff:192.168.0.1",
       "::ffff:7f00:1",
       "::ffff:a9fe:a9fe",
+      // Conserto 1 — formas de endereço IPv6 interno que a régua por regex não cobria.
+      "::7f00:1", // IPv4-compatible (127.0.0.1 embutido)
+      "::ffff:0:7f00:1", // IPv4-translated (127.0.0.1 embutido)
+      "ff00::1", // multicast, ff00::/8
+      "fec0::1", // site-local (deprecated), fec0::/10
+      "0:0:0:0:0:0:0:1", // loopback na forma expandida
     ];
     for (const ip of privados) expect(isPrivateAddress(ip), ip).toBe(true);
   });
 
   it("aceita público", () => {
-    for (const ip of ["8.8.8.8", "172.32.0.1", "172.15.0.1", "93.184.216.34", "2606:2800::1"]) {
+    for (const ip of [
+      "8.8.8.8",
+      "172.32.0.1",
+      "172.15.0.1",
+      "93.184.216.34",
+      "2606:2800::1",
+      // Vizinhos de faixa do lado IPv6, para não bloquear demais: abaixo de fe80 (link-local),
+      // abaixo de fc00 (unique-local) e entre unique-local e link-local não são privados.
+      "fe7f::1",
+      "fbff::1",
+      "fe00::1",
+    ]) {
       expect(isPrivateAddress(ip), ip).toBe(false);
     }
   });
@@ -133,5 +150,40 @@ describe("fetchSource", () => {
   it("devolve o corpo quando está tudo certo", async () => {
     const r = await fetchSource("https://x.com/a.jpg", { ...base, fetchImpl: ok });
     expect(r.finalUrl).toBe("https://x.com/a.jpg");
+  });
+
+  // Conserto 1: a origem é hostil por definição — um Location malformado não pode escapar
+  // como TypeError cru, fora do contrato FetchSourceError.
+  it("traduz Location malformado no salto para SOURCE_UNREACHABLE (não deixa o TypeError escapar)", async () => {
+    const fetchImpl = vi.fn(
+      async () => new Response(null, { status: 302, headers: { location: "http://[bad" } })
+    );
+    await expect(fetchSource("https://x.com/a.jpg", { ...base, fetchImpl })).rejects.toMatchObject({
+      code: "SOURCE_UNREACHABLE",
+    });
+  });
+
+  // Conserto 2: hostname.toLowerCase() de um literal IPv6 vem COM colchetes; passar isso direto
+  // para o lookup faz um endereço público ser recusado como "inalcançável" por engano.
+  it("resolve host IPv6 literal público sem os colchetes", async () => {
+    const lookup = vi.fn(async (h: string) => [h]);
+    const r = await fetchSource("https://[2606:2800::1]/a.jpg", { ...base, lookup, fetchImpl: ok });
+    expect(lookup).toHaveBeenCalledWith("2606:2800::1"); // sem colchetes
+    expect(r.finalUrl).toBe("https://[2606:2800::1]/a.jpg");
+  });
+
+  // Conserto 4: o timeout tem que valer para a busca inteira, não um cronômetro novo por salto —
+  // senão o teto real é maxRedirects × connectTimeoutMs.
+  it("usa um único cronômetro para a busca inteira, não um por salto", async () => {
+    const spy = vi.spyOn(AbortSignal, "timeout");
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(null, { status: 302, headers: { location: "https://outro.com/a.jpg" } })
+    );
+    await expect(
+      fetchSource("https://x.com/a.jpg", { ...base, maxRedirects: 2, fetchImpl })
+    ).rejects.toMatchObject({ code: "TOO_MANY_REDIRECTS" });
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockRestore();
   });
 });

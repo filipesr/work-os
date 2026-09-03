@@ -6,6 +6,10 @@
 // segunda (DNS rebinding). Fechar isso exigiria fixar o IP resolvido e falar TLS com SNI manual,
 // o que quebra a verificação de certificado do jeito ingênuo. Fica anotado como o buraco que esta
 // versão NÃO fecha, em vez de fingir que fecha.
+//
+// `isPrivateAddress` também não é uma prova: é uma lista de faixas reservadas conhecidas. Ela cobre
+// as formas de endereço documentadas abaixo (decimal, IPv6 nas variações que canonicalizamos), mas
+// não é — e não pretende ser — uma demonstração formal de que todo endereço interno cai nela.
 
 import { lookup as dnsLookup } from "node:dns/promises";
 
@@ -28,40 +32,94 @@ export class FetchSourceError extends Error {
   }
 }
 
+function isPrivateIpv4Octets(octets: [number, number, number, number]): boolean {
+  const [a, b] = octets;
+  if (a === 0 || a === 10 || a === 127) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  if (a >= 224) return true; // multicast e reservados
+  return false;
+}
+
+// Canonicaliza um literal IPv6 (sem colchetes, minúsculo, contém ":") para 8 grupos de 16 bits.
+// Expande "::", completa a notação mista com IPv4 pontuado ("::ffff:1.2.3.4") em dois grupos hex,
+// e devolve null quando a string não é um endereço reconhecível. Fazer isso uma vez, em vez de
+// mais um regex por forma, é o ponto: um regex por forma é exatamente como a lista de exceções
+// cresceu incompleta da primeira vez.
+function ipv6ToGroups(input: string): number[] | null {
+  let host = input;
+  const lastColon = host.lastIndexOf(":");
+  const tail = host.slice(lastColon + 1);
+  const v4Tail = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(tail);
+  if (v4Tail) {
+    const parts = v4Tail.slice(1).map(Number);
+    if (parts.some((p) => p > 255)) return null;
+    const hi = ((parts[0] << 8) | parts[1]).toString(16);
+    const lo = ((parts[2] << 8) | parts[3]).toString(16);
+    host = host.slice(0, lastColon + 1) + hi + ":" + lo;
+  }
+
+  const halves = host.split("::");
+  if (halves.length > 2) return null;
+
+  let groups: string[];
+  if (halves.length === 2) {
+    const head = halves[0] ? halves[0].split(":") : [];
+    const tailGroups = halves[1] ? halves[1].split(":") : [];
+    const missing = 8 - head.length - tailGroups.length;
+    if (missing < 0) return null;
+    groups = [...head, ...Array(missing).fill("0"), ...tailGroups];
+  } else {
+    groups = host.split(":");
+  }
+  if (groups.length !== 8) return null;
+
+  const nums = groups.map((g) => (/^[0-9a-f]{1,4}$/.test(g) ? parseInt(g, 16) : NaN));
+  if (nums.some((n) => Number.isNaN(n))) return null;
+  return nums;
+}
+
+function ipv4FromGroups(hi: number, lo: number): [number, number, number, number] {
+  return [(hi >> 8) & 255, hi & 255, (lo >> 8) & 255, lo & 255];
+}
+
+function isPrivateIpv6Groups(g: number[]): boolean {
+  if (g.every((x) => x === 0)) return true; // "::" — não especificado
+  if (g.slice(0, 7).every((x) => x === 0) && g[7] === 1) return true; // "::1" — loopback
+  const first = g[0];
+  if (first >= 0xfe80 && first <= 0xfebf) return true; // link-local, fe80::/10
+  if ((first & 0xfe00) === 0xfc00) return true; // unique-local, fc00::/7
+  if (first >= 0xfec0 && first <= 0xfeff) return true; // site-local (deprecated), fec0::/10
+  if (first >>> 8 === 0xff) return true; // multicast, ff00::/8
+  // IPv4-mapped: 0:0:0:0:0:ffff:a.b.c.d
+  if (g[0] === 0 && g[1] === 0 && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0xffff) {
+    return isPrivateIpv4Octets(ipv4FromGroups(g[6], g[7]));
+  }
+  // IPv4-translated: 0:0:0:0:ffff:0:a.b.c.d
+  if (g[0] === 0 && g[1] === 0 && g[2] === 0 && g[3] === 0 && g[4] === 0xffff && g[5] === 0) {
+    return isPrivateIpv4Octets(ipv4FromGroups(g[6], g[7]));
+  }
+  // IPv4-compatible: 0:0:0:0:0:0:a.b.c.d (::/:: e ::1 já saíram acima)
+  if (g[0] === 0 && g[1] === 0 && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0) {
+    return isPrivateIpv4Octets(ipv4FromGroups(g[6], g[7]));
+  }
+  return false;
+}
+
 export function isPrivateAddress(ip: string): boolean {
   const host = ip.replace(/^\[|\]$/g, "").toLowerCase();
   const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
   if (v4) {
-    const a = Number(v4[1]);
-    const b = Number(v4[2]);
-    if (a === 0 || a === 10 || a === 127) return true;
-    if (a === 172 && b >= 16 && b <= 31) return true;
-    if (a === 192 && b === 168) return true;
-    if (a === 169 && b === 254) return true;
-    if (a === 100 && b >= 64 && b <= 127) return true;
-    if (a >= 224) return true; // multicast e reservados
-    return false;
+    return isPrivateIpv4Octets([Number(v4[1]), Number(v4[2]), Number(v4[3]), Number(v4[4])]);
   }
   // Sem dois-pontos não é endereço IPv6 — é nome. Sem esta linha, as regras de prefixo abaixo
   // recusam domínio de verdade: `fdic.gov` cai em /^f[cd]/ e `febraban.com.br` cai em /^fe[89ab]/.
   if (!host.includes(":")) return false;
-  if (host === "::1" || host === "::") return true;
-  // fe80::/10 — o terceiro nibble vai de 8 a b. `startsWith("fe80")` deixaria passar fe90/fea0/febf.
-  if (/^fe[89ab]/.test(host)) return true;
-  if (/^f[cd]/.test(host)) return true; // unique-local fc00::/7
-  // IPv4 mapeado, NAS DUAS FORMAS. O parser de URL normaliza "::ffff:127.0.0.1" para
-  // "::ffff:7f00:1" — reconhecer só a forma decimal deixa o literal passar como público, que é
-  // um bypass de SSRF conhecido.
-  const dec = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(host);
-  if (dec) return isPrivateAddress(dec[1]);
-  const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(host);
-  if (hex) {
-    const n = ((parseInt(hex[1], 16) << 16) >>> 0) + parseInt(hex[2], 16);
-    return isPrivateAddress(
-      [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join(".")
-    );
-  }
-  return false;
+  const groups = ipv6ToGroups(host);
+  if (!groups) return false; // não reconhecido como endereço — não é a régua de endereço que decide
+  return isPrivateIpv6Groups(groups);
 }
 
 async function defaultLookup(host: string): Promise<string[]> {
@@ -86,6 +144,9 @@ export async function fetchSource(
   const timeout = opts.connectTimeoutMs ?? 15_000;
   const lookup = opts.lookup ?? defaultLookup;
   const doFetch = opts.fetchImpl ?? fetch;
+  // Um cronômetro para a busca inteira, não um por salto: senão o teto real vira
+  // maxRedirects × connectTimeoutMs em vez de connectTimeoutMs.
+  const signal = AbortSignal.timeout(timeout);
 
   let current = rawUrl;
   for (let hop = 0; hop <= maxRedirects; hop++) {
@@ -99,7 +160,9 @@ export async function fetchSource(
       throw new FetchSourceError("PRIVATE_HOST", `esquema não permitido: ${u.protocol}`);
     }
 
-    const host = u.hostname.toLowerCase();
+    // hostname de um literal IPv6 vem COM colchetes ("[2606:2800::1]"); tirá-los aqui é o que
+    // faz um endereço público literal resolver, em vez de estourar ENOTFOUND na DNS.
+    const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
     // Literal já resolvido, ou nome — os dois passam pela mesma régua.
     const enderecos = isPrivateAddress(host) ? [host] : await lookup(host).catch(() => null);
     if (!enderecos || enderecos.length === 0) {
@@ -116,7 +179,7 @@ export async function fetchSource(
       res = await doFetch(current, {
         method: "GET",
         redirect: "manual",
-        signal: AbortSignal.timeout(timeout),
+        signal,
       });
     } catch (e) {
       const err = e as Error;
@@ -131,7 +194,13 @@ export async function fetchSource(
       if (!location) {
         throw new FetchSourceError("SOURCE_UNREACHABLE", "redirecionamento sem destino");
       }
-      current = new URL(location, current).toString();
+      // A origem é hostil por definição: um Location malformado não pode escapar como TypeError
+      // cru, fora do contrato FetchSourceError que quem chama este módulo espera tratar.
+      try {
+        current = new URL(location, current).toString();
+      } catch {
+        throw new FetchSourceError("SOURCE_UNREACHABLE", `Location inválido: ${location}`);
+      }
       continue;
     }
 
