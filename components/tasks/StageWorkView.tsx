@@ -40,7 +40,22 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
   const tComments = useTranslations("tasks.comments");
   const tArtifacts = useTranslations("tasks.artifacts");
   const locale = useLocale();
+
   const { stage, task, comments, previousStages, activeLog, artifactRows, canManageScoped } = view;
+
+  // Instrução e correções DESTA etapa, em ordem de chegada: a primeira é o brief, as seguintes são
+  // os motivos que vieram com cada reversão. `activeStageId` prende cada uma à etapa de DESTINO da
+  // reversão, então a etapa B mostra as correções de B e a C as de C, sem cruzamento.
+  const instrucoes = [...comments]
+    .filter((c) => c.kind === "STAGE_INSTRUCTION" && c.activeStageId === stage.activeStageId)
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+  // A conversa segue sendo a da DEMANDA inteira, menos as instruções desta etapa — elas subiram
+  // para o bloco em destaque, e repeti-las aqui faria a mesma linha aparecer duas vezes na mesma
+  // tela. Instrução de OUTRA etapa fica: dali, ela é contexto da demanda, não direção de agora.
+  const conversa = comments.filter(
+    (c) => !(c.kind === "STAGE_INSTRUCTION" && c.activeStageId === stage.activeStageId)
+  );
 
   const stageStatusLabels: Record<StageView["stage"]["status"], string> = {
     INACTIVE: tStages("pending"),
@@ -130,19 +145,52 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
           </div>
         </SectionCard>
 
+        {/* As instruções DESTA etapa, em ordem: a primeira é o brief escrito na criação, e as
+            seguintes são as correções que vieram com cada reversão. Elas moram AQUI e não na
+            conversa porque quem vai refazer precisa da direção e do que voltou no mesmo lugar —
+            antes o brief ficava no destaque e os motivos só no fluxo, de modo que o bloco em
+            evidência mostrava exatamente o que já estava errado, sem o que explica o retorno.
+
+            Cada uma continua sendo uma LINHA, com autor e data, em vez de virar texto acumulado num
+            campo: uma string única perde o autor, e "quem pediu esta correção" é a primeira
+            pergunta de quem discorda dela. */}
         {/* A instrução da etapa em destaque — entregue no momento da liberação, aqui é onde
             quem executa efetivamente a lê, e não só na hora de gerar a demanda. */}
-        {stage.instruction && (
+        {(instrucoes.length > 0 || stage.instruction) && (
           <div
             data-testid="stage-instruction"
             className="rounded-lg border border-warning/30 bg-warning-subtle p-4"
           >
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-warning">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-warning">
               {t("stageView.instructionTitle")}
             </p>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-              {stage.instruction}
-            </p>
+            {instrucoes.length > 0 ? (
+              <div className="space-y-3">
+                {instrucoes.map((linha, i) => (
+                  <div key={linha.id}>
+                    <p className="text-xs text-muted-foreground">
+                      {/* O brief não é uma correção: a numeração começa na primeira reversão. */}
+                      {i > 0 && (
+                        <span className="mr-1 font-semibold text-warning">
+                          {t("stageView.revertLabel", { n: i })}
+                        </span>
+                      )}
+                      {linha.author.name} ·{" "}
+                      {format(linha.createdAt, "dd/MM/yyyy", { locale: dateFnsLocale(locale) })}
+                    </p>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                      {linha.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Demanda anterior a esta feature: tem o campo preenchido e nenhum comentário de
+                 instrução (não houve backfill). Sem esta queda, ela perderia a instrução da tela. */
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {stage.instruction}
+              </p>
+            )}
           </div>
         )}
 
@@ -205,46 +253,52 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
         )}
 
         {/* A conversa INTEIRA da demanda — `highlightStageId` só realça, nunca filtra. */}
-        <SectionCard title={tComments("title")} icon={MessageSquare} bodyClassName="space-y-4 p-6">
-          <CommentsList
-            comments={comments.map((c) => ({
-              id: c.id,
-              content: c.content,
-              createdAt: c.createdAt,
-              kind: c.kind,
-              activeStageId: c.activeStageId,
-              user: { id: c.author.id, name: c.author.name, email: null },
-            }))}
-            currentUserId={currentUserId}
-            highlightStageId={stage.activeStageId}
-          />
+        <div data-testid="comments-section">
+          <SectionCard
+            title={tComments("title")}
+            icon={MessageSquare}
+            bodyClassName="space-y-4 p-6"
+          >
+            <CommentsList
+              comments={conversa.map((c) => ({
+                id: c.id,
+                content: c.content,
+                createdAt: c.createdAt,
+                kind: c.kind,
+                activeStageId: c.activeStageId,
+                user: { id: c.author.id, name: c.author.name, email: null },
+              }))}
+              currentUserId={currentUserId}
+              highlightStageId={stage.activeStageId}
+            />
 
-          {/* A caixa aparece qualquer que seja o status da etapa. A regra anterior ("etapa
+            {/* A caixa aparece qualquer que seja o status da etapa. A regra anterior ("etapa
               concluída é leitura") não veio da spec e cobrava caro: numa demanda terminada TODAS
               as etapas estão COMPLETED, e como `/tasks/{id}` virou leitura e `/admin/tasks/{id}`
               é MANAGER+, MEMBER e SUPERVISOR ficavam sem nenhum lugar para escrever — enquanto
               `addComment` exige apenas MEMBER+. Conversa não fecha junto com a etapa. */}
-          <div data-testid="add-comment">
-            <AddCommentForm
-              taskId={task.id}
-              userId={currentUserId}
-              activeStageId={stage.activeStageId}
-            />
-          </div>
-        </SectionCard>
+            <div data-testid="add-comment">
+              <AddCommentForm
+                taskId={task.id}
+                userId={currentUserId}
+                activeStageId={stage.activeStageId}
+              />
+            </div>
+          </SectionCard>
 
-        {/* Painel de artefatos operando A PARTIR DA ETAPA (Task 9) — a tela da demanda mantém o
+          {/* Painel de artefatos operando A PARTIR DA ETAPA (Task 9) — a tela da demanda mantém o
             mesmo painel, mas só em leitura (`canAdd`/`canRemove` sempre `false` lá). */}
-        <SectionCard title={tArtifacts("title")} icon={Paperclip} bodyClassName="p-6">
-          <UnifiedArtifactsPanel
-            rows={artifactRows}
-            scope="TASK"
-            ownerIds={{ taskId: task.id, projectId: task.projectId, clientId: task.clientId }}
-            currentTaskId={task.id}
-            canAdd={podeAnexar}
-            canRemove={canManageScoped}
-          />
-        </SectionCard>
+          <SectionCard title={tArtifacts("title")} icon={Paperclip} bodyClassName="p-6">
+            <UnifiedArtifactsPanel
+              rows={artifactRows}
+              scope="TASK"
+              ownerIds={{ taskId: task.id, projectId: task.projectId, clientId: task.clientId }}
+              currentTaskId={task.id}
+              canAdd={podeAnexar}
+              canRemove={canManageScoped}
+            />
+          </SectionCard>
+        </div>
       </div>
     </div>
   );

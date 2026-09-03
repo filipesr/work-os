@@ -81,7 +81,8 @@
     "backToDemand": "Voltar para a demanda",
     "thisStage": "Esta etapa",
     "demandActionsTitle": "Ações da demanda",
-    "revertScopeHint": "Reverter devolve a DEMANDA inteira para uma etapa anterior — inclusive as etapas paralelas que não aparecem nesta tela."
+    "revertScopeHint": "Reverter devolve a DEMANDA inteira para uma etapa anterior — inclusive as etapas paralelas que não aparecem nesta tela.",
+    "revertLabel": "revert#{n}:"
   },
   "stages": {
     "title": "Etapas do Fluxo de Trabalho",

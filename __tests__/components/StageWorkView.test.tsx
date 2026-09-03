@@ -7,7 +7,10 @@ import type { StageView } from "@/lib/actions/stage-view";
 // next-intl: ecoa a chave (sem namespace) — é assim que o teste verifica QUAL chave
 // cada trecho da tela usa, sem depender do texto traduzido.
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  // Ecoa a chave e, quando há parâmetros, também os valores — é assim que estes testes afirmam a
+  // NUMERAÇÃO das correções sem depender do texto traduzido.
+  useTranslations: () => (key: string, vals?: Record<string, unknown>) =>
+    vals ? `${key}:${Object.values(vals).join("|")}` : key,
   useLocale: () => "pt-BR",
 }));
 
@@ -112,6 +115,101 @@ const VIEW: StageView = {
   ],
 };
 
+/** A mesma etapa, depois de duas reversões: o brief e as duas correções, todos presos a `as2`. */
+const VIEW_COM_CORRECOES: StageView = {
+  ...VIEW,
+  comments: [
+    VIEW.comments[0],
+    VIEW.comments[1],
+    VIEW.comments[2],
+    {
+      id: "r1",
+      content: "Medidas inconsistentes — deveria ser 1080px",
+      createdAt: new Date("2026-09-02T14:00:00Z"),
+      kind: "STAGE_INSTRUCTION",
+      activeStageId: "as2",
+      author: { id: "u3", name: "Carla" },
+    },
+    {
+      id: "r2",
+      content: "Cores alteradas a pedido do cliente",
+      createdAt: new Date("2026-09-03T09:00:00Z"),
+      kind: "STAGE_INSTRUCTION",
+      activeStageId: "as2",
+      author: { id: "u2", name: "Beto" },
+    },
+    // Instrução de OUTRA etapa: contexto da demanda, não direção do trabalho de agora.
+    {
+      id: "outra",
+      content: "Edição precisa de legenda",
+      createdAt: new Date("2026-09-02T16:00:00Z"),
+      kind: "STAGE_INSTRUCTION",
+      activeStageId: "as9",
+      author: { id: "gestor1", name: "Gestora" },
+    },
+  ],
+};
+
+describe("StageWorkView — o bloco acumula as correções", () => {
+  it("lista o brief e as correções na ordem, numerando só as correções", () => {
+    // Quem vai refazer precisa da direção original E do que voltou, no mesmo lugar. Antes o brief
+    // estava no destaque e os motivos de reversão só na conversa, longe — de forma que o bloco em
+    // evidência mostrava exatamente o que já estava errado, sem o que explica o retorno.
+    render(<StageWorkView view={VIEW_COM_CORRECOES} currentUserId="u1" />);
+    const bloco = screen.getByTestId("stage-instruction");
+
+    expect(bloco).toHaveTextContent("Gravar no estúdio B");
+    expect(bloco).toHaveTextContent("Medidas inconsistentes");
+    expect(bloco).toHaveTextContent("Cores alteradas a pedido do cliente");
+    // O brief não é uma correção; a numeração começa na primeira reversão.
+    expect(bloco).toHaveTextContent("stageView.revertLabel:1");
+    expect(bloco).toHaveTextContent("stageView.revertLabel:2");
+    expect(bloco).not.toHaveTextContent("stageView.revertLabel:3");
+  });
+
+  it("cada linha diz quem escreveu", () => {
+    // É por isso que o texto não é acumulado num campo só: uma string perde o autor, e "quem pediu
+    // esta correção" é a primeira pergunta de quem discorda dela.
+    render(<StageWorkView view={VIEW_COM_CORRECOES} currentUserId="u1" />);
+    const bloco = screen.getByTestId("stage-instruction");
+    expect(bloco).toHaveTextContent("Gestora");
+    expect(bloco).toHaveTextContent("Carla");
+    expect(bloco).toHaveTextContent("Beto");
+  });
+
+  it("as instruções DESTA etapa somem da conversa — elas moram no bloco", () => {
+    render(<StageWorkView view={VIEW_COM_CORRECOES} currentUserId="u1" />);
+    const conversa = screen.getByTestId("comments-section");
+    expect(conversa).not.toHaveTextContent("Medidas inconsistentes");
+    expect(conversa).not.toHaveTextContent("Gravar no estúdio B");
+  });
+
+  it("a instrução de OUTRA etapa continua na conversa", () => {
+    // Da tela da Gravação, o que voltou a Edição é contexto da demanda, não direção do trabalho de
+    // agora. Some do bloco desta etapa, permanece na história.
+    render(<StageWorkView view={VIEW_COM_CORRECOES} currentUserId="u1" />);
+    expect(screen.getByTestId("comments-section")).toHaveTextContent("Edição precisa de legenda");
+  });
+
+  it("demanda ANTERIOR à feature cai no campo bruto, em vez de perder a instrução", () => {
+    // Não houve backfill: essas demandas têm `instructions` preenchido e nenhum comentário de
+    // instrução. Trocar a fonte sem esta queda apagaria a instrução da tela delas.
+    const legado: StageView = { ...VIEW, comments: [VIEW.comments[0]] };
+    render(<StageWorkView view={legado} currentUserId="u1" />);
+    expect(screen.getByTestId("stage-instruction")).toHaveTextContent("Gravar no estúdio B");
+  });
+
+  it("sem instrução nenhuma, não há bloco", () => {
+    const semNada: StageView = {
+      ...VIEW,
+      stage: { ...VIEW.stage, instruction: null },
+      comments: [VIEW.comments[0]],
+    };
+    render(<StageWorkView view={semNada} currentUserId="u1" />);
+    expect(screen.queryByTestId("stage-instruction")).not.toBeInTheDocument();
+  });
+});
+
 describe("StageWorkView", () => {
   it("mostra a instrução da etapa em destaque, com título próprio", () => {
     render(<StageWorkView view={VIEW} currentUserId="u1" />);
@@ -120,12 +218,21 @@ describe("StageWorkView", () => {
     expect(destaque).toHaveTextContent("Gravar no estúdio B");
   });
 
-  it("a conversa é a da DEMANDA, com o bloco desta etapa realçado", () => {
-    // Realçar, não filtrar: quem opera precisa do contexto inteiro. Um teste que só contasse os
-    // comentários da etapa passaria numa implementação que filtra — que é o oposto da decisão.
-    render(<StageWorkView view={VIEW} currentUserId="u1" />);
+  it("a conversa é a da DEMANDA — só as instruções DESTA etapa saem dela", () => {
+    // Realçar, não filtrar: quem opera precisa do contexto inteiro, e um teste que só contasse os
+    // comentários da etapa passaria numa implementação que filtra — o oposto da decisão.
+    //
+    // A ÚNICA saída é deliberada e veio depois: a instrução desta etapa e as correções dela subiram
+    // para o bloco em destaque, e repeti-las aqui poria a mesma linha duas vezes na mesma tela.
+    // Por isso a asserção mudou de "as três" para "as de conversa mais as instruções de OUTRAS
+    // etapas" — o que ela protege continua sendo o mesmo: a conversa não encolhe para esta etapa.
+    render(<StageWorkView view={VIEW_COM_CORRECOES} currentUserId="u1" />);
+    const conversa = screen.getByTestId("comments-section");
+
+    expect(conversa).toHaveTextContent("oi");
+    expect(conversa).toHaveTextContent("combinado, obrigado");
+    expect(conversa).toHaveTextContent("Edição precisa de legenda");
     expect(screen.getAllByTestId("comment")).toHaveLength(3);
-    expect(screen.getByTestId("comment-c2")).toHaveAttribute("data-this-stage", "true");
     expect(screen.getByTestId("comment-c1")).toHaveAttribute("data-this-stage", "false");
   });
 
