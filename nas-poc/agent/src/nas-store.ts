@@ -69,8 +69,7 @@ export async function storeStreamToNas(input: StoreStreamInput): Promise<StoreSt
       if (!ws.write(chunk)) await once(ws, "drain");
     }
     if (tooLarge) {
-      ws.destroy();
-      await safeUnlink(tmpPath);
+      await destroyAndUnlink(ws, tmpPath);
       throw new StoreError("TOO_LARGE", `upload excede o limite de ${maxBytes} bytes`);
     }
     ws.end();
@@ -82,8 +81,7 @@ export async function storeStreamToNas(input: StoreStreamInput): Promise<StoreSt
     // para não se confundir, lá no chamador, com um erro genérico do NAS (disco cheio, EMFILE,
     // falha de I/O) — essas duas causas pedem reação bem diferente e não podem virar a mesma
     // mensagem de log.
-    ws.destroy();
-    await safeUnlink(tmpPath);
+    await destroyAndUnlink(ws, tmpPath);
     throw new StoreError("ABORTED", (err as Error).message);
   }
   const msWrite = Date.now() - tWrite;
@@ -124,6 +122,17 @@ export async function storeStreamToNas(input: StoreStreamInput): Promise<StoreSt
   }
 
   return { bytes, checksum, msWrite, msHash };
+}
+
+// Destrói o stream de escrita e SÓ ENTÃO tenta apagar o tmp. `ws.destroy()` é assíncrono por baixo
+// — se o arquivo ainda estava sendo aberto (fs.open em andamento no threadpool), um unlink
+// disparado logo em seguida pode rodar ANTES desse open() terminar, e o arquivo reaparece depois
+// que achávamos ter limpado. Esperar o stream fechar de fato (`finished`, tolerando o erro que o
+// próprio destroy pode gerar) fecha essa corrida.
+async function destroyAndUnlink(ws: ReturnType<typeof createWriteStream>, tmpPath: string) {
+  ws.destroy();
+  await finished(ws).catch(() => {});
+  await safeUnlink(tmpPath);
 }
 
 export async function safeUnlink(p: string): Promise<void> {
