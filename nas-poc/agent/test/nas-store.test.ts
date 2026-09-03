@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { storeStreamToNas, StoreError } from "../src/nas-store";
@@ -140,5 +141,89 @@ describe("storeStreamToNas", () => {
       expect(err).toBeInstanceOf(StoreError);
       expect((err as StoreError).code).toBe("EXECUTABLE");
     }
+  });
+
+  it("fonte que aborta DURANTE a escrita vira StoreError ABORTED (cliente desistiu)", async () => {
+    const finalPath = path.join(dir, "h.png");
+    const tmpPath = path.join(dir, "h.png.tmp");
+    async function* fonte() {
+      yield Buffer.alloc(10);
+      throw new Error("ECONNRESET simulado — cliente fechou a conexão");
+    }
+    let caught: unknown;
+    try {
+      await storeStreamToNas({
+        source: fonte(),
+        finalPath,
+        tmpPath,
+        maxBytes: 1000,
+        ext: "png",
+        hashMode: "off",
+      });
+      expect.unreachable("deveria ter lançado");
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeInstanceOf(StoreError);
+    expect((caught as StoreError).code).toBe("ABORTED");
+    expect(existsSync(finalPath)).toBe(false);
+    expect(existsSync(tmpPath)).toBe(false);
+  });
+
+  it("erro genérico do NAS durante o sniff (não é desistência do cliente) propaga o erro original, não StoreError", async () => {
+    const finalPath = path.join(dir, "i.png");
+    const tmpPath = path.join(dir, "i.png.tmp");
+    // Simula uma falha real de I/O do NAS entre a escrita e o sniff: o tmp some do caminho antes
+    // do open() de leitura (ENOENT genérico — não é o cliente que desistiu, é o disco/FS falhando).
+    async function* fonte() {
+      yield PNG;
+      await rm(tmpPath, { force: true });
+    }
+    let caught: unknown;
+    try {
+      await storeStreamToNas({
+        source: fonte(),
+        finalPath,
+        tmpPath,
+        maxBytes: 1000,
+        ext: "png",
+        hashMode: "off",
+      });
+      expect.unreachable("deveria ter lançado");
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeDefined();
+    expect(caught).not.toBeInstanceOf(StoreError);
+  });
+
+  it("msWrite/msHash: deferred mede o hash separado (>0), off fica zero", async () => {
+    const big = Buffer.alloc(48 * 1024 * 1024); // grande o bastante pra hash não zerar no relógio de ms
+
+    const finalOff = path.join(dir, "off.bin");
+    const tmpOff = path.join(dir, "off.bin.tmp");
+    const rOff = await storeStreamToNas({
+      source: bytes(big),
+      finalPath: finalOff,
+      tmpPath: tmpOff,
+      maxBytes: big.length + 10,
+      ext: "bin",
+      hashMode: "off",
+    });
+    expect(rOff.msHash).toBe(0);
+    expect(typeof rOff.msWrite).toBe("number");
+    expect(rOff.msWrite).toBeGreaterThanOrEqual(0);
+
+    const finalDeferred = path.join(dir, "deferred.bin");
+    const tmpDeferred = path.join(dir, "deferred.bin.tmp");
+    const rDeferred = await storeStreamToNas({
+      source: bytes(big),
+      finalPath: finalDeferred,
+      tmpPath: tmpDeferred,
+      maxBytes: big.length + 10,
+      ext: "bin",
+      hashMode: "deferred",
+    });
+    expect(rDeferred.msHash).toBeGreaterThan(0);
   });
 });

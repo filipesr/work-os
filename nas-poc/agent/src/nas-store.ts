@@ -14,7 +14,12 @@ import path from "node:path";
 import { sniffUpload, SniffError } from "./sniff.js";
 import type { HashMode } from "./config.js";
 
-export type StoreFailureCode = "TOO_LARGE" | "EXECUTABLE" | "MAGIC_MISMATCH" | "WRITE_FAILED";
+export type StoreFailureCode =
+  | "TOO_LARGE"
+  | "EXECUTABLE"
+  | "MAGIC_MISMATCH"
+  | "WRITE_FAILED"
+  | "ABORTED";
 
 export class StoreError extends Error {
   constructor(
@@ -38,6 +43,8 @@ export interface StoreStreamInput {
 export interface StoreStreamResult {
   bytes: number;
   checksum: string | null;
+  msWrite: number;
+  msHash: number;
 }
 
 export async function storeStreamToNas(input: StoreStreamInput): Promise<StoreStreamResult> {
@@ -48,6 +55,7 @@ export async function storeStreamToNas(input: StoreStreamInput): Promise<StoreSt
   const hash = hashMode === "off" ? null : createHash("sha256");
   const ws = createWriteStream(tmpPath);
   let bytes = 0;
+  const tWrite = Date.now();
 
   try {
     let tooLarge = false;
@@ -69,11 +77,16 @@ export async function storeStreamToNas(input: StoreStreamInput): Promise<StoreSt
     await finished(ws);
   } catch (err) {
     if (err instanceof StoreError) throw err;
-    // Client disconnect / stream error — the temp file never becomes final.
+    // A fonte (ou o próprio stream de escrita) falhou no meio — na prática isso é quase sempre o
+    // cliente desistindo (aba fechada, conexão caída). Marcamos com um código próprio (ABORTED)
+    // para não se confundir, lá no chamador, com um erro genérico do NAS (disco cheio, EMFILE,
+    // falha de I/O) — essas duas causas pedem reação bem diferente e não podem virar a mesma
+    // mensagem de log.
     ws.destroy();
     await safeUnlink(tmpPath);
-    throw err;
+    throw new StoreError("ABORTED", (err as Error).message);
   }
+  const msWrite = Date.now() - tWrite;
 
   // Sniffing dos primeiros bytes ANTES de publicar — nunca publica um arquivo mal-rotulado.
   try {
@@ -87,6 +100,11 @@ export async function storeStreamToNas(input: StoreStreamInput): Promise<StoreSt
       await safeUnlink(tmpPath);
       throw new StoreError(err.code, err.message);
     }
+    // Erro genérico do NAS (EMFILE, EACCES, I/O) ao abrir/ler o tmp para o sniff — não é o cliente
+    // desistindo, é o storage falhando. Propaga o erro ORIGINAL (não StoreError) para que o
+    // handler deixe o Fastify responder 500 em vez de disfarçar de "upload aborted". Ainda assim
+    // limpamos o tmp aqui — melhoria sobre o código antigo, que deixava esse arquivo para trás
+    // nesse caminho e dependia só do reconcile como rede de segurança.
     await safeUnlink(tmpPath);
     throw err;
   }
@@ -96,13 +114,16 @@ export async function storeStreamToNas(input: StoreStreamInput): Promise<StoreSt
 
   // Checksum according to the measurement mode.
   let checksum: string | null = null;
+  let msHash = 0;
   if (hashMode === "inline" && hash) {
     checksum = hash.digest("hex");
   } else if (hashMode === "deferred") {
+    const tHash = Date.now();
     checksum = await hashFile(finalPath);
+    msHash = Date.now() - tHash;
   }
 
-  return { bytes, checksum };
+  return { bytes, checksum, msWrite, msHash };
 }
 
 export async function safeUnlink(p: string): Promise<void> {

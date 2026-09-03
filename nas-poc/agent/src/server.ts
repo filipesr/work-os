@@ -106,7 +106,6 @@ async function uploadHandler(
   const tmpPath = `${finalPath}.uploading-${claims.jti}.tmp`;
 
   let stored;
-  const tWrite = Date.now();
   try {
     stored = await storeStreamToNas({
       source: req.raw as AsyncIterable<Uint8Array>,
@@ -119,6 +118,12 @@ async function uploadHandler(
   } catch (err) {
     if (err instanceof StoreError) {
       if (err.code === "TOO_LARGE") return reply.code(413).send({ error: "too_large", maxSize });
+      if (err.code === "ABORTED") {
+        // Cliente desistiu (aba fechada, conexão caída) — não é uma falha do NAS.
+        req.log.warn({ err: err.message, tmpPath }, "upload aborted");
+        return reply.code(499).send({ error: "aborted" });
+      }
+      // EXECUTABLE / MAGIC_MISMATCH (sniff recusou o conteúdo).
       await audit.append({
         event: "rejected_sniff",
         artifactId: claims.artifactId,
@@ -126,14 +131,16 @@ async function uploadHandler(
       });
       return reply.code(415).send({ error: err.code, message: err.message });
     }
-    // Client disconnect / stream error — the temp file never becomes final.
-    req.log.warn({ err: (err as Error).message, tmpPath }, "upload aborted");
-    return reply.code(499).send({ error: "aborted" });
+    // Erro genérico da esteira (não StoreError) — não é o cliente desistindo, é o NAS falhando
+    // (disco cheio, EMFILE, I/O). Loga distinto do "upload aborted" e relança para o 500 padrão
+    // do Fastify, em vez de disfarçar de desistência do cliente.
+    req.log.error(
+      { err: (err as Error).message, tmpPath },
+      "falha na gravação do upload — não é desistência do cliente"
+    );
+    throw err;
   }
-  const msWrite = Date.now() - tWrite;
-  const msHash = 0;
-  const bytes = stored.bytes;
-  const checksum = stored.checksum;
+  const { bytes, checksum, msWrite, msHash } = stored;
 
   // Finalize (PENDING/UPLOADING -> READY): tenta inline uma vez; se falhar, enfileira para retry
   // persistente (durável a restart do agente — o worker drena a fila com backoff).
