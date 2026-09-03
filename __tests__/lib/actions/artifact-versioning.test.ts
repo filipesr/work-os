@@ -82,6 +82,37 @@ describe("addLinkArtifactVersion", () => {
     });
   });
 
+  it("preserva mediaType e sensibilidade da versão vigente (a etiqueta não pode cair ao versionar)", async () => {
+    const prisma = (await import("@/lib/prisma")).prisma as never as {
+      taskArtifact: {
+        findUnique: ReturnType<typeof vi.fn>;
+        create: ReturnType<typeof vi.fn>;
+      };
+    };
+    prisma.taskArtifact.findUnique.mockResolvedValue({
+      id: "a1",
+      isCurrent: true,
+      scope: "TASK",
+      taskId: "t1",
+      projectId: null,
+      clientId: null,
+      version: 1,
+      rootId: null,
+      title: "Briefing",
+      type: "DOCUMENT",
+      mediaType: "FOTOS",
+      sensitivity: "CONFIDENCIAL",
+    });
+
+    const { addLinkArtifactVersion } = await import("@/lib/actions/artifact");
+    const res = await addLinkArtifactVersion("a1", { url: "https://drive/x" });
+
+    expect(res).toEqual({ success: true });
+    const data = prisma.taskArtifact.create.mock.calls.at(-1)?.[0].data;
+    expect(data.mediaType).toBe("FOTOS");
+    expect(data.sensitivity).toBe("CONFIDENCIAL");
+  });
+
   it("recusa versionar uma versão não-vigente", async () => {
     const prisma = (await import("@/lib/prisma")).prisma as never as {
       taskArtifact: { findUnique: ReturnType<typeof vi.fn> };

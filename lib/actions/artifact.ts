@@ -817,6 +817,10 @@ export async function addLinkArtifactVersion(artifactId: string, input: { url: s
           title: current.title, // herdado
           url,
           type: current.type, // herdado
+          // Herdados também: são a etiqueta do artefato, e a sensibilidade decide o que o cliente
+          // enxerga. Sem isto, versionar um link CONFIDENCIAL o rebaixa para INTERNO em silêncio.
+          mediaType: current.mediaType,
+          sensitivity: current.sensitivity,
           storageKind: "LINK",
           uploadStatus: "READY",
           userId: user.id as string,
