@@ -164,6 +164,22 @@ describe("POST /api/artifacts/import-queue", () => {
     expect((await res.json()).items).toHaveLength(0);
   });
 
+  it("NÃO entrega upload de navegador em progresso — url nulo, mas nasPath/fileName já selados", async () => {
+    // A forma REAL de um upload de navegador esperando os bytes: `nasPath`/`fileName` são selados
+    // no prepare (createArtifactWithVersion), para os dois fluxos (upload e importação) — só falta
+    // `url`. O caso acima (nasPath/fileName também nulos) não prova nada sobre a guarda `url: {
+    // not: null }` sozinha, porque a guarda `nasPath: { not: null }` já bastaria para excluí-lo.
+    // Este isola: só `url` está faltando.
+    addArtifact({
+      id: "browser2",
+      url: null,
+      nasPath: "Cliente/Tarefa ~ab12/institucional/fotos/Foto_v01.jpg",
+      fileName: "Foto_v01.jpg",
+    });
+    const res = await POST(assinada({ agentId: "a1" }) as never);
+    expect((await res.json()).items).toHaveLength(0);
+  });
+
   it("não entrega o mesmo item duas vezes", async () => {
     addArtifact({ id: "art1" });
     await POST(assinada({ agentId: "a1" }) as never);
