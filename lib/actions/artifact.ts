@@ -27,6 +27,7 @@ import {
   ALLOWLIST,
   buildNasPath,
   fileBaseToken,
+  isUploadableMediaType,
   NasPathError,
   normalizeExtension,
 } from "@/lib/nas/path";
@@ -206,6 +207,12 @@ export async function prepareArtifactUpload(input: unknown) {
 
     if (!isNasUploadConfigured()) {
       return { error: t("uploadNotConfigured") };
+    }
+
+    // Tipo só-de-link (FIGMA, OUTROS) nunca recebe arquivo: recusa aqui, antes de qualquer consulta
+    // — a tela já não oferece essas opções, mas quem trava é o servidor, não o esconder do botão.
+    if (!isUploadableMediaType(data.mediaType)) {
+      return { error: t("mediaTypeLinkOnly") };
     }
 
     // Resolve folderName (raiz do cliente) + nome/id do dono conforme o escopo.

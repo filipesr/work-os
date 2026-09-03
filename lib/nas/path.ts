@@ -17,24 +17,40 @@
 // `ArtifactTarget` (same member values), so Prisma enum values pass through with no coupling.
 
 import { createHash } from "node:crypto";
+// Reexporta a política de tipo de mídia de media-types.ts (sem node:crypto — ver o comentário lá).
+// UploadArtifactForm ("use client") importa UPLOADABLE_MEDIA_TYPES direto de "@/lib/nas/media-types"
+// pelo mesmo motivo: importar deste arquivo quebraria o bundle do cliente (node:crypto não resolve
+// no browser). Quem já importa daqui (server actions, testes) continua funcionando sem mudança.
+import {
+  type ArtifactMediaType,
+  LINK_ONLY_MEDIA_TYPES,
+  type UploadableMediaType,
+  UPLOADABLE_MEDIA_TYPES,
+  isUploadableMediaType,
+} from "./media-types";
 
-export type ArtifactMediaType =
-  | "VIDEOS"
-  | "FOTOS"
-  | "DOCUMENTOS"
-  | "LOGOS"
-  | "SOCIAL_MEDIA"
-  | "OUTROS";
+export {
+  type ArtifactMediaType,
+  LINK_ONLY_MEDIA_TYPES,
+  type UploadableMediaType,
+  UPLOADABLE_MEDIA_TYPES,
+  isUploadableMediaType,
+} from "./media-types";
 
 export type ArtifactScope = "TASK" | "PROJECT" | "CLIENT";
 
 // enum -> folder label (central mapper). SOCIAL_MEDIA is a real folder name; the rest lowercase.
+// Continua com as sete chaves — `outros/` existe no NAS com arquivos antigos, e uma pasta que some
+// do mapa quebra a leitura do que já está gravado.
 export const MEDIA_TYPE_FOLDER: Record<ArtifactMediaType, string> = {
   VIDEOS: "videos",
   FOTOS: "fotos",
   DOCUMENTOS: "documentos",
   LOGOS: "logos",
   SOCIAL_MEDIA: "Social Media",
+  // FIGMA e OUTROS são só-de-link: estas duas não recebem arquivo novo. `outros` fica porque já
+  // existe no NAS, com o que foi gravado antes desta política.
+  FIGMA: "figma",
   OUTROS: "outros",
 };
 
@@ -42,7 +58,7 @@ export const MEDIA_TYPE_FOLDER: Record<ArtifactMediaType, string> = {
 const MB = 1024 * 1024;
 const GB = 1024 * MB;
 
-export const ALLOWLIST: Record<ArtifactMediaType, { ext: string[]; maxBytes: number }> = {
+export const ALLOWLIST: Record<UploadableMediaType, { ext: string[]; maxBytes: number }> = {
   FOTOS: {
     ext: ["jpg", "png", "webp", "gif", "tiff", "heic", "raw", "cr2", "nef", "arw"],
     maxBytes: 150 * MB,
@@ -53,9 +69,11 @@ export const ALLOWLIST: Record<ArtifactMediaType, { ext: string[]; maxBytes: num
     ext: ["pdf", "docx", "xlsx", "pptx", "txt", "zip", "indd", "psd"],
     maxBytes: 200 * MB,
   },
-  SOCIAL_MEDIA: { ext: ["jpg", "png", "mp4", "gif", "pdf"], maxBytes: 500 * MB },
-  // OUTROS = any extension present in the union of the allowlists above (never "anything").
-  OUTROS: { ext: [], maxBytes: 500 * MB },
+  // Foto e vídeo — o pdf saiu porque não é nem um nem outro.
+  SOCIAL_MEDIA: {
+    ext: ["jpg", "png", "webp", "gif", "mp4", "mov", "webm"],
+    maxBytes: 500 * MB,
+  },
 };
 
 // Executables are always blocked, regardless of media type.
@@ -74,12 +92,8 @@ export const BLOCKED_EXT = new Set([
   "html",
 ]);
 
-// Union of allowed extensions, used by OUTROS.
-const ALLOWED_UNION = new Set(
-  Object.entries(ALLOWLIST)
-    .filter(([k]) => k !== "OUTROS")
-    .flatMap(([, v]) => v.ext)
-);
+// União de todas as extensões aceitas — usada pela guarda de extensão dupla.
+const ALLOWED_UNION = new Set(Object.values(ALLOWLIST).flatMap((v) => v.ext));
 
 // Length budgets (spec). relPath total is the binding one (protects Windows MAX_PATH 260).
 export const LIMITS = {
@@ -96,6 +110,7 @@ export class NasPathError extends Error {
       | "DOUBLE_EXTENSION"
       | "BLOCKED_EXTENSION"
       | "EXT_NOT_ALLOWED_FOR_TYPE"
+      | "MEDIA_TYPE_LINK_ONLY"
       | "MISSING_OWNER"
       | "EMPTY_COMPONENT",
     message: string
@@ -157,6 +172,12 @@ export function fileBaseToken(originalFileName: string): string {
 
 // Normalize an extension from the original file name. Throws on missing / double / blocked.
 export function normalizeExtension(originalFileName: string, mediaType: ArtifactMediaType): string {
+  if (!isUploadableMediaType(mediaType)) {
+    throw new NasPathError(
+      "MEDIA_TYPE_LINK_ONLY",
+      `o tipo ${mediaType} existe só como link e não recebe arquivo no NAS`
+    );
+  }
   const name = originalFileName.trim();
   const parts = name.split(".");
   if (parts.length < 2 || parts[parts.length - 1] === "") {
@@ -178,8 +199,7 @@ export function normalizeExtension(originalFileName: string, mediaType: Artifact
   if (BLOCKED_EXT.has(ext)) {
     throw new NasPathError("BLOCKED_EXTENSION", `extensão bloqueada: ".${ext}"`);
   }
-  const allowed =
-    mediaType === "OUTROS" ? ALLOWED_UNION.has(ext) : ALLOWLIST[mediaType].ext.includes(ext);
+  const allowed = ALLOWLIST[mediaType].ext.includes(ext);
   if (!allowed) {
     throw new NasPathError(
       "EXT_NOT_ALLOWED_FOR_TYPE",

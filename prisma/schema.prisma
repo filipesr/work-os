@@ -62,6 +62,7 @@ enum ArtifactMediaType {
   DOCUMENTOS
   LOGOS
   SOCIAL_MEDIA
+  FIGMA
   OUTROS
 }
 

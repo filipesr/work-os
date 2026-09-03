@@ -137,6 +137,7 @@
     "urlRequired": "URL é obrigatória.",
     "uploadNotConfigured": "Upload no NAS não está configurado neste ambiente.",
     "demandNotFound": "Demanda não encontrada.",
+    "mediaTypeLinkOnly": "Esse tipo existe só como link e não recebe arquivo no NAS.",
     "prepareUploadFailed": "Erro ao preparar o envio.",
     "loadOptionsFailed": "Erro ao carregar as opções de envio.",
     "markUploadFailed": "Erro ao marcar o envio.",

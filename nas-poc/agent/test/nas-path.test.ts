@@ -6,6 +6,8 @@ import {
   toNasToken,
   NasPathError,
   LIMITS,
+  ALLOWLIST,
+  isUploadableMediaType,
 } from "../src/nas-path.js";
 
 describe("toAsciiSafe", () => {
@@ -38,20 +40,16 @@ describe("normalizeExtension", () => {
     expect(normalizeExtension("clip.MP4", "VIDEOS")).toBe("mp4");
   });
   it("rejects missing extension", () => {
-    expect(() => normalizeExtension("semponto", "OUTROS")).toThrow(NasPathError);
+    expect(() => normalizeExtension("semponto", "DOCUMENTOS")).toThrow(NasPathError);
   });
   it("rejects blocked executables", () => {
-    expect(() => normalizeExtension("payload.exe", "OUTROS")).toThrow(/bloqueada/);
+    expect(() => normalizeExtension("payload.exe", "DOCUMENTOS")).toThrow(/bloqueada/);
   });
   it("rejects double extension", () => {
     expect(() => normalizeExtension("invoice.pdf.exe", "DOCUMENTOS")).toThrow(/dupla|bloqueada/);
   });
   it("rejects extension not allowed for the media type", () => {
     expect(() => normalizeExtension("art.mp4", "FOTOS")).toThrow(/não permitida/);
-  });
-  it("OUTROS accepts any extension in the global union", () => {
-    expect(normalizeExtension("thing.zip", "OUTROS")).toBe("zip");
-    expect(() => normalizeExtension("thing.xyz", "OUTROS")).toThrow(/não permitida/);
   });
 });
 
@@ -149,5 +147,20 @@ describe("buildNasPath — length budgets", () => {
       campaignSlug: "Z".repeat(90),
     };
     expect(buildNasPath(input)).toEqual(buildNasPath(input));
+  });
+});
+
+describe("política de tipos (paridade com o app)", () => {
+  it("FIGMA e OUTROS recusam arquivo", () => {
+    for (const t of ["FIGMA", "OUTROS"] as const) {
+      expect(() => normalizeExtension("a.png", t), t).toThrow(NasPathError);
+    }
+  });
+
+  it("LOGOS continua com vetor e pdf; SOCIAL_MEDIA aceita vídeo e recusa pdf", () => {
+    expect(() => normalizeExtension("m.ai", "LOGOS")).not.toThrow();
+    expect(() => normalizeExtension("m.pdf", "LOGOS")).not.toThrow();
+    expect(() => normalizeExtension("v.mp4", "SOCIAL_MEDIA")).not.toThrow();
+    expect(() => normalizeExtension("d.pdf", "SOCIAL_MEDIA")).toThrow(NasPathError);
   });
 });

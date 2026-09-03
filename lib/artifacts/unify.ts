@@ -46,6 +46,7 @@ const MEDIA_TYPE_LABEL: Record<string, string> = {
   DOCUMENTOS: "Documentos",
   LOGOS: "Logos",
   SOCIAL_MEDIA: "Social Media",
+  FIGMA: "Figma",
   OUTROS: "Outros",
 };
 

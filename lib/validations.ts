@@ -88,6 +88,7 @@ const artifactMediaTypeEnum = z.enum([
   "DOCUMENTOS",
   "LOGOS",
   "SOCIAL_MEDIA",
+  "FIGMA",
   "OUTROS",
 ]);
 const sensitivityEnum = z.enum(["INTERNO", "CLIENTE", "CONFIDENCIAL"]);

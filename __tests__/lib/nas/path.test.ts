@@ -7,6 +7,8 @@ import {
   toNasToken,
   NasPathError,
   LIMITS,
+  ALLOWLIST,
+  isUploadableMediaType,
 } from "@/lib/nas/path";
 
 describe("toAsciiSafe", () => {
@@ -56,20 +58,16 @@ describe("normalizeExtension", () => {
     expect(normalizeExtension("clip.MP4", "VIDEOS")).toBe("mp4");
   });
   it("rejects missing extension", () => {
-    expect(() => normalizeExtension("semponto", "OUTROS")).toThrow(NasPathError);
+    expect(() => normalizeExtension("semponto", "DOCUMENTOS")).toThrow(NasPathError);
   });
   it("rejects blocked executables", () => {
-    expect(() => normalizeExtension("payload.exe", "OUTROS")).toThrow(/bloqueada/);
+    expect(() => normalizeExtension("payload.exe", "DOCUMENTOS")).toThrow(/bloqueada/);
   });
   it("rejects double extension", () => {
     expect(() => normalizeExtension("invoice.pdf.exe", "DOCUMENTOS")).toThrow(/dupla|bloqueada/);
   });
   it("rejects extension not allowed for the media type", () => {
     expect(() => normalizeExtension("art.mp4", "FOTOS")).toThrow(/não permitida/);
-  });
-  it("OUTROS accepts any extension in the global union", () => {
-    expect(normalizeExtension("thing.zip", "OUTROS")).toBe("zip");
-    expect(() => normalizeExtension("thing.xyz", "OUTROS")).toThrow(/não permitida/);
   });
 });
 
@@ -192,5 +190,59 @@ describe("buildNasPath — length budgets", () => {
       uploadDate: JULY_2026,
     };
     expect(buildNasPath(input)).toEqual(buildNasPath(input));
+  });
+});
+
+describe("tipos só de link", () => {
+  it('recusam arquivo com um motivo próprio, não com "extensão não permitida"', () => {
+    for (const t of ["FIGMA", "OUTROS"] as const) {
+      expect(() => normalizeExtension("a.png", t)).toThrow(NasPathError);
+      try {
+        normalizeExtension("a.png", t);
+      } catch (e) {
+        expect((e as NasPathError).code, t).toBe("MEDIA_TYPE_LINK_ONLY");
+      }
+    }
+  });
+
+  it("OUTROS deixa de ser o coringa que aceitava a união das listas", () => {
+    expect(() => normalizeExtension("qualquer.psd", "OUTROS")).toThrow(NasPathError);
+  });
+
+  it("isUploadableMediaType separa os dois mundos", () => {
+    expect(isUploadableMediaType("FOTOS")).toBe(true);
+    expect(isUploadableMediaType("FIGMA")).toBe(false);
+    expect(isUploadableMediaType("OUTROS")).toBe(false);
+  });
+});
+
+describe("LOGOS não muda", () => {
+  it("continua aceitando vetor e pdf", () => {
+    for (const f of ["marca.svg", "marca.ai", "marca.eps", "marca.pdf", "marca.png", "marca.cdr"]) {
+      expect(() => normalizeExtension(f, "LOGOS"), f).not.toThrow();
+    }
+  });
+
+  it("continua com o teto de 200 MB", () => {
+    expect(ALLOWLIST.LOGOS.maxBytes).toBe(200 * 1024 * 1024);
+  });
+});
+
+describe("SOCIAL_MEDIA é foto e vídeo", () => {
+  it("aceita os dois conjuntos", () => {
+    for (const f of ["a.jpg", "a.png", "a.webp", "a.gif", "a.mp4", "a.mov", "a.webm"]) {
+      expect(() => normalizeExtension(f, "SOCIAL_MEDIA"), f).not.toThrow();
+    }
+  });
+
+  it("recusa pdf, que não é nem um nem outro", () => {
+    expect(() => normalizeExtension("a.pdf", "SOCIAL_MEDIA")).toThrow(/não permitida para o tipo/);
+  });
+});
+
+describe("a guarda de extensão dupla sobrevive à mudança da união", () => {
+  it("continua pegando o disfarce", () => {
+    expect(() => normalizeExtension("nota.pdf.exe", "DOCUMENTOS")).toThrow(NasPathError);
+    expect(() => normalizeExtension("foto.jpg.png", "FOTOS")).toThrow(/dupla/);
   });
 });

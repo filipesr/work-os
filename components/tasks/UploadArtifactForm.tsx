@@ -27,8 +27,11 @@ import { resolveUploadEndpoint, type UploadEndpoint } from "@/lib/nas/endpoint";
 import { nasFailureMessage } from "@/lib/nas/failure-message";
 import { getArtifactUploadOptions } from "@/lib/actions/artifact";
 import { guessMediaType, uploadFileToNas } from "@/lib/nas/upload-client";
+// Importa de media-types (não de "@/lib/nas/path"): este componente é "use client" e path.ts
+// importa node:crypto, que não resolve no bundle do browser.
+import { UPLOADABLE_MEDIA_TYPES } from "@/lib/nas/media-types";
 
-const MEDIA_TYPES = ["VIDEOS", "FOTOS", "DOCUMENTOS", "LOGOS", "SOCIAL_MEDIA", "OUTROS"];
+const MEDIA_TYPES = UPLOADABLE_MEDIA_TYPES;
 const SENSITIVITIES = ["INTERNO", "CLIENTE", "CONFIDENCIAL"];
 
 interface Options {
