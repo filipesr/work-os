@@ -14,11 +14,9 @@ export interface FinalizeConfig {
   agentId: string;
 }
 
-export interface FinalizePayload {
-  artifactId: string;
-  checksum: string | null;
-  sizeBytes: number;
-}
+export type FinalizePayload =
+  | { artifactId: string; checksum: string | null; sizeBytes: number }
+  | { artifactId: string; failed: true; reason: string; detail?: string };
 
 export function finalizeSignature(secret: string, timestamp: string, rawBody: string): string {
   return createHmac("sha256", secret).update(`${timestamp}.${rawBody}`).digest("hex");

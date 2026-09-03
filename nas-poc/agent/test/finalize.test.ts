@@ -115,4 +115,30 @@ describe("callFinalize", () => {
     expect(r.ok).toBe(false);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
+
+  it("carrega failed:true e o reason no corpo assinado, para a variante de falha", async () => {
+    const seen: { url: unknown; init: any }[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: unknown, init: any) => {
+        seen.push({ url, init });
+        return { ok: true, status: 200 } as Response;
+      })
+    );
+
+    await callFinalize(
+      { url: "http://cloud/api/artifacts/finalize", secret: "s3cr3t", agentId: "agent-1" },
+      { artifactId: "art1", failed: true, reason: "PRIVATE_HOST", detail: "10.0.0.1 é interno" }
+    );
+
+    expect(seen).toHaveLength(1);
+    const { init } = seen[0];
+    expect(JSON.parse(init.body)).toMatchObject({
+      artifactId: "art1",
+      failed: true,
+      reason: "PRIVATE_HOST",
+      detail: "10.0.0.1 é interno",
+      agentId: "agent-1",
+    });
+  });
 });

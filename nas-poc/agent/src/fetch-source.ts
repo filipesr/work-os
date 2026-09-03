@@ -118,7 +118,10 @@ export function isPrivateAddress(ip: string): boolean {
   // recusam domínio de verdade: `fdic.gov` cai em /^f[cd]/ e `febraban.com.br` cai em /^fe[89ab]/.
   if (!host.includes(":")) return false;
   const groups = ipv6ToGroups(host);
-  if (!groups) return false; // não reconhecido como endereço — não é a régua de endereço que decide
+  // Ininteligível não é "não é a régua de endereço que decide" — é a régua recusando por
+  // definição. Um endereço que esta função não sabe canonicalizar (ex.: zona "%eth0") tem que
+  // falhar para o lado fechado (privado), nunca para o lado aberto (público).
+  if (!groups) return true;
   return isPrivateIpv6Groups(groups);
 }
 

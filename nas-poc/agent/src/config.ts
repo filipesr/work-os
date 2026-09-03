@@ -25,6 +25,10 @@ export interface AgentConfig {
   reconcileToken?: string;
   // TTL de arquivos .uploading-*.tmp órfãos (reconcile cleanup).
   tmpTtlMs: number;
+  // Fila de importação (agente -> nuvem). Sem a URL, o laço nem começa: o agente antigo continua
+  // servindo upload normalmente, que é o que permite publicar app e agente em dias diferentes.
+  cloudImportQueueUrl?: string;
+  importPollMs: number;
 }
 
 function num(name: string, def: number): number {
@@ -68,6 +72,8 @@ export function loadConfig(): AgentConfig {
     stateDir: process.env.STATE_DIR || path.join(path.resolve(nasRoot), ".agent-state"),
     reconcileToken: process.env.RECONCILE_TOKEN || undefined,
     tmpTtlMs: num("TMP_TTL_MS", 24 * 60 * 60 * 1000),
+    cloudImportQueueUrl: process.env.CLOUD_IMPORT_QUEUE_URL || undefined,
+    importPollMs: num("IMPORT_POLL_MS", 60_000),
   };
 }
 

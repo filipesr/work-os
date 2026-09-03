@@ -24,6 +24,7 @@ import {
 import { callFinalize, decideFinalize } from "./finalize.js";
 import { PersistentJtiStore, FinalizeQueue, AuditLog } from "./store.js";
 import { storeStreamToNas, StoreError, safeUnlink } from "./nas-store.js";
+import { startImportWorker } from "./import-worker.js";
 
 function bearer(req: FastifyRequest): string | undefined {
   const h = req.headers.authorization;
@@ -426,6 +427,7 @@ async function main() {
   await tunnel.listen({ host: cfg.tunnelHost, port: cfg.tunnelPort });
 
   const stopWorker = startFinalizeWorker(cfg, queue, audit, lan.log);
+  startImportWorker(cfg, lan.log);
 
   lan.log.info(
     { nasRoot: cfg.nasRoot, stateDir: cfg.stateDir, hashMode: cfg.hashMode, kids: store.kids },

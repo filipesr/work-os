@@ -1,9 +1,29 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import path from "node:path";
-import { safeResolve } from "../src/config.js";
+import { safeResolve, loadConfig } from "../src/config.js";
 import { sanitizeDisposition, resolveRange } from "../src/server.js";
 
 const ROOT = path.resolve("/data");
+
+describe("loadConfig — fila de importação", () => {
+  afterEach(() => {
+    delete process.env.NAS_ROOT;
+    delete process.env.TOKEN_PUBLIC_KEYS;
+    delete process.env.CLOUD_IMPORT_QUEUE_URL;
+    delete process.env.IMPORT_POLL_MS;
+  });
+
+  it("sem CLOUD_IMPORT_QUEUE_URL, cloudImportQueueUrl é undefined e importPollMs tem o padrão", () => {
+    process.env.NAS_ROOT = "/data";
+    process.env.TOKEN_PUBLIC_KEYS = "[]";
+    delete process.env.CLOUD_IMPORT_QUEUE_URL;
+    delete process.env.IMPORT_POLL_MS;
+
+    const cfg = loadConfig();
+    expect(cfg.cloudImportQueueUrl).toBeUndefined();
+    expect(cfg.importPollMs).toBe(60_000);
+  });
+});
 
 describe("safeResolve", () => {
   it("resolves a normal relative path inside the root", () => {

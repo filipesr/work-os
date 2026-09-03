@@ -60,6 +60,13 @@ describe("isPrivateAddress", () => {
       expect(isPrivateAddress(nome), nome).toBe(false);
     }
   });
+
+  it("recusa um endereço com zona que ela não sabe interpretar (falhar para o lado fechado)", () => {
+    // Hoje isso é inalcançável a partir de fetchSource (o parser de URL rejeita a zona antes de
+    // chegar aqui), mas isPrivateAddress é exportada e um endereço ininteligível precisa ser
+    // recusado por definição — não tratado como público por omissão.
+    expect(isPrivateAddress("fe80::1%eth0")).toBe(true);
+  });
 });
 
 describe("fetchSource", () => {
