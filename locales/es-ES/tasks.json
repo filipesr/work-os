@@ -262,6 +262,19 @@
       "FAILED": "Falló",
       "EXPIRED": "Expirado"
     },
+    "nasFailure": {
+      "TOO_LARGE": "El archivo supera el límite del tipo declarado.",
+      "NOT_A_FILE": "El enlace ha devuelto una página, no un archivo.",
+      "EXECUTABLE": "El contenido es un ejecutable y se ha bloqueado.",
+      "SOURCE_UNREACHABLE": "El origen no ha respondido.",
+      "SOURCE_REFUSED": "El origen ha rechazado la descarga (puede que el enlace exija iniciar sesión).",
+      "PRIVATE_HOST": "La dirección apunta al interior de la red.",
+      "TOO_MANY_REDIRECTS": "El enlace ha redirigido demasiadas veces.",
+      "TIMEOUT": "El origen ha tardado demasiado en responder.",
+      "WRITE_FAILED": "No se ha podido guardar el archivo en el NAS."
+    },
+    "editImport": "Editar y volver a intentarlo",
+    "editImportTitle": "Corregir la importación",
     "types": {
       "document": "Documento",
       "image": "Imagen",

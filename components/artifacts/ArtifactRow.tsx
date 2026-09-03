@@ -60,6 +60,9 @@ interface ArtifactRowProps {
   reenviarBusy: string | null;
   onReenviar: (id: string) => void;
   onRemoveFailed: (id: string) => void;
+  // Reedição da importação que falhou (Task 8) — "reenviar" abre um seletor de arquivo LOCAL, e
+  // quem registrou o link está, por hipótese, fora da LAN; então aqui troca por "editar", não soma.
+  onEditImport: (id: string) => void;
   // Remoção de artefato de escopo (projeto/cliente)
   onRemove: (id: string) => void;
 }
@@ -82,6 +85,7 @@ export function ArtifactRow({
   reenviarBusy,
   onReenviar,
   onRemoveFailed,
+  onEditImport,
   onRemove,
 }: ArtifactRowProps) {
   const t = useTranslations("tasks.artifacts");
@@ -94,8 +98,16 @@ export function ArtifactRow({
     if (t.has(key)) return t(key);
     return row.mediaType ?? row.type ?? "—";
   };
+  // Código estável do motivo (TOO_LARGE, NOT_A_FILE…) — traduz quando conhecido; senão, cai no
+  // texto CRU em vez de sumir. Agente e app não sobem juntos: uma versão nova do agente pode
+  // inventar um código que este app ainda não traduz, e a tela não pode emudecer nesse dia.
+  const motivo = (code: string) => (t.has(`nasFailure.${code}`) ? t(`nasFailure.${code}`) : code);
   const showTaskBadge = a.taskId != null && a.taskId !== currentTaskId;
   const isNas = a.storageKind === "NAS_UPLOAD";
+  // Editar só existe para uma IMPORTAÇÃO (NAS_UPLOAD com origem em `url`) que FALHOU. Um artefato
+  // READY tem bytes gravados — trocar a origem depois mentiria sobre um arquivo que existe.
+  const isImport = isNas && a.url != null;
+  const importFalhou = isImport && a.uploadStatus === "FAILED";
   return (
     <div className="rounded-lg border bg-card">
       <div className="flex items-start justify-between gap-3 p-3 hover:bg-accent/40 transition-colors">
@@ -154,20 +166,34 @@ export function ArtifactRow({
               {formatArtifactTime(new Date(a.createdAt), t, locale)}
             </span>
           </div>
+          {a.uploadStatus === "FAILED" && a.failedReason && (
+            <p className="mt-1 text-xs text-destructive">{motivo(a.failedReason)}</p>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
           {isNas && a.uploadStatus === "READY" && <DownloadArtifactButton artifactId={a.id} />}
           {isNas && a.uploadStatus !== "READY" && a.origin === scope && (
             <>
-              <button
-                type="button"
-                onClick={() => onReenviar(a.id)}
-                disabled={isPending || reenviarBusy !== null}
-                className="text-xs font-semibold text-primary hover:text-primary/80 disabled:opacity-50"
-              >
-                {reenviarBusy === a.id ? t("reenviarPending") : t("reenviar")}
-              </button>
+              {importFalhou ? (
+                <button
+                  type="button"
+                  onClick={() => onEditImport(a.id)}
+                  disabled={isPending}
+                  className="text-xs font-semibold text-primary hover:text-primary/80 disabled:opacity-50"
+                >
+                  {t("editImport")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onReenviar(a.id)}
+                  disabled={isPending || reenviarBusy !== null}
+                  className="text-xs font-semibold text-primary hover:text-primary/80 disabled:opacity-50"
+                >
+                  {reenviarBusy === a.id ? t("reenviarPending") : t("reenviar")}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => onRemoveFailed(a.id)}

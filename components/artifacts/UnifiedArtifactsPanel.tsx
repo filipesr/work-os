@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
@@ -10,6 +10,7 @@ import { useArtifactVersions } from "@/lib/hooks/useArtifactVersions";
 import { useNasReupload } from "@/lib/hooks/useNasReupload";
 import { ArtifactRow } from "@/components/artifacts/ArtifactRow";
 import { AddArtifactForm } from "@/components/artifacts/AddArtifactForm";
+import { EditFailedImportDialog } from "@/components/artifacts/EditFailedImportDialog";
 
 interface UnifiedArtifactsPanelProps {
   rows: UnifiedArtifactRow[];
@@ -37,6 +38,9 @@ export function UnifiedArtifactsPanel({
 
   const versions = useArtifactVersions(startTransition);
   const reupload = useNasReupload({ scope, ownerIds, startTransition });
+  // Reedição da importação que falhou (Task 8) — a linha selecionada mora aqui, não no
+  // ArtifactRow: um diálogo controlado precisa de estado que sobrevive a todas as linhas.
+  const [editandoImport, setEditandoImport] = useState<UnifiedArtifactRow | null>(null);
 
   const sorted = sortRows(rows);
 
@@ -86,6 +90,7 @@ export function UnifiedArtifactsPanel({
               reenviarBusy={reupload.reenviarBusy}
               onReenviar={reupload.startReenviar}
               onRemoveFailed={reupload.handleRemoveFailed}
+              onEditImport={() => setEditandoImport(a)}
               onRemove={handleRemove}
             />
           ))}
@@ -100,6 +105,10 @@ export function UnifiedArtifactsPanel({
           isPending={isPending}
           startTransition={startTransition}
         />
+      )}
+
+      {editandoImport && (
+        <EditFailedImportDialog artifact={editandoImport} onClose={() => setEditandoImport(null)} />
       )}
     </div>
   );

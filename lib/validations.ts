@@ -143,6 +143,17 @@ export const importArtifactSchema = z
 
 export type ImportArtifactInput = z.infer<typeof importArtifactSchema>;
 
+// retryArtifactImport — a reedição reabre TODOS os campos: a falha nem sempre é do link (um vídeo
+// declarado como FOTOS é recusado pelo teto do tipo, e trocar só a URL não resolveria).
+export const retryImportSchema = z.object({
+  title: z.string().min(1, "Nome do artefato é obrigatório").max(200),
+  url: z.string().url("URL inválida"),
+  mediaType: artifactMediaTypeEnum,
+  sensitivity: sensitivityEnum.default("INTERNO"),
+});
+
+export type RetryImportInput = z.infer<typeof retryImportSchema>;
+
 // ========== Scoped link artifacts (spec 2026-07-06) ==========
 // Artifacts carry a `scope` (TASK / PROJECT / CLIENT). v1 supports LINK artifacts only for the
 // PROJECT/CLIENT scopes. The invariant — enforced here in code, not in the DB — is that EXACTLY ONE

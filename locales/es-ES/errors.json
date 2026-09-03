@@ -156,7 +156,10 @@
     "importSchemeNotAllowed": "Solo se puede importar desde direcciones http o https.",
     "importPrivateHost": "Esa dirección apunta al interior de la red y no se puede importar.",
     "importNoFileName": "El enlace debe apuntar directamente al archivo (terminando en su nombre, con extensión). Los enlaces de carpeta o de vista previa no sirven.",
-    "importFailed": "No se ha podido poner la importación en cola."
+    "importFailed": "No se ha podido poner la importación en cola.",
+    "importOnlyFailed": "Solo se puede editar una importación que ha fallado.",
+    "importOnlyImports": "Este artefacto no es una importación.",
+    "importPathTaken": "Ya existe un artefacto con ese nombre en esa carpeta del NAS."
   },
   "calendar": {
     "invalidYear": "Año inválido.",

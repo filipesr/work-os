@@ -10,8 +10,13 @@ export type UnifiedArtifactRow = {
   url: string | null;
   storageKind: "LINK" | "NAS_UPLOAD";
   uploadStatus: string;
+  failedReason: string | null; // código estável (TOO_LARGE, NOT_A_FILE…) — a tela traduz, com queda para o cru
   type: string | null; // ArtifactType (link)
   mediaType: string | null; // ArtifactMediaType (NAS)
+  // A reedição da importação falha (Task 8) reabre este campo pré-preenchido com o valor ATUAL —
+  // sem ele aqui, o diálogo teria que "adivinhar" (INTERNO), e reenviar sem tocar a sensibilidade
+  // rebaixaria em silêncio um artefato CLIENTE/CONFIDENCIAL.
+  sensitivity: string | null;
   fileName: string | null;
   version: number;
   createdAt: string; // ISO
@@ -88,8 +93,10 @@ type RawArtifact = {
   url?: string | null;
   storageKind?: string | null;
   uploadStatus?: string | null;
+  failedReason?: string | null;
   type?: string | null;
   mediaType?: string | null;
+  sensitivity?: string | null;
   fileName?: string | null;
   version?: number | null;
   createdAt: Date | string;
@@ -109,8 +116,10 @@ export function mapArtifactRow(
     url: a.url ?? null,
     storageKind: a.storageKind === "NAS_UPLOAD" ? "NAS_UPLOAD" : "LINK",
     uploadStatus: a.uploadStatus ?? "READY",
+    failedReason: a.failedReason ?? null,
     type: a.type ?? null,
     mediaType: a.mediaType ?? null,
+    sensitivity: a.sensitivity ?? null,
     fileName: a.fileName ?? null,
     version: a.version ?? 1,
     createdAt: typeof a.createdAt === "string" ? a.createdAt : a.createdAt.toISOString(),
