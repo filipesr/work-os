@@ -6,11 +6,8 @@
 //   -> enforce size -> atomic rename -> sha256 (mode-dependent) -> 201.
 // Download path: verify JWT -> Range-aware stream (200/206/416).
 
-import { createHash } from "node:crypto";
-import { createReadStream, createWriteStream, mkdirSync } from "node:fs";
-import { mkdir, open, readdir, rename, rm, stat, statfs } from "node:fs/promises";
-import { once } from "node:events";
-import { finished } from "node:stream/promises";
+import { createReadStream, mkdirSync } from "node:fs";
+import { readdir, stat, statfs } from "node:fs/promises";
 import path from "node:path";
 import Fastify, { type FastifyInstance, type FastifyRequest, type FastifyReply } from "fastify";
 import cors from "@fastify/cors";
@@ -26,7 +23,7 @@ import {
 } from "./token.js";
 import { callFinalize, decideFinalize } from "./finalize.js";
 import { PersistentJtiStore, FinalizeQueue, AuditLog } from "./store.js";
-import { sniffUpload, SniffError } from "./sniff.js";
+import { storeStreamToNas, StoreError, safeUnlink } from "./nas-store.js";
 
 function bearer(req: FastifyRequest): string | undefined {
   const h = req.headers.authorization;
@@ -107,46 +104,21 @@ async function uploadHandler(
   }
 
   const tmpPath = `${finalPath}.uploading-${claims.jti}.tmp`;
-  await mkdir(path.dirname(finalPath), { recursive: true });
 
-  const hash = cfg.hashMode === "off" ? null : createHash("sha256");
-  const ws = createWriteStream(tmpPath);
-  let bytes = 0;
+  let stored;
   const tWrite = Date.now();
-
   try {
-    for await (const chunk of req.raw as AsyncIterable<Buffer>) {
-      bytes += chunk.length;
-      if (bytes > maxSize) {
-        ws.destroy();
-        await safeUnlink(tmpPath);
-        return reply.code(413).send({ error: "too_large", maxSize });
-      }
-      if (cfg.hashMode === "inline" && hash) hash.update(chunk);
-      if (!ws.write(chunk)) await once(ws, "drain");
-    }
-    ws.end();
-    await finished(ws);
+    stored = await storeStreamToNas({
+      source: req.raw as AsyncIterable<Uint8Array>,
+      finalPath,
+      tmpPath,
+      maxBytes: maxSize,
+      ext: path.extname(claims.fileName).slice(1).toLowerCase(),
+      hashMode: cfg.hashMode,
+    });
   } catch (err) {
-    // Client disconnect / stream error — the temp file never becomes final.
-    ws.destroy();
-    await safeUnlink(tmpPath);
-    req.log.warn({ err: (err as Error).message, tmpPath }, "upload aborted");
-    return reply.code(499).send({ error: "aborted" });
-  }
-  const msWrite = Date.now() - tWrite;
-
-  // Sniffing dos primeiros bytes ANTES de publicar — nunca publica um arquivo mal-rotulado.
-  try {
-    const fh = await open(tmpPath, "r");
-    const headBuf = Buffer.alloc(256);
-    const { bytesRead } = await fh.read(headBuf, 0, 256, 0);
-    await fh.close();
-    const ext = path.extname(claims.fileName).slice(1).toLowerCase();
-    sniffUpload(headBuf.subarray(0, bytesRead), ext);
-  } catch (err) {
-    if (err instanceof SniffError) {
-      await safeUnlink(tmpPath);
+    if (err instanceof StoreError) {
+      if (err.code === "TOO_LARGE") return reply.code(413).send({ error: "too_large", maxSize });
       await audit.append({
         event: "rejected_sniff",
         artifactId: claims.artifactId,
@@ -154,22 +126,14 @@ async function uploadHandler(
       });
       return reply.code(415).send({ error: err.code, message: err.message });
     }
-    throw err;
+    // Client disconnect / stream error — the temp file never becomes final.
+    req.log.warn({ err: (err as Error).message, tmpPath }, "upload aborted");
+    return reply.code(499).send({ error: "aborted" });
   }
-
-  // Atomic publish.
-  await rename(tmpPath, finalPath);
-
-  // Checksum according to the measurement mode.
-  let checksum: string | null = null;
-  let msHash = 0;
-  if (cfg.hashMode === "inline" && hash) {
-    checksum = hash.digest("hex");
-  } else if (cfg.hashMode === "deferred") {
-    const tHash = Date.now();
-    checksum = await hashFile(finalPath);
-    msHash = Date.now() - tHash;
-  }
+  const msWrite = Date.now() - tWrite;
+  const msHash = 0;
+  const bytes = stored.bytes;
+  const checksum = stored.checksum;
 
   // Finalize (PENDING/UPLOADING -> READY): tenta inline uma vez; se falhar, enfileira para retry
   // persistente (durável a restart do agente — o worker drena a fila com backoff).
@@ -471,20 +435,6 @@ async function main() {
 }
 
 // ---- utils -------------------------------------------------------------------
-
-async function safeUnlink(p: string): Promise<void> {
-  try {
-    await rm(p, { force: true });
-  } catch {
-    /* ignore */
-  }
-}
-
-async function hashFile(p: string): Promise<string> {
-  const h = createHash("sha256");
-  await finished(createReadStream(p).on("data", (c) => h.update(c)));
-  return h.digest("hex");
-}
 
 // RFC 7233 single-range resolver. 416 only when the start is unsatisfiable; a too-large end is
 // clamped to size-1. Handles suffix ranges ("bytes=-N").
