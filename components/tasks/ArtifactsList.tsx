@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { TaskArtifact, User } from "@prisma/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getProxiedImageUrl } from "@/lib/utils/image-proxy";
-import { ExternalLink, FileText, Image, Video, Figma, File } from "lucide-react";
+import { ExternalLink, File, FileText, Figma, Image, Video } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { dateFnsLocale } from "@/lib/date-locale";
 import { DownloadArtifactButton } from "./DownloadArtifactButton";
@@ -26,14 +26,34 @@ interface ArtifactsListProps {
   artifacts: ArtifactWithUser[];
 }
 
-// Ícone + cor por tipo (o rótulo textual vem de tasks.artifacts.types).
-const artifactTypeConfig = {
+// Ícone por tipo de mídia (artefato novo) com queda para o `type` legado (artefato antigo).
+const mediaIconConfig = {
+  VIDEOS: { icon: Video, color: "text-primary" },
+  FOTOS: { icon: Image, color: "text-success" },
+  DOCUMENTOS: { icon: FileText, color: "text-primary" },
+  LOGOS: { icon: Image, color: "text-success" },
+  SOCIAL_MEDIA: { icon: Image, color: "text-success" },
+  FIGMA: { icon: Figma, color: "text-pink-500" },
+  OUTROS: { icon: File, color: "text-gray-500" },
+} as const;
+
+const legacyTypeConfig = {
   DOCUMENT: { icon: FileText, color: "text-primary" },
   IMAGE: { icon: Image, color: "text-success" },
   VIDEO: { icon: Video, color: "text-primary" },
   FIGMA: { icon: Figma, color: "text-pink-500" },
   OTHER: { icon: File, color: "text-gray-500" },
-};
+} as const;
+
+const FALLBACK_CONFIG = { icon: File, color: "text-gray-500" } as const;
+
+function artifactIconConfig(a: { mediaType?: string | null; type?: string | null }) {
+  if (a.mediaType) {
+    return mediaIconConfig[a.mediaType as keyof typeof mediaIconConfig] ?? FALLBACK_CONFIG;
+  }
+  if (a.type) return legacyTypeConfig[a.type as keyof typeof legacyTypeConfig] ?? FALLBACK_CONFIG;
+  return FALLBACK_CONFIG;
+}
 
 export function ArtifactsList({ artifacts }: ArtifactsListProps) {
   const t = useTranslations("tasks.artifacts");
@@ -52,7 +72,7 @@ export function ArtifactsList({ artifacts }: ArtifactsListProps) {
   return (
     <div className="space-y-3">
       {sortedArtifacts.map((artifact) => {
-        const config = artifactTypeConfig[artifact.type];
+        const config = artifactIconConfig(artifact);
         const Icon = config.icon;
 
         return (
@@ -117,7 +137,13 @@ export function ArtifactsList({ artifacts }: ArtifactsListProps) {
                 <span>•</span>
 
                 {/* Type */}
-                <span>{t(`types.${artifact.type.toLowerCase()}`)}</span>
+                <span>
+                  {artifact.mediaType
+                    ? t(`mediaTypes.${artifact.mediaType}`)
+                    : artifact.type
+                      ? t(`types.${artifact.type.toLowerCase()}`)
+                      : "—"}
+                </span>
 
                 <span>•</span>
 

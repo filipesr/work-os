@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { mapArtifactRow, artifactTypeLabel, sortRows } from "@/lib/artifacts/unify";
+import {
+  mapArtifactRow,
+  artifactTypeLabel,
+  artifactTypeLabelKey,
+  sortRows,
+} from "@/lib/artifacts/unify";
 
 describe("mapArtifactRow", () => {
   it("mapeia link de projeto (origin PROJECT, sem tarefa)", () => {
@@ -78,6 +83,31 @@ describe("artifactTypeLabel", () => {
   });
   it("cai para — quando não há tipo", () => {
     expect(artifactTypeLabel({ storageKind: "LINK", type: null, mediaType: null })).toBe("—");
+  });
+});
+
+describe("rótulo de tipo — mediaType manda, type é o resto", () => {
+  it("link novo, com mediaType, mostra o tipo de mídia", () => {
+    const row = { storageKind: "LINK" as const, type: null, mediaType: "FIGMA" };
+    expect(artifactTypeLabelKey(row)).toBe("mediaTypes.FIGMA");
+    expect(artifactTypeLabel(row)).toBe("Figma");
+  });
+
+  it("link antigo, só com type, continua mostrando o dele", () => {
+    const row = { storageKind: "LINK" as const, type: "DOCUMENT", mediaType: null };
+    expect(artifactTypeLabelKey(row)).toBe("types.document");
+    expect(artifactTypeLabel(row)).toBe("Documento");
+  });
+
+  it("upload no NAS segue como antes", () => {
+    const row = { storageKind: "NAS_UPLOAD" as const, type: null, mediaType: "FOTOS" };
+    expect(artifactTypeLabelKey(row)).toBe("mediaTypes.FOTOS");
+  });
+
+  it("sem tipo nenhum devolve null (a tela mostra travessão)", () => {
+    const row = { storageKind: "LINK" as const, type: null, mediaType: null };
+    expect(artifactTypeLabelKey(row)).toBeNull();
+    expect(artifactTypeLabel(row)).toBe("—");
   });
 });
 

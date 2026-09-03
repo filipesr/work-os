@@ -50,13 +50,11 @@ const MEDIA_TYPE_LABEL: Record<string, string> = {
   OUTROS: "Outros",
 };
 
-/** Rótulo de tipo: mediaType para NAS, ArtifactType para link. */
+/** Rótulo de tipo: `mediaType` quando houver (upload no NAS ou link novo), senão o `type` legado. */
 export function artifactTypeLabel(
   row: Pick<UnifiedArtifactRow, "storageKind" | "type" | "mediaType">
 ): string {
-  if (row.storageKind === "NAS_UPLOAD" && row.mediaType) {
-    return MEDIA_TYPE_LABEL[row.mediaType] ?? row.mediaType;
-  }
+  if (row.mediaType) return MEDIA_TYPE_LABEL[row.mediaType] ?? row.mediaType;
   if (row.type) return ARTIFACT_TYPE_LABEL[row.type] ?? row.type;
   return "—";
 }
@@ -71,16 +69,15 @@ export function originLabelKey(origin: ArtifactOrigin): string {
 
 /**
  * Chave i18n (relativa a `tasks.artifacts`) para o rótulo de tipo:
- * `mediaTypes.<MEDIA>` para NAS, `types.<type minúsculo>` para link.
- * Retorna `null` quando não há tipo (a UI mostra "—"). O valor cru
- * (`mediaType`/`type`) serve de fallback quando a chave não existe.
+ * `mediaTypes.<MEDIA>` quando houver `mediaType` (upload no NAS ou link novo),
+ * senão `types.<type minúsculo>` (link antigo). Retorna `null` quando não há
+ * tipo (a UI mostra "—"). O valor cru (`mediaType`/`type`) serve de fallback
+ * quando a chave não existe.
  */
 export function artifactTypeLabelKey(
   row: Pick<UnifiedArtifactRow, "storageKind" | "type" | "mediaType">
 ): string | null {
-  if (row.storageKind === "NAS_UPLOAD" && row.mediaType) {
-    return `mediaTypes.${row.mediaType}`;
-  }
+  if (row.mediaType) return `mediaTypes.${row.mediaType}`;
   if (row.type) return `types.${row.type.toLowerCase()}`;
   return null;
 }

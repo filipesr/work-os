@@ -92,7 +92,7 @@ export function ArtifactRow({
     const key = artifactTypeLabelKey(row);
     if (!key) return "—";
     if (t.has(key)) return t(key);
-    return row.storageKind === "NAS_UPLOAD" ? (row.mediaType ?? "—") : (row.type ?? "—");
+    return row.mediaType ?? row.type ?? "—";
   };
   const showTaskBadge = a.taskId != null && a.taskId !== currentTaskId;
   const isNas = a.storageKind === "NAS_UPLOAD";
