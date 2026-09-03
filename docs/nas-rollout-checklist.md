@@ -112,6 +112,42 @@ automático. Envs (de `nas-poc/.env.example`):
 > pastas (`{cliente}/institucional`, `{cliente}/{projeto|tarefa ~id}/institucional`) é calculado no
 > app. O `nas-poc/agent/src/nas-path.ts` (PoC) está desatualizado mas **não é usado em runtime**.
 
+## 3b. Importação de link para o NAS (2026-09)
+
+A importação permite que o agente puxe artefatos da fila de requerimentos da Vercel. Sem uma versão
+nova do agente em produção publicada, a fila enche de requisições e ninguém as consome — e o sintoma
+para quem usa é o pior possível: "importei e nunca chegou".
+
+### Variáveis de ambiente do agente
+
+Acrescentar ao `.env` do agente (além das já presentes na seção anterior):
+
+| Env                      | Valor / origem                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------- |
+| `CLOUD_IMPORT_QUEUE_URL` | `https://workos.goonmarketing.com/api/artifacts/import-queue` (fila de requerimentos)       |
+| `IMPORT_POLL_MS`         | intervalo de sondagem em ms (opcional, padrão `60000` — 1 min). Reduzir para testes locais. |
+
+> **Autenticação:** a importação reutiliza `FINALIZE_SECRET`, já presente na seção 3. Não há nova
+> autenticação a configurar — o mesmo segredo serve para ambos os endpoints.
+
+### Verificação de funcionamento
+
+- [ ] Enviar uma importação de teste pela aba de artefatos.
+- [ ] Confirmar que o artefato sai de `PENDING` **em menos de um ciclo de `IMPORT_POLL_MS`**.
+      Se estiver em PENDING depois de 2–3 ciclos, o agente não está sondando a fila.
+
+### Ordem de publicação
+
+**Não há ordem obrigatória, mas não se pode parar no meio:**
+
+- Publicar o app **primeiro** é inofensivo — a fila só acumula (o agente não consome se não estiver
+  online).
+- Publicar o agente **primeiro** também é inofensivo — ele sonda a fila, recebe lista vazia
+  e fica à espera.
+
+O que não pode acontecer é parar a publicação no meio e deixar o sistema funcionando
+parcialmente, achando que a funcionalidade está completa.
+
 ## 4. Cloudflare Tunnel + DNS (por subdomínio)
 
 > **Ainda não implementado.** O compose desta topologia é o `nas-poc/compose.tunnel.yml` — **não** o

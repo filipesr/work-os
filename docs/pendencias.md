@@ -135,3 +135,31 @@ Não são pendências desta lista, mas quem lê aqui costuma precisar delas:
   que `activeStageId` nulo ou `createdById` nulo em registro antigo não é erro de gravação.
   `kind` NÃO entra nessa lista: a coluna é `NOT NULL DEFAULT 'USER'`, então comentário antigo
   nenhum ficou sem ela — todos nasceram (retroativamente) `USER`, que é exatamente o que eram.
+
+### Limitações da importação de link para o NAS (2026-09)
+
+- **A importação não fecha DNS rebinding.** O agente confere o DNS contra faixas privadas
+  (módulo `ipaddr.js`) e depois faz o `fetch` — entre as duas consultas, uma resposta DNS com
+  TTL curtíssimo pode trocar o endereço e fazer o `fetch` cair num servidor público. Fechar a
+  brecha de verdade exigiria fixar o IP da primeira resolução e falar TLS com SNI manual. O que a
+  trava atual cobre — literal privado (`127.0.0.1`, `::1`), nome que resolve para privado, e a
+  reconferência de DNS a **cada** redirecionamento HTTP — é a maior parte do risco real; isto é
+  o que fica descoberto.
+
+- **Também não cobre 6to4 (`2002:7f00:1::1`) nem NAT64 (`64:ff9b::7f00:1`)**, que embutem
+  endereços IPv4 internos em faixas de IPv6 que a lista do módulo não reconhece. Coerente com o
+  que o próprio módulo declara: é uma lista de faixas conhecidas, não uma prova completa.
+
+- **Só link direto.** Um link de visualização do Drive ou do Trello devolve uma página HTML
+  (não um arquivo) e morre com o código de falha `NOT_A_FILE`, visível ao usuário na tela.
+  Traduzir link de fornecedor externo (abrir um download por trás de um redirecionamento)
+  ficou fora de propósito: é código que cada fornecedor muda sem avisar, e a manutenção
+  ficaria quebrando sozinha.
+
+- **O cron de reconciliação não toca importação.** O cron `/api/cron/nas-reconcile` expira
+  uploads de navegador parado (aqueles que nunca chegaram ao agente). A importação tem liveness
+  própria: a reserva do endpoint `/api/artifacts/import-queue` (que o agente renova ao sondagem).
+  Um `PENDING` de importação não expira por tempo — expira porque o agente parou de sondear (fila
+  descartada após o lease). Quem mexer no cron de reconciliação e seus TTLs precisa saber que
+  `PENDING` significa **duas coisas diferentes** conforme o artefato tenha ou não um `url`: upload
+  de navegador fica órfão e entra na expiração do cron; importação entra se o agente morrer.
