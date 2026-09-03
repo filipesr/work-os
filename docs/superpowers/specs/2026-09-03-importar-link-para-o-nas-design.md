@@ -76,19 +76,33 @@ sistema gravar ou reportar. É o único código genuinamente novo de segurança 
 O último item merece nome próprio: baixar 5 GB para então descobrir que o limite era 150 MB é como
 se derruba o NAS pelo caminho de quem estava tentando protegê-lo.
 
-## Importar pede o que adicionar link não pedia
+## A aba de link ganha a forma da aba de upload
 
-O formulário de link (`AddArtifactForm`, `mode: "link"`) coleta título, URL e `type` — o campo
-**legado**. O NAS não usa `type`: ele decide pasta, extensões e tamanho por `mediaType`
-(`ArtifactMediaType`), e exige sensibilidade.
+O formulário de link hoje coleta título, URL e `type` — o campo **legado**, que o schema já marca
+como _"removido na fase 2 da migração (usar mediaType)"_. O NAS não usa `type`: ele decide pasta,
+extensões e teto de tamanho por `mediaType`, e exige sensibilidade.
 
-Então "Importar para o NAS", ao lado de "Adicionar", **revela os campos que o upload já pede**
-(`mediaType` e sensibilidade) em vez de adivinhar um mapeamento de `type` para `mediaType`. Adivinhar
-seria escolher a pasta do cliente e o teto de tamanho no chute — e o erro só apareceria na falha do
-agente, longe de quem digitou.
+Em vez de "Importar" revelar campos que "Adicionar" não pede, **as duas abas passam a ter a mesma
+forma**: nome na primeira linha, tipo de mídia e sensibilidade na segunda, ações na terceira, com os
+mesmos rótulos da aba de upload. Uma tela só para aprender, e o import não cobra um segundo
+formulário de quem já preencheu o primeiro.
 
-"Adicionar" continua exatamente como está: quem só quer registrar o link não paga por campo nenhum a
-mais.
+Duas consequências, ambas deliberadas:
+
+**A sensibilidade é inerte para link puro, e o rótulo precisa dizer isso.** Ela governa canais de
+download do arquivo NO NAS (`lib/nas/sensitivity.ts`: LAN, túnel, share). Um link não tem arquivo
+nosso — "baixar" é abrir a URL de outra pessoa. Perguntar mesmo assim se justifica porque o campo
+vale no instante em que o arquivo entra no NAS, e perguntar duas vezes seria pior; o que não se pode
+é apresentá-la como se já governasse alguma coisa. O texto de apoio diz que ela vale quando o
+arquivo estiver no NAS.
+
+**`ArtifactRow` precisa mudar junto.** Ele mostra `mediaType` para NAS e `type` para LINK
+(`ArtifactRow.tsx:95`). Se o formulário parar de gravar `type`, todo link novo apareceria com "—" na
+coluna de tipo. A regra passa a ser **`mediaType` quando houver, senão `type`**: link novo mostra o
+campo novo, link antigo continua mostrando o dele, e ninguém precisa de backfill.
+
+`addLinkArtifact` passa a receber `mediaType` e `sensitivity` no lugar de `type`. Artefatos de link
+já existentes não são tocados.
 
 ## A falha guarda o motivo, e a reedição
 
@@ -110,11 +124,11 @@ que também cobre a falha passageira de rede, em que se reenvia sem mudar nada.
 
 ## As peças novas
 
-| Onde   | O quê                                                                                                                                                                                                                                             |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| App    | O botão e os campos no `AddArtifactForm`; a ação que cria o artefato `NAS_UPLOAD`/`PENDING` com a origem; um endpoint que o agente consulta para receber o que está pendente; `finalize` aceitando falha com motivo; a ação de reeditar em FAILED |
-| Agente | Um laço que pergunta ao app o que há pendente; o download com as travas de rede acima; a entrega dos bytes à esteira que já existe; o relato de falha com motivo                                                                                  |
-| Tela   | O estado do artefato na lista (PENDING → UPLOADING → READY/FAILED) — o painel já mostra isso para upload — e, em FAILED, o motivo e o botão de reeditar                                                                                           |
+| Onde   | O quê                                                                                                                                                                                                                                                                                     |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| App    | A aba de link com a forma da de upload (`AddArtifactForm`) e o botão de importar; a ação que cria o artefato `NAS_UPLOAD`/`PENDING` com a origem; um endpoint que o agente consulta para receber o que está pendente; `finalize` aceitando falha com motivo; a ação de reeditar em FAILED |
+| Agente | Um laço que pergunta ao app o que há pendente; o download com as travas de rede acima; a entrega dos bytes à esteira que já existe; o relato de falha com motivo                                                                                                                          |
+| Tela   | O estado do artefato na lista (PENDING → UPLOADING → READY/FAILED) — o painel já mostra isso para upload — e, em FAILED, o motivo e o botão de reeditar                                                                                                                                   |
 
 O endpoint que o agente consulta usa **o mesmo HMAC com timestamp** do `finalize`. Nenhuma
 autenticação nova: o canal agente→app já existe, está assinado e está em produção.
@@ -136,8 +150,9 @@ O agente tem suíte própria (`nas-poc/agent/test/`, com `sniff`, `nas-path`, `f
 - **Do `finalize`:** falha grava o motivo e deixa o artefato em FAILED; sucesso continua como hoje.
 - **Da reedição:** só existe em FAILED; devolve para PENDING; recusada em READY pelo SERVIDOR, não
   só escondida na tela.
-- **Do formulário:** "Adicionar" não passa a exigir campos novos; "Importar" exige `mediaType` e
-  sensibilidade.
+- **Do formulário:** as duas ações exigem `mediaType` e sensibilidade, e `addLinkArtifact` grava os
+  dois; um link antigo (sem `mediaType`) continua mostrando o `type` dele na lista, e um novo mostra
+  o `mediaType` — é a regra que impede a coluna de virar "—" para todo link criado daqui em diante.
 
 ## Fora desta entrega
 
