@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { fetchSource, isPrivateAddress } from "../src/fetch-source.js";
+import { fetchSource, isPrivateAddress, FetchSourceError } from "../src/fetch-source.js";
 
 describe("isPrivateAddress", () => {
   it("recusa toda a família privada", () => {
@@ -215,78 +215,119 @@ describe("fetchSource", () => {
   // O TESTE QUE FALTAVA (item crítico da revisão final): o prazo de cabeçalho NÃO pode governar o
   // corpo inteiro. Um corpo mais lento que connectTimeoutMs, mas nunca ocioso por mais que
   // idleTimeoutMs, tem que terminar — prova de que o teto absoluto sumiu.
-  it("o corpo pode demorar mais que o prazo de cabeçalho e ainda assim terminar (sem teto absoluto)", async () => {
-    // O stream verifica o MESMO `signal` que foi passado ao fetch — como o fetch de verdade faz,
-    // onde o sinal da requisição também governa a leitura do corpo. É o que faz este teste falhar
-    // contra a implementação antiga: lá o cronômetro de 10ms aborta a busca inteira (corpo
-    // incluso); aqui só o cabeçalho usa esse prazo, e é cancelado assim que os cabeçalhos chegam.
-    function streamLento(signal?: AbortSignal): ReadableStream<Uint8Array> {
-      const partes: [Uint8Array, number][] = [
-        [new Uint8Array([1]), 0],
-        [new Uint8Array([2]), 40],
-        [new Uint8Array([3]), 40],
-      ];
-      let i = 0;
-      return new ReadableStream({
-        async pull(controller) {
-          if (i >= partes.length) {
-            controller.close();
-            return;
-          }
-          const [chunk, delay] = partes[i++];
-          if (delay) {
-            await new Promise<void>((resolve, reject) => {
-              if (signal?.aborted) {
-                reject(Object.assign(new Error("abortado"), { name: "AbortError" }));
-                return;
-              }
-              const t = setTimeout(resolve, delay);
-              signal?.addEventListener("abort", () => {
-                clearTimeout(t);
-                reject(Object.assign(new Error("abortado"), { name: "AbortError" }));
-              });
+  // Stream que honra o MESMO `signal` que a implementação real do fetch honraria — como o
+  // undici faz: quando o signal aborta, a leitura do corpo rejeita com AbortError de verdade.
+  // Reproduzir isso fielmente é o que expõe o bug de ORDEM em `withIdleTimeout` (abort síncrono
+  // ANTES do reject faria o AbortError do próprio stream vencer a corrida, escondendo o
+  // SOURCE_STALLED) — e também o que prova que o REARME por pedaço é real, não um teto absoluto
+  // disfarçado (um cronômetro criado uma única vez teria que abortar mesmo com o signal vivo).
+  function streamComPartes(
+    partes: [Uint8Array, number][],
+    signal?: AbortSignal
+  ): ReadableStream<Uint8Array> {
+    let i = 0;
+    return new ReadableStream({
+      async pull(controller) {
+        if (i >= partes.length) {
+          controller.close();
+          return;
+        }
+        const [chunk, delay] = partes[i++];
+        if (delay) {
+          await new Promise<void>((resolve, reject) => {
+            if (signal?.aborted) {
+              reject(Object.assign(new Error("abortado"), { name: "AbortError" }));
+              return;
+            }
+            const t = setTimeout(resolve, delay);
+            signal?.addEventListener("abort", () => {
+              clearTimeout(t);
+              reject(Object.assign(new Error("abortado"), { name: "AbortError" }));
             });
-          }
-          controller.enqueue(chunk);
-        },
-      });
-    }
+          });
+        }
+        controller.enqueue(chunk);
+      },
+    });
+  }
+
+  // O teste que faltava, parte 1: o corpo pode demorar mais que o prazo de cabeçalho E mais que
+  // o próprio idleTimeoutMs SOMADO — só não pode ficar OCIOSO por mais que idleTimeoutMs de uma
+  // vez. 3 pedaços de 40ms cada somam 80ms de corpo (bem mais que os 60ms de ociosidade), mas
+  // nenhum INTERVALO isolado passa de 40ms. Isso só passa se o cronômetro for REARMADO a cada
+  // pedaço — um cronômetro criado uma única vez (teto absoluto disfarçado) abortaria por volta
+  // dos 60ms, antes do terceiro pedaço (que só chega perto dos 80ms).
+  it("o corpo pode demorar mais que o prazo de cabeçalho e mais que a ociosidade SOMADA — só não pode ficar ocioso de uma vez (prova o rearme por pedaço)", async () => {
+    const partes: [Uint8Array, number][] = [
+      [new Uint8Array([1]), 0],
+      [new Uint8Array([2]), 40],
+      [new Uint8Array([3]), 40],
+    ];
     const fetchImpl = async (_url: string, init?: RequestInit) =>
-      new Response(streamLento(init?.signal ?? undefined), { status: 200 });
-    // Cabeçalho responde na hora — o prazo de 10ms nem chega a ser testado por ele. O corpo leva
-    // ~80ms no total (bem mais que os 10ms de cabeçalho), mas cada intervalo (40ms) fica bem
-    // abaixo do teto de ociosidade (200ms).
+      new Response(streamComPartes(partes, init?.signal ?? undefined), { status: 200 });
+    // Cabeçalho responde na hora — o prazo de 10ms nem chega a ser testado por ele.
     const inicio = Date.now();
     const r = await fetchSource("https://x.com/a.jpg", {
       ...base,
       connectTimeoutMs: 10,
-      idleTimeoutMs: 200,
+      idleTimeoutMs: 60,
       fetchImpl,
     });
     const recebidos: number[] = [];
     for await (const chunk of r.body) recebidos.push(chunk[0]);
     expect(recebidos).toEqual([1, 2, 3]);
+    // >60ms de corpo (o "teto absoluto" que o cronômetro teria se não fosse rearmado), mas cada
+    // intervalo entre pedaços ficou em 40ms — bem abaixo dele.
     expect(Date.now() - inicio).toBeGreaterThanOrEqual(70);
   });
 
-  // O outro lado do MESMO teste que faltava: um corpo que para no meio (ocioso) precisa morrer
-  // rápido, com um código PRÓPRIO — não pode virar ABORTED nem TIMEOUT.
-  it("aborta com SOURCE_STALLED quando a origem para de mandar bytes no meio (ociosidade, não teto absoluto)", async () => {
-    function streamQueTrava(): ReadableStream<Uint8Array> {
-      let entregueUmChunk = false;
-      return new ReadableStream({
-        async pull(controller) {
-          if (!entregueUmChunk) {
-            entregueUmChunk = true;
-            controller.enqueue(new Uint8Array([1]));
-            return;
-          }
-          // Nunca resolve: a origem parou de mandar bytes.
-          await new Promise(() => {});
-        },
-      });
-    }
-    const fetchImpl = async () => new Response(streamQueTrava(), { status: 200 });
+  // O teste que faltava, parte 2: um corpo que para no meio (ocioso) precisa morrer rápido, com
+  // um código PRÓPRIO — não pode virar AbortError cru nem ABORTED/WRITE_FAILED depois de
+  // atravessar a esteira. Afirma o CÓDIGO do erro, não só que algo rejeitou: é a única forma de
+  // pegar a regressão de ORDEM (reject antes de abort) em `withIdleTimeout`.
+  //
+  // Repara que aqui NÃO se usa `streamComPartes`/ReadableStream: um ReadableStream real erra o
+  // reader.read() pendente através de várias camadas de Promise (pull() -> controller -> reader),
+  // o que sempre chega depois do nosso `reject` controlado, DE QUALQUER ORDEM — não reproduziria
+  // o bug. O undici reage ao abort de forma mais direta (mais perto de síncrona); um iterável CRU
+  // cujo `next()` pendente é rejeitado pelo MESMO listener de 'abort' (que o EventTarget dispara
+  // de forma síncrona) é o que faz a corrida com `ociosidade` decidir pela ORDEM das duas chamadas
+  // — exatamente a característica que expôs o bug e que precisa continuar coberta.
+  function iterableQueTrava(signal?: AbortSignal): AsyncIterable<Uint8Array> {
+    let entregueUmChunk = false;
+    return {
+      [Symbol.asyncIterator]() {
+        return {
+          next(): Promise<IteratorResult<Uint8Array>> {
+            if (!entregueUmChunk) {
+              entregueUmChunk = true;
+              return Promise.resolve({ done: false, value: new Uint8Array([1]) });
+            }
+            // Nunca resolve por conta própria — só reage ao abort, e reage NA HORA (o mesmo
+            // listener que o `dispatchEvent` de `controller.abort()` chama sincronamente).
+            return new Promise<IteratorResult<Uint8Array>>((_, reject) => {
+              const abortar = () =>
+                reject(Object.assign(new Error("abortado"), { name: "AbortError" }));
+              if (signal?.aborted) {
+                abortar();
+                return;
+              }
+              signal?.addEventListener("abort", abortar, { once: true });
+            });
+          },
+        };
+      },
+    };
+  }
+
+  it("aborta com SOURCE_STALLED (não AbortError cru) quando a origem para de mandar bytes no meio", async () => {
+    const fetchImpl = async (_url: string, init?: RequestInit) =>
+      ({
+        status: 200,
+        ok: true,
+        headers: { get: () => null },
+        body: iterableQueTrava(init?.signal ?? undefined),
+      }) as unknown as Response;
     const r = await fetchSource("https://x.com/a.jpg", {
       ...base,
       connectTimeoutMs: 5_000, // cabeçalho chegou na hora — não é ele quem aborta aqui
@@ -298,6 +339,8 @@ describe("fetchSource", () => {
       for await (const chunk of r.body) chunks.push(chunk);
       return chunks;
     };
-    await expect(consumir()).rejects.toMatchObject({ code: "SOURCE_STALLED" });
+    const err = await consumir().catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(FetchSourceError);
+    expect((err as FetchSourceError).code).toBe("SOURCE_STALLED");
   });
 });

@@ -270,16 +270,22 @@ function withIdleTimeout(
           let timer: ReturnType<typeof setTimeout>;
           const ociosidade = new Promise<never>((_, reject) => {
             timer = setTimeout(() => {
-              // Cancela a leitura de verdade (libera a conexão) — o fetch real trata isso como
-              // abort da requisição inteira, mas a essa altura os cabeçalhos já foram entregues e
-              // publicados; só o corpo é afetado.
-              controller.abort();
+              // ORDEM IMPORTA: rejeita ANTES de abortar. `controller.abort()` erra o stream do
+              // undici de forma SÍNCRONA — se ele rodasse primeiro, a promessa de `proximo` já
+              // estaria rejeitada com AbortError quando chamássemos `reject`, e o Promise.race
+              // entregaria o AbortError genérico (não o FetchSourceError). A esteira perderia o
+              // código SOURCE_STALLED, caindo no fallback StoreError("ABORTED") -> WRITE_FAILED —
+              // exatamente a mensagem enganosa que este código existe para evitar.
               reject(
                 new FetchSourceError(
                   "SOURCE_STALLED",
                   `a origem parou de mandar bytes por ${idleTimeoutMs}ms`
                 )
               );
+              // Cancela a leitura de verdade (libera a conexão) — o fetch real trata isso como
+              // abort da requisição inteira, mas a essa altura os cabeçalhos já foram entregues e
+              // publicados; só o corpo é afetado.
+              controller.abort();
             }, idleTimeoutMs);
           });
           try {
