@@ -24,16 +24,27 @@ export async function GET(request: NextRequest) {
   const pendingCutoff = new Date(now - PENDING_TTL_MIN * 60_000);
   const uploadingCutoff = new Date(now - UPLOADING_TTL_MIN * 60_000);
 
+  // Browser uploads only: importation has its own liveness mechanism (import-queue lease).
+  // Browser PENDING = "path sealed, waiting for bytes from browser"; importation PENDING = "queued, agent hasn't claimed yet".
+  // If we expire importation, it never recovers — the import-queue doesn't retry beyond the lease timeout.
   const expired = await prisma.taskArtifact.updateMany({
-    where: { storageKind: "NAS_UPLOAD", uploadStatus: "PENDING", createdAt: { lt: pendingCutoff } },
+    where: {
+      storageKind: "NAS_UPLOAD",
+      uploadStatus: "PENDING",
+      createdAt: { lt: pendingCutoff },
+      url: null, // browser upload only
+    },
     data: { uploadStatus: "EXPIRED" },
   });
 
+  // Browser uploads only: same reason as PENDING above. Importation UPLOADING = "agent downloading";
+  // browser UPLOADING = "bytes arriving". Agent retries finalize, so generous TTL respects that.
   const failed = await prisma.taskArtifact.updateMany({
     where: {
       storageKind: "NAS_UPLOAD",
       uploadStatus: "UPLOADING",
       createdAt: { lt: uploadingCutoff },
+      url: null, // browser upload only
     },
     data: {
       uploadStatus: "FAILED",

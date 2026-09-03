@@ -20,7 +20,7 @@ const FINALIZE_SECRET = "s3cr3t";
 
 interface Row {
   id: string;
-  uploadStatus: "PENDING" | "UPLOADING" | "READY" | "FAILED";
+  uploadStatus: "PENDING" | "UPLOADING" | "READY" | "FAILED" | "EXPIRED";
   failedAt: Date | null;
   failedReason: string | null;
   importClaimedAt: Date | null;
@@ -152,6 +152,14 @@ describe("POST /api/artifacts/finalize — falha com motivo", () => {
     expect(res.status).toBe(409);
   });
 
+  it("não ressuscita como falho um artefato já expirado", async () => {
+    addArtifact({ id: "art1", uploadStatus: "EXPIRED" });
+    const res = await POST(
+      assinada({ artifactId: "art1", failed: true, reason: "TIMEOUT" }) as never
+    );
+    expect(res.status).toBe(409);
+  });
+
   it("é idempotente: repetir a falha não é erro", async () => {
     addArtifact({ id: "art1", uploadStatus: "FAILED", failedReason: "TIMEOUT" });
     const res = await POST(
@@ -167,7 +175,9 @@ describe("POST /api/artifacts/finalize — falha com motivo", () => {
       assinada({ artifactId: "art1", failed: true, reason: "X".repeat(5000) }) as never
     );
     expect(res.status).toBe(200);
-    expect(String(updateArgs().failedReason).length).toBeLessThanOrEqual(200);
+    const data = updateArgs();
+    expect(data.uploadStatus).toBe("FAILED");
+    expect(String(data.failedReason)).toHaveLength(200);
   });
 
   it("o sucesso continua como hoje", async () => {

@@ -58,6 +58,9 @@ export async function POST(request: NextRequest) {
     if (artifact.uploadStatus === "READY") {
       return NextResponse.json({ error: "artefato já está pronto" }, { status: 409 });
     }
+    if (artifact.uploadStatus === "EXPIRED") {
+      return NextResponse.json({ error: "artefato já expirou" }, { status: 409 });
+    }
     const motivo = String(reason ?? "WRITE_FAILED").slice(0, 200);
     await prisma.$transaction(async (tx) => {
       await tx.taskArtifact.update({
