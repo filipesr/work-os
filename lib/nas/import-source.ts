@@ -59,10 +59,18 @@ function isPrivateIpv4(host: string): boolean {
 function isPrivateIpv6(host: string): boolean {
   const h = host.replace(/^\[|\]$/g, "").toLowerCase();
   if (h === "::1" || h === "::") return true;
-  if (h.startsWith("fe80")) return true; // link-local
+  // fe80::/10 — o terceiro nibble vai de 8 a b, não só 0.
+  if (/^fe[89ab]/.test(h)) return true;
   if (/^f[cd]/.test(h)) return true; // unique-local fc00::/7
-  const mapped = /^::ffff:(.+)$/.exec(h);
-  if (mapped) return isPrivateIpv4(mapped[1]);
+  // IPv4 mapeado, NAS DUAS FORMAS: o parser de URL normaliza "::ffff:127.0.0.1" para
+  // "::ffff:7f00:1", então reconhecer só a decimal deixa o literal passar como público.
+  const dec = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(h);
+  if (dec) return isPrivateIpv4(dec[1]);
+  const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(h);
+  if (hex) {
+    const n = ((parseInt(hex[1], 16) << 16) >>> 0) + parseInt(hex[2], 16);
+    return isPrivateIpv4([(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join("."));
+  }
   return false;
 }
 

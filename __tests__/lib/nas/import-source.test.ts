@@ -44,6 +44,11 @@ describe("checkImportUrl", () => {
       "169.254.169.254",
       "localhost",
       "[::1]",
+      "[::ffff:127.0.0.1]",
+      "[::ffff:169.254.169.254]",
+      "[::ffff:10.0.0.1]",
+      "[fe90::1]",
+      "[febf::1]",
     ];
     for (const h of hosts) {
       const r = checkImportUrl(`http://${h}/a.jpg`);
