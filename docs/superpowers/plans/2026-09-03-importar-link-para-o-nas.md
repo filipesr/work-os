@@ -1498,7 +1498,9 @@ Expected: FAIL — não existem os campos nem o botão de importar.
 Em `components/artifacts/AddArtifactForm.tsx`: troque o estado `type` por `mediaType`/`sensitivity`, apague `TYPE_OPTIONS` e o import de `ArtifactType`, e substitua o bloco do modo link. As listas e os rótulos são os mesmos da aba de upload (`tasks.upload.*`), de propósito:
 
 ```tsx
-import { LINK_ONLY_MEDIA_TYPES, UPLOADABLE_MEDIA_TYPES } from "@/lib/nas/path";
+// De `media-types`, NÃO de `path`: este é um componente "use client", e `lib/nas/path.ts` importa
+// `node:crypto` — o webpack recusa isso no bundle do browser. `media-types.ts` é a metade pura.
+import { LINK_ONLY_MEDIA_TYPES, UPLOADABLE_MEDIA_TYPES } from "@/lib/nas/media-types";
 
 // A aba de LINK oferece os sete: link de Figma é justamente o que FIGMA existe para classificar.
 // O que muda é o que se pode IMPORTAR — daí a lista dos só-de-link, logo abaixo.
