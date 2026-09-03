@@ -30,13 +30,16 @@ export async function POST(request: NextRequest) {
     checksum?: string;
     sizeBytes?: number | string;
     agentId?: string;
+    failed?: boolean;
+    reason?: string;
+    detail?: string;
   };
   try {
     body = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
-  const { artifactId, checksum, sizeBytes, agentId } = body;
+  const { artifactId, checksum, sizeBytes, agentId, failed, reason, detail } = body;
   if (!artifactId) return NextResponse.json({ error: "artifactId obrigatório" }, { status: 400 });
 
   const artifact = await prisma.taskArtifact.findUnique({
@@ -44,6 +47,39 @@ export async function POST(request: NextRequest) {
     select: { id: true, uploadStatus: true },
   });
   if (!artifact) return NextResponse.json({ error: "artefato não encontrado" }, { status: 404 });
+
+  // --- Falha reportada pelo agente -----------------------------------------------------------
+  // Um import que falhou nunca virou arquivo. O motivo é gravado para a tela explicar o que houve
+  // e a pessoa corrigir o que estava errado (Task 8) — sem ele, a reedição é adivinhação.
+  if (failed) {
+    if (artifact.uploadStatus === "FAILED") {
+      return NextResponse.json({ ok: true, idempotent: true });
+    }
+    if (artifact.uploadStatus === "READY") {
+      return NextResponse.json({ error: "artefato já está pronto" }, { status: 409 });
+    }
+    const motivo = String(reason ?? "WRITE_FAILED").slice(0, 200);
+    await prisma.$transaction(async (tx) => {
+      await tx.taskArtifact.update({
+        where: { id: artifactId },
+        data: {
+          uploadStatus: "FAILED",
+          failedAt: new Date(),
+          failedReason: motivo,
+          importClaimedAt: null,
+          agentId: agentId ?? null,
+        },
+      });
+      await tx.artifactAuditLog.create({
+        data: {
+          artifactId,
+          eventType: "IMPORT_FAILED",
+          metadata: { reason: motivo, detail: detail ? String(detail).slice(0, 500) : null },
+        },
+      });
+    });
+    return NextResponse.json({ ok: true });
+  }
 
   // Idempotent: already finalized.
   if (artifact.uploadStatus === "READY") {
