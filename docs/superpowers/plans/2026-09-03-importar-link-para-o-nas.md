@@ -19,6 +19,7 @@
 - **Arquivo `"use server"` só exporta função async.** Constantes e tipos vão para módulo comum (ex.: `lib/nas/...`), nunca para o arquivo de actions.
 - **Trava de servidor antes de trava de tela.** Toda regra nova (só FAILED reedita, só link direto) é recusada pela action/rota; a tela só esconde o que o servidor já recusa. Um teste de cada lado.
 - **O agente é a única fronteira de rede.** Nenhuma trava de SSRF vive no app: o app faz a checagem barata (esquema, IP literal privado) para dar mensagem boa, e o agente faz a checagem que vale (resolução de DNS a cada salto).
+- **Tipo só de link é regra de servidor.** `FIGMA` e `OUTROS` não recebem arquivo no NAS — nem por upload, nem por importação. A tela não os oferece onde não valem, mas quem recusa é a action; esconder um botão não é uma trava.
 - **Nada de `type` novo.** Nenhum código escrito neste plano grava `TaskArtifact.type`. A coluna continua no banco e é lida só para artefato antigo.
 - **Commits diretos na `main`** (projeto solo, sem branch/PR), um commit por passo de "Commit" do plano.
 
@@ -51,72 +52,140 @@
 
 ---
 
-### Task 1: FIGMA passa a existir em toda parte
+### Task 1: cada tipo de mídia ganha a sua política
 
-O enum `ArtifactMediaType` não tinha FIGMA e o `ArtifactType` legado tinha. Como o `type` para de ser gravado, sem esta task o rótulo mais usado numa agência desapareceria. O valor do enum **não é só rótulo**: ele decide a pasta no NAS e a lista de extensões aceitas, então nasce nos dois lados (app e agente) na mesma task — se nascer só num, uma importação FIGMA é aceita pelo app e recusada pelo agente, e a pessoa vê "falhou" sem entender por quê.
+Quatro decisões, e nenhuma delas é só rótulo — o valor do enum decide a pasta no NAS, as extensões
+aceitas e o teto de tamanho:
+
+| Tipo             | Política                                                                                                                      |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **FIGMA** (novo) | **Só link.** Nunca recebe arquivo — nem por upload, nem por importação.                                                       |
+| **OUTROS**       | **Só link.** Deixa de ser o coringa que aceitava a união de todas as listas.                                                  |
+| **LOGOS**        | **Como está hoje** — `svg, ai, eps, pdf, png, cdr`, 200 MB. Arquivo aberto de marca é o que uma agência mais precisa guardar. |
+| **SOCIAL_MEDIA** | **Foto e vídeo.** Sai o `pdf` (não é nem um nem outro); entram os formatos que faltavam dos dois conjuntos.                   |
+
+`FOTOS`, `VIDEOS` e `DOCUMENTOS` não mudam.
+
+"Só link" é uma categoria nova no código, não só uma lista vazia: um tipo sem entrada na allowlist
+precisa recusar com uma frase que explique — "esse tipo existe só como link" —, e não com "extensão
+não permitida", que manda a pessoa procurar o erro no lugar errado.
 
 **Files:**
 
 - Modify: `prisma/schema.prisma` (enum `ArtifactMediaType`)
 - Create: `prisma/migrations/20260903120000_artifact_media_type_figma/migration.sql`
-- Modify: `lib/nas/path.ts:21-27` (type), `:32-39` (`MEDIA_TYPE_FOLDER`), `:45-59` (`ALLOWLIST`)
+- Modify: `lib/nas/path.ts:21-27` (type), `:32-39` (`MEDIA_TYPE_FOLDER`), `:41-85` (`ALLOWLIST`, união, `normalizeExtension`)
 - Modify: `lib/validations.ts:84-92` (`artifactMediaTypeEnum`)
-- Modify: `nas-poc/agent/src/nas-path.ts:18-24`, `:27-34`, `:41-56` (os mesmos três)
+- Modify: `nas-poc/agent/src/nas-path.ts:18-24`, `:27-34`, `:36-100` (os mesmos)
 - Modify: `components/tasks/UploadArtifactForm.tsx:33` (`MEDIA_TYPES`)
-- Modify: `locales/pt-BR/tasks.json`, `locales/es-ES/tasks.json` (`artifacts.mediaTypes.FIGMA`)
+- Modify: `lib/actions/artifact.ts` (`prepareArtifactUpload` recusa tipo só-de-link)
+- Modify: `locales/pt-BR/tasks.json`, `locales/es-ES/tasks.json`, `locales/{pt-BR,es-ES}/errors.json`
 - Test: `__tests__/lib/nas/path.test.ts`, `nas-poc/agent/test/nas-path.test.ts`
 
 **Interfaces:**
 
 - Consumes: nada (primeira task).
-- Produces: `"FIGMA"` válido como `ArtifactMediaType` no Prisma, em `lib/nas/path.ts`, em `lib/validations.ts` e no agente. `ALLOWLIST.FIGMA = { ext: ["fig","pdf","png","svg"], maxBytes: 200 * MB }`, `MEDIA_TYPE_FOLDER.FIGMA = "figma"`.
+- Produces, em `lib/nas/path.ts` **e** em `nas-poc/agent/src/nas-path.ts` (as duas cópias andam juntas):
+
+```ts
+export type ArtifactMediaType =
+  | "VIDEOS"
+  | "FOTOS"
+  | "DOCUMENTOS"
+  | "LOGOS"
+  | "SOCIAL_MEDIA"
+  | "FIGMA"
+  | "OUTROS";
+/** Tipos que existem só como link — nunca recebem arquivo no NAS. */
+export const LINK_ONLY_MEDIA_TYPES = ["FIGMA", "OUTROS"] as const;
+/** Tipos que aceitam arquivo, na ordem em que aparecem na tela. */
+export const UPLOADABLE_MEDIA_TYPES = [
+  "FOTOS",
+  "VIDEOS",
+  "DOCUMENTOS",
+  "LOGOS",
+  "SOCIAL_MEDIA",
+] as const;
+export type UploadableMediaType = (typeof UPLOADABLE_MEDIA_TYPES)[number];
+export function isUploadableMediaType(m: ArtifactMediaType): m is UploadableMediaType;
+export const ALLOWLIST: Record<UploadableMediaType, { ext: string[]; maxBytes: number }>;
+```
+
+`ALLOWLIST` deixa de ser indexada por `ArtifactMediaType` e passa a ser por `UploadableMediaType`.
+Isso é de propósito: o TypeScript passa a **exigir** o estreitamento em cada ponto que consulta um
+teto de tamanho, e um caminho que esqueceu de recusar tipo só-de-link deixa de compilar em vez de
+falhar em produção.
 
 - [ ] **Step 1: Escrever os testes que falham (app)**
 
 Ao final de `__tests__/lib/nas/path.test.ts`:
 
 ```ts
-describe("FIGMA como tipo de mídia", () => {
-  it("aceita as extensões de exportação do Figma", () => {
-    expect(normalizeExtension("marca.fig", "FIGMA")).toBe("fig");
-    expect(normalizeExtension("marca.pdf", "FIGMA")).toBe("pdf");
-    expect(normalizeExtension("marca.png", "FIGMA")).toBe("png");
-    expect(normalizeExtension("marca.svg", "FIGMA")).toBe("svg");
+describe("tipos só de link", () => {
+  it('recusam arquivo com um motivo próprio, não com "extensão não permitida"', () => {
+    for (const t of ["FIGMA", "OUTROS"] as const) {
+      expect(() => normalizeExtension("a.png", t)).toThrow(NasPathError);
+      try {
+        normalizeExtension("a.png", t);
+      } catch (e) {
+        expect((e as NasPathError).code, t).toBe("MEDIA_TYPE_LINK_ONLY");
+      }
+    }
   });
 
-  it("recusa extensão fora da lista do tipo", () => {
-    expect(() => normalizeExtension("video.mp4", "FIGMA")).toThrow(/não permitida para o tipo/);
+  it("OUTROS deixa de ser o coringa que aceitava a união das listas", () => {
+    expect(() => normalizeExtension("qualquer.psd", "OUTROS")).toThrow(NasPathError);
   });
 
-  it("grava na pasta figma", () => {
-    const built = buildNasPath({
-      scope: "TASK",
-      client: "Cliente Um",
-      ownerName: "Post de lançamento",
-      ownerId: "task-1",
-      mediaType: "FIGMA",
-      originalFileName: "tela.fig",
-      version: 1,
-      uploadDate: new Date("2026-09-03T12:00:00Z"),
-    });
-    expect(built.mediaFolder).toBe("figma");
-    expect(built.relPath).toContain("/figma/");
+  it("isUploadableMediaType separa os dois mundos", () => {
+    expect(isUploadableMediaType("FOTOS")).toBe(true);
+    expect(isUploadableMediaType("FIGMA")).toBe(false);
+    expect(isUploadableMediaType("OUTROS")).toBe(false);
+  });
+});
+
+describe("LOGOS não muda", () => {
+  it("continua aceitando vetor e pdf", () => {
+    for (const f of ["marca.svg", "marca.ai", "marca.eps", "marca.pdf", "marca.png", "marca.cdr"]) {
+      expect(() => normalizeExtension(f, "LOGOS"), f).not.toThrow();
+    }
   });
 
-  it("passa a aceitar .fig também em OUTROS, porque OUTROS é a união das listas", () => {
-    expect(normalizeExtension("qualquer.fig", "OUTROS")).toBe("fig");
+  it("continua com o teto de 200 MB", () => {
+    expect(ALLOWLIST.LOGOS.maxBytes).toBe(200 * 1024 * 1024);
+  });
+});
+
+describe("SOCIAL_MEDIA é foto e vídeo", () => {
+  it("aceita os dois conjuntos", () => {
+    for (const f of ["a.jpg", "a.png", "a.webp", "a.gif", "a.mp4", "a.mov", "a.webm"]) {
+      expect(() => normalizeExtension(f, "SOCIAL_MEDIA"), f).not.toThrow();
+    }
+  });
+
+  it("recusa pdf, que não é nem um nem outro", () => {
+    expect(() => normalizeExtension("a.pdf", "SOCIAL_MEDIA")).toThrow(/não permitida para o tipo/);
+  });
+});
+
+describe("a guarda de extensão dupla sobrevive à mudança da união", () => {
+  it("continua pegando o disfarce", () => {
+    expect(() => normalizeExtension("nota.pdf.exe", "DOCUMENTOS")).toThrow(NasPathError);
+    expect(() => normalizeExtension("foto.jpg.png", "FOTOS")).toThrow(/dupla/);
   });
 });
 ```
 
-O último caso não é decoração: `OUTROS` é a união das outras listas, então acrescentar FIGMA **alarga OUTROS junto**. É consequência aceita — o teste existe para que ela seja decisão registrada, e não efeito colateral que ninguém percebeu.
+O último bloco existe porque a união de extensões (que alimenta a guarda de extensão dupla) era
+calculada excluindo `OUTROS`. Mexer na allowlist mexe nessa união — e uma guarda de segurança que
+afrouxa como efeito colateral de outra mudança é exatamente o tipo de estrago que não dá erro.
 
 - [ ] **Step 2: Rodar e ver falhar**
 
 Run: `npx vitest run __tests__/lib/nas/path.test.ts`
-Expected: FAIL — `normalizeExtension` lança para o tipo `FIGMA` (ou o TypeScript recusa o literal).
+Expected: FAIL — não existe `MEDIA_TYPE_LINK_ONLY`, `isUploadableMediaType` nem o tipo `FIGMA`.
 
-- [ ] **Step 3: Acrescentar FIGMA no app**
+- [ ] **Step 3: Reescrever a política no app**
 
 `lib/nas/path.ts`:
 
@@ -129,7 +198,34 @@ export type ArtifactMediaType =
   | "SOCIAL_MEDIA"
   | "FIGMA"
   | "OUTROS";
+
+/**
+ * Tipos que existem SÓ COMO LINK: nunca recebem arquivo no NAS.
+ * FIGMA é um endereço vivo numa ferramenta de outra pessoa — copiar bytes de lá guarda uma foto de
+ * um desenho que continua mudando. OUTROS era o coringa que aceitava a união de todas as listas;
+ * um balde sem regra é onde entra o que ninguém quis classificar.
+ */
+export const LINK_ONLY_MEDIA_TYPES = ["FIGMA", "OUTROS"] as const;
+
+/** Tipos que aceitam arquivo (upload ou importação), na ordem em que aparecem na tela. */
+export const UPLOADABLE_MEDIA_TYPES = [
+  "FOTOS",
+  "VIDEOS",
+  "DOCUMENTOS",
+  "LOGOS",
+  "SOCIAL_MEDIA",
+] as const;
+
+export type UploadableMediaType = (typeof UPLOADABLE_MEDIA_TYPES)[number];
+
+export function isUploadableMediaType(m: ArtifactMediaType): m is UploadableMediaType {
+  return (UPLOADABLE_MEDIA_TYPES as readonly string[]).includes(m);
+}
 ```
+
+`MEDIA_TYPE_FOLDER` continua com as sete chaves — `outros/` existe no NAS com arquivos antigos, e
+uma pasta que some do mapa quebra a leitura do que já está gravado. A de `FIGMA` nasce inalcançável
+e é só completude de tipo:
 
 ```ts
 export const MEDIA_TYPE_FOLDER: Record<ArtifactMediaType, string> = {
@@ -138,19 +234,57 @@ export const MEDIA_TYPE_FOLDER: Record<ArtifactMediaType, string> = {
   DOCUMENTOS: "documentos",
   LOGOS: "logos",
   SOCIAL_MEDIA: "Social Media",
+  // FIGMA e OUTROS são só-de-link: estas duas não recebem arquivo novo. `outros` fica porque já
+  // existe no NAS, com o que foi gravado antes desta política.
   FIGMA: "figma",
   OUTROS: "outros",
 };
 ```
 
-Dentro de `ALLOWLIST`, antes de `OUTROS`:
+A allowlist perde as duas entradas e o `SOCIAL_MEDIA` é reescrito:
 
 ```ts
-  // Figma é procedência, não formato: o que se guarda de lá é uma exportação.
-  FIGMA: { ext: ["fig", "pdf", "png", "svg"], maxBytes: 200 * MB },
+export const ALLOWLIST: Record<UploadableMediaType, { ext: string[]; maxBytes: number }> = {
+  FOTOS: {
+    ext: ["jpg", "png", "webp", "gif", "tiff", "heic", "raw", "cr2", "nef", "arw"],
+    maxBytes: 150 * MB,
+  },
+  VIDEOS: { ext: ["mp4", "mov", "webm", "mkv"], maxBytes: 5 * GB },
+  LOGOS: { ext: ["svg", "ai", "eps", "pdf", "png", "cdr"], maxBytes: 200 * MB },
+  DOCUMENTOS: {
+    ext: ["pdf", "docx", "xlsx", "pptx", "txt", "zip", "indd", "psd"],
+    maxBytes: 200 * MB,
+  },
+  // Foto e vídeo — o pdf saiu porque não é nem um nem outro.
+  SOCIAL_MEDIA: {
+    ext: ["jpg", "png", "webp", "gif", "mp4", "mov", "webm"],
+    maxBytes: 500 * MB,
+  },
+};
+
+// União de todas as extensões aceitas — usada pela guarda de extensão dupla.
+const ALLOWED_UNION = new Set(Object.values(ALLOWLIST).flatMap((v) => v.ext));
 ```
 
-`lib/validations.ts`: acrescente `"FIGMA"` ao `artifactMediaTypeEnum`, antes de `"OUTROS"`.
+`NasPathError` ganha o código novo, e `normalizeExtension` recusa cedo:
+
+```ts
+    | "EXT_NOT_ALLOWED_FOR_TYPE"
+    | "MEDIA_TYPE_LINK_ONLY"
+```
+
+```ts
+export function normalizeExtension(originalFileName: string, mediaType: ArtifactMediaType): string {
+  if (!isUploadableMediaType(mediaType)) {
+    throw new NasPathError(
+      "MEDIA_TYPE_LINK_ONLY",
+      `o tipo ${mediaType} existe só como link e não recebe arquivo no NAS`
+    );
+  }
+  // … o resto como está hoje, com `ALLOWLIST[mediaType].ext.includes(ext)` direto
+  // (o ramo especial de OUTROS desaparece junto com o coringa).
+}
+```
 
 - [ ] **Step 4: Rodar e ver passar**
 
@@ -159,19 +293,27 @@ Expected: PASS
 
 - [ ] **Step 5: Repetir no agente**
 
-As mesmas três mudanças em `nas-poc/agent/src/nas-path.ts`, e ao final de `nas-poc/agent/test/nas-path.test.ts`:
+As mesmas mudanças em `nas-poc/agent/src/nas-path.ts` — type, `LINK_ONLY_MEDIA_TYPES`,
+`UPLOADABLE_MEDIA_TYPES`, `isUploadableMediaType`, `MEDIA_TYPE_FOLDER`, `ALLOWLIST`, união e
+`normalizeExtension`. É a mesma política, escrita duas vezes porque são dois deployables; **divergir
+aqui é o defeito mais caro desta entrega** — um tipo aceito por um lado e recusado pelo outro
+aparece como "falhou" sem explicação para quem usa.
+
+Ao final de `nas-poc/agent/test/nas-path.test.ts`:
 
 ```ts
-describe("FIGMA (paridade com o app)", () => {
-  it("aceita fig/pdf/png/svg e recusa mp4", () => {
-    for (const f of ["a.fig", "a.pdf", "a.png", "a.svg"]) {
-      expect(() => normalizeExtension(f, "FIGMA")).not.toThrow();
+describe("política de tipos (paridade com o app)", () => {
+  it("FIGMA e OUTROS recusam arquivo", () => {
+    for (const t of ["FIGMA", "OUTROS"] as const) {
+      expect(() => normalizeExtension("a.png", t), t).toThrow(NasPathError);
     }
-    expect(() => normalizeExtension("a.mp4", "FIGMA")).toThrow(NasPathError);
   });
 
-  it("mapeia para a pasta figma", () => {
-    expect(MEDIA_TYPE_FOLDER.FIGMA).toBe("figma");
+  it("LOGOS continua com vetor e pdf; SOCIAL_MEDIA aceita vídeo e recusa pdf", () => {
+    expect(() => normalizeExtension("m.ai", "LOGOS")).not.toThrow();
+    expect(() => normalizeExtension("m.pdf", "LOGOS")).not.toThrow();
+    expect(() => normalizeExtension("v.mp4", "SOCIAL_MEDIA")).not.toThrow();
+    expect(() => normalizeExtension("d.pdf", "SOCIAL_MEDIA")).toThrow(NasPathError);
   });
 });
 ```
@@ -181,39 +323,73 @@ Expected: PASS
 
 - [ ] **Step 6: Migração do enum e o client**
 
-Crie `prisma/migrations/20260903120000_artifact_media_type_figma/migration.sql`:
+`prisma/migrations/20260903120000_artifact_media_type_figma/migration.sql`:
 
 ```sql
--- FIGMA passa a ser tipo de mídia: link de Figma é o rótulo mais usado, e o `type` legado
--- (que o tinha) parou de ser gravado. Aditivo: nenhum dado existente muda.
+-- FIGMA passa a ser tipo de mídia. Ele é SÓ DE LINK (não recebe arquivo no NAS), mas precisa
+-- existir no enum porque link de Figma é o rótulo mais usado, e o `type` legado — que o tinha —
+-- parou de ser gravado. Aditivo: nenhum dado existente muda.
 ALTER TYPE "ArtifactMediaType" ADD VALUE IF NOT EXISTS 'FIGMA';
 ```
 
 Em `prisma/schema.prisma`, acrescente `FIGMA` ao enum (antes de `OUTROS`).
 
 Run: `npx prisma migrate deploy && npx prisma generate`
-Expected: migração aplicada, client regenerado. **Não use `prisma migrate dev`** — quebrado neste repo (P3006).
+**Não use `prisma migrate dev`** — quebrado neste repo (P3006).
 
-- [ ] **Step 7: Rótulo nos dois locales e no seletor**
+Nenhum artefato existente com `mediaType = OUTROS` é tocado: a política nova vale para escrita nova,
+e o que já está no NAS continua onde está, com o tipo que tem.
 
-`locales/pt-BR/tasks.json` → `artifacts.mediaTypes`: `"FIGMA": "Figma"`.
-`locales/es-ES/tasks.json` → `artifacts.mediaTypes`: `"FIGMA": "Figma"`.
-`components/tasks/UploadArtifactForm.tsx:33`:
+- [ ] **Step 7: O upload deixa de oferecer o que não aceita**
+
+`components/tasks/UploadArtifactForm.tsx:33` passa a usar a lista única, em vez de repetir os nomes:
 
 ```ts
-const MEDIA_TYPES = ["VIDEOS", "FOTOS", "DOCUMENTOS", "LOGOS", "SOCIAL_MEDIA", "FIGMA", "OUTROS"];
+import { UPLOADABLE_MEDIA_TYPES } from "@/lib/nas/path";
+const MEDIA_TYPES = UPLOADABLE_MEDIA_TYPES;
 ```
 
-- [ ] **Step 8: Suíte inteira**
+E `prepareArtifactUpload` (`lib/actions/artifact.ts`) recusa no SERVIDOR, antes de qualquer
+consulta — a lista da tela é conveniência, não trava:
 
-Run: `npm test`
-Expected: PASS, incluindo a paridade de locales.
+```ts
+if (!isUploadableMediaType(data.mediaType)) {
+  return { error: t("mediaTypeLinkOnly") };
+}
+```
 
-- [ ] **Step 9: Commit**
+Sem esse estreitamento o `ALLOWLIST[data.mediaType]` logo abaixo nem compila, que é exatamente o
+efeito procurado ao tipar a allowlist por `UploadableMediaType`.
+
+- [ ] **Step 8: Textos nos dois locales**
+
+`locales/{pt-BR,es-ES}/tasks.json` → `artifacts.mediaTypes`: `"FIGMA": "Figma"` nos dois (o nome
+próprio não se traduz).
+
+`locales/pt-BR/errors.json` → `artifact`:
+
+```json
+    "mediaTypeLinkOnly": "Esse tipo existe só como link e não recebe arquivo no NAS."
+```
+
+`locales/es-ES/errors.json` → `artifact`:
+
+```json
+    "mediaTypeLinkOnly": "Ese tipo existe solo como enlace y no admite archivos en el NAS."
+```
+
+- [ ] **Step 9: Suíte inteira**
+
+Run: `npm test && npx tsc --noEmit`
+Expected: PASS. O `tsc` é o passo que importa aqui: ele lista todos os pontos que consultam
+`ALLOWLIST` sem estreitar o tipo. Cada um deles precisa de recusa explícita — nenhum deve ser
+resolvido com `as` nem com `!`.
+
+- [ ] **Step 10: Commit**
 
 ```bash
 git add -A
-git commit -m "feat(nas): FIGMA vira tipo de mídia, nos dois lados"
+git commit -m "feat(nas): cada tipo de mídia com a sua política, e FIGMA/OUTROS só como link"
 ```
 
 ---
@@ -743,6 +919,14 @@ describe("enqueueArtifactImport", () => {
     expect(res).toMatchObject({ error: "importPrivateHost" });
   });
 
+  it("recusa tipo que só existe como link", async () => {
+    for (const mediaType of ["FIGMA", "OUTROS"] as const) {
+      const res = await enqueueArtifactImport({ ...base, mediaType });
+      expect(res, mediaType).toMatchObject({ error: "mediaTypeLinkOnly" });
+    }
+    expect(created).toHaveLength(0);
+  });
+
   it("recusa extensão que o tipo de mídia não aceita", async () => {
     const res = await enqueueArtifactImport({
       ...base,
@@ -967,7 +1151,7 @@ import { requireMemberOrHigher, requireManagerOrAdmin } from "@/lib/permissions"
 import { importArtifactSchema } from "@/lib/validations";
 import { checkImportUrl, deriveFileNameFromUrl, URL_PROBLEM_KEY } from "@/lib/nas/import-source";
 import { isNasImportConfigured } from "@/lib/nas/config";
-import { NasPathError, normalizeExtension } from "@/lib/nas/path";
+import { NasPathError, isUploadableMediaType, normalizeExtension } from "@/lib/nas/path";
 import { createArtifactWithVersion, resolveArtifactOwner } from "@/lib/actions/artifact";
 
 export async function enqueueArtifactImport(input: unknown) {
@@ -983,6 +1167,10 @@ export async function enqueueArtifactImport(input: unknown) {
       data.scope === "TASK" ? await requireMemberOrHigher() : await requireManagerOrAdmin();
 
     if (!isNasImportConfigured()) return { error: t("importNotConfigured") };
+
+    // Tipo só de link não vira arquivo. A recusa é aqui, com a frase certa — o formulário
+    // desabilita o botão, mas o botão não é a trava.
+    if (!isUploadableMediaType(data.mediaType)) return { error: t("mediaTypeLinkOnly") };
 
     const check = checkImportUrl(data.url);
     if (!check.ok) return { error: t(URL_PROBLEM_KEY[check.reason]) };
@@ -1283,6 +1471,15 @@ describe("AddArtifactForm — aba de link", () => {
     expect(addLink).not.toHaveBeenCalled();
   });
 
+  it("importar fica desabilitado quando o tipo só existe como link", async () => {
+    renderForm();
+    await preencher({ nome: "Tela", url: "https://figma.com/file/abc" });
+    await escolherTipo("Figma");
+    expect(screen.getByRole("button", { name: /importar para o nas/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^adicionar$/i })).toBeEnabled();
+    expect(screen.getByText(/só como link/i)).toBeInTheDocument();
+  });
+
   it("os dois botões ficam desabilitados sem nome ou sem URL", async () => {
     renderForm();
     expect(screen.getByRole("button", { name: /^adicionar$/i })).toBeDisabled();
@@ -1301,7 +1498,11 @@ Expected: FAIL — não existem os campos nem o botão de importar.
 Em `components/artifacts/AddArtifactForm.tsx`: troque o estado `type` por `mediaType`/`sensitivity`, apague `TYPE_OPTIONS` e o import de `ArtifactType`, e substitua o bloco do modo link. As listas e os rótulos são os mesmos da aba de upload (`tasks.upload.*`), de propósito:
 
 ```tsx
-const MEDIA_TYPES = ["VIDEOS", "FOTOS", "DOCUMENTOS", "LOGOS", "SOCIAL_MEDIA", "FIGMA", "OUTROS"];
+import { LINK_ONLY_MEDIA_TYPES, UPLOADABLE_MEDIA_TYPES } from "@/lib/nas/path";
+
+// A aba de LINK oferece os sete: link de Figma é justamente o que FIGMA existe para classificar.
+// O que muda é o que se pode IMPORTAR — daí a lista dos só-de-link, logo abaixo.
+const MEDIA_TYPES = [...UPLOADABLE_MEDIA_TYPES, ...LINK_ONLY_MEDIA_TYPES];
 const SENSITIVITIES = ["INTERNO", "CLIENTE", "CONFIDENCIAL"];
 ```
 
@@ -1310,6 +1511,9 @@ const [mediaType, setMediaType] = useState("DOCUMENTOS");
 const [sensitivity, setSensitivity] = useState("INTERNO");
 
 const camposOk = Boolean(title.trim() && url.trim());
+// FIGMA e OUTROS existem só como link: importar não é uma opção, e a tela precisa dizer isso ANTES
+// do clique. Um botão que só recusa depois de apertado ensina que o sistema é aleatório.
+const soLink = (LINK_ONLY_MEDIA_TYPES as readonly string[]).includes(mediaType);
 
 const validarUrl = (): boolean => {
   try {
@@ -1457,12 +1661,14 @@ E o corpo, nas três linhas prometidas:
       type="button"
       variant="outline"
       onClick={handleImport}
-      disabled={isPending || !camposOk}
+      disabled={isPending || !camposOk || soLink}
     >
       <Download className="mr-2 h-4 w-4" />
       {t("importToNas")}
     </Button>
   </div>
+
+  {soLink && <p className="text-xs text-muted-foreground">{t("importLinkOnlyType")}</p>}
 </div>
 ```
 
@@ -1475,6 +1681,7 @@ Acrescente `const tUpload = useTranslations("tasks.upload");` e os imports de `L
 ```json
     "importToNas": "Importar para o NAS",
     "importQueued": "Na fila: o agente vai buscar o arquivo e avisar quando estiver no NAS.",
+    "importLinkOnlyType": "Figma e Outros existem só como link — esses tipos não recebem arquivo no NAS.",
     "importHint": "Adicionar guarda só o link — o arquivo continua na origem. Importar traz uma cópia para o NAS, e para isso o link precisa apontar direto para o arquivo. A sensibilidade vale nos dois casos: é ela que define o que o cliente enxerga."
 ```
 
@@ -1483,6 +1690,7 @@ Acrescente `const tUpload = useTranslations("tasks.upload");` e os imports de `L
 ```json
     "importToNas": "Importar al NAS",
     "importQueued": "En cola: el agente buscará el archivo y avisará cuando esté en el NAS.",
+    "importLinkOnlyType": "Figma y Otros existen solo como enlace: esos tipos no admiten archivos en el NAS.",
     "importHint": "Añadir guarda solo el enlace: el archivo sigue en su origen. Importar trae una copia al NAS, y para eso el enlace debe apuntar directamente al archivo. La sensibilidad vale en ambos casos: es la que define lo que ve el cliente."
 ```
 
@@ -1638,7 +1846,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getFinalizeSecret, IMPORT_LEASE_MS, IMPORT_QUEUE_MAX } from "@/lib/nas/config";
 import { verifyFinalizeSignature } from "@/lib/nas/token";
-import { ALLOWLIST } from "@/lib/nas/path";
+import { ALLOWLIST, isUploadableMediaType, type ArtifactMediaType } from "@/lib/nas/path";
 
 export async function POST(request: NextRequest) {
   let secret: string;
@@ -1707,16 +1915,23 @@ export async function POST(request: NextRequest) {
     select: { id: true, url: true, nasPath: true, fileName: true, mediaType: true },
   });
 
-  return NextResponse.json({
-    items: reservados.map((a) => ({
-      artifactId: a.id,
-      url: a.url as string,
-      nasPath: a.nasPath as string,
-      fileName: a.fileName as string,
-      mediaType: a.mediaType as string,
-      maxBytes: ALLOWLIST[a.mediaType as keyof typeof ALLOWLIST].maxBytes,
-    })),
+  // Uma linha com tipo só-de-link não deveria existir na fila (a action recusa), mas a fila é lida
+  // por OUTRO deployable: se aparecer, sai da lista em vez de derrubar a resposta inteira.
+  const items = reservados.flatMap((a) => {
+    const m = a.mediaType as ArtifactMediaType | null;
+    if (!m || !isUploadableMediaType(m)) return [];
+    return [
+      {
+        artifactId: a.id,
+        url: a.url as string,
+        nasPath: a.nasPath as string,
+        fileName: a.fileName as string,
+        mediaType: m,
+        maxBytes: ALLOWLIST[m].maxBytes,
+      },
+    ];
   });
+  return NextResponse.json({ items });
 }
 ```
 
@@ -3019,7 +3234,8 @@ git commit -m "docs(nas): publicar o agente e as limitações que a importação
 
 1. **A spec diz "nenhuma coluna nova" e este plano acrescenta `importClaimedAt`.** A mesma spec pede, dois parágrafos abaixo, que o agente marque o que pegou "com carimbo de tempo" — e não existe carimbo sem coluna. A frase descrevia o estado da fila (que de fato cabia no modelo), não a reserva.
 2. **A spec conta cinco consumidores do `type`; um deles (`ActivityFeed`) não tem importador.** A Task 2 manda conferir com `grep` antes de apagar, e manda remapear em vez de apagar se o grep discordar.
-3. **A importação que falhou troca "reenviar" por "editar", em vez de mostrar os dois** (Task 8, Step 8), com a justificativa no próprio plano.
+3. **A política por tipo (Task 1) não estava na spec** — veio na revisão: FIGMA e OUTROS só como link, SOCIAL_MEDIA sem `pdf`, LOGOS intacto. Duas consequências assumidas: `OUTROS` deixa de aceitar upload, então um arquivo que hoje entraria por ele passa a precisar de tipo de verdade; e artefato antigo com `mediaType = OUTROS` fica como está, porque a política vale para escrita nova.
+4. **A importação que falhou troca "reenviar" por "editar", em vez de mostrar os dois** (Task 8, Step 8), com a justificativa no próprio plano.
 
 **Placeholders:** não há "TBD" nem "trate os erros adequadamente". Onde o plano descreve markup em vez de escrevê-lo (o diálogo da Task 8, Step 9), ele nomeia os campos, os rótulos, a ação chamada e o comportamento em erro e em sucesso.
 
