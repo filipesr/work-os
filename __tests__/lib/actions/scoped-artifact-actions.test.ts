@@ -44,6 +44,7 @@ describe("addScopedLinkArtifact", () => {
       projectId: "p1",
       title: "Briefing",
       url: "https://drive.google.com/x",
+      mediaType: "DOCUMENTOS",
     });
     expect(res).toEqual({ success: true });
     const data = prisma.taskArtifact.create.mock.calls.at(-1)?.[0].data;
@@ -75,6 +76,37 @@ describe("addScopedLinkArtifact", () => {
       clientId: "c1", // dono errado
       title: "x",
       url: "https://x.com",
+    });
+    expect(res).toHaveProperty("error");
+  });
+
+  it("grava mediaType e sensibilidade, e não grava o type legado", async () => {
+    const { prisma } = await import("@/lib/prisma");
+    const { addScopedLinkArtifact } = await import("@/lib/actions/artifact");
+    await addScopedLinkArtifact({
+      scope: "CLIENT",
+      clientId: "c1",
+      title: "Manual da marca",
+      url: "https://exemplo.com/manual.pdf",
+      mediaType: "DOCUMENTOS",
+      sensitivity: "CLIENTE",
+    });
+    const data = vi.mocked(prisma.taskArtifact.create).mock.calls.at(-1)![0].data;
+    expect(data.mediaType).toBe("DOCUMENTOS");
+    expect(data.sensitivity).toBe("CLIENTE");
+    expect(data).not.toHaveProperty("type");
+    expect(data.storageKind).toBe("LINK");
+    expect(data.uploadStatus).toBe("READY");
+  });
+
+  it("exige o tipo de mídia", async () => {
+    const { addScopedLinkArtifact } = await import("@/lib/actions/artifact");
+    const res = await addScopedLinkArtifact({
+      scope: "CLIENT",
+      clientId: "c1",
+      title: "x",
+      url: "https://exemplo.com/a.pdf",
+      sensitivity: "INTERNO",
     });
     expect(res).toHaveProperty("error");
   });

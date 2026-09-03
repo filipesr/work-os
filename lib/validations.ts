@@ -151,8 +151,6 @@ export type ImportArtifactInput = z.infer<typeof importArtifactSchema>;
 
 export const artifactScopeEnum = z.enum(["TASK", "PROJECT", "CLIENT"]);
 
-const linkArtifactTypeEnum = z.enum(["DOCUMENT", "IMAGE", "VIDEO", "FIGMA", "OTHER"]);
-
 export const scopedLinkArtifactSchema = z
   .object({
     scope: artifactScopeEnum,
@@ -161,7 +159,8 @@ export const scopedLinkArtifactSchema = z
     clientId: z.string().min(1).nullish(),
     title: z.string().min(1, "Título do artefato é obrigatório").max(200),
     url: z.string().url("URL inválida"),
-    type: linkArtifactTypeEnum.default("OTHER"),
+    mediaType: artifactMediaTypeEnum,
+    sensitivity: sensitivityEnum.default("INTERNO"),
   })
   .refine(
     (data) => {

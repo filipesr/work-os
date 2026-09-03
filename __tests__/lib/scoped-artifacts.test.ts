@@ -4,7 +4,7 @@ import { scopedLinkArtifactSchema } from "@/lib/validations";
 const base = {
   title: "Brand guidelines",
   url: "https://drive.google.com/brand",
-  type: "DOCUMENT" as const,
+  mediaType: "DOCUMENTOS" as const,
 };
 
 describe("scopedLinkArtifactSchema — scope owner invariant", () => {
@@ -35,17 +35,28 @@ describe("scopedLinkArtifactSchema — scope owner invariant", () => {
     expect(result.success).toBe(true);
   });
 
-  it("defaults type to OTHER when omitted", () => {
+  it("defaults sensitivity to INTERNO when omitted", () => {
+    const result = scopedLinkArtifactSchema.safeParse({
+      title: base.title,
+      url: base.url,
+      mediaType: base.mediaType,
+      scope: "PROJECT",
+      projectId: "proj-1",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.sensitivity).toBe("INTERNO");
+    }
+  });
+
+  it("rejects when mediaType is omitted — não há tipo padrão para link", () => {
     const result = scopedLinkArtifactSchema.safeParse({
       title: base.title,
       url: base.url,
       scope: "PROJECT",
       projectId: "proj-1",
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.type).toBe("OTHER");
-    }
+    expect(result.success).toBe(false);
   });
 
   it("rejects an artifact with zero owners", () => {

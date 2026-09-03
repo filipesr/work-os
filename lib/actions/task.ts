@@ -5,7 +5,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
-import { Prisma, type ActiveStageStatus, type ReworkKind } from "@prisma/client";
+import {
+  Prisma,
+  type ActiveStageStatus,
+  type ReworkKind,
+  type ArtifactMediaType,
+  type SensitivityLevel,
+} from "@prisma/client";
 import { auth } from "@/auth";
 import { requireMemberOrHigher, requireManagerOrAdmin, getSessionUser } from "@/lib/permissions";
 import { createTaskSchema } from "@/lib/validations";
@@ -2117,7 +2123,8 @@ export async function addLinkArtifact(
   taskId: string,
   title: string,
   url: string,
-  type: "DOCUMENT" | "IMAGE" | "VIDEO" | "FIGMA" | "OTHER"
+  mediaType: ArtifactMediaType,
+  sensitivity: SensitivityLevel = "INTERNO"
 ) {
   const user = await requireMemberOrHigher();
   const userId = user.id as string;
@@ -2137,7 +2144,8 @@ export async function addLinkArtifact(
         userId,
         title: title.trim(),
         url: url.trim(),
-        type,
+        mediaType,
+        sensitivity,
       },
       include: {
         user: {

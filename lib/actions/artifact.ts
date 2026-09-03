@@ -662,7 +662,7 @@ export async function addScopedLinkArtifact(input: unknown) {
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   }
-  const { scope, projectId, clientId, title, url, type } = parsed.data;
+  const { scope, projectId, clientId, title, url, mediaType, sensitivity } = parsed.data;
   if (scope === "TASK") {
     return { error: t("taskArtifactsUseTaskFlow") };
   }
@@ -675,7 +675,8 @@ export async function addScopedLinkArtifact(input: unknown) {
         clientId: clientId ?? null,
         title: title.trim(),
         url: url.trim(),
-        type,
+        mediaType,
+        sensitivity,
         userId: user.id as string,
         storageKind: "LINK",
         uploadStatus: "READY",
