@@ -139,6 +139,45 @@ substitui valores NO ARQUIVO, não injeta variável no processo do contêiner. J
 - [ ] Confirmar que o artefato sai de `PENDING` **em menos de um ciclo de `IMPORT_POLL_MS`**.
       Se estiver em PENDING depois de 2–3 ciclos, o agente não está sondando a fila.
 
+### Como o código chega no NAS (medido em 2026-09-09)
+
+O ambiente do NAS é enxuto, e descobrir isso no meio de uma publicação custa tempo:
+
+- **não há `git`**, `rsync` nem `tar` — atualizar é copiar do Mac, não puxar de lá;
+- **`scp` só funciona com `-O`** (protocolo antigo). Sem a opção, ele negocia SFTP, autentica e
+  fecha a conexão com `scp: Connection closed`, que parece problema de rede e não é;
+- `~/nas-poc/docker-compose.yml` é mantido **à mão** — compare antes de sobrescrever;
+- `docker` exige `sudo`.
+
+Sequência que funcionou, do Mac (num terminal de verdade — o `scp` pede senha, então não serve
+comando que não consiga respondê-la):
+
+```
+cd <repo>/nas-poc/agent
+scp -O Dockerfile package.json tsconfig.json Filipe@192.168.200.216:~/nas-poc/agent/
+scp -O src/*.ts Filipe@192.168.200.216:~/nas-poc/agent/src/
+```
+
+> Copie `src/*.ts` para **dentro** de `src/`. `scp -r src ...:~/nas-poc/agent/` cria
+> `agent/src/src` quando o destino já existe — o `scp` funciona assim, ao contrário do `rsync`.
+
+E no NAS, `sudo docker compose build agent && sudo docker compose up -d agent` (só o agente: o Caddy
+guarda o certificado num volume que não se recria à toa).
+
+### Verificação que realmente prova a troca
+
+`AGENT_VERSION` vem da variável no compose, **não do código** — ele diz `0.3.0` mesmo com uma imagem
+construída a partir dos arquivos velhos. As duas provas que valem:
+
+```
+sudo docker compose exec agent ls /app/dist | grep -E "import-worker|fetch-source|nas-store"
+sudo docker compose exec agent env | grep -E "CLOUD_IMPORT|IMPORT_POLL|AGENT_VERSION"
+```
+
+A primeira mostra o código compilado dentro da imagem; a segunda, que as variáveis atravessaram o
+compose. Na publicação de 2026-09-09 a cópia falhou em silêncio na primeira tentativa, e foi a
+conferência dos arquivos — não a versão — que pegou.
+
 ### Ordem de publicação
 
 **Não há ordem obrigatória, mas não se pode parar no meio:**

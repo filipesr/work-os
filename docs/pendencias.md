@@ -116,6 +116,42 @@ depois governa acesso é a forma mais silenciosa de errar: não dá erro, só n�
 CLIENTE o que for material de cliente, ou deixar cada dono remarcar o seu. O que não pode é a virada
 da visão do cliente acontecer antes dessa decisão.
 
+**Decidido em 2026-09-09:** o acervo atual fica como está, `INTERNO`, porque ainda é dado de teste —
+não há material de cliente de verdade a proteger. **A pendência não morre, ela hiberna:** volta a
+valer no instante em que entrar acervo real, e mais ainda antes de a visão do cliente ir ao ar. Quem
+reabrir isto precisa saber que a decisão foi tomada sobre dado descartável, não sobre o acervo que
+existir naquele dia.
+
+---
+
+## Anexo do Trello exige login — medido, não suposto (2026-09-09)
+
+A importação para o NAS foi construída para atender à migração do Trello. No primeiro teste real com
+um anexo de lá, o resultado foi `SOURCE_REFUSED` ("a origem recusou o download").
+
+**A causa foi medida, e não é nossa.** O mesmo link abre no navegador (que manda os cookies da
+sessão), mas do caminho de rede do próprio NAS:
+
+```
+curl -o /dev/null -w "%{http_code}" -A "" 'URL'   ->  401
+curl -o /dev/null -w "%{http_code}"     'URL'     ->  401
+```
+
+Igual com e sem `User-Agent`, o que descarta a hipótese de o agente estar sendo barrado por não
+mandar cabeçalho de navegador — era a suspeita razoável, já que ele não manda nenhum. É
+autenticação: o anexo está atrás de login.
+
+**Consequência para uma decisão que estava em aberto.** A spec da importação deixou "traduzir link de
+fornecedor" fora do escopo _até a migração mostrar se valia a pena_. Para o **Trello**, está
+respondido: não vale, porque o obstáculo é permissão, e nenhuma reescrita de URL contorna login. Para
+o **Drive**, o obstáculo é outro — link de compartilhamento devolve a página de visualização, e a
+forma de download direto existe para arquivo público. Lá a tradução resolveria de fato.
+
+**Os caminhos que sobram para o acervo do Trello**, do mais barato ao mais caro: quem tem acesso baixa
+e sobe pelo NAS (funciona hoje, sem código, mas exige estar na rede local — que é exatamente a
+limitação que a importação existe para contornar); ou move para o Drive com link público e importa de
+lá. A segunda é a que torna a tradução de link do Drive um investimento com retorno claro.
+
 ---
 
 ## Higiene deixada pela importação de link (2026-09-09)

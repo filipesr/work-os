@@ -1,6 +1,11 @@
-# TOPOLOGIA EM PRODUÇÃO — é este arquivo que roda no NAS hoje (mesmo conteúdo do
-# `~/nas-poc/docker-compose.yml` de lá). A variante com Cloudflare Tunnel para download
-# externo (§4, não implementado) está em `compose.tunnel.yml` e NÃO deve ser subida.
+# TOPOLOGIA EM PRODUÇÃO — é esta a que roda no NAS. A variante com Cloudflare Tunnel para
+# download externo (§4, não implementado) está em `compose.tunnel.yml` e NÃO deve ser subida.
+#
+# ATENÇÃO: este arquivo é a REFERÊNCIA, não uma cópia espelhada. O `~/nas-poc/docker-compose.yml`
+# do NAS é mantido À MÃO — não há git, rsync nem tar naquele ambiente. Em 2026-09-09 os dois
+# divergiam só em comentário (conteúdo funcional idêntico), e as três linhas da importação foram
+# acrescentadas lá por edição manual. Antes de copiar este arquivo por cima do de lá, COMPARE:
+# um comentário afirmando que são iguais foi o que quase fez a gente sobrescrever ajuste alheio.
 
 # §5b (host networking) — a bridge do NAS não dá egress pra internet, então agente E caddy usam a
 # rede do host (que alcança a Vercel p/ o finalize). Caddy termina TLS na :443 e fala com o agente
