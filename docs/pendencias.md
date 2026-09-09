@@ -118,6 +118,49 @@ da visão do cliente acontecer antes dessa decisão.
 
 ---
 
+## Higiene deixada pela importação de link (2026-09-09)
+
+Dezesseis achados menores que a revisão final triou como "podem esperar" — nenhum tem consequência
+em produção, e a recomendação dela foi agrupá-los numa fatia só, em vez de espalhá-los.
+
+**Testes que não seguram o que dizem segurar**
+
+- `useNasReupload` e `guessMediaType` não têm teste dedicado; a cobertura é indireta.
+- Dos quatro testes do rótulo de tipo (`artifacts-unify`), só um discrimina a mudança; os outros três
+  produzem o mesmo resultado com a regra antiga e com a nova (e se nomeiam honestamente como
+  não-regressão).
+- `importPathTaken` (colisão de caminho, P2002) está implementado e sem teste.
+
+**Arestas de código**
+
+- `deriveFileNameFromUrl(...) as string` recomputa e faz asserção de tipo em vez de aproveitar o
+  resultado que `checkImportUrl` já validou.
+- `user.id as string` — a origem é o tipo de retorno de `requireMemberOrHigher`/`requireManagerOrAdmin`.
+- `addLinkArtifactVersion` ainda herda o `type` legado (sai junto com a coluna, por desenho).
+- O botão de editar importação usa só o `isPending` global, sem estado de "salvando" próprio.
+- `NOT_A_FILE` está no `FetchFailureCode` do agente e nunca é lançado por lá (quem o produz é a
+  tradução no worker).
+- `nas-poc/agent/src/nas-path.ts` não é importado por nenhum arquivo de `src/` — a política de tipos
+  do agente é cópia documental, não imposição em runtime. Quem for mantê-la precisa saber disso para
+  não pagar o custo achando que compra segurança.
+
+**Robustez do agente, sem consequência hoje**
+
+- `destroyAndUnlink` espera `finished(ws)` sem prazo; num mount de NAS travado, o caminho de
+  desistência fica refém de um `open()` que não volta. Não é risco novo (o `unlink` anterior já era
+  uma chamada de sistema sem prazo no mesmo caminho).
+- `startImportWorker` descarta o timer que devolve, diferente do worker irmão que o guarda para o
+  encerramento. Ambos têm `unref`, então nada trava.
+- `pedirFila` não tem tratamento próprio para exceção de rede (o não-2xx já passou a ser registrado).
+- `FinalizeQueue.enqueue` não deduplica por artefato: duas falhas do mesmo artefato viram dois jobs,
+  e o reagendamento só encontra o primeiro.
+- O relato de falha não carrega marca da tentativa: sob queda longa da nuvem, um relato antigo
+  drenado da fila pode marcar como falha uma tentativa nova já em curso.
+- O filtro de "já estou processando" roda na montagem da lista, não dentro do laço.
+- A régua de endereços não cobre 6to4 nem NAT64 (ver as limitações da importação, acima).
+
+---
+
 ## Limitações conhecidas, registradas em outro lugar
 
 Não são pendências desta lista, mas quem lê aqui costuma precisar delas:
