@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next-intl/server", () => ({
@@ -66,6 +66,14 @@ beforeEach(() => {
   vi.mocked(prisma.task.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.timeLog.groupBy).mockResolvedValue([] as never);
   vi.mocked(prisma.stageTransition.findMany).mockResolvedValue([] as never);
+  // Congela o relógio antes da semana fixa: getClientLoad projeta etapas a partir de "hoje", então
+  // o resultado depende de onde "hoje" cai em relação à semana pedida (SEGUNDA = "2026-09-07").
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-09-01T12:00:00.000Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("getClientLoad", () => {
