@@ -120,7 +120,10 @@ para quem usa é o pior possível: "importei e nunca chegou".
 
 ### Variáveis de ambiente do agente
 
-Acrescentar ao `.env` do agente (além das já presentes na seção anterior):
+Acrescentar ao `.env` do agente (além das já presentes na seção anterior). **Atenção:** as duas
+também precisam estar no bloco `environment:` do `docker-compose.yml` — o `.env` do Compose
+substitui valores NO ARQUIVO, não injeta variável no processo do contêiner. Já estão lá desde
+`AGENT_VERSION: "0.3.0"`; se você editar o compose do NAS à mão, não as perca.
 
 | Env                      | Valor / origem                                                                              |
 | ------------------------ | ------------------------------------------------------------------------------------------- |

@@ -23,10 +23,15 @@ services:
       MAX_UPLOAD_BYTES: "${MAX_UPLOAD_BYTES:-5368709120}"
       ALLOWED_ORIGIN: "${ALLOWED_ORIGIN}"
       CLOUD_FINALIZE_URL: "${CLOUD_FINALIZE_URL}"
+      # Fila de importação (2026-09). Precisa estar AQUI, não só no .env: o .env do Compose
+      # substitui valores NESTE arquivo, não injeta variável no processo do contêiner. Sem esta
+      # linha o agente sobe sem saber a URL da fila e nunca sonda — em silêncio.
+      CLOUD_IMPORT_QUEUE_URL: "${CLOUD_IMPORT_QUEUE_URL}"
+      IMPORT_POLL_MS: "${IMPORT_POLL_MS:-60000}"
       FINALIZE_SECRET: "${FINALIZE_SECRET}"
       RECONCILE_TOKEN: "${RECONCILE_TOKEN}"
       TOKEN_PUBLIC_KEYS: "${TOKEN_PUBLIC_KEYS}"
-      AGENT_VERSION: "0.2.0"
+      AGENT_VERSION: "0.3.0"
     volumes:
       - "${NAS_SHARE_PATH:-/volume1/WorkOS-PoC}:/data"
 
