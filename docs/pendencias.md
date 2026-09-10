@@ -266,6 +266,30 @@ e na descrição — merecem decisão humana, um a um. São: `MODELO - Checklist
 
 **Anexos são LINK para o Trello, não cópias.** 454 dos 455 arquivos são `isUpload: true` e hospedados atrás de autenticação (`curl 'URL' → 401`). A importação para o NAS não consegue baixá-los. Cada um entra como **artefato de link**, com nome, tipo de mídia e a URL original. **Se o quadro do Trello for apagado ou a conta encerrada, as referências morrem junto.** É consequência aceita da decisão de não guardar credencial do Trello para uma migração única — mas quem depender desses arquivos (3,47 GB, maior arquivo 201 MB) precisa saber.
 
-**A repescagem manual de pessoas.** 6 dos 17 membros do Trello não casaram com usuário do WorkOS por regra exata: `FSRezende`, `Franciele Souza`, `Paola Palma`, `Sara Goon`, `Vladimir Goon`, `rocio bernal`. O trabalho deles fica sem responsável até alguém mapear à mão.
+**A repescagem manual de pessoas.** 5 dos 17 membros do Trello não casaram com usuário do WorkOS: `FSRezende`, `Franciele Souza`, `Paola Palma`, `Vladimir Goon`, `rocio bernal` — juntos, 2 demandas. `Sara Goon` era a sexta e foi resolvida por declaração no script (`MANUAL_MATCHES`, em `scripts/import-trello/run.ts`): o e-mail dela no WorkOS é `saragoonmmkt@gmail.com`, com dois `m`, fora do padrão que as três chaves reconhecem. **O cadastro continua com o e-mail fora do padrão** — se alguém quiser que o casamento automático passe a funcionar, é lá que precisa mexer, sabendo que o e-mail é a chave de login por Google.
 
-**Decisão em aberto: o cliente que já existe.** O cliente `AtlanticoShop` já tem um projeto (`Black Friday 2026`, com 3 demandas de teste). Ele convive com os 17 projetos mensais da importação ou é absorvido? É decisão do dono do projeto.
+**O `Black Friday 2026` deixou de existir.** A pergunta era se aquele projeto de teste conviveria com os 17 mensais; o dono do projeto apagou os projetos de teste antes da gravação, então a importação entrou em terreno limpo. Não há decisão pendente aqui.
+
+**O desempate do responsável pode inflar quem supervisiona.** Quando o card declara 2 a 4 membros e nada desempata, a etapa fica com o **primeiro da lista do card** — decisão explícita do dono do projeto, e é escolha, não medição: a ordem em que o Trello guarda os membros não significa nada. Efeito medido: Pedro Villalba fica com 115 etapas, das quais 65 são as pendentes de aprovação e relatório (dele de fato, por ter aberto as demandas) e 14 são Desenho vindas desse desempate. Quem olhar métrica de execução por pessoa precisa saber disso antes de concluir qualquer coisa.
+
+**Quality Control pendente fica sem dono.** As 45 etapas de revisão que as demandas abertas têm pela frente nascem sem responsável, de propósito: o portão de qualidade é do time de qualidade, não de quem abriu a demanda. Se o processo quiser um dono ali, é uma linha em `CREATOR_OWNED_STAGES` (`lib/trello/plan.ts`).
+
+**Sobras da importação, sem efeito no dado gravado.** O relatório do ensaio não diz quantas demandas cada projeto mensal recebe nem quais cards foram descartados um a um (só a contagem por motivo); `applyImportPlan` tem um ramo de ensaio que o executável nunca chama, então as pré-condições de banco só são checadas na hora do `--commit`; `ReworkEvent.byTrelloId` e o `kind: "CLIENT"` nunca são escritos; os checklists de 3 cards não foram importados; e o mês do projeto é recortado do ISO em UTC enquanto o resto do app usa fuso de São Paulo, o que põe 18 das 204 num mês vizinho.
+
+---
+
+## O gatilho órfão que impedia criar demanda (2026-09-10)
+
+`20250104160000_add_assignee_team_validation` criou o gatilho `check_task_assignee_team`, que lê
+`NEW."assigneeId"` e `NEW."currentStageId"`. `20260901180000_drop_task_assignee` derrubou a coluna
+`assigneeId` e **não** derrubou o gatilho. Um gatilho `BEFORE INSERT` que lê campo inexistente do
+registro faz o Postgres recusar a linha com `column "new" does not exist` — mensagem que não aponta
+para lugar nenhum. Resultado: **criar qualquer demanda no sistema falhou de 1º a 10 de setembro**, e
+ninguém percebeu, porque os testes de criação usam cliente falso e nenhuma demanda de verdade foi
+criada nesse intervalo. Apareceu na primeira gravação da importação do Trello, que quebrou nos 17
+meses de uma vez. Corrigido em `20260910130000_drop_stale_assignee_team_trigger`.
+
+**A lição que fica:** migração que remove coluna precisa remover o que lê aquela coluna — gatilho,
+função, view, índice de expressão. E a suíte, que mocka o Prisma, é estruturalmente incapaz de ver
+isso: nada aqui roda contra um banco de verdade. Enquanto for assim, a primeira escrita real depois
+de uma migração destrutiva é o teste.
