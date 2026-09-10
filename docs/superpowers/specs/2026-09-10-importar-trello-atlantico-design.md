@@ -130,7 +130,7 @@ duas — o join pretendido.
 | `name`                                     | `Task.title`                                                                 |
 | `desc`                                     | `Task.description` (o campo existe, `@db.Text`)                              |
 | `due`                                      | `Task.dueDate`                                                               |
-| `idMembers`                                | `assignee` da etapa de produção                                              |
+| `idMembers`                                | `assignee` da etapa sem dono por evidência (ver "As pessoas")                |
 | lista `DISEÑO - <pessoa>`                  | etapa `Desenho`, responsável = a pessoa da lista                             |
 | lista `AUDIOVISUAL`                        | etapa `Audio Visual`                                                         |
 | lista `REVISIÓN`                           | etapa `Quality Control`                                                      |
@@ -177,6 +177,16 @@ sobrenome parciais** (`Mathias Gonzalez` ↔ `Benicio Mathias Gonzalez Delgado`)
 O que não casar entra numa lista de repescagem manual — inclusive **dois autores de anexo que já
 saíram do quadro** e não estão em `members`.
 
+**O responsável declarado no card.** `idMembers` dá dono à etapa que a evidência de execução — o
+nome na lista (`DISEÑO - MARTIN`), o autor do anexo — deixou sem responsável. Nunca sobrescreve
+essa evidência: quem fez o trabalho é quem aparece nela. Mas 80 dos 127 cards com membro declaram
+de duas a quatro pessoas, e os nomes mais frequentes são de quem supervisiona (Pedro Villalba em
+72 cards, Samuel Goon em 66), não de quem executa. A escada de desempate: um membro casado só, é
+ele; vários, é o que também anexou arquivo no card; vários sem desempate, é o **primeiro** da
+lista do card — e isso é uma escolha do dono do projeto, não uma medição, porque a ordem em que o
+Trello guarda os membros não significa nada. 37 demandas caem nesse último caso. Resultado: 180
+das 276 etapas nascem com dono (eram 87) e as demandas sem ninguém caem de 117 para 46.
+
 ## Por que os anexos ficam como link
 
 454 dos 455 anexos são `isUpload: true`, hospedados em `trello.com/1/cards/.../download/...`.
@@ -210,8 +220,18 @@ data — sem dizer nada sobre revisão ou aprovação.
 lista de origem quando ela for `DISEÑO -*` ou `AUDIOVISUAL`; nada mais é afirmado.
 
 Em todos os níveis, **etapa sem evidência é etapa não-incluída** — o mesmo mecanismo que o produto já
-usa para etapa opcional excluída na criação. `Briefing`, `Gráfica`, `Trafego Pago`, `Imprensa` e
-`Relatório` ficam fora de toda demanda importada, porque nenhuma delas foi observada no quadro.
+usa para etapa opcional excluída na criação. `Briefing`, `Gráfica`, `Trafego Pago` e `Imprensa` ficam
+fora de toda demanda importada, porque nenhuma delas foi observada no quadro.
+
+**A demanda ABERTA é a exceção, e não contradiz a regra.** Numa demanda fechada, a etapa é registro
+do que aconteceu, e registrar o que não se observou é fabricar histórico. Numa demanda ainda aberta,
+a etapa que falta é outra coisa: é o trabalho que vai acontecer. Sem ela, concluir o `Desenho` de uma
+demanda importada não teria `Quality Control` nem `Aprovação` para ativar, e a demanda terminaria
+pulando o portão que reprova 37% das peças. Então as 52 abertas recebem o resto da sequência do
+template — `Quality Control`, `Aprovação` e `Relatório` —, cada uma só quando vier DEPOIS da etapa
+mais avançada com evidência: 45 recebem as três, 2 recebem aprovação e relatório, 5 só o relatório.
+Elas entram **sem data, sem dono e sem histórico**: existem para que o fluxo continue, não para
+afirmar que algo aconteceu. Nenhuma demanda concluída ou obsoleta ganha etapa pendente.
 
 ## Como isso é construído
 
