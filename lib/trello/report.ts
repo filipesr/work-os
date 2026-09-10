@@ -1,4 +1,5 @@
 import type { ImportPlan, SkipReason } from "./plan";
+import type { ImportReport } from "./writer";
 
 // Formata o relatório do ensaio/gravação da importação do Trello — lógica pura (só string a partir
 // de `ImportPlan`), por isso testável sem tocar o banco nem ler o export real. O executável
@@ -74,4 +75,31 @@ export function formatReport(plan: ImportPlan, totalCards: number): string {
 
 function countByReason(plan: ImportPlan, reason: SkipReason): number {
   return plan.skipped.filter((s) => s.reason === reason).length;
+}
+
+/**
+ * Formata o resumo pós-gravação (`ImportReport` que `applyImportPlan(commit:true)` devolve) — o
+ * texto que quem rodou `--commit` lê DEPOIS de uma operação irreversível. Mesmo padrão de
+ * `formatReport`: lógica pura, testável, sem o executável precisar formatar nada sozinho.
+ */
+export function formatWriteResult(report: ImportReport): string {
+  const lines: string[] = [];
+  lines.push("Resultado da gravação:");
+  lines.push(`  projetos criados: ${report.projectsCreated}`);
+  lines.push(`  projetos reaproveitados (já existiam): ${report.projectsReused}`);
+  lines.push(`  demandas criadas: ${report.tasksCreated}`);
+  lines.push(
+    `  demandas puladas (já importadas antes, mesma URL de card): ${report.skippedAlreadyImported}`
+  );
+  lines.push(`  artefatos criados: ${report.artifactsCreated}`);
+  lines.push(`  eventos de retrabalho criados: ${report.reworkEventsCreated}`);
+  if (report.failedMonths.length > 0) {
+    lines.push(`  meses com falha (transação revertida, outros meses não afetados):`);
+    for (const f of report.failedMonths) {
+      lines.push(`    - ${f.monthKey}: ${f.error}`);
+    }
+  } else {
+    lines.push("  nenhum mês falhou.");
+  }
+  return lines.join("\n");
 }

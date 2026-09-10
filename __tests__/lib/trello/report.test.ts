@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { formatReport } from "@/lib/trello/report";
+import { formatReport, formatWriteResult } from "@/lib/trello/report";
 import type { ImportPlan, PlannedTask, SkippedCard } from "@/lib/trello/plan";
 import type { ExportCard, TrelloMember } from "@/lib/trello/types";
+import type { ImportReport } from "@/lib/trello/writer";
 
 /** Card mínimo — formatReport só olha para o total de itens e o motivo do descarte, nunca para os
  * campos do card em si, então os valores aqui são só para satisfazer o tipo. */
@@ -83,5 +84,41 @@ describe("formatReport", () => {
     const txt = formatReport(semRepescagem, 9);
     expect(txt).toContain("repescagem manual");
     expect(txt).toMatch(/nenhum/i);
+  });
+});
+
+describe("formatWriteResult", () => {
+  const REPORT: ImportReport = {
+    commit: true,
+    projectsCreated: 3,
+    projectsReused: 1,
+    tasksCreated: 204,
+    skippedAlreadyImported: 5,
+    artifactsCreated: 120,
+    reworkEventsCreated: 8,
+    failedMonths: [],
+  };
+
+  it("mostra os contadores da gravação", () => {
+    const txt = formatWriteResult(REPORT);
+    expect(txt).toContain("projetos criados: 3");
+    expect(txt).toContain("reaproveitados");
+    expect(txt).toContain("1");
+    expect(txt).toContain("demandas criadas: 204");
+    expect(txt).toContain("5");
+    expect(txt).toContain("artefatos criados: 120");
+    expect(txt).toContain("eventos de retrabalho criados: 8");
+    expect(txt).toMatch(/nenhum mês falhou/i);
+  });
+
+  it("lista os meses que falharam quando há falha", () => {
+    const comFalha: ImportReport = {
+      ...REPORT,
+      failedMonths: [{ monthKey: "2025-07", error: "boom" }],
+    };
+    const txt = formatWriteResult(comFalha);
+    expect(txt).toContain("2025-07");
+    expect(txt).toContain("boom");
+    expect(txt).not.toMatch(/nenhum mês falhou/i);
   });
 });

@@ -14,19 +14,23 @@
 
 import fs from "node:fs";
 import { PrismaClient } from "@prisma/client";
-import { buildImportPlan } from "@/lib/trello/plan";
-import { applyImportPlan, type ImportReport } from "@/lib/trello/writer";
-import { formatReport } from "@/lib/trello/report";
+import { buildImportPlan, type ImportPlan } from "@/lib/trello/plan";
+import {
+  applyImportPlan,
+  type ApplyImportPlanOptions,
+  type ImportReport,
+} from "@/lib/trello/writer";
+import { formatReport, formatWriteResult } from "@/lib/trello/report";
 import type { TrelloBoardExport, WorkOSUser } from "@/lib/trello/types";
 
-interface Args {
+export interface Args {
   file: string;
   clientId: string;
   commit: boolean;
   importedById?: string;
 }
 
-function parseArgs(argv: string[]): Args {
+export function parseArgs(argv: string[]): Args {
   let file: string | undefined;
   let clientId: string | undefined;
   let commit = false;
@@ -72,27 +76,28 @@ function readBoard(file: string): TrelloBoardExport {
   return JSON.parse(raw) as TrelloBoardExport;
 }
 
-function formatWriteResult(report: ImportReport): string {
-  const lines: string[] = [];
-  lines.push("");
-  lines.push("Resultado da gravação:");
-  lines.push(`  projetos criados: ${report.projectsCreated}`);
-  lines.push(`  projetos reaproveitados (já existiam): ${report.projectsReused}`);
-  lines.push(`  demandas criadas: ${report.tasksCreated}`);
-  lines.push(
-    `  demandas puladas (já importadas antes, mesma URL de card): ${report.skippedAlreadyImported}`
-  );
-  lines.push(`  artefatos criados: ${report.artifactsCreated}`);
-  lines.push(`  eventos de retrabalho criados: ${report.reworkEventsCreated}`);
-  if (report.failedMonths.length > 0) {
-    lines.push(`  meses com falha (transação revertida, outros meses não afetados):`);
-    for (const f of report.failedMonths) {
-      lines.push(`    - ${f.monthKey}: ${f.error}`);
-    }
-  } else {
-    lines.push("  nenhum mês falhou.");
-  }
-  return lines.join("\n");
+/**
+ * A ÚNICA linha que decide se algo é gravado: sem `--commit`, `applyImportPlan` nunca é chamado
+ * (devolve `null`); com `--commit`, é chamado com `commit: true`. É a única salvaguarda entre
+ * digitar o comando e gravar no banco — por isso é uma função à parte, exportada, chamável de teste
+ * com um `applyFn` espionado, em vez de uma decisão perdida no meio de `main()`.
+ *
+ * `applyFn` é parametrizado (com o `applyImportPlan` real como padrão) exatamente para isso: o
+ * teste da fiação (`__tests__/scripts/import-trello/run.test.ts`) passa um `vi.fn()` no lugar e
+ * afirma como e se ele foi chamado, sem precisar de banco de verdade.
+ */
+export async function applyIfRequested(
+  args: Args,
+  plan: ImportPlan,
+  prisma: PrismaClient,
+  applyFn: (
+    prisma: PrismaClient,
+    plan: ImportPlan,
+    opts: ApplyImportPlanOptions
+  ) => Promise<ImportReport> = applyImportPlan
+): Promise<ImportReport | null> {
+  if (!args.commit) return null;
+  return applyFn(prisma, plan, { commit: true, importedById: args.importedById! });
 }
 
 async function main(): Promise<void> {
@@ -118,23 +123,28 @@ async function main(): Promise<void> {
     console.log(args.commit ? "=== GRAVANDO ===" : "=== ENSAIO (nada será gravado) ===");
     console.log(formatReport(plan, totalCards));
 
-    if (!args.commit) {
+    const result = await applyIfRequested(args, plan, prisma);
+    if (!result) {
       console.log("");
       console.log("Ensaio concluído. Nada foi gravado. Rode de novo com --commit para gravar.");
       return;
     }
 
-    const result = await applyImportPlan(prisma, plan, {
-      commit: true,
-      importedById: args.importedById!,
-    });
+    console.log("");
     console.log(formatWriteResult(result));
   } finally {
     await prisma.$disconnect();
   }
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+// Só roda `main()` quando o arquivo é o ponto de entrada (`npx tsx scripts/import-trello/run.ts
+// ...`), nunca quando é IMPORTADO — é o que permite o teste da fiação
+// (`__tests__/scripts/import-trello/run.test.ts`) importar `parseArgs`/`applyIfRequested` sem
+// disparar `main()` (que leria `process.argv` do test runner e chamaria `process.exit`).
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+if (isMainModule) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}
