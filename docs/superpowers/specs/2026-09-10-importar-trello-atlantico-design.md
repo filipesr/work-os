@@ -131,7 +131,7 @@ duas — o join pretendido.
 | lista `REVISIÓN`                           | etapa `Quality Control`                                                      |
 | lista `LIBERADO`                           | etapa `Aprovação`                                                            |
 | rótulos `URGENTE`/`PRIORIDAD`/`IMPORTANTE` | `Task.priority` — ver a tabela de prioridade abaixo                          |
-| rótulos `STORIES`/`SOCIAL MEDIA`/`REELS`   | (tipo — decidir se vira rótulo ou nada)                                      |
+| rótulos `STORIES`/`SOCIAL MEDIA`/`REELS`   | prefixo do título: `[STORIES] <nome do card>`                                |
 | `shortUrl` do card                         | **artefato de link**: "card original no Trello"                              |
 | cada anexo                                 | **artefato de link** com a URL do Trello, `mediaType` derivado do `mimeType` |
 | checklists (7)                             | anexadas à descrição                                                         |
@@ -209,10 +209,44 @@ usa para etapa opcional excluída na criação. `Briefing`, `Gráfica`, `Trafego
 migração que acontece uma vez não vira funcionalidade: nem tela, nem credencial guardada, nem
 endpoint.
 
-**Reusa `createTaskStages`** (`lib/stage-assignment-helpers.ts`) em vez de gravar linhas de etapa por
-conta própria. É o mesmo helper que `createTask` usa, com `selectedStageIds` decidindo o que entra —
-então os invariantes (etapa inicial `ACTIVE`, demais `INACTIVE`, transição registrada, pelo menos uma
-etapa incluída) valem por construção, não por reimplementação.
+### Reusar o fluxo do produto: até onde vai, e por quê
+
+**`createTask` não é chamável de um script.** Ela termina em `redirect()` — que no Next **lança por
+design** —, exige sessão (`requireMemberOrHigher`) e chama `revalidatePath`, que só existe dentro de
+uma requisição. O que se reusa é o **miolo transacional**: `task.create` + `createTaskStages` +
+`markTaskStarted`.
+
+**Extração:** esse miolo sai de `createTask` para uma função que recebe a transação e os dados já
+validados, chamada pela action e pelo script. É extração pura; a suíte de criação de demanda que já
+existe é a rede que prova que o comportamento não mudou.
+
+**O obstáculo maior é o tempo.** `recordStageTransition`, `markTaskStarted` e `createTaskStages`
+gravam `new Date()` — nenhum aceita data. Criar as demandas pelo caminho vivo e depois avançá-las
+produziria um histórico **datado de hoje**, o que anula o motivo inteiro da importação.
+
+**Decisão:** as três funções ganham um **parâmetro de data opcional**, com o padrão continuando
+`new Date()`. O produto não muda de comportamento; o script passa a data histórica e escreve pelo
+mesmo caminho testado. Cada uma ganha um teste a mais — o da data explícita. A alternativa recusada
+era o script implementar o fechamento de etapa por conta própria: mais código, sem rede, e a versão
+paralela envelheceria em silêncio.
+
+Com isso, os invariantes (etapa inicial `ACTIVE`, demais `INACTIVE`, transição registrada, ao menos
+uma etapa incluída) valem por construção, não por reimplementação.
+
+### As linhas que o histórico precisa escrever
+
+| Linha             | O que a importação grava                                                                             |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| `Task`            | título com prefixo de rótulo, descrição, prazo, prioridade, status, `completedAt` quando `COMPLETED` |
+| `TaskActiveStage` | uma por etapa incluída, com responsável quando conhecido                                             |
+| `TaskStageLog`    | `enteredAt` / `exitedAt` **históricos** — é daqui que sai o tempo por etapa                          |
+| `StageTransition` | a sequência observada, datada                                                                        |
+| `ReworkEvent`     | as devoluções da revisão — ver abaixo                                                                |
+
+**As 21 devoluções viram `ReworkEvent` de tipo `INTERNAL`** (pego dentro do processo, antes do
+cliente). A `sourceStage` é a etapa que **injetou** o defeito — `Desenho` ou `Audio Visual` —, não a
+revisão que o encontrou. Inverter isso inverteria a métrica: mediria quem acha defeito em vez de onde
+ele nasce, que é exatamente o que o P5 proíbe.
 
 **Duas passadas obrigatórias:**
 
@@ -276,7 +310,6 @@ E duas coisas que a importação vai expor e que são decisão de processo, não
 
 **O projeto que já existe** no cliente AtlanticoShop convive com os 18 mensais, ou é absorvido?
 
-**Os rótulos de tipo** (`STORIES`, `SOCIAL MEDIA`, `REELS` — 44 cards) não têm destino no modelo
-hoje: o WorkOS não tem rótulo livre de demanda. Ou viram uma linha na descrição, ou se perdem — e
-perder é escolha legítima, desde que feita de olho aberto. **Esta é a única linha da tabela de
-mapeamento que continua em aberto.**
+**Decidido:** os rótulos de tipo entram como **prefixo do título** (`[STORIES] Carrusel de
+carnaval`). O WorkOS não tem rótulo livre de demanda, e o título é o único lugar onde a informação
+sobrevive à busca e à listagem. Não há mais linha em aberto na tabela de mapeamento.
