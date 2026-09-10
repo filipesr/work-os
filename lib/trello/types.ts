@@ -3,6 +3,18 @@ export interface Card {
   name: string;
   idLabels?: string[];
   attachments?: Array<{ id: string }>;
+  /** ID da lista: usado para determinar se card está em "Concluido" */
+  idList?: string;
+  /** Timestamp do fechamento do card (quando foi arquivado). */
+  dateClosed?: string | null;
+  /** Data da última atividade no card. */
+  dateLastActivity?: string | null;
+  /** Indica se o card foi arquivado. */
+  closed?: boolean;
+  /** Descrição do card. */
+  desc?: string;
+  /** Data de vencimento do card. */
+  due?: string | null;
 }
 
 /** Natureza de um card: demanda real, separador visual, ausência/evento ou referência. */
