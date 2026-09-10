@@ -44,6 +44,10 @@ export interface BuildImportPlanOptions {
    * real (testes de plan.ts, que não escrevem no banco); o escritor recusa `clientId` vazio antes
    * de abrir qualquer transação — ver `resolveWriteContext` em writer.ts. */
   clientId?: string;
+  /** Casamentos declarados à mão, `{ apelido no Trello: e-mail no WorkOS }`, repassados a
+   * `matchMembers` (map-people.ts) para a pessoa cujo cadastro foge do padrão que as três chaves
+   * automáticas reconhecem. Quem roda a importação declara isso — plan.ts não adivinha. */
+  manualMatches?: Record<string, string>;
 }
 
 /**
@@ -123,7 +127,7 @@ export function buildImportPlan(
   const concludoListId = board.lists.find((l) => l.name === concludoListName)?.id ?? "";
   const trelloIdByDesignerName = deriveTrelloIdByDesignerName(board.lists, board.members);
 
-  const { byTrelloId, unmatched } = matchMembers(board.members, workosUsers);
+  const { byTrelloId, unmatched } = matchMembers(board.members, workosUsers, opts.manualMatches);
 
   const stagesCtx: MapStagesContext = { listNamesById, trelloIdByDesignerName };
   const taskCtx: MapTaskContext = { labelsById, concludoListId, concludoListName };

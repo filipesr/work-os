@@ -115,3 +115,57 @@ describe("matchMembers", () => {
     });
   });
 });
+
+describe("matchMembers — casamento manual", () => {
+  const users: WorkOSUser[] = [
+    { id: "u1", name: "Sara Rufina Maldonado Morel", email: "saragoonmmkt@gmail.com" },
+    { id: "u2", name: "Luis Martin Gauto Caballero", email: "martingoonmk@gmail.com" },
+  ];
+
+  it("casa pelo apelido do Trello quando o e-mail do WorkOS foge do padrão", () => {
+    const r = matchMembers([m({ id: "t1", username: "saragoon1", fullName: "Sara Goon" })], users, {
+      saragoon1: "saragoonmmkt@gmail.com",
+    });
+    expect(r.byTrelloId.get("t1")).toBe("u1");
+    expect(r.unmatched).toEqual([]);
+  });
+
+  it("e-mail que não existe no WorkOS não casa — o membro continua na repescagem", () => {
+    const r = matchMembers([m({ id: "t1", username: "saragoon1", fullName: "Sara Goon" })], users, {
+      saragoon1: "naoexiste@gmail.com",
+    });
+    expect(r.byTrelloId.has("t1")).toBe(false);
+    expect(r.unmatched.map((x) => x.id)).toEqual(["t1"]);
+  });
+
+  it("e-mail errado no mapa não cai de volta nas chaves automáticas — o erro fica visível", () => {
+    // `martingoonmk` casaria sozinho com u2 pelo prefixo do e-mail. Como alguém DECLAROU um destino
+    // para ele e esse destino não existe, o certo é a repescagem: um casamento automático aqui
+    // esconderia o erro de digitação atrás de um acerto por acaso.
+    const r = matchMembers([m({ id: "t1", username: "martingoonmk", fullName: "Martin" })], users, {
+      martingoonmk: "digitei@errado.com",
+    });
+    expect(r.byTrelloId.has("t1")).toBe(false);
+    expect(r.unmatched.map((x) => x.id)).toEqual(["t1"]);
+  });
+
+  it("o casamento manual manda: nem tenta as três chaves automáticas", () => {
+    const r = matchMembers([m({ id: "t1", username: "martingoonmk", fullName: "Martin" })], users, {
+      martingoonmk: "saragoonmmkt@gmail.com",
+    });
+    expect(r.byTrelloId.get("t1")).toBe("u1");
+  });
+
+  it("dois membros apontados para o mesmo usuário viram ambiguidade, não um vencedor", () => {
+    const r = matchMembers(
+      [
+        m({ id: "t1", username: "saragoon1", fullName: "Sara Goon" }),
+        m({ id: "t2", username: "sara2", fullName: "Sara Outra" }),
+      ],
+      users,
+      { saragoon1: "saragoonmmkt@gmail.com", sara2: "saragoonmmkt@gmail.com" }
+    );
+    expect(r.byTrelloId.size).toBe(0);
+    expect(r.unmatched.map((x) => x.id).sort()).toEqual(["t1", "t2"]);
+  });
+});

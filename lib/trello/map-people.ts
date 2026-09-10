@@ -20,13 +20,37 @@ export interface MatchResult {
  */
 export function matchMembers(
   trelloMembers: TrelloMember[],
-  workosUsers: WorkOSUser[]
+  workosUsers: WorkOSUser[],
+  /**
+   * Casamentos declarados à mão: `{ apelido no Trello: e-mail no WorkOS }`. Existem para a pessoa
+   * cujo cadastro foge do padrão que as três chaves reconhecem — no quadro real, `@saragoon1`
+   * corresponde a `saragoonmmkt@gmail.com`, com dois `m`, e nem o prefixo nem o nome casam.
+   *
+   * Um casamento manual DISPENSA as três chaves para aquele membro (é uma decisão de quem roda a
+   * importação, não um palpite), mas não escapa da regra de ambiguidade: dois membros apontados
+   * para o mesmo usuário continuam indo os dois para a repescagem. E-mail que não existe entre os
+   * usuários simplesmente não casa — o membro aparece na repescagem do relatório, que é onde um
+   * erro de digitação fica visível em vez de virar silêncio.
+   */
+  manualMatches: Record<string, string> = {}
 ): MatchResult {
+  const userIdByEmail = new Map(workosUsers.map((u) => [u.email.toLowerCase(), u.id]));
+
   // Mapa temporário: cada membro do Trello para seu(s) possível(is) usuário(s) do WorkOS
   const candidates = new Map<string, string[]>();
 
   for (const member of trelloMembers) {
     const matches: string[] = [];
+
+    const declaredEmail = manualMatches[member.username];
+    if (declaredEmail) {
+      const userId = userIdByEmail.get(declaredEmail.toLowerCase());
+      if (userId) matches.push(userId);
+      if (matches.length > 0) {
+        candidates.set(member.id, matches);
+      }
+      continue;
+    }
 
     for (const user of workosUsers) {
       if (

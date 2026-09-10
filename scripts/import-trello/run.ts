@@ -23,6 +23,22 @@ import {
 import { formatReport, formatWriteResult } from "@/lib/trello/report";
 import type { TrelloBoardExport, WorkOSUser } from "@/lib/trello/types";
 
+/**
+ * Casamentos declarados à mão, `{ apelido no Trello: e-mail no WorkOS }`.
+ *
+ * As três chaves automáticas de `matchMembers` (prefixo de e-mail, nome completo, nome+sobrenome)
+ * não alcançam quem tem o cadastro fora do padrão. `@saragoon1` é o caso do quadro real: o e-mail
+ * dela no WorkOS é `saragoonmmkt@gmail.com`, com dois `m`, então nem o prefixo `saragoonmkt` casa
+ * nem "Sara Goon" bate com "Sara Rufina Maldonado Morel". Ela é declarada em 33 demandas.
+ *
+ * Fica aqui, no script, e não em `lib/`: é uma decisão de quem roda a importação sobre ESTE quadro
+ * e ESTE cadastro, não uma regra do mapeamento. Um e-mail errado aqui não vira casamento errado —
+ * vira "continua na repescagem", e a repescagem é impressa no relatório.
+ */
+const MANUAL_MATCHES: Record<string, string> = {
+  saragoon1: "saragoonmmkt@gmail.com",
+};
+
 export interface Args {
   file: string;
   clientId: string;
@@ -128,7 +144,10 @@ async function main(): Promise<number> {
       email: u.email ?? "",
     }));
 
-    const plan = buildImportPlan(board, workosUsers, { clientId: args.clientId });
+    const plan = buildImportPlan(board, workosUsers, {
+      clientId: args.clientId,
+      manualMatches: MANUAL_MATCHES,
+    });
 
     // O --commit imprime o MESMO relatório do ensaio antes de gravar — quem manda gravar precisa
     // ver o que vai acontecer, na mesma execução (brief da Task 10). Por isso este console.log é

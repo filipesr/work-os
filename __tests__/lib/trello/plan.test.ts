@@ -138,6 +138,24 @@ describe("buildImportPlan", () => {
     expect(p.projects.every((x) => x.clientId === "")).toBe(true);
   });
 
+  it("opts.manualMatches casa o membro cujo cadastro foge do padrão das três chaves", () => {
+    const foraDoPadrao = [user("u9", "Sara Rufina Maldonado Morel", "saragoonmmkt@gmail.com")];
+    const b = board(
+      [card({ id: "s1", idList: "L_AV", idMembers: ["tSara"], due: "2026-07-15T00:00:00Z" })],
+      {
+        members: [member("tSara", "saragoon1", "Sara Goon")],
+      }
+    );
+    const semMapa = buildImportPlan(b, foraDoPadrao, {});
+    expect(semMapa.unmatchedPeople.map((x) => x.id)).toEqual(["tSara"]);
+
+    const comMapa = buildImportPlan(b, foraDoPadrao, {
+      manualMatches: { saragoon1: "saragoonmmkt@gmail.com" },
+    });
+    expect(comMapa.unmatchedPeople).toEqual([]);
+    expect(comMapa.tasks[0].stages[0].assigneeUserId).toBe("u9");
+  });
+
   it("membro do Trello sem casamento no WorkOS vai para unmatchedPeople", () => {
     const p = buildImportPlan(baseBoard, [], {});
     expect(p.unmatchedPeople.map((m) => m.id)).toContain("tMartin");
