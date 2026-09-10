@@ -270,10 +270,20 @@ e na descrição — merecem decisão humana, um a um. São: `MODELO - Checklist
 
 **O `Black Friday 2026` deixou de existir.** A pergunta era se aquele projeto de teste conviveria com os 17 mensais; o dono do projeto apagou os projetos de teste antes da gravação, então a importação entrou em terreno limpo. Não há decisão pendente aqui.
 
-**O Desenho só tem dono quando a lista diz o nome.** 44 das 96 etapas de `Desenho` ficam sem
+**O Desenho só tem dono quando a lista diz o nome.** 40 das 71 etapas de `Desenho` ficam sem
 responsável: são os cards que nunca pararam nem passaram por uma lista `DISEÑO - <NOME>`, e para
 eles o quadro não diz quem desenhou. O autor do anexo não serve como resposta — é quem SUBIU o
-arquivo, com frequência o atendimento. Se alguém souber de quem eram essas 44, é correção manual.
+arquivo, com frequência o atendimento. Se alguém souber de quem eram essas 40, é correção manual.
+
+**A revisão de qualidade tem 12 donos que provavelmente estão errados.** As etapas de `Quality
+Control` percorridas ainda aceitam o membro declarado no card — a mesma fonte que foi tirada da
+aprovação —, e o resultado é Martin (designer) com 8, Pedro com 2, Vinícius e Lèli com 1. A lista
+`REVISIÓN` não nomeia ninguém, então o quadro não diz quem revisou. Aplicar a mesma régua deixaria
+as 49 etapas de QC sem responsável. Decisão do dono do projeto, ainda não tomada.
+
+**E `Audio Visual` tem 2 demandas com o atendimento como produtor**, pelo mesmo motivo (autor do
+anexo). É pequeno hoje porque quase todo o audiovisual do quadro estava arquivado, mas a regra
+continua frouxa: se voltar a crescer, volta o problema.
 
 **O desempate do responsável pode inflar quem supervisiona.** Quando o card declara 2 a 4 membros e nada desempata, a etapa fica com o **primeiro da lista do card** — decisão explícita do dono do projeto, e é escolha, não medição: a ordem em que o Trello guarda os membros não significa nada. Vale para `Audio Visual`, `Quality Control`, `Aprovação` e `Relatório` — nunca para `Desenho`, que exige o nome da lista. Quem olhar métrica de execução por pessoa precisa saber disso antes de concluir qualquer coisa.
 
