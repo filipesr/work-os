@@ -31,7 +31,7 @@ const TEMPLATE_STAGE_ROWS = TEMPLATE.stages.map((s) => ({
  * (`fakePrisma`/`fakePrismaComEstado`) caem no mesmo objeto, porque rastrear o que foi criado É a
  * forma mais simples de simular idempotência real entre duas chamadas.
  */
-function fakePrisma(opts: { artifactExistsFor?: string[] } = {}) {
+function fakePrisma(opts: { artifactExistsFor?: string[]; explodeOnArtifactUrl?: string } = {}) {
   const existingArtifactUrls = new Set(opts.artifactExistsFor ?? []);
   const projectsByName = new Map<string, { id: string }>();
   const stageLogRows: Array<Record<string, unknown>> = [];
@@ -123,6 +123,11 @@ function fakePrisma(opts: { artifactExistsFor?: string[] } = {}) {
         return url && existingArtifactUrls.has(url) ? { id: `art-${url}` } : null;
       }),
       create: vi.fn().mockImplementation(async ({ data }: { data: { url?: string | null } }) => {
+        // `explodeOnArtifactUrl` simula a transação morrendo NO MEIO do mês (é o que P2028 faz):
+        // as escritas anteriores já rodaram e já contaram, e só então vem o erro.
+        if (opts.explodeOnArtifactUrl && data.url === opts.explodeOnArtifactUrl) {
+          throw new Error("P2028 — Transaction already closed (simulado)");
+        }
         if (data.url) existingArtifactUrls.add(data.url);
         return { id: `art-${data.url ?? Math.random()}` };
       }),
@@ -270,16 +275,12 @@ describe("applyImportPlan — artefatos", () => {
 });
 
 describe("applyImportPlan — transação por projeto mensal", () => {
-  it("uma transação por projeto mensal — um mês que falha não derruba os outros", async () => {
-    const prisma = fakePrisma();
-    let call = 0;
-    (prisma.$transaction as ReturnType<typeof vi.fn>).mockImplementation(
-      async (fn: (tx: unknown) => Promise<unknown>) => {
-        call += 1;
-        if (call === 2) throw new Error("mês quebrado de propósito");
-        return fn(prisma);
-      }
-    );
+  it("mês que falha NO MEIO não soma nada ao relatório — e não derruba os outros meses", async () => {
+    // O rollback desfaz as LINHAS do mês que falhou; não desfaria os contadores se eles fossem
+    // incrementados direto no `report` de dentro da transação. Aqui o mês de fevereiro escreve o
+    // projeto, a primeira demanda inteira (com artefato e retrabalho) e só então estoura no
+    // artefato da segunda — exatamente a forma do P2028. Nada disso pode aparecer no relatório.
+    const prisma = fakePrisma({ explodeOnArtifactUrl: "https://trello.com/c/c3" });
 
     const plan: ImportPlan = {
       projects: [
@@ -294,6 +295,29 @@ describe("applyImportPlan — transação por projeto mensal", () => {
         plannedTask({
           monthKey: "2026-02",
           card: card({ id: "c2", shortUrl: "https://trello.com/c/c2" }),
+          stages: [
+            stage({
+              stageName: "Desenho",
+              segments: [{ exitedAt: new Date("2026-02-03T10:00:00.000Z") }],
+            }),
+            stage({
+              stageName: "Quality Control",
+              segments: [{ exitedAt: new Date("2026-02-03T10:00:00.000Z") }],
+              completed: true,
+            }),
+          ],
+          rework: [
+            {
+              at: new Date("2026-02-03T10:00:00.000Z"),
+              kind: "INTERNAL",
+              sourceStageName: "Desenho",
+              reason: "Devolução da revisão",
+            },
+          ],
+        }),
+        plannedTask({
+          monthKey: "2026-02",
+          card: card({ id: "c3", shortUrl: "https://trello.com/c/c3" }),
         }),
       ],
       skipped: [],
@@ -302,9 +326,23 @@ describe("applyImportPlan — transação por projeto mensal", () => {
 
     const r = await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
 
+    // O laço continua: os dois meses tiveram sua transação, e o de janeiro escreveu.
     expect(prisma.$transaction).toHaveBeenCalledTimes(2);
-    expect(r.tasksCreated).toBe(1); // só o mês de janeiro escreveu
     expect(r.failedMonths).toEqual([{ monthKey: "2026-02", error: expect.any(String) }]);
+
+    // Só os números de JANEIRO. Fevereiro escreveu de verdade antes de estourar (o fake registra
+    // as chamadas), mas nada do que ele escreveu sobreviveu ao rollback — logo, não conta.
+    // 3 demandas foram de fato CRIADAS no banco (janeiro + as duas de fevereiro — a segunda só
+    // estoura depois, no artefato); as duas de fevereiro morreram no rollback.
+    expect(prisma.task.create).toHaveBeenCalledTimes(3);
+    expect(r).toMatchObject({
+      projectsCreated: 1,
+      projectsReused: 0,
+      tasksCreated: 1,
+      artifactsCreated: 1,
+      reworkEventsCreated: 0,
+      skippedAlreadyImported: 0,
+    });
   });
 });
 

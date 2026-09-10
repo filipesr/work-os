@@ -67,6 +67,44 @@ export interface ImportReport {
   failedMonths: { monthKey: string; error: string }[];
 }
 
+/**
+ * Os contadores de um mês, acumulados LOCALMENTE enquanto a transação daquele mês roda.
+ *
+ * Somar direto no `ImportReport` de dentro da transação mente quando ela falha: o rollback desfaz
+ * as LINHAS, não os números já somados — quem rodasse leria "demandas criadas: 204" logo acima de
+ * "meses com falha: 2026-08". Estes números só entram no relatório depois que o
+ * `await prisma.$transaction(...)` daquele mês retornar sem lançar (ver `applyImportPlan`).
+ */
+type MonthCounts = Pick<
+  ImportReport,
+  | "projectsCreated"
+  | "projectsReused"
+  | "tasksCreated"
+  | "skippedAlreadyImported"
+  | "artifactsCreated"
+  | "reworkEventsCreated"
+>;
+
+const MONTH_COUNT_KEYS = [
+  "projectsCreated",
+  "projectsReused",
+  "tasksCreated",
+  "skippedAlreadyImported",
+  "artifactsCreated",
+  "reworkEventsCreated",
+] as const satisfies readonly (keyof MonthCounts)[];
+
+function zeroCounts(): MonthCounts {
+  return {
+    projectsCreated: 0,
+    projectsReused: 0,
+    tasksCreated: 0,
+    skippedAlreadyImported: 0,
+    artifactsCreated: 0,
+    reworkEventsCreated: 0,
+  };
+}
+
 /** Contexto resolvido uma vez, compartilhado por todos os meses. */
 interface WriteContext {
   templateId: string;
@@ -100,14 +138,19 @@ export async function applyImportPlan(
 
   for (const proj of plan.projects) {
     const tasksOfMonth = plan.tasks.filter((t) => t.monthKey === proj.monthKey);
+    const counts = zeroCounts();
     try {
       // Garantia 3: uma transação por PROJETO MENSAL, não uma para o plano inteiro.
       await prisma.$transaction(async (tx) => {
-        const projectId = await resolveProjectId(tx, proj, report);
+        const projectId = await resolveProjectId(tx, proj, counts);
         for (const task of tasksOfMonth) {
-          await writeTask(tx, task, projectId, ctx, report);
+          await writeTask(tx, task, projectId, ctx, counts);
         }
       }, TRANSACTION_OPTIONS);
+      // Só aqui, DEPOIS de a transação retornar sem lançar: o que ela escreveu sobreviveu, então
+      // conta. Um mês que lança pula esta linha e não soma NADA — o relatório fica coerente com o
+      // banco, em vez de anunciar demandas que o rollback desfez.
+      for (const key of MONTH_COUNT_KEYS) report[key] += counts[key];
     } catch (error) {
       report.failedMonths.push({ monthKey: proj.monthKey, error: String(error) });
     }
@@ -169,16 +212,16 @@ async function resolveWriteContext(
 async function resolveProjectId(
   tx: Prisma.TransactionClient,
   proj: { monthKey: string; name: string; clientId: string },
-  report: ImportReport
+  counts: MonthCounts
 ): Promise<string> {
   const existing = await tx.project.findFirst({ where: { name: proj.name }, select: { id: true } });
   if (existing) {
-    report.projectsReused += 1;
+    counts.projectsReused += 1;
     return existing.id;
   }
 
   const created = await tx.project.create({ data: { name: proj.name, clientId: proj.clientId } });
-  report.projectsCreated += 1;
+  counts.projectsCreated += 1;
   return created.id;
 }
 
@@ -187,7 +230,7 @@ async function writeTask(
   task: PlannedTask,
   projectId: string,
   ctx: WriteContext,
-  report: ImportReport
+  counts: MonthCounts
 ): Promise<void> {
   const cardUrl = task.card.shortUrl;
 
@@ -198,7 +241,7 @@ async function writeTask(
       select: { id: true },
     });
     if (existing) {
-      report.skippedAlreadyImported += 1;
+      counts.skippedAlreadyImported += 1;
       return;
     }
   }
@@ -253,11 +296,11 @@ async function writeTask(
 
   for (const rework of task.rework) {
     await writeReworkEvent(tx, taskId, rework, task.stages, ctx.stageIdByName, ctx.importedById);
-    report.reworkEventsCreated += 1;
+    counts.reworkEventsCreated += 1;
   }
 
-  report.artifactsCreated += await writeArtifacts(tx, taskId, task.card, ctx.importedById);
-  report.tasksCreated += 1;
+  counts.artifactsCreated += await writeArtifacts(tx, taskId, task.card, ctx.importedById);
+  counts.tasksCreated += 1;
 }
 
 /**
