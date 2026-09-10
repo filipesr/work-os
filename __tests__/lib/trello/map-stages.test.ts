@@ -49,7 +49,7 @@ function ctx(overrides: Partial<MapStagesContext> = {}): MapStagesContext {
 }
 
 describe("planStages", () => {
-  it("nível 1 — com movimentação, reconstrói a jornada com datas", () => {
+  it("nível 1 — com movimentação, reconstrói a jornada com datas por segmento", () => {
     const r = planStages(
       card({ idList: "L_CONC" }),
       [
@@ -61,8 +61,9 @@ describe("planStages", () => {
     );
     expect(r.tier).toBe(1);
     expect(r.stages.map((s) => s.stageName)).toEqual(["Desenho", "Quality Control", "Aprovação"]);
-    expect(r.stages[1].enteredAt).toEqual(new Date("2026-08-14T10:00:00Z"));
-    expect(r.stages[1].exitedAt).toEqual(new Date("2026-08-14T15:00:00Z"));
+    expect(r.stages[1].segments).toHaveLength(1);
+    expect(r.stages[1].segments[0].enteredAt).toEqual(new Date("2026-08-14T10:00:00Z"));
+    expect(r.stages[1].segments[0].exitedAt).toEqual(new Date("2026-08-14T15:00:00Z"));
   });
 
   it("nível 2 — sem movimentação, o anexo diz quem produziu e quando", () => {
@@ -77,14 +78,16 @@ describe("planStages", () => {
     expect(r.tier).toBe(2);
     expect(r.stages).toHaveLength(1);
     expect(r.stages[0]).toMatchObject({ stageName: "Desenho", assigneeTrelloId: "tMartin" });
-    expect(r.stages[0].enteredAt).toEqual(new Date("2026-04-02T12:00:00Z"));
+    expect(r.stages[0].segments).toHaveLength(1);
+    expect(r.stages[0].segments[0].enteredAt).toEqual(new Date("2026-04-02T12:00:00Z"));
   });
 
   it("nível 3 — só a lista de origem, sem data de etapa", () => {
     const r = planStages(card({ idList: "L_AV" }), [], ctx());
     expect(r.tier).toBe(3);
     expect(r.stages.map((s) => s.stageName)).toEqual(["Audio Visual"]);
-    expect(r.stages[0].enteredAt).toBeUndefined();
+    expect(r.stages[0].segments).toHaveLength(1);
+    expect(r.stages[0].segments[0].enteredAt).toBeUndefined();
   });
 
   it("NUNCA inclui etapa sem evidência", () => {
@@ -135,7 +138,7 @@ describe("planStages", () => {
       ctx()
     );
     expect(r.tier).toBe(3);
-    expect(r.stages[0].enteredAt).toBeUndefined();
+    expect(r.stages[0].segments[0].enteredAt).toBeUndefined();
   });
 
   it("etapa concluída em nível 1 leva completed=true; sem evidência de saída leva completed=false", () => {
@@ -148,5 +151,104 @@ describe("planStages", () => {
 
     const r3 = planStages(card({ idList: "L_AV" }), [], ctx());
     expect(r3.stages[0].completed).toBe(false);
+  });
+
+  describe("devolução: revisitar uma etapa não pode fundir visitas nem fabricar duração", () => {
+    it("DISEÑO → REVISIÓN → DISEÑO → REVISIÓN → LIBERADO produz dois segmentos em Desenho e em Quality Control", () => {
+      const r = planStages(
+        card({ idList: "L_LIBERADO" }),
+        [
+          mov("DISEÑO - MARTIN", "REVISIÓN", "2026-08-10T09:00:00Z"), // t1: sai do Desenho
+          mov("REVISIÓN", "DISEÑO - MARTIN", "2026-08-10T10:00:00Z"), // t2: devolução — sai do QC
+          mov("DISEÑO - MARTIN", "REVISIÓN", "2026-08-12T09:00:00Z"), // t3: sai do Desenho de novo
+          mov("REVISIÓN", "LIBERADO", "2026-08-12T14:00:00Z"), // t4: sai do QC de novo
+        ],
+        ctx()
+      );
+      expect(r.tier).toBe(1);
+
+      const desenho = r.stages.find((s) => s.stageName === "Desenho")!;
+      expect(desenho.segments).toHaveLength(2);
+      expect(desenho.segments[0]).toEqual({
+        enteredAt: undefined,
+        exitedAt: new Date("2026-08-10T09:00:00Z"),
+      });
+      expect(desenho.segments[1]).toEqual({
+        enteredAt: new Date("2026-08-10T10:00:00Z"),
+        exitedAt: new Date("2026-08-12T09:00:00Z"),
+      });
+      expect(desenho.completed).toBe(true);
+
+      const qc = r.stages.find((s) => s.stageName === "Quality Control")!;
+      expect(qc.segments).toHaveLength(2);
+      expect(qc.segments[0]).toEqual({
+        enteredAt: new Date("2026-08-10T09:00:00Z"),
+        exitedAt: new Date("2026-08-10T10:00:00Z"),
+      });
+      expect(qc.segments[1]).toEqual({
+        enteredAt: new Date("2026-08-12T09:00:00Z"),
+        exitedAt: new Date("2026-08-12T14:00:00Z"),
+      });
+      expect(qc.completed).toBe(true);
+
+      const aprovacao = r.stages.find((s) => s.stageName === "Aprovação")!;
+      expect(aprovacao.segments).toHaveLength(1);
+      expect(aprovacao.segments[0].exitedAt).toBeUndefined();
+      expect(aprovacao.completed).toBe(false);
+
+      // Nenhum segmento pode cobrir tempo fora da etapa: a excursão de 1h em REVISIÓN (t1..t2) não
+      // pode aparecer dentro de um segmento de Desenho, e vice-versa.
+      const desenhoSpansMs = desenho.segments
+        .filter((s) => s.enteredAt && s.exitedAt)
+        .map((s) => s.exitedAt!.getTime() - s.enteredAt!.getTime());
+      for (const span of desenhoSpansMs) {
+        expect(span).toBeLessThanOrEqual(2 * 24 * 60 * 60 * 1000); // nenhum segmento > 2 dias aqui
+      }
+    });
+  });
+
+  describe("autor do anexo quando há vários — o autor com mais anexos vence, empate o mais antigo", () => {
+    it("um autor só: assigneeTrelloId é o autor, mesmo com vários anexos dele", () => {
+      const r = planStages(
+        card({
+          idList: "L_MARTIN",
+          attachments: [
+            anexo({ id: "a1", idMember: "tMartin", date: "2026-04-01T10:00:00Z" }),
+            anexo({ id: "a2", idMember: "tMartin", date: "2026-04-02T10:00:00Z" }),
+          ],
+        }),
+        [],
+        ctx()
+      );
+      expect(r.stages[0].assigneeTrelloId).toBe("tMartin");
+    });
+
+    it("três anexos de A contra um de B mais antigo — vence A, não quem anexou primeiro", () => {
+      const r = planStages(
+        card({
+          idList: "L_MARTIN",
+          attachments: [
+            anexo({ id: "a1", idMember: "tB", date: "2026-04-01T09:00:00Z" }), // B: mais antigo, só 1
+            anexo({ id: "a2", idMember: "tA", date: "2026-04-01T10:00:00Z" }),
+            anexo({ id: "a3", idMember: "tA", date: "2026-04-01T11:00:00Z" }),
+            anexo({ id: "a4", idMember: "tA", date: "2026-04-01T12:00:00Z" }),
+          ],
+        }),
+        [],
+        ctx()
+      );
+      expect(r.stages[0].assigneeTrelloId).toBe("tA");
+    });
+  });
+
+  it("anexo sem idMember não herda o responsável da lista — o nível 2 vem só do anexo, ponto", () => {
+    const r = planStages(
+      card({ idList: "L_MARTIN", attachments: [anexo({ date: "2026-04-01T10:00:00Z" })] }), // sem idMember
+      [],
+      ctx()
+    );
+    expect(r.tier).toBe(2);
+    // A lista ("DISEÑO - MARTIN") resolveria "tMartin" via ctx — mas nível 2 não pode herdar isso.
+    expect(r.stages[0].assigneeTrelloId).toBeUndefined();
   });
 });

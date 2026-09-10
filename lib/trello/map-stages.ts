@@ -3,13 +3,31 @@ import type { Card, CardMovement } from "./types";
 /** Nomes de etapa possíveis — precisam bater EXATAMENTE com o template "Demanda GoOn" do banco. */
 export type StageName = "Desenho" | "Audio Visual" | "Quality Control" | "Aprovação";
 
-/** Uma etapa planejada para a demanda, com o nível de detalhe que a evidência sustenta. */
+/**
+ * Uma visita a uma etapa: quando entrou e quando saiu. `exitedAt: undefined` significa que não há
+ * evidência de saída (a etapa pode ainda estar em curso, ou simplesmente não sabemos).
+ *
+ * Uma etapa revisitada (devolução da revisão, por exemplo) gera um segmento por visita — nunca um
+ * único intervalo fundido, que fabricaria duração incluindo tempo em que o card não estava na etapa.
+ */
+export interface StageSegment {
+  enteredAt?: Date;
+  exitedAt?: Date;
+}
+
+/**
+ * Uma etapa planejada para a demanda, com o nível de detalhe que a evidência sustenta.
+ *
+ * `segments` tem um item por visita à etapa — normalmente um só, mas dois ou mais quando há
+ * devolução. Isso espelha o schema: uma etapa gera um `TaskActiveStage` (linha única, por
+ * `@@unique([taskId, stageId])`) e um `TaskStageLog` por segmento (log, sem restrição de
+ * unicidade — várias linhas por etapa são o jeito natural de registrar ida-e-volta).
+ */
 export interface StagePlan {
   stageName: StageName;
   assigneeTrelloId?: string;
-  enteredAt?: Date;
-  exitedAt?: Date;
-  /** true quando há evidência de que a etapa foi encerrada (saída conhecida). */
+  segments: StageSegment[];
+  /** true quando o ÚLTIMO segmento tem saída conhecida (a etapa foi encerrada, não só visitada). */
   completed: boolean;
 }
 
@@ -46,7 +64,8 @@ const DESENHO_LIST_PATTERN = /^DISE[ÑN]O\s*-\s*(.+)$/i;
  * evidência é etapa NÃO-INCLUÍDA, nunca inferida.
  *
  * Três níveis de evidência, do mais forte ao mais fraco:
- * 1. Movimentação entre listas registrada — reconstrói a jornada inteira, com datas por etapa.
+ * 1. Movimentação entre listas registrada — reconstrói a jornada inteira, com um segmento por
+ *    visita a cada etapa (mais de um quando há devolução).
  * 2. Sem movimentação, mas com anexo (autor + data) — marca a etapa de produção (Desenho ou
  *    Audio Visual) como percorrida, com responsável e data. Nada é afirmado sobre revisão/aprovação.
  * 3. Só a lista onde o card parou — a etapa de produção entra pela lista de origem, sem data.
@@ -128,20 +147,31 @@ function planFromOriginList(card: Card, ctx: MapStagesContext): StagePlan[] {
     {
       stageName: origin.stageName,
       assigneeTrelloId: origin.assigneeTrelloId,
+      segments: [{}],
       completed: false,
     },
   ];
+}
+
+/** Evidência de anexo já resolvida: quando entrou e quem é o responsável — pode ser undefined. */
+interface AttachmentEvidence {
+  enteredAt?: string;
+  assigneeTrelloId?: string;
 }
 
 /**
  * Nível 2: sem movimentação, mas com anexo. O anexo diz quem produziu (autor) e quando (data) —
  * nada sobre revisão ou aprovação, então a etapa continua sendo só a de produção, resolvida pela
  * mesma lista de origem do nível 3.
+ *
+ * O responsável vem SÓ do anexo — nunca herda o da lista (resolveOriginProductionStage), mesmo
+ * quando o anexo não tem autor. Nível 2 existe porque o anexo fala; se ele não disser quem, a
+ * etapa fica sem responsável, não com um adivinhado pela lista.
  */
 function planFromAttachment(
   card: Card,
   ctx: MapStagesContext,
-  attachment: { idMember?: string; date?: string | null }
+  attachment: AttachmentEvidence
 ): StagePlan[] {
   const origin = resolveOriginProductionStage(card, ctx);
   if (!origin) return [];
@@ -149,25 +179,60 @@ function planFromAttachment(
   return [
     {
       stageName: origin.stageName,
-      assigneeTrelloId: attachment.idMember ?? origin.assigneeTrelloId,
-      enteredAt: attachment.date ? new Date(attachment.date) : undefined,
+      assigneeTrelloId: attachment.assigneeTrelloId,
+      segments: [{ enteredAt: attachment.enteredAt ? new Date(attachment.enteredAt) : undefined }],
       completed: false,
     },
   ];
 }
 
-/** Melhor evidência de anexo: o mais antigo com data conhecida — "quando" é exigido para o nível 2. */
-function bestAttachmentEvidence(
-  attachments: Card["attachments"]
-): { idMember?: string; date?: string | null } | undefined {
+/**
+ * Melhor evidência de anexo, em duas perguntas separadas:
+ *
+ * "Quando": o anexo mais antigo com data conhecida — data é exigida para o nível 2 existir.
+ *
+ * "Quem": o autor com MAIS anexos nesta evidência; empate, o autor cujo anexo mais antigo vence.
+ * Não é "quem anexou primeiro" — um card pode ter um anexo de rascunho de outra pessoa seguido de
+ * dez do autor de fato. Quem produziu o grosso do material é o responsável mais defensável; "quem
+ * chegou primeiro" não tem defesa nenhuma diante de uma contagem 10 a 1.
+ */
+function bestAttachmentEvidence(attachments: Card["attachments"]): AttachmentEvidence | undefined {
   if (!attachments || attachments.length === 0) return undefined;
 
-  const comDatas = attachments.filter((a) => a.date);
-  if (comDatas.length === 0) return undefined;
+  const comData = attachments.filter((a) => a.date);
+  if (comData.length === 0) return undefined;
 
-  return [...comDatas].sort(
+  const maisAntigo = [...comData].sort(
     (a, b) => new Date(a.date as string).getTime() - new Date(b.date as string).getTime()
   )[0];
+
+  const porAutor = new Map<string, { count: number; earliestAt: number }>();
+  for (const a of comData) {
+    if (!a.idMember) continue;
+    const at = new Date(a.date as string).getTime();
+    const atual = porAutor.get(a.idMember);
+    if (!atual) {
+      porAutor.set(a.idMember, { count: 1, earliestAt: at });
+    } else {
+      atual.count += 1;
+      atual.earliestAt = Math.min(atual.earliestAt, at);
+    }
+  }
+
+  let assigneeTrelloId: string | undefined;
+  let melhor: { count: number; earliestAt: number } | undefined;
+  for (const [idMember, stats] of porAutor) {
+    const vence =
+      !melhor ||
+      stats.count > melhor.count ||
+      (stats.count === melhor.count && stats.earliestAt < melhor.earliestAt);
+    if (vence) {
+      melhor = stats;
+      assigneeTrelloId = idMember;
+    }
+  }
+
+  return { enteredAt: maisAntigo.date ?? undefined, assigneeTrelloId };
 }
 
 /** Uma visita a uma lista, com quando entrou e quando saiu (undefined = desconhecido). */
@@ -178,9 +243,10 @@ interface ListVisit {
 }
 
 /**
- * Nível 1: reconstrói a sequência de listas visitadas a partir das movimentações, e agrega por
- * etapa (uma entrada por nome de etapa, na ordem da primeira visita). Listas que não mapeiam para
- * etapa nenhuma (ex.: "COMUNICADOR", "Concluido") são ignoradas — não produzem StagePlan.
+ * Nível 1: reconstrói a sequência de listas visitadas a partir das movimentações, e agrupa por
+ * etapa (uma StagePlan por nome de etapa, na ordem da primeira visita) — mas cada visita vira o SEU
+ * PRÓPRIO segmento dentro da etapa, nunca fundida com uma visita anterior. Listas que não mapeiam
+ * para etapa nenhuma (ex.: "COMUNICADOR", "Concluido") são ignoradas — não produzem segmento.
  */
 function planFromMovements(movements: CardMovement[], ctx: MapStagesContext): StagePlan[] {
   const sorted = [...movements].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
@@ -198,32 +264,33 @@ function planFromMovements(movements: CardMovement[], ctx: MapStagesContext): St
   });
 
   const order: StageName[] = [];
-  const byStage = new Map<StageName, StagePlan>();
+  const segmentsByStage = new Map<StageName, StageSegment[]>();
+  const assigneeByStage = new Map<StageName, string | undefined>();
 
   for (const visit of visits) {
     const mapped = mapListToStage(visit.listName);
     if (!mapped) continue;
 
-    const existing = byStage.get(mapped.stageName);
-    const exitedAt = visit.exitedAt ? new Date(visit.exitedAt) : undefined;
-
-    if (!existing) {
+    if (!segmentsByStage.has(mapped.stageName)) {
       order.push(mapped.stageName);
-      byStage.set(mapped.stageName, {
-        stageName: mapped.stageName,
-        assigneeTrelloId: resolveDesignerAssignee(mapped.designerName, ctx),
-        enteredAt: visit.enteredAt ? new Date(visit.enteredAt) : undefined,
-        exitedAt,
-        completed: exitedAt !== undefined,
-      });
-    } else {
-      existing.exitedAt = exitedAt;
-      existing.completed = exitedAt !== undefined;
-      if (!existing.assigneeTrelloId) {
-        existing.assigneeTrelloId = resolveDesignerAssignee(mapped.designerName, ctx);
-      }
+      segmentsByStage.set(mapped.stageName, []);
+      assigneeByStage.set(mapped.stageName, resolveDesignerAssignee(mapped.designerName, ctx));
     }
+
+    segmentsByStage.get(mapped.stageName)!.push({
+      enteredAt: visit.enteredAt ? new Date(visit.enteredAt) : undefined,
+      exitedAt: visit.exitedAt ? new Date(visit.exitedAt) : undefined,
+    });
   }
 
-  return order.map((name) => byStage.get(name) as StagePlan);
+  return order.map((name) => {
+    const segments = segmentsByStage.get(name)!;
+    const lastSegment = segments[segments.length - 1];
+    return {
+      stageName: name,
+      assigneeTrelloId: assigneeByStage.get(name),
+      segments,
+      completed: lastSegment.exitedAt !== undefined,
+    };
+  });
 }
