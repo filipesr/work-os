@@ -1,5 +1,6 @@
 import type { CardMovement } from "./types";
 import type { MapStagesContext, StageName } from "./map-stages";
+import { mapListToStage } from "./map-stages";
 
 /**
  * Um evento de retrabalho: quando uma demanda é devolvida de uma etapa de qualidade para
@@ -22,23 +23,6 @@ export interface ReworkEvent {
 }
 
 /**
- * Mapeia `mapListToStage` internamente: resolve nome de lista para StageName.
- * Importa apenas a lógica, não reutiliza a função, para evitar ciclos.
- */
-function mapListToStage(listName: string): StageName | null {
-  const trimmed = listName.trim();
-
-  if (trimmed === "AUDIOVISUAL") return "Audio Visual";
-  if (trimmed === "REVISIÓN") return "Quality Control";
-  if (trimmed === "LIBERADO") return "Aprovação";
-
-  const desenhoMatch = /^DISE[ÑN]O\s*-\s*(.+)$/i.exec(trimmed);
-  if (desenhoMatch) return "Desenho";
-
-  return null;
-}
-
-/**
  * Transforma as devoluções da revisão em eventos de retrabalho.
  *
  * Uma devolução é um movimento que sai de "REVISIÓN" (Quality Control) para outra etapa
@@ -54,21 +38,21 @@ export function planRework(movements: CardMovement[], ctx: MapStagesContext): Re
 
   for (const mov of movements) {
     // Só interessa movimentos que saem de "REVISIÓN"
-    const fromStage = mapListToStage(mov.fromListName);
-    if (fromStage !== "Quality Control") continue;
+    const fromStageInfo = mapListToStage(mov.fromListName);
+    if (fromStageInfo?.stageName !== "Quality Control") continue;
 
     // Se vai para "Aprovação", é uma saída normal, não retrabalho
-    const toStage = mapListToStage(mov.toListName);
-    if (toStage === "Aprovação") continue;
+    const toStageInfo = mapListToStage(mov.toListName);
+    if (toStageInfo?.stageName === "Aprovação") continue;
 
     // Se o destino não mapeia para etapa nenhuma, ignora
-    if (!toStage) continue;
+    if (!toStageInfo) continue;
 
     // É um retrabalho: a origem é a etapa de destino (que injetou o defeito)
     result.push({
       at: new Date(mov.at),
       kind: "INTERNAL",
-      sourceStageName: toStage,
+      sourceStageName: toStageInfo.stageName,
       reason: "Devolução da revisão",
     });
   }

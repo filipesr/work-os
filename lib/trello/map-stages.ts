@@ -91,7 +91,7 @@ export function planStages(
 }
 
 /** Mapeia o nome de uma lista do Trello para a etapa correspondente, se houver. */
-function mapListToStage(listName: string): MappedList | null {
+export function mapListToStage(listName: string): MappedList | null {
   const trimmed = listName.trim();
 
   if (trimmed === "AUDIOVISUAL") return { stageName: "Audio Visual" };
