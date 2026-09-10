@@ -123,18 +123,39 @@ duas — o join pretendido.
 | Trello                                     | WorkOS                                                                       |
 | ------------------------------------------ | ---------------------------------------------------------------------------- |
 | `name`                                     | `Task.title`                                                                 |
-| `desc`                                     | descrição / primeiro comentário                                              |
-| `due`                                      | prazo da demanda                                                             |
+| `desc`                                     | `Task.description` (o campo existe, `@db.Text`)                              |
+| `due`                                      | `Task.dueDate`                                                               |
 | `idMembers`                                | `assignee` da etapa de produção                                              |
 | lista `DISEÑO - <pessoa>`                  | etapa `Desenho`, responsável = a pessoa da lista                             |
 | lista `AUDIOVISUAL`                        | etapa `Audio Visual`                                                         |
 | lista `REVISIÓN`                           | etapa `Quality Control`                                                      |
 | lista `LIBERADO`                           | etapa `Aprovação`                                                            |
-| rótulos `URGENTE`/`PRIORIDAD`/`IMPORTANTE` | prioridade                                                                   |
+| rótulos `URGENTE`/`PRIORIDAD`/`IMPORTANTE` | `Task.priority` — ver a tabela de prioridade abaixo                          |
 | rótulos `STORIES`/`SOCIAL MEDIA`/`REELS`   | (tipo — decidir se vira rótulo ou nada)                                      |
 | `shortUrl` do card                         | **artefato de link**: "card original no Trello"                              |
 | cada anexo                                 | **artefato de link** com a URL do Trello, `mediaType` derivado do `mimeType` |
 | checklists (7)                             | anexadas à descrição                                                         |
+
+### O estado e a prioridade da demanda
+
+`Task.status` não sai de "arquivado" (que não significa concluído). Sai da lista onde o card parou:
+
+| Lista onde parou               | `Task.status`                                                |
+| ------------------------------ | ------------------------------------------------------------ |
+| `Concluido`                    | `COMPLETED`                                                  |
+| qualquer outra, card arquivado | `OBSOLETE` — descartada, fora de pendentes e dos percentuais |
+| qualquer outra, card aberto    | `IN_PROGRESS`                                                |
+
+O `OBSOLETE` é a escolha honesta para os 157 arquivados que não estão em `Concluido`: eles não foram
+concluídos nem seguem pendentes, e o próprio schema descreve esse estado como "arquival, fora de
+pendentes/%". Marcá-los `COMPLETED` inventaria 83 conclusões em audiovisual; deixá-los
+`IN_PROGRESS` encheria a fila de trabalho que ninguém vai fazer.
+
+`Task.completedAt` recebe `dateClosed` **apenas** quando o status for `COMPLETED` — é o que alimenta
+lead time, e datá-lo com o arquivamento de um card abandonado corromperia a medida.
+
+A prioridade sai dos rótulos, e só deles: `URGENTE` → `URGENT`; `PRIORIDAD` ou `IMPORTANTE` → `HIGH`;
+sem rótulo → o padrão `MEDIUM`. São 26 cards com algum desses rótulos; os outros 203 ficam no padrão.
 
 ### As pessoas
 
@@ -255,5 +276,7 @@ E duas coisas que a importação vai expor e que são decisão de processo, não
 
 **O projeto que já existe** no cliente AtlanticoShop convive com os 18 mensais, ou é absorvido?
 
-**Os rótulos de tipo** (`STORIES`, `SOCIAL MEDIA`, `REELS`) não têm destino no modelo hoje. Ou viram
-parte do título, ou se perdem — e perder é uma escolha legítima, desde que feita de olho aberto.
+**Os rótulos de tipo** (`STORIES`, `SOCIAL MEDIA`, `REELS` — 44 cards) não têm destino no modelo
+hoje: o WorkOS não tem rótulo livre de demanda. Ou viram uma linha na descrição, ou se perdem — e
+perder é escolha legítima, desde que feita de olho aberto. **Esta é a única linha da tabela de
+mapeamento que continua em aberto.**
