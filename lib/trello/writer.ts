@@ -1,6 +1,7 @@
 import type { ArtifactMediaType, Prisma, PrismaClient } from "@prisma/client";
 import { recordStageTransition } from "@/lib/stage-transitions";
 import { createTaskCore } from "@/lib/task-create-core";
+import { markTaskStarted } from "@/lib/task-start";
 import type { ReworkEvent } from "@/lib/trello/map-rework";
 import type { StageName } from "@/lib/trello/map-stages";
 import type { ImportPlan, PlannedStage, PlannedTask } from "@/lib/trello/plan";
@@ -246,6 +247,7 @@ async function writeTask(
     }
   }
 
+  const measuredStartedAt = earliestMeasuredDate(task);
   const historicalAt = earliestKnownDate(task);
   const selectedStageIds = new Set(task.stages.map((s) => ctx.stageIdByName.get(s.stageName)!));
 
@@ -268,6 +270,17 @@ async function writeTask(
     selectedStageIds,
     at: historicalAt,
   });
+
+  // `createTaskCore` só carimba `startedAt` quando a etapa de entrada nasce com responsável
+  // (`initialAssigned`), e o escritor não passa `assignments` de propósito — ver o comentário
+  // acima. O carimbo é feito aqui, e SÓ quando existe data MEDIDA: `startedAt` afirma "esta
+  // demanda começou em tal instante", e a âncora inferida (`dueDate`/`dateLastActivity`, ver
+  // `earliestKnownDate`) não é medição de início nenhuma. Sem data medida, `startedAt` fica nulo,
+  // que é a verdade — `getCycleTimePercentiles` (lib/actions/reporting.ts) prefere não ver a
+  // demanda a ver um cycle time forjado.
+  if (measuredStartedAt) {
+    await markTaskStarted(tx, taskId, measuredStartedAt);
+  }
 
   for (const stage of task.stages) {
     await fixupStage(tx, taskId, stage, task.status, ctx.stageIdByName, historicalAt);
@@ -520,6 +533,29 @@ function deriveAttachmentMediaType(mimeType?: string | null): ArtifactMediaType 
 }
 
 /**
+ * A mais antiga data MEDIDA da demanda: a menor entre `enteredAt`/`exitedAt` de qualquer segmento
+ * de qualquer etapa planejada, ou `undefined` quando nenhum segmento tem data (nível 3 de
+ * evidência: só a lista onde o card parou).
+ *
+ * É a função irmã de `earliestKnownDate`, e existe para separar o que aquela mistura: ela SEMPRE
+ * devolve uma data, caindo em `dueDate`/`dateLastActivity` quando não há segmento datado. Essa
+ * queda serve para `createdAt` (a linha precisa de um carimbo de criação, e o mês do card é a
+ * melhor aproximação honesta), mas NÃO serve para `startedAt`, que afirma um evento medido — daí
+ * a distinção entre âncora MEDIDA e âncora INFERIDA.
+ */
+function earliestMeasuredDate(task: PlannedTask): Date | undefined {
+  let earliest: Date | undefined;
+  for (const stage of task.stages) {
+    for (const seg of stage.segments) {
+      for (const d of [seg.enteredAt, seg.exitedAt]) {
+        if (d && (!earliest || d < earliest)) earliest = d;
+      }
+    }
+  }
+  return earliest;
+}
+
+/**
  * A âncora de data histórica da demanda: a mais antiga entre `enteredAt`/`exitedAt` de qualquer
  * segmento de qualquer etapa planejada. Sem isso, `createTaskCore` cairia no padrão (`new Date()`)
  * e a importação inteira nasceria datada de hoje — o oposto do objetivo (ver spec, "O obstáculo
@@ -534,15 +570,8 @@ function deriveAttachmentMediaType(mimeType?: string | null): ArtifactMediaType 
  * esperado.
  */
 function earliestKnownDate(task: PlannedTask): Date {
-  let earliest: Date | undefined;
-  for (const stage of task.stages) {
-    for (const seg of stage.segments) {
-      for (const d of [seg.enteredAt, seg.exitedAt]) {
-        if (d && (!earliest || d < earliest)) earliest = d;
-      }
-    }
-  }
-  if (earliest) return earliest;
+  const measured = earliestMeasuredDate(task);
+  if (measured) return measured;
   if (task.dueDate) return task.dueDate;
   if (task.card.dateLastActivity) return new Date(task.card.dateLastActivity);
   return new Date();

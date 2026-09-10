@@ -708,6 +708,61 @@ describe("applyImportPlan — data histórica, não a de hoje", () => {
   });
 });
 
+// `createTaskCore` só carimba `startedAt` quando `initialAssigned` é verdadeiro, e o escritor não
+// passa `assignments` de propósito (ver o comentário em writer.ts) — sem este conserto, nenhuma das
+// 204 nasceria com `startedAt`, e `getCycleTimePercentiles` (reporting.ts) filtra
+// `startedAt: { not: null }`.
+describe("applyImportPlan — startedAt só com data medida", () => {
+  function planComEtapas(stages: PlannedStage[], dueDate: Date | null = null): ImportPlan {
+    return {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [plannedTask({ stages, dueDate })],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+  }
+
+  function carimbosDeInicio(prisma: PrismaClient) {
+    return (prisma.task.updateMany as ReturnType<typeof vi.fn>).mock.calls
+      .filter((c) => c[0]?.data?.startedAt !== undefined)
+      .map((c) => c[0]);
+  }
+
+  it("demanda com segmento datado começa na MAIS ANTIGA das datas medidas", async () => {
+    const prisma = fakePrisma();
+    const maisAntiga = new Date("2026-01-04T08:00:00.000Z");
+    const depois = new Date("2026-01-09T08:00:00.000Z");
+    const plan = planComEtapas(
+      [
+        stage({ stageName: "Desenho", segments: [{ exitedAt: depois }] }),
+        stage({ stageName: "Audio Visual", segments: [{ enteredAt: maisAntiga }] }),
+      ],
+      // Um prazo bem anterior: se o carimbo saísse da âncora inferida em vez da medida, seria este.
+      new Date("2025-12-01T00:00:00.000Z")
+    );
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    const carimbos = carimbosDeInicio(prisma);
+    expect(carimbos).toHaveLength(1);
+    expect(carimbos[0].data.startedAt).toEqual(maisAntiga);
+    // Compare-and-set: só carimba se ainda estiver nulo (markTaskStarted, lib/task-start.ts).
+    expect(carimbos[0].where.startedAt).toBeNull();
+  });
+
+  it("demanda sem NENHUM segmento datado fica com startedAt nulo — a âncora inferida não é medição", async () => {
+    const prisma = fakePrisma();
+    const plan = planComEtapas(
+      [stage({ stageName: "Desenho", segments: [{}] })],
+      new Date("2026-01-20T00:00:00.000Z")
+    );
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    expect(carimbosDeInicio(prisma)).toHaveLength(0);
+  });
+});
+
 describe("applyImportPlan — pré-condição do template", () => {
   it("aborta antes de escrever quando o template não tem uma etapa que o plano precisa", async () => {
     const prisma = fakePrisma();
