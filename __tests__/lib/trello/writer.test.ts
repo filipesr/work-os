@@ -14,6 +14,7 @@ const TEMPLATE = {
     { id: "s-av", name: "Audio Visual" },
     { id: "s-qc", name: "Quality Control" },
     { id: "s-aprov", name: "Aprovação" },
+    { id: "s-relatorio", name: "Relatório" },
   ],
 };
 
@@ -185,6 +186,7 @@ function plannedTask(overrides: Partial<PlannedTask> = {}): PlannedTask {
     status: "IN_PROGRESS",
     completedAt: null,
     stages: [stage()],
+    futureStageNames: [],
     rework: [],
     ...overrides,
   };
@@ -984,6 +986,53 @@ describe("applyImportPlan — o início nunca é posterior à conclusão", () =>
     expect(carimbos).toHaveLength(1);
     // Sem isto, startedAt (12:05) seria POSTERIOR a completedAt (11:56) — lead time negativo.
     expect(carimbos[0].data.startedAt).toEqual(conclusao);
+  });
+});
+
+// As etapas que uma demanda ABERTA tem pela frente entram como etapa da tarefa (senão o produto não
+// teria o que ativar quando o Desenho fechar), mas NÃO entram no histórico: não há data, não há
+// dono e não houve permanência nenhuma para registrar.
+describe("applyImportPlan — as etapas pela frente entram sem histórico", () => {
+  function planComFuturas(): ImportPlan {
+    return {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          stages: [
+            stage({
+              stageName: "Desenho",
+              segments: [{ enteredAt: new Date("2026-01-05T09:00:00.000Z") }],
+            }),
+          ],
+          futureStageNames: ["Quality Control", "Aprovação", "Relatório"],
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+  }
+
+  it("a etapa pela frente vira linha da tarefa, junto com a que tem evidência", async () => {
+    const prisma = fakePrisma();
+    await applyImportPlan(prisma, planComFuturas(), { commit: true, importedById: "u1" });
+
+    const criadas = (prisma.taskActiveStage.create as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c) => c[0].data.stageId
+    );
+    expect(new Set(criadas)).toEqual(new Set(["s-desenho", "s-qc", "s-aprov", "s-relatorio"]));
+  });
+
+  it("a etapa pela frente não recebe data, dono nem registro de permanência", async () => {
+    const prisma = fakePrisma();
+    await applyImportPlan(prisma, planComFuturas(), { commit: true, importedById: "u1" });
+
+    const ajustadas = (prisma.taskActiveStage.update as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c) => c[0].where.taskId_stageId.stageId
+    );
+    expect(ajustadas).toEqual(["s-desenho"]);
+
+    const logs = (prisma.taskStageLog as unknown as { _rows: Array<{ stageId: string }> })._rows;
+    expect(logs.map((l) => l.stageId)).toEqual(["s-desenho"]);
   });
 });
 

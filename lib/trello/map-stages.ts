@@ -1,7 +1,50 @@
 import type { Card, CardMovement } from "./types";
+import type { MappedTask } from "./map-task";
 
 /** Nomes de etapa possíveis — precisam bater EXATAMENTE com o template "Demanda GoOn" do banco. */
-export type StageName = "Desenho" | "Audio Visual" | "Quality Control" | "Aprovação";
+export type StageName = "Desenho" | "Audio Visual" | "Quality Control" | "Aprovação" | "Relatório";
+
+/**
+ * A ordem das etapas dentro do template "Demanda GoOn", espelhada aqui porque este módulo é puro —
+ * ele não lê o banco. `Desenho` e `Audio Visual` dividem a mesma ordem de propósito: são paralelas
+ * no template (uma peça pode ser arte, vídeo, ou as duas).
+ *
+ * Serve para uma coisa só: saber o que ainda está PELA FRENTE de uma demanda aberta. Se o template
+ * for reordenado no banco, `resolveWriteContext` (writer.ts) continua validando que toda etapa
+ * existe, mas a noção de "adiante" aqui envelheceria — daí o espelho estar num lugar só.
+ */
+export const STAGE_ORDER: Record<StageName, number> = {
+  Desenho: 2,
+  "Audio Visual": 2,
+  "Quality Control": 3,
+  Aprovação: 4,
+  Relatório: 6,
+};
+
+/**
+ * O que uma demanda AINDA ABERTA tem pela frente, na ordem do template.
+ *
+ * As etapas de uma demanda fechada são registro do que aconteceu — e a regra desta importação é
+ * que etapa sem evidência não entra. Numa demanda aberta elas são outra coisa: o trabalho que
+ * falta. Sem isto, concluir o Desenho de uma demanda importada não ativaria revisão nem aprovação,
+ * e ela terminaria pulando o portão de qualidade que reprova 37% das peças.
+ *
+ * `Briefing` fica de fora porque acontece fora do Trello e já aconteceu; as opcionais de ordem 5
+ * (`Trafego Pago`, `Imprensa`, `Gráfica`) ficam de fora porque nada no card diz que se aplicam.
+ */
+const FORWARD_STAGES: StageName[] = ["Quality Control", "Aprovação", "Relatório"];
+
+/**
+ * As etapas do template que vêm DEPOIS da etapa mais avançada com evidência.
+ *
+ * Devolve vazio quando a demanda não está aberta: numa concluída ou abandonada, uma etapa pendente
+ * seria trabalho que ninguém vai fazer.
+ */
+export function futureStagesFor(status: MappedTask["status"], evidenced: StageName[]): StageName[] {
+  if (status !== "IN_PROGRESS") return [];
+  const furthest = Math.max(...evidenced.map((n) => STAGE_ORDER[n]));
+  return FORWARD_STAGES.filter((n) => STAGE_ORDER[n] > furthest);
+}
 
 /**
  * Uma visita a uma etapa: quando entrou e quando saiu. `exitedAt: undefined` significa que não há

@@ -21,6 +21,7 @@ function plannedTask(id: string, monthKey: string): PlannedTask {
     status: "IN_PROGRESS",
     completedAt: null,
     stages: [],
+    futureStageNames: [],
     rework: [],
   };
 }

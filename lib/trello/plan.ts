@@ -1,7 +1,14 @@
 import { cardNature } from "./classify";
 import { mapCardToTask, type MapTaskContext, type MappedTask } from "./map-task";
 import { matchMembers } from "./map-people";
-import { mapListToStage, planStages, type MapStagesContext, type StagePlan } from "./map-stages";
+import {
+  futureStagesFor,
+  mapListToStage,
+  planStages,
+  type MapStagesContext,
+  type StageName,
+  type StagePlan,
+} from "./map-stages";
 import { planRework, type ReworkEvent } from "./map-rework";
 import type {
   CardMovement,
@@ -65,6 +72,10 @@ export interface PlannedTask {
   completedAt: Date | null;
   /** Nunca vazio — cards sem etapa mapeável vão para `ImportPlan.skipped`, não viram PlannedTask. */
   stages: PlannedStage[];
+  /** As etapas que a demanda tem PELA FRENTE, sem evidência nenhuma e por isso sem data, sem dono e
+   * sem histórico: só existem para que a demanda aberta continue o fluxo no produto. Vazio em
+   * demanda concluída ou obsoleta. Ver `futureStagesFor` (map-stages.ts). */
+  futureStageNames: StageName[];
   rework: ReworkEvent[];
 }
 
@@ -146,9 +157,13 @@ export function buildImportPlan(
     }
 
     const rework = planRework(movements, stagesCtx);
+    const declaredOwner = declaredOwnerOf(card, byTrelloId);
     const plannedStages: PlannedStage[] = stages.map((s) => ({
       ...s,
-      assigneeUserId: s.assigneeTrelloId ? byTrelloId.get(s.assigneeTrelloId) : undefined,
+      // A evidência de execução manda: quem está no nome da lista ou anexou o arquivo fez o
+      // trabalho. O membro declarado no card só entra onde ela não disse nada.
+      assigneeUserId:
+        (s.assigneeTrelloId ? byTrelloId.get(s.assigneeTrelloId) : undefined) ?? declaredOwner,
     }));
 
     monthKeys.add(mapped.monthKey);
@@ -162,6 +177,10 @@ export function buildImportPlan(
       status: mapped.status,
       completedAt: mapped.completedAt,
       stages: plannedStages,
+      futureStageNames: futureStagesFor(
+        mapped.status,
+        plannedStages.map((s) => s.stageName)
+      ),
       rework,
     });
   }
@@ -174,6 +193,49 @@ export function buildImportPlan(
   }));
 
   return { projects, tasks, skipped, unmatchedPeople: unmatched };
+}
+
+/**
+ * O responsável DECLARADO no card (`idMembers`), casado com um usuário do WorkOS.
+ *
+ * Um card do quadro real costuma declarar mais de uma pessoa — 80 dos 127 declaram de duas a
+ * quatro, e os nomes mais frequentes são de quem supervisiona, não de quem executa. A escada:
+ *
+ *   1. um membro casado só → é ele, sem ambiguidade nenhuma;
+ *   2. vários, e exatamente um deles também anexou arquivo no card → esse, porque anexar é
+ *      evidência de execução e desempata sem chutar;
+ *   3. vários e nenhum desempate → o PRIMEIRO da lista do card. Decisão explícita do dono do
+ *      projeto (37 demandas do export caem aqui): a ordem em que o Trello guarda os membros não
+ *      significa nada, então isto é uma escolha, não uma medição.
+ *
+ * Membro sem casamento no WorkOS não conta — ele já aparece em `ImportPlan.unmatchedPeople`.
+ */
+function declaredOwnerOf(card: ExportCard, byTrelloId: Map<string, string>): string | undefined {
+  const declared = uniqueMatched(card.idMembers, byTrelloId);
+  if (declared.length === 0) return undefined;
+  if (declared.length === 1) return declared[0];
+
+  const authors = uniqueMatched(
+    (card.attachments ?? []).map((a) => a.idMember),
+    byTrelloId
+  );
+  const alsoAttached = declared.filter((u) => authors.includes(u));
+  if (alsoAttached.length === 1) return alsoAttached[0];
+
+  return declared[0];
+}
+
+/** Os IDs de usuário WorkOS dos IDs de Trello dados, sem repetição e na ordem em que aparecem. */
+function uniqueMatched(
+  trelloIds: Array<string | undefined> | undefined,
+  byTrelloId: Map<string, string>
+): string[] {
+  const out: string[] = [];
+  for (const id of trelloIds ?? []) {
+    const userId = id ? byTrelloId.get(id) : undefined;
+    if (userId && !out.includes(userId)) out.push(userId);
+  }
+  return out;
 }
 
 function buildLabelsById(board: TrelloBoardExport): LabelsById {

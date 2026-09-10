@@ -178,7 +178,9 @@ async function resolveWriteContext(
   const stageIdByName = new Map<StageName, string>();
   for (const s of template?.stages ?? []) stageIdByName.set(s.name as StageName, s.id);
 
-  const requiredNames = new Set(plan.tasks.flatMap((t) => t.stages.map((s) => s.stageName)));
+  const requiredNames = new Set(
+    plan.tasks.flatMap((t) => [...t.stages.map((s) => s.stageName), ...t.futureStageNames])
+  );
   for (const name of requiredNames) {
     if (!stageIdByName.has(name)) {
       throw new Error(
@@ -261,7 +263,11 @@ async function writeTask(
   const decodedCreatedAt = cardCreatedAt(task.card);
   const createdAt =
     decodedCreatedAt && decodedCreatedAt <= historicalAt ? decodedCreatedAt : historicalAt;
-  const selectedStageIds = new Set(task.stages.map((s) => ctx.stageIdByName.get(s.stageName)!));
+  // As etapas com evidência MAIS as que a demanda aberta tem pela frente: as duas viram linha de
+  // `TaskActiveStage`, mas só as primeiras recebem fixup e histórico (abaixo). Sem as futuras,
+  // concluir o Desenho de uma demanda importada não teria revisão nem aprovação para ativar.
+  const stageNames = [...task.stages.map((s) => s.stageName), ...task.futureStageNames];
+  const selectedStageIds = new Set(stageNames.map((n) => ctx.stageIdByName.get(n)!));
 
   // De propósito SEM `assignments`: createTaskStages só atribui quem pertence ao time EFETIVO da
   // etapa hoje, e faria a promoção automática para IN_PROGRESS quando a etapa de entrada ganha

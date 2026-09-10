@@ -22,6 +22,10 @@ export interface Card {
   }>;
   /** ID da lista. Usado por mapCardToTask para determinar status (COMPLETED se em "Concluido"). */
   idList?: string;
+  /** IDs dos membros do Trello declarados no card. Usado por buildImportPlan (plan.ts) para dar
+   * dono às etapas que a evidência de execução (nome na lista, autor do anexo) deixou sem
+   * responsável — 127 cards do export real declaram alguém. */
+  idMembers?: string[];
   /** Timestamp do ARQUIVAMENTO do card. NÃO serve para datar `completedAt`: medido no export real,
    * é nulo nos 52 cards da lista `Concluido` (nenhum está arquivado), e card arquivado FORA de
    * `Concluido` vira OBSOLETE, status em que a data é descartada de propósito. Fica declarado

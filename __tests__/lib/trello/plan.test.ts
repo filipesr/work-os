@@ -224,6 +224,136 @@ describe("buildImportPlan", () => {
   });
 });
 
+// As demandas ABERTAS não são registro do passado: as etapas que faltam são o trabalho que ainda
+// vai acontecer. Sem isto, ao concluir o Desenho de uma demanda importada não haveria Quality
+// Control nem Aprovação para ativar, e ela terminaria pulando o portão de qualidade.
+describe("buildImportPlan — a demanda aberta recebe o resto da sequência do template", () => {
+  function planoDe(c: ExportCard, actions: TrelloAction[] = []) {
+    return buildImportPlan(board([c], { actions }), USERS, {});
+  }
+
+  it("demanda aberta parada na produção ganha revisão, aprovação e relatório pela frente", () => {
+    const p = planoDe(card({ id: "a1", idList: "L_DESENHO", due: "2026-07-15T00:00:00Z" }));
+    const t = p.tasks.find((x) => x.card.id === "a1")!;
+    expect(t.status).toBe("IN_PROGRESS");
+    expect(t.stages.map((s) => s.stageName)).toEqual(["Desenho"]);
+    expect(t.futureStageNames).toEqual(["Quality Control", "Aprovação", "Relatório"]);
+  });
+
+  it("demanda aberta que já passou pela aprovação só tem o relatório pela frente", () => {
+    const p = planoDe(card({ id: "a2", idList: "L_LIBERADO", due: "2026-07-15T00:00:00Z" }), [
+      action("DISEÑO - MARTIN", "REVISIÓN", "2026-07-02T10:00:00Z", "a2"),
+      action("REVISIÓN", "LIBERADO", "2026-07-03T10:00:00Z", "a2"),
+    ]);
+    const t = p.tasks.find((x) => x.card.id === "a2")!;
+    expect(t.stages.map((s) => s.stageName)).toContain("Aprovação");
+    expect(t.futureStageNames).toEqual(["Relatório"]);
+  });
+
+  it("demanda concluída não ganha etapa nenhuma pela frente — o trabalho acabou", () => {
+    const p = planoDe(
+      card({
+        id: "a3",
+        idList: "L_CONC",
+        due: "2026-07-15T00:00:00Z",
+        dateCompleted: "2026-07-20T10:00:00Z",
+        attachments: [{ id: "x", mimeType: "image/png", date: "2026-07-10T10:00:00Z" }],
+      })
+    );
+    const t = p.tasks.find((x) => x.card.id === "a3")!;
+    expect(t.status).toBe("COMPLETED");
+    expect(t.futureStageNames).toEqual([]);
+  });
+
+  it("demanda obsoleta não ganha etapa nenhuma pela frente — foi abandonada, não pausada", () => {
+    const p = planoDe(
+      card({ id: "a4", idList: "L_DESENHO", closed: true, due: "2026-07-15T00:00:00Z" })
+    );
+    const t = p.tasks.find((x) => x.card.id === "a4")!;
+    expect(t.status).toBe("OBSOLETE");
+    expect(t.futureStageNames).toEqual([]);
+  });
+});
+
+// O card declara quem é responsável em `idMembers`. Era o único campo do mapeamento da spec que o
+// código nunca lia — 127 cards do export real o preenchem.
+describe("buildImportPlan — o responsável declarado no card vira dono da etapa", () => {
+  const MEMBROS = [
+    member("tMartin", "martingoonmkt", "Martin"),
+    member("tSara", "saragoonmkt", "Sara Goon"),
+    member("tPedro", "pedrogoonmkt", "Pedro Villalba"),
+  ];
+  const USUARIOS = [
+    user("u1", "Martin", "martin@goon.com"),
+    user("u2", "Sara Goon", "sara@goon.com"),
+    user("u3", "Pedro Villalba", "pedro@goon.com"),
+  ];
+
+  function planoDe(c: ExportCard, actions: TrelloAction[] = []) {
+    return buildImportPlan(board([c], { members: MEMBROS, actions }), USUARIOS, {});
+  }
+
+  it("um membro só: ele é o dono da etapa que não tinha dono", () => {
+    const p = planoDe(
+      card({ id: "m1", idList: "L_AV", idMembers: ["tSara"], due: "2026-07-15T00:00:00Z" })
+    );
+    expect(p.tasks[0].stages[0]).toMatchObject({ stageName: "Audio Visual", assigneeUserId: "u2" });
+  });
+
+  it("evidência mais forte manda: o nome na lista não é sobrescrito pelo membro declarado", () => {
+    const p = planoDe(
+      card({ id: "m2", idList: "L_DESENHO", idMembers: ["tSara"], due: "2026-07-15T00:00:00Z" })
+    );
+    expect(p.tasks[0].stages[0].assigneeUserId).toBe("u1");
+  });
+
+  it("vários membros: fica com quem também anexou arquivo no card", () => {
+    const p = planoDe(
+      card({
+        id: "m3",
+        idList: "L_AV",
+        idMembers: ["tPedro", "tSara"],
+        attachments: [{ id: "an1", idMember: "tSara" }],
+        due: "2026-07-15T00:00:00Z",
+      }),
+      [action("AUDIOVISUAL", "REVISIÓN", "2026-07-02T10:00:00Z", "m3")]
+    );
+    const av = p.tasks[0].stages.find((s) => s.stageName === "Audio Visual")!;
+    expect(av.assigneeUserId).toBe("u2");
+  });
+
+  it("vários membros e nenhum anexou: fica com o primeiro do card", () => {
+    const p = planoDe(
+      card({
+        id: "m4",
+        idList: "L_AV",
+        idMembers: ["tPedro", "tSara"],
+        due: "2026-07-15T00:00:00Z",
+      }),
+      [action("AUDIOVISUAL", "REVISIÓN", "2026-07-02T10:00:00Z", "m4")]
+    );
+    const av = p.tasks[0].stages.find((s) => s.stageName === "Audio Visual")!;
+    expect(av.assigneeUserId).toBe("u3");
+  });
+
+  it("membro sem casamento no WorkOS não conta — sobra um, e é ele", () => {
+    const p = planoDe(
+      card({
+        id: "m5",
+        idList: "L_AV",
+        idMembers: ["tDesconhecido", "tSara"],
+        due: "2026-07-15T00:00:00Z",
+      })
+    );
+    expect(p.tasks[0].stages[0].assigneeUserId).toBe("u2");
+  });
+
+  it("card sem membro nenhum continua sem dono — nada é inventado", () => {
+    const p = planoDe(card({ id: "m6", idList: "L_AV", due: "2026-07-15T00:00:00Z" }));
+    expect(p.tasks[0].stages[0].assigneeUserId).toBeUndefined();
+  });
+});
+
 describe("contra o export real", () => {
   const exportPath =
     "/Users/fsrezende/Downloads/goon/atl/export trello/INm0k5De - atlantico-shop.json";
