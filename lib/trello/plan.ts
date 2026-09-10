@@ -186,14 +186,7 @@ export function buildImportPlan(
       ...s,
       // A evidência de execução manda: quem está no nome da lista ou anexou o arquivo fez o
       // trabalho. O membro declarado no card só entra onde ela não disse nada.
-      // A escada, da evidência mais forte para a mais fraca: o membro do Trello que a lista ou o
-      // anexo apontou; o NOME que a lista carrega, casado direto no WorkOS (é como FABRICIO, DIEGO
-      // e JORGE são alcançados — eles desenham para este quadro sem serem membros dele); e, por
-      // último, quem o card declara em `idMembers`.
-      assigneeUserId:
-        (s.assigneeTrelloId ? byTrelloId.get(s.assigneeTrelloId) : undefined) ??
-        (s.designerName ? userIdByDesignerName[s.designerName] : undefined) ??
-        declaredOwner,
+      assigneeUserId: assigneeFor(s, byTrelloId, userIdByDesignerName, declaredOwner),
     }));
 
     monthKeys.add(mapped.monthKey);
@@ -320,6 +313,36 @@ function groupMovementsByCard(actions: TrelloAction[]): Map<string, CardMovement
  * sem casamento único (zero ou mais de um membro) fica de fora do mapa, e planStages (map-stages.ts)
  * já trata a ausência de entrada como "sem responsável conhecido", nunca inferido.
  */
+/**
+ * O dono de uma etapa percorrida, da evidência mais forte para a mais fraca.
+ *
+ * **`Desenho` é a exceção, e é a regra mais estrita do módulo: quem desenhou está no NOME da
+ * lista, e só ali.** Sem nome na lista, a etapa fica sem dono. As outras duas evidências não
+ * servem para esta etapa: o autor do anexo é quem SUBIU o arquivo — no quadro real, com frequência
+ * o atendimento, e era assim que Pedro e Sara apareciam como responsáveis por 16 desenhos — e o
+ * membro declarado no card é quem acompanha. Nenhum dos dois é evidência de ter desenhado. Custo
+ * medido: 44 das 96 etapas de Desenho ficam sem dono; as outras 52 vêm do nome da lista.
+ *
+ * Para as demais etapas a escada continua: o membro do Trello que a lista ou o anexo apontou; o
+ * nome da lista casado direto no WorkOS (é como FABRICIO, DIEGO e JORGE são alcançados — desenham
+ * para este quadro sem serem membros dele); e, por último, quem o card declara em `idMembers`.
+ */
+function assigneeFor(
+  stage: StagePlan,
+  byTrelloId: Map<string, string>,
+  userIdByDesignerName: Record<string, string>,
+  declaredOwner: string | undefined
+): string | undefined {
+  const doNome = stage.designerName ? userIdByDesignerName[stage.designerName] : undefined;
+  const doTrello = stage.assigneeTrelloId ? byTrelloId.get(stage.assigneeTrelloId) : undefined;
+
+  if (stage.stageName === "Desenho") {
+    return stage.designerName ? (doTrello ?? doNome) : undefined;
+  }
+
+  return doTrello ?? doNome ?? declaredOwner;
+}
+
 /** As etapas pendentes que ficam com quem ABRIU a demanda. `Quality Control` de propósito fora: o
  * portão de qualidade é do time de qualidade, não de quem pediu a peça. */
 const CREATOR_OWNED_STAGES: StageName[] = ["Aprovação", "Relatório"];

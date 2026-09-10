@@ -205,6 +205,14 @@ sobrenome parciais** (`Mathias Gonzalez` ↔ `Benicio Mathias Gonzalez Delgado`)
 O que não casar entra numa lista de repescagem manual — inclusive **dois autores de anexo que já
 saíram do quadro** e não estão em `members`.
 
+**Quem desenhou está no nome da lista, e só ali.** `Desenho` é a etapa com a regra mais estrita do
+módulo: sem nome na lista (`DISEÑO - MARTIN`, `DISEÑO - FABRICIO`…), a etapa fica sem dono. As duas
+outras evidências não servem para ela — o autor do anexo é quem SUBIU o arquivo, com frequência o
+atendimento, e o membro declarado no card é quem acompanha. Nenhum dos dois desenhou. Custo medido:
+44 das 96 etapas de `Desenho` ficam sem responsável; as outras 52 vêm do nome da lista. `Audio
+Visual` continua aceitando o autor do anexo: a lista `AUDIOVISUAL` não nomeia ninguém, e ali quem
+anexa o vídeo é quem o produziu.
+
 **O responsável declarado no card.** `idMembers` dá dono à etapa que a evidência de execução — o
 nome na lista (`DISEÑO - MARTIN`), o autor do anexo — deixou sem responsável. Nunca sobrescreve
 essa evidência: quem fez o trabalho é quem aparece nela. Mas 80 dos 127 cards com membro declaram

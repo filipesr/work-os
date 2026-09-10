@@ -440,6 +440,83 @@ describe("buildImportPlan — o nome da lista alcança o usuário do WorkOS", ()
 });
 
 // As etapas pendentes de aprovação e relatório são do atendimento — de quem abriu a demanda.
+// Quem desenha está no NOME da lista, e só ali. O autor do anexo é quem subiu o arquivo — no
+// quadro real, com frequência o atendimento — e o membro declarado no card é quem acompanha.
+// Nenhum dos dois é evidência de ter desenhado.
+describe("buildImportPlan — o Desenho só tem dono se a lista disser o nome", () => {
+  const MEMBROS = [
+    member("tMartin", "martingoonmkt", "Martin"),
+    member("tPedro", "pedro_villalba", "Pedro Villalba"),
+  ];
+  const USUARIOS = [
+    user("u1", "Martin", "martin@goon.com"),
+    user("up", "Pedro Fernando Villalba Brandel", "pedrogoonmkt@gmail.com"),
+  ];
+
+  function planoDe(c: ExportCard) {
+    return buildImportPlan(board([c], { members: MEMBROS }), USUARIOS, {});
+  }
+
+  it("Desenho vindo do tipo do arquivo fica SEM dono, mesmo com autor de anexo conhecido", () => {
+    const p = planoDe(
+      card({
+        id: "x1",
+        idList: "L_COMUNICADOR", // lista organizacional: não nomeia designer nenhum
+        idMembers: ["tPedro"],
+        attachments: [
+          { id: "a1", idMember: "tPedro", mimeType: "image/png", date: "2026-07-02T10:00:00Z" },
+        ],
+        due: "2026-07-15T00:00:00Z",
+      })
+    );
+    const d = p.tasks[0].stages.find((s) => s.stageName === "Desenho")!;
+    expect(d.assigneeUserId).toBeUndefined();
+  });
+
+  it("Desenho de uma lista com nome continua com o dono da lista", () => {
+    const p = planoDe(
+      card({
+        id: "x2",
+        idList: "L_DESENHO",
+        idMembers: ["tPedro"],
+        attachments: [{ id: "a1", idMember: "tPedro", date: "2026-07-02T10:00:00Z" }],
+        due: "2026-07-15T00:00:00Z",
+      })
+    );
+    const d = p.tasks[0].stages.find((s) => s.stageName === "Desenho")!;
+    expect(d.assigneeUserId).toBe("u1");
+  });
+
+  it("o nome da lista chega pelo membro do Trello quando o nome do usuário não o carrega", () => {
+    // `DISEÑO - LELI` → membro "Lèli Goon" → usuário "Alessandra Francielli Marques", casada pelo
+    // prefixo do e-mail. A ponte por NOME não alcança essa (o usuário não tem "Leli" no nome), e é
+    // por isso que a escada do Desenho tenta o membro do Trello ANTES do nome.
+    const p = buildImportPlan(
+      board([card({ id: "x4", idList: "L_LELI", due: "2026-07-15T00:00:00Z" })], {
+        lists: [...LISTS, trelloList("L_LELI", "DISEÑO - LELI")],
+        members: [member("tLeli", "leligoon", "Lèli Goon")],
+      }),
+      [user("ua", "Alessandra Francielli Marques", "leligoonmkt@gmail.com")],
+      {}
+    );
+    const d = p.tasks[0].stages.find((s) => s.stageName === "Desenho")!;
+    expect(d.assigneeUserId).toBe("ua");
+  });
+
+  it("Audio Visual continua com o autor do anexo — a regra é do Desenho", () => {
+    const p = planoDe(
+      card({
+        id: "x3",
+        idList: "L_AV",
+        attachments: [{ id: "a1", idMember: "tPedro", date: "2026-07-02T10:00:00Z" }],
+        due: "2026-07-15T00:00:00Z",
+      })
+    );
+    const av = p.tasks[0].stages.find((s) => s.stageName === "Audio Visual")!;
+    expect(av.assigneeUserId).toBe("up");
+  });
+});
+
 describe("buildImportPlan — quem criou o card responde pelas etapas pendentes", () => {
   const MEMBROS = [member("tPedro", "pedro_villalba", "Pedro Villalba")];
   const USUARIOS = [user("up", "Pedro Fernando Villalba Brandel", "pedrogoonmkt@gmail.com")];
