@@ -272,6 +272,16 @@ e na descrição — merecem decisão humana, um a um. São: `MODELO - Checklist
 
 **O desempate do responsável pode inflar quem supervisiona.** Quando o card declara 2 a 4 membros e nada desempata, a etapa fica com o **primeiro da lista do card** — decisão explícita do dono do projeto, e é escolha, não medição: a ordem em que o Trello guarda os membros não significa nada. Efeito medido: Pedro Villalba fica com 115 etapas, das quais 65 são as pendentes de aprovação e relatório (dele de fato, por ter aberto as demandas) e 14 são Desenho vindas desse desempate. Quem olhar métrica de execução por pessoa precisa saber disso antes de concluir qualquer coisa.
 
+**A reclassificação de "arquivado" (2026-09-10).** O desenho original marcava `OBSOLETE` todo card
+arquivado fora de `Concluido`, e isso deixou 12 projetos mensais com 100% das demandas descartadas —
+63 peças entregues que o sistema exibia como nada. A evidência derrubou a decisão: 100 das 101
+arquivadas pararam numa lista de produção ou no portão, o arquivamento está espalhado por 84 dias
+distintos em 14 meses, e a mediana da distância entre o prazo e o arquivamento é ZERO dia. Hoje a
+importação não produz `OBSOLETE`: 152 concluídas e 52 abertas. **O que fica em aberto é o inverso:**
+se alguma daquelas 152 tiver sido de fato abandonada, ela agora conta como entregue e infla o
+throughput daquele mês. Não há no export como distinguir uma da outra — quem conhecer um caso
+específico corrige à mão.
+
 **Quality Control pendente fica sem dono.** As 45 etapas de revisão que as demandas abertas têm pela frente nascem sem responsável, de propósito: o portão de qualidade é do time de qualidade, não de quem abriu a demanda. Se o processo quiser um dono ali, é uma linha em `CREATOR_OWNED_STAGES` (`lib/trello/plan.ts`).
 
 **Sobras da importação, sem efeito no dado gravado.** O relatório do ensaio não diz quantas demandas cada projeto mensal recebe nem quais cards foram descartados um a um (só a contagem por motivo); `applyImportPlan` tem um ramo de ensaio que o executável nunca chama, então as pré-condições de banco só são checadas na hora do `--commit`; `ReworkEvent.byTrelloId` e o `kind: "CLIENT"` nunca são escritos; os checklists de 3 cards não foram importados; e o mês do projeto é recortado do ISO em UTC enquanto o resto do app usa fuso de São Paulo, o que põe 18 das 204 num mês vizinho.
