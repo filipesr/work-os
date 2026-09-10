@@ -337,7 +337,7 @@ O último caso é o que impede a regra de referência de engolir trabalho real: 
 
 - [ ] **Step 4: Rodar e ver passar.**
 
-- [ ] **Step 5: Verificar contra o export real** — um teste que lê o JSON e afirma a contagem: 229 demandas, 36 separadores, 26 ausências, 10 referências. Se o arquivo não estiver presente no ambiente, o teste é pulado com `it.skip` e uma nota; **não invente números**.
+- [ ] **Step 5: Verificar contra o export real** — um teste que lê o JSON e afirma a contagem: 229 demandas, 38 separadores, 26 ausências, 10 referências (soma 303 — confira a soma, foi ela que pegou meu erro). Se o arquivo não estiver presente no ambiente, o teste é pulado com `it.skip` e uma nota; **não invente números**.
 
 - [ ] **Step 6: Commit.**
 
@@ -666,7 +666,7 @@ it("o relatório diz o que entra, o que fica de fora e por quê", () => {
   const txt = formatReport(plan);
   expect(txt).toContain("229 demandas");
   expect(txt).toContain("18 projetos");
-  expect(txt).toMatch(/separador:\s*36/);
+  expect(txt).toMatch(/separador:\s*38/);
   expect(txt).toContain("repescagem manual");
 });
 ```
@@ -685,7 +685,7 @@ O `--commit` só grava depois de imprimir o mesmo relatório do ensaio. Sem `--f
 - [ ] **Step 3: Ensaio de verdade contra o export real**
 
 Run: `npx tsx scripts/import-trello/run.ts --file "/Users/fsrezende/Downloads/goon/atl/export trello/INm0k5De - atlantico-shop.json"`
-Expected: relatório com 229 demandas, 18 projetos, 72 descartados e a lista de repescagem. **Nenhuma escrita** — confirme com uma contagem de demandas antes e depois.
+Expected: relatório com 229 demandas, 18 projetos, 74 descartados e a lista de repescagem. **Nenhuma escrita** — confirme com uma contagem de demandas antes e depois.
 
 - [ ] **Step 4: `npm test && npx tsc --noEmit`.**
 
@@ -699,7 +699,7 @@ Expected: relatório com 229 demandas, 18 projetos, 72 descartados e a lista de 
 
 - Modify: `docs/pendencias.md`
 
-- [ ] **Step 1:** registrar, na seção de limitações: os **10 cards de instrução** que ficaram fora (com os títulos), o que **não** foi importado e por quê (36 separadores, 26 ausências, comentários), e que os anexos são **link para o Trello** — se o quadro for apagado, as referências morrem junto.
+- [ ] **Step 1:** registrar, na seção de limitações: os **10 cards de instrução** que ficaram fora (com os títulos), o que **não** foi importado e por quê (38 separadores, 26 ausências, comentários), e que os anexos são **link para o Trello** — se o quadro for apagado, as referências morrem junto.
 
 - [ ] **Step 2:** registrar a decisão em aberto que a spec levantou: o **projeto que já existe** no cliente AtlanticoShop convive com os 18 mensais ou é absorvido.
 

@@ -26,14 +26,14 @@ existe.
 
 Classificando por título, rótulo e anexos:
 
-| Natureza                                                                |   Cards | Destino                     |
-| ----------------------------------------------------------------------- | ------: | --------------------------- |
-| **Demanda**                                                             | **229** | importar                    |
-| Separador visual (`PRIORIDAD 👆`, `EN PROCESO ⬆️`, `-----`)             |      36 | descartar                   |
-| Ausência / evento (`FERIADO 14/05`, `FÉRIAS 09 A 16/06`, `REUNIÓN`)     |      26 | descartar                   |
-| Instrução / referência (`TAMAÑO - Banners Web`, `ACCESSOS`, `MODELO -`) |      10 | **ignorar**, listar em nota |
+| Natureza                                                                      |   Cards | Destino                     |
+| ----------------------------------------------------------------------------- | ------: | --------------------------- |
+| **Demanda**                                                                   | **229** | importar                    |
+| Separador visual (`PRIORIDAD 👆`, `EN PROCESO ⬆️`, `☝ ALTERACIÓN ☝`, `-----`) |      38 | descartar                   |
+| Ausência / evento (`FERIADO 14/05`, `FÉRIAS 09 A 16/06`, `REUNIÓN`)           |      26 | descartar                   |
+| Instrução / referência (`TAMAÑO - Banners Web`, `ACCESSOS`, `MODELO -`)       |      10 | **ignorar**, listar em nota |
 
-Os 36 separadores e os 26 registros de ausência são mobília de quadro, não trabalho. Importá-los
+Os 38 separadores e os 26 registros de ausência são mobília de quadro, não trabalho. Importá-los
 encheria o histórico de demandas que nunca existiram.
 
 Os 10 cards de instrução **não têm anexo nenhum** — o conteúdo está no título e na descrição, não em
