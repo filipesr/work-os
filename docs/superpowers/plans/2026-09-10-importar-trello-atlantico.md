@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** trazer 229 demandas de 19 meses do quadro "Atlantico Shop" para o WorkOS, com as etapas que foram observadas, as datas históricas reais e nenhuma etapa inventada.
+**Goal:** trazer 230 demandas de 19 meses do quadro "Atlantico Shop" para o WorkOS, com as etapas que foram observadas, as datas históricas reais e nenhuma etapa inventada.
 
 **Architecture:** lógica pura em `lib/trello/` (classificação, mapeamento, evidência), testada pela suíte que já existe; escrita reusando o miolo de criação de demanda do próprio produto, com data histórica passada por parâmetro; executável descartável em `scripts/import-trello/`, em modo ensaio por padrão.
 
@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **Etapa sem evidência é etapa NÃO-INCLUÍDA, nunca inferida.** Vale para toda a entrega. `Briefing`, `Gráfica`, `Trafego Pago`, `Imprensa` e `Relatório` ficam fora das 229 demandas.
+- **Etapa sem evidência é etapa NÃO-INCLUÍDA, nunca inferida.** Vale para toda a entrega. `Briefing`, `Gráfica`, `Trafego Pago`, `Imprensa` e `Relatório` ficam fora das 230 demandas.
 - **"Arquivado" não é "concluído".** Só card na lista `Concluido` vira `COMPLETED`. Arquivado em outra lista vira `OBSOLETE`. Aberto vira `IN_PROGRESS`.
 - **`Task.completedAt` só é datado quando o status for `COMPLETED`** — é o que alimenta lead time.
 - **No `ReworkEvent`, `sourceStage` é a etapa que INJETOU o defeito** (`Desenho` / `Audio Visual`), não a revisão que o encontrou. Inverter isso inverte a métrica (P5 da `docs/biblioteca-de-conhecimento.md`).
@@ -337,7 +337,7 @@ O último caso é o que impede a regra de referência de engolir trabalho real: 
 
 - [ ] **Step 4: Rodar e ver passar.**
 
-- [ ] **Step 5: Verificar contra o export real** — um teste que lê o JSON e afirma a contagem: 229 demandas, 38 separadores, 26 ausências, 10 referências (soma 303 — confira a soma, foi ela que pegou meu erro). Se o arquivo não estiver presente no ambiente, o teste é pulado com `it.skip` e uma nota; **não invente números**.
+- [ ] **Step 5: Verificar contra o export real** — um teste que lê o JSON e afirma a contagem: 230 demandas, 38 separadores, 25 ausências, 10 referências (soma 303 — confira a soma, foi ela que pegou meu erro). Se o arquivo não estiver presente no ambiente, o teste é pulado com `it.skip` e uma nota; **não invente números**.
 
 - [ ] **Step 6: Commit.**
 
@@ -664,7 +664,7 @@ O teste de rodar duas vezes é o que protege o estrago mais caro desta entrega.
 ```ts
 it("o relatório diz o que entra, o que fica de fora e por quê", () => {
   const txt = formatReport(plan);
-  expect(txt).toContain("229 demandas");
+  expect(txt).toContain("230 demandas");
   expect(txt).toContain("18 projetos");
   expect(txt).toMatch(/separador:\s*38/);
   expect(txt).toContain("repescagem manual");
@@ -685,7 +685,7 @@ O `--commit` só grava depois de imprimir o mesmo relatório do ensaio. Sem `--f
 - [ ] **Step 3: Ensaio de verdade contra o export real**
 
 Run: `npx tsx scripts/import-trello/run.ts --file "/Users/fsrezende/Downloads/goon/atl/export trello/INm0k5De - atlantico-shop.json"`
-Expected: relatório com 229 demandas, 18 projetos, 74 descartados e a lista de repescagem. **Nenhuma escrita** — confirme com uma contagem de demandas antes e depois.
+Expected: relatório com 230 demandas, 18 projetos, 73 descartados e a lista de repescagem. **Nenhuma escrita** — confirme com uma contagem de demandas antes e depois.
 
 - [ ] **Step 4: `npm test && npx tsc --noEmit`.**
 
@@ -699,7 +699,7 @@ Expected: relatório com 229 demandas, 18 projetos, 74 descartados e a lista de 
 
 - Modify: `docs/pendencias.md`
 
-- [ ] **Step 1:** registrar, na seção de limitações: os **10 cards de instrução** que ficaram fora (com os títulos), o que **não** foi importado e por quê (38 separadores, 26 ausências, comentários), e que os anexos são **link para o Trello** — se o quadro for apagado, as referências morrem junto.
+- [ ] **Step 1:** registrar, na seção de limitações: os **10 cards de instrução** que ficaram fora (com os títulos), o que **não** foi importado e por quê (38 separadores, 25 ausências, comentários), e que os anexos são **link para o Trello** — se o quadro for apagado, as referências morrem junto.
 
 - [ ] **Step 2:** registrar a decisão em aberto que a spec levantou: o **projeto que já existe** no cliente AtlanticoShop convive com os 18 mensais ou é absorvido.
 

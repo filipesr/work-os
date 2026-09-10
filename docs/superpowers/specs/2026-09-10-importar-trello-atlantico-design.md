@@ -33,14 +33,14 @@ Classificando por título, rótulo e anexos:
 | Ausência / evento (`FERIADO 14/05`, `FÉRIAS 09 A 16/06`, `REUNIÓN`)           |      26 | descartar                   |
 | Instrução / referência (`TAMAÑO - Banners Web`, `ACCESSOS`, `MODELO -`)       |      10 | **ignorar**, listar em nota |
 
-Os 38 separadores e os 26 registros de ausência são mobília de quadro, não trabalho. Importá-los
+Os 38 separadores e os 25 registros de ausência são mobília de quadro, não trabalho. Importá-los
 encheria o histórico de demandas que nunca existiram.
 
 Os 10 cards de instrução **não têm anexo nenhum** — o conteúdo está no título e na descrição, não em
 arquivo. Não há artefato a extrair. Ficam de fora, com a lista nominal na nota final desta spec,
 para revisão individual.
 
-### O que as 229 demandas carregam
+### O que as 230 demandas carregam
 
 | Evidência                           | Demandas |
 | ----------------------------------- | -------: |
@@ -260,7 +260,7 @@ ele nasce, que é exatamente o que o P5 proíbe.
 pula. A procedência que já íamos gravar vira a chave de repetição — sem campo novo no schema, sem
 dívida permanente para uma migração de uma vez.
 
-> Rodar duas vezes por engano é o estrago mais provável e o mais caro de desfazer: 229 demandas e 18
+> Rodar duas vezes por engano é o estrago mais provável e o mais caro de desfazer: 230 demandas e 18
 > projetos duplicados, cada um com etapas e artefatos. O ensaio por padrão e a chave de repetição
 > atacam o mesmo risco por dois lados.
 
