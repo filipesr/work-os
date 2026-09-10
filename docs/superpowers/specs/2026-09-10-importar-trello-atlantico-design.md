@@ -181,8 +181,11 @@ cobrem **149 das 152**; as 3 restantes ficam sem data em vez de ganharem uma inv
 **A conclusão não cria um início.** `Task.startedAt` continua saindo só de data medida em segmento
 de etapa (111 demandas). Deixar a conclusão criá-lo faria as demandas antigas — cuja única data é o
 arquivamento — nascerem com início igual à entrega: tempo de ciclo ZERO, fabricado e indistinguível
-de um medido, em cerca de 100 demandas. O que a conclusão faz é limitar o início por cima, para que
-nenhuma demanda comece depois de ter sido entregue.
+de um medido, em cerca de 100 demandas. Pela mesma razão, a data medida que NÃO é anterior à
+entrega também não é início: o card cujo único anexo tem o instante da conclusão — ou é posterior a
+ela, como "Trend Que venden?", concluído às 11:56 com o anexo às 12:05 — não diz quando o trabalho
+começou, diz quando ele foi entregue. Sem evidência de um começo distinto da entrega, `startedAt`
+fica nulo. São 8 demandas, e sem esta regra elas nasceriam com ciclo zero ou negativo.
 
 **A etapa fecha com a demanda.** Numa demanda entregue, a etapa de produção terminou até a entrega:
 ela nasce `COMPLETED`, datada pela saída medida quando existe e pela própria entrega quando não.

@@ -1013,9 +1013,12 @@ describe("applyImportPlan — o início nunca é posterior à conclusão", () =>
     expect(carimbos[0].data.startedAt).toEqual(saida);
   });
 
-  it("conclusão anterior a todo segmento datado também conta como data medida", async () => {
+  it("única data medida no instante da entrega (ou depois) não é início — fica nulo", async () => {
     const prisma = fakePrisma();
-    // O caso real do card "Trend Que venden?": dateCompleted às 11:56, único anexo às 12:05.
+    // O caso real do card "Trend Que venden?": dateCompleted às 11:56, único anexo às 12:05. Não
+    // sabemos quando o trabalho começou; sabemos quando ele foi entregue. Carimbar o início na
+    // entrega produz tempo de ciclo ZERO — a mesma fabricação que a entrega-cria-início produzia,
+    // só que menor. Medido na primeira gravação com esta regra: 8 demandas.
     const conclusao = new Date("2026-08-03T11:56:41.545Z");
     const anexo = new Date("2026-08-03T12:05:46.449Z");
     const plan: ImportPlan = {
@@ -1037,9 +1040,61 @@ describe("applyImportPlan — o início nunca é posterior à conclusão", () =>
     const carimbos = (prisma.task.updateMany as ReturnType<typeof vi.fn>).mock.calls
       .filter((c) => c[0]?.data?.startedAt !== undefined)
       .map((c) => c[0]);
+    // Nem 12:05 (início POSTERIOR à entrega, lead time negativo) nem 11:56 (início igual à
+    // entrega, ciclo zero): nenhum dos dois é uma medição de quando o trabalho começou.
+    expect(carimbos).toHaveLength(0);
+  });
+
+  it("data medida NO MESMO instante da entrega também não é início — ciclo zero é fabricação", async () => {
+    const prisma = fakePrisma();
+    const instante = new Date("2026-08-20T18:30:00.000Z");
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-08", name: "AtlanticoShop 2026-08", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          monthKey: "2026-08",
+          status: "COMPLETED",
+          completedAt: instante,
+          stages: [stage({ segments: [{ enteredAt: instante }], completed: true })],
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    const carimbos = (prisma.task.updateMany as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (c) => c[0]?.data?.startedAt !== undefined
+    );
+    expect(carimbos).toHaveLength(0);
+  });
+
+  it("data medida ANTES da entrega continua sendo o início", async () => {
+    const prisma = fakePrisma();
+    const comecou = new Date("2026-08-01T09:00:00.000Z");
+    const entregue = new Date("2026-08-03T11:56:41.545Z");
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-08", name: "AtlanticoShop 2026-08", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          monthKey: "2026-08",
+          status: "COMPLETED",
+          completedAt: entregue,
+          stages: [stage({ segments: [{ enteredAt: comecou }], completed: true })],
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    const carimbos = (prisma.task.updateMany as ReturnType<typeof vi.fn>).mock.calls
+      .filter((c) => c[0]?.data?.startedAt !== undefined)
+      .map((c) => c[0]);
     expect(carimbos).toHaveLength(1);
-    // Sem isto, startedAt (12:05) seria POSTERIOR a completedAt (11:56) — lead time negativo.
-    expect(carimbos[0].data.startedAt).toEqual(conclusao);
+    expect(carimbos[0].data.startedAt).toEqual(comecou);
   });
 });
 

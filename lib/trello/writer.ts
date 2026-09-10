@@ -669,12 +669,17 @@ function earliestMeasuredDate(task: PlannedTask): Date | undefined {
       }
     }
   }
-  // A CONCLUSÃO não cria um início — ela só o limita por cima. Deixá-la criar faria as demandas
-  // antigas, cuja única data é o arquivamento, nascerem com início igual à entrega: tempo de ciclo
-  // ZERO, fabricado e indistinguível de um medido, em ~100 demandas. Quando existe segmento datado
-  // e a conclusão é ANTERIOR a ele (o card marcado como concluído antes do último anexo), é a
-  // conclusão que vale — senão a demanda começaria depois de ter sido entregue.
-  if (earliest && task.completedAt && task.completedAt < earliest) return task.completedAt;
+  // A CONCLUSÃO nunca vira início. Deixá-la virar faria as demandas antigas, cuja única data é o
+  // arquivamento, nascerem com início igual à entrega: tempo de ciclo ZERO, fabricado e
+  // indistinguível de um medido, em ~100 demandas.
+  //
+  // E a data medida que NÃO é anterior à entrega também não é início. O card cujo único anexo tem
+  // o mesmo instante da conclusão (ou é posterior a ela, como "Trend Que venden?": concluído às
+  // 11:56, anexo às 12:05) não conta quando o trabalho começou — conta quando ele foi entregue.
+  // Carimbar o início ali produz ciclo zero, ou até negativo. Sem evidência de um começo distinto
+  // da entrega, `startedAt` fica nulo, e `getCycleTimePercentiles` prefere não ver a demanda a ver
+  // um ciclo forjado. Medido: 8 demandas caem aqui.
+  if (earliest && task.completedAt && earliest >= task.completedAt) return undefined;
   return earliest;
 }
 
