@@ -100,7 +100,20 @@ export async function applyIfRequested(
   return applyFn(prisma, plan, { commit: true, importedById: args.importedById! });
 }
 
-async function main(): Promise<void> {
+/**
+ * O código de saída do processo: zero só quando NENHUM mês falhou.
+ *
+ * `applyImportPlan` não lança quando uma transação mensal quebra — ela registra o mês em
+ * `failedMonths` e segue para o próximo (garantia 3, writer.ts), o que é o comportamento certo
+ * para a gravação, mas fazia o script sair com 0 mesmo com meses perdidos. Quem automatizar a
+ * chamada leria sucesso; a falha do prazo de transação (P2028), se reaparecer, passaria
+ * despercebida. `null` é o ENSAIO — não gravou nada, não há o que falhar.
+ */
+export function exitCodeFor(result: ImportReport | null): number {
+  return result && result.failedMonths.length > 0 ? 1 : 0;
+}
+
+async function main(): Promise<number> {
   const args = parseArgs(process.argv.slice(2));
 
   const board = readBoard(args.file);
@@ -127,11 +140,22 @@ async function main(): Promise<void> {
     if (!result) {
       console.log("");
       console.log("Ensaio concluído. Nada foi gravado. Rode de novo com --commit para gravar.");
-      return;
+      return exitCodeFor(null);
     }
 
     console.log("");
     console.log(formatWriteResult(result));
+
+    const code = exitCodeFor(result);
+    if (code !== 0) {
+      console.error("");
+      console.error(
+        `FALHA: ${result.failedMonths.length} mês(es) não foram gravados — saindo com código ` +
+          `${code}. Os meses que falharam sofreram rollback e podem ser reimportados: a ` +
+          `idempotência pela URL do card pula o que já entrou.`
+      );
+    }
+    return code;
   } finally {
     await prisma.$disconnect();
   }
@@ -143,8 +167,12 @@ async function main(): Promise<void> {
 // disparar `main()` (que leria `process.argv` do test runner e chamaria `process.exit`).
 const isMainModule = import.meta.url === `file://${process.argv[1]}`;
 if (isMainModule) {
-  main().catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
-    process.exit(1);
-  });
+  main()
+    .then((code) => {
+      if (code !== 0) process.exit(code);
+    })
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : error);
+      process.exit(1);
+    });
 }

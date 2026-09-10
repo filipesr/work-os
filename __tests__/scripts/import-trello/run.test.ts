@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "@prisma/client";
-import { applyIfRequested, parseArgs, type Args } from "@/scripts/import-trello/run";
+import { applyIfRequested, exitCodeFor, parseArgs, type Args } from "@/scripts/import-trello/run";
 import type { ImportPlan } from "@/lib/trello/plan";
 import type { ImportReport } from "@/lib/trello/writer";
 
@@ -41,6 +41,27 @@ describe("applyIfRequested — a fiação do --commit", () => {
     expect(applyFn).toHaveBeenCalledTimes(1);
     expect(applyFn).toHaveBeenCalledWith(FAKE_PRISMA, PLAN, { commit: true, importedById: "u1" });
     expect(result).toBe(FAKE_REPORT);
+  });
+});
+
+describe("exitCodeFor — mês que falhou não pode passar por sucesso", () => {
+  it("ensaio (sem gravação) sai 0", () => {
+    expect(exitCodeFor(null)).toBe(0);
+  });
+
+  it("gravação sem mês quebrado sai 0", () => {
+    expect(exitCodeFor(FAKE_REPORT)).toBe(0);
+  });
+
+  it("gravação com mês quebrado sai diferente de zero", () => {
+    // Sem isto, a falha do prazo de transação (P2028, conserto 2), se reaparecer, passa
+    // despercebida por quem automatizar a chamada: o script imprimiria "meses com falha" e o
+    // shell leria sucesso.
+    const comFalha: ImportReport = {
+      ...FAKE_REPORT,
+      failedMonths: [{ monthKey: "2026-08", error: "P2028" }],
+    };
+    expect(exitCodeFor(comFalha)).not.toBe(0);
   });
 });
 

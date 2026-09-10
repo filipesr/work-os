@@ -204,7 +204,7 @@ async function resolveWriteContext(
   return { templateId: template?.id ?? "", stageIdByName, importedById };
 }
 
-/** Acha o projeto mensal pelo nome (idempotência do projeto) ou cria contra `proj.clientId` — o
+/** Acha o projeto mensal pelo par nome+cliente (idempotência do projeto) ou cria contra `proj.clientId` — o
  * dado que o plano já carrega, não mais derivado cortando o sufixo " <monthKey>" do nome (rodada
  * de conserto 1: essa derivação amarrava a identidade do Client a uma convenção de texto de outro
  * módulo — um projeto renomeado, ou uma mudança no formato de `plan.ts`, faria procurar o cliente
@@ -215,7 +215,13 @@ async function resolveProjectId(
   proj: { monthKey: string; name: string; clientId: string },
   counts: MonthCounts
 ): Promise<string> {
-  const existing = await tx.project.findFirst({ where: { name: proj.name }, select: { id: true } });
+  // `clientId` no `where`, não só o nome: depois que a rodada de conserto 1 tirou a identidade do
+  // cliente do NOME do projeto, dois clientes podem ter um "AtlanticoShop 2026-01" cada — procurar
+  // só pelo nome cruzaria os dois e jogaria as demandas importadas no projeto do cliente errado.
+  const existing = await tx.project.findFirst({
+    where: { name: proj.name, clientId: proj.clientId },
+    select: { id: true },
+  });
   if (existing) {
     counts.projectsReused += 1;
     return existing.id;

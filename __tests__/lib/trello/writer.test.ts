@@ -31,9 +31,17 @@ const TEMPLATE_STAGE_ROWS = TEMPLATE.stages.map((s) => ({
  * (`fakePrisma`/`fakePrismaComEstado`) caem no mesmo objeto, porque rastrear o que foi criado É a
  * forma mais simples de simular idempotência real entre duas chamadas.
  */
-function fakePrisma(opts: { artifactExistsFor?: string[]; explodeOnArtifactUrl?: string } = {}) {
+function fakePrisma(
+  opts: {
+    artifactExistsFor?: string[];
+    explodeOnArtifactUrl?: string;
+    existingProjects?: Array<{ name: string; clientId: string }>;
+  } = {}
+) {
   const existingArtifactUrls = new Set(opts.artifactExistsFor ?? []);
-  const projectsByName = new Map<string, { id: string }>();
+  const projectRows: Array<{ id: string; name: string; clientId: string }> = (
+    opts.existingProjects ?? []
+  ).map((p, i) => ({ id: `proj-existente-${i + 1}`, ...p }));
   const stageLogRows: Array<Record<string, unknown>> = [];
   const stageTransitionRows: Array<Record<string, unknown>> = [];
   let taskSeq = 0;
@@ -47,15 +55,24 @@ function fakePrisma(opts: { artifactExistsFor?: string[]; explodeOnArtifactUrl?:
     // conserto 1 tirou a derivação por nome do projeto — o escritor usa `proj.clientId` direto,
     // nunca consulta o model `Client`.
     project: {
-      findFirst: vi.fn().mockImplementation(async ({ where }: { where: { name: string } }) => {
-        return projectsByName.get(where.name) ?? null;
-      }),
-      create: vi.fn().mockImplementation(async ({ data }: { data: { name: string } }) => {
-        projectSeq += 1;
-        const row = { id: `proj-${projectSeq}` };
-        projectsByName.set(data.name, row);
-        return row;
-      }),
+      // Casa TODAS as chaves do `where`, não só o nome: é assim que o Prisma se comporta, e é o que
+      // deixa o teste ver a diferença entre procurar por `{ name }` e por `{ name, clientId }`.
+      findFirst: vi
+        .fn()
+        .mockImplementation(async ({ where }: { where: Record<string, unknown> }) => {
+          const row = projectRows.find((p) =>
+            Object.entries(where).every(([k, v]) => p[k as keyof typeof p] === v)
+          );
+          return row ? { id: row.id } : null;
+        }),
+      create: vi
+        .fn()
+        .mockImplementation(async ({ data }: { data: { name: string; clientId: string } }) => {
+          projectSeq += 1;
+          const row = { id: `proj-${projectSeq}`, name: data.name, clientId: data.clientId };
+          projectRows.push(row);
+          return row;
+        }),
     },
     templateStage: {
       findMany: vi.fn().mockResolvedValue(TEMPLATE_STAGE_ROWS),
@@ -226,6 +243,26 @@ describe("applyImportPlan — idempotência pela URL do card", () => {
     // O projeto do mês também não duplica — achado pelo nome na segunda rodada.
     expect(prisma.project.create).toHaveBeenCalledTimes(1);
     expect(r2.projectsReused).toBe(1);
+  });
+});
+
+describe("applyImportPlan — o projeto mensal é do CLIENTE, não só do nome", () => {
+  it("projeto de mesmo nome de OUTRO cliente não é reaproveitado", async () => {
+    // Depois que a rodada de conserto 1 tirou a identidade do cliente do NOME do projeto, dois
+    // clientes podem ter um "AtlanticoShop 2026-01" cada. Procurar só por `{ name }` cruzaria os
+    // dois — as demandas importadas cairiam no projeto do cliente errado.
+    const prisma = fakePrisma({
+      existingProjects: [{ name: "AtlanticoShop 2026-01", clientId: "outro-cliente" }],
+    });
+    const plan = planCom(["https://trello.com/c/x1"]);
+
+    const r = await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    expect(r.projectsReused).toBe(0);
+    expect(r.projectsCreated).toBe(1);
+    expect(prisma.project.create).toHaveBeenCalledWith({
+      data: { name: "AtlanticoShop 2026-01", clientId: "client1" },
+    });
   });
 });
 
