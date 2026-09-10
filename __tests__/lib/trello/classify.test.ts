@@ -1,7 +1,10 @@
 import fs from "fs";
-import path from "path";
 import { describe, expect, it } from "vitest";
 import { cardNature, type Card, type LabelsById } from "@/lib/trello/classify";
+
+const exportPath =
+  "/Users/fsrezende/Downloads/goon/atl/export trello/INm0k5De - atlantico-shop.json";
+const exportExists = fs.existsSync(exportPath);
 
 /** Helper: cria um card com os valores padrão para teste. */
 function card(overrides: Partial<Card> = {}): Card {
@@ -76,40 +79,56 @@ describe("natureza do card", () => {
     const c = card({ name: "Algo", idLabels: ["L1"], attachments: [] });
     expect(cardNature(c, { L1: "MODELO" })).toBe("referencia");
   });
+
+  it("card com rótulo MODELO e com anexo (via rótulo) é demanda mesmo sem 'modelo' no título", () => {
+    const c = card({ name: "Peça de campanha", idLabels: ["L1"], attachments: [anexo()] });
+    expect(cardNature(c, { L1: "MODELO" })).toBe("demanda");
+  });
+
+  it("ausência sem anexo é ausência", () => {
+    expect(cardNature(card({ name: "FERIADO 14/05", attachments: [] }), {})).toBe("ausencia");
+  });
+
+  it("ausência com anexo é demanda (anexo é evidência de trabalho real)", () => {
+    const c = card({
+      name: "Historia Instagram: Vacaciones de Invierno",
+      attachments: [anexo()],
+    });
+    expect(cardNature(c, {})).toBe("demanda");
+  });
 });
 
 describe("contagem contra export real", () => {
-  const exportPath =
-    "/Users/fsrezende/Downloads/goon/atl/export trello/INm0k5De - atlantico-shop.json";
+  it.skipIf(!exportExists)(
+    "export tem as contagens esperadas (arquivo fora do repo, não existe em CI)",
+    () => {
+      const data = JSON.parse(fs.readFileSync(exportPath, "utf-8"));
+      const cards = data.cards || [];
 
-  it("export tem as contagens esperadas", () => {
-    // Pula este teste se o arquivo não existir — é dado de cliente, fora do repo
-    if (!fs.existsSync(exportPath)) {
-      it.skip("arquivo de export não encontrado em " + exportPath);
-      return;
+      // Construir mapa de labels: id -> name
+      const labels = data.labels || [];
+      const labelsById: LabelsById = {};
+      for (const label of labels) {
+        labelsById[label.id] = label.name;
+      }
+
+      // Classificar todos os cards
+      const counts = { demanda: 0, separador: 0, ausencia: 0, referencia: 0 };
+      for (const card of cards) {
+        const nature = cardNature(card, labelsById);
+        counts[nature]++;
+      }
+
+      const total = counts.demanda + counts.separador + counts.ausencia + counts.referencia;
+
+      // Verificar contagens novas (corrigidas pelo briefing)
+      expect(counts.demanda).toBe(230);
+      expect(counts.separador).toBe(38);
+      expect(counts.ausencia).toBe(25);
+      expect(counts.referencia).toBe(10);
+
+      // Verificar soma contra total de cards
+      expect(total).toBe(cards.length);
     }
-
-    const data = JSON.parse(fs.readFileSync(exportPath, "utf-8"));
-    const cards = data.cards || [];
-
-    // Construir mapa de labels: id -> name
-    const labels = data.labels || [];
-    const labelsById: LabelsById = {};
-    for (const label of labels) {
-      labelsById[label.id] = label.name;
-    }
-
-    // Classificar todos os cards
-    const counts = { demanda: 0, separador: 0, ausencia: 0, referencia: 0 };
-    for (const card of cards) {
-      const nature = cardNature(card, labelsById);
-      counts[nature]++;
-    }
-
-    // Verificar contagens reais do export
-    expect(counts.demanda).toBe(229);
-    expect(counts.separador).toBe(38);
-    expect(counts.ausencia).toBe(26);
-    expect(counts.referencia).toBe(10);
-  });
+  );
 });
