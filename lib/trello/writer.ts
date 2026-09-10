@@ -255,6 +255,12 @@ async function writeTask(
 
   const measuredStartedAt = earliestMeasuredDate(task);
   const historicalAt = earliestKnownDate(task);
+  // A criação é a do card, quando o id a carrega e ela não contradiz o primeiro evento conhecido.
+  // Criação POSTERIOR ao primeiro evento seria incoerente (nada acontece antes de existir): nesse
+  // caso, e quando o id não decodifica, a âncora histórica continua valendo.
+  const decodedCreatedAt = cardCreatedAt(task.card);
+  const createdAt =
+    decodedCreatedAt && decodedCreatedAt <= historicalAt ? decodedCreatedAt : historicalAt;
   const selectedStageIds = new Set(task.stages.map((s) => ctx.stageIdByName.get(s.stageName)!));
 
   // De propósito SEM `assignments`: createTaskStages só atribui quem pertence ao time EFETIVO da
@@ -272,7 +278,7 @@ async function writeTask(
     userId: ctx.importedById,
     status: task.status,
     completedAt: task.status === "COMPLETED" ? task.completedAt : undefined,
-    createdAt: historicalAt,
+    createdAt,
     selectedStageIds,
     at: historicalAt,
   });
@@ -548,25 +554,58 @@ function deriveAttachmentMediaType(mimeType?: string | null): ArtifactMediaType 
 
 /**
  * A mais antiga data MEDIDA da demanda: a menor entre `enteredAt`/`exitedAt` de qualquer segmento
- * de qualquer etapa planejada, ou `undefined` quando nenhum segmento tem data (nível 3 de
- * evidência: só a lista onde o card parou).
+ * de qualquer etapa planejada e o `completedAt` da própria demanda, ou `undefined` quando nada
+ * disso tem data (nível 3 de evidência: só a lista onde o card parou).
+ *
+ * A SAÍDA de um segmento conta tanto quanto a entrada: um card que saiu de uma lista num instante
+ * conhecido já tinha começado antes desse instante, mesmo sem registro de quando entrou.
+ *
+ * O `completedAt` entra pelo mesmo motivo, e resolve uma incoerência real do export: quando ele
+ * vem de `dateCompleted` (a marcação do Trello, fonte 2 de map-task.ts) enquanto a única evidência
+ * de trabalho é um anexo POSTERIOR, sem ele a demanda nasceria começando depois de ter sido
+ * concluída — lead time e cycle time negativos. As duas fontes são medições independentes; a mais
+ * antiga é o início conhecido.
  *
  * É a função irmã de `earliestKnownDate`, e existe para separar o que aquela mistura: ela SEMPRE
- * devolve uma data, caindo em `dueDate`/`dateLastActivity` quando não há segmento datado. Essa
- * queda serve para `createdAt` (a linha precisa de um carimbo de criação, e o mês do card é a
- * melhor aproximação honesta), mas NÃO serve para `startedAt`, que afirma um evento medido — daí
- * a distinção entre âncora MEDIDA e âncora INFERIDA.
+ * devolve uma data, caindo em `dueDate`/`dateLastActivity` quando não há nada medido. Essa queda
+ * serve para a âncora histórica, mas NÃO serve para `startedAt`, que afirma um evento medido —
+ * daí a distinção entre âncora MEDIDA e âncora INFERIDA.
  */
 function earliestMeasuredDate(task: PlannedTask): Date | undefined {
-  let earliest: Date | undefined;
+  let earliest: Date | undefined = undefined;
+  const consider = (d: Date | undefined | null) => {
+    if (d && (!earliest || d < earliest)) earliest = d;
+  };
   for (const stage of task.stages) {
     for (const seg of stage.segments) {
-      for (const d of [seg.enteredAt, seg.exitedAt]) {
-        if (d && (!earliest || d < earliest)) earliest = d;
-      }
+      consider(seg.enteredAt);
+      consider(seg.exitedAt);
     }
   }
+  consider(task.completedAt);
   return earliest;
+}
+
+/**
+ * A data de criação do card, decodificada do próprio id.
+ *
+ * O id de um card do Trello é um ObjectId do MongoDB: os 4 primeiros bytes (8 dígitos hex) são o
+ * instante da criação em segundos. É a única fonte de criação que o export carrega — nenhum campo
+ * a traz —, e ela é medição, não inferência. Sem isto, `createdAt` recebia a âncora histórica (o
+ * primeiro evento conhecido), o que faz `startedAt` coincidir com `createdAt` em toda demanda com
+ * data medida e leva `getLeadTimeMetrics` (lib/actions/reporting.ts) a afirmar "fila de zero dia"
+ * onde não há evidência nenhuma sobre a fila.
+ *
+ * Devolve `null` quando o id não tem a forma de um ObjectId ou quando a data decodificada é
+ * implausível — o chamador cai na âncora histórica, sem inventar nada.
+ */
+function cardCreatedAt(card: PlannedTask["card"]): Date | null {
+  if (!/^[0-9a-f]{24}$/i.test(card.id)) return null;
+  const at = new Date(parseInt(card.id.slice(0, 8), 16) * 1000);
+  if (Number.isNaN(at.getTime())) return null;
+  const ano = at.getUTCFullYear();
+  if (ano < 2011 || ano > 2100) return null; // o Trello não existia antes de 2011
+  return at;
 }
 
 /**

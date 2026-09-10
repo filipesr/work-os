@@ -875,6 +875,118 @@ describe("applyImportPlan — startedAt só com data medida", () => {
   });
 });
 
+// Rodada de conserto residual (revisão da rodada de conserto). Três buracos que a re-revisão
+// achou: a regra "saída medida também é início" não estava presa por teste nenhum; `completedAt`
+// vindo de `dateCompleted` podia ser ANTERIOR à primeira data medida, gravando lead time negativo;
+// e `createdAt` caía na âncora histórica quando o próprio id do card carrega a data de criação.
+describe("applyImportPlan — a data de criação sai do id do card", () => {
+  function planComCard(c: ExportCard, stages: PlannedStage[], dueDate: Date | null = null) {
+    return {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [plannedTask({ card: c, stages, dueDate })],
+      skipped: [],
+      unmatchedPeople: [],
+    } as ImportPlan;
+  }
+
+  function criacaoGravada(prisma: PrismaClient): Date {
+    return (prisma.task.create as ReturnType<typeof vi.fn>).mock.calls[0][0].data.createdAt;
+  }
+
+  it("id do Trello vira a data real de criação, não a âncora do primeiro evento", async () => {
+    const prisma = fakePrisma();
+    // 680b9786 = 2025-04-25T14:09:10Z. É o mesmo card real do export (INm0k5De).
+    const c = card({ id: "680b97863a68fa141b15a0f9", shortUrl: "https://trello.com/c/x1" });
+    const plan = planComCard(c, [
+      stage({ segments: [{ enteredAt: new Date("2026-08-14T12:00:00.000Z") }] }),
+    ]);
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    expect(criacaoGravada(prisma)).toEqual(new Date("2025-04-25T14:09:10.000Z"));
+  });
+
+  it("id que não é um ObjectId cai na âncora histórica, sem inventar data", async () => {
+    const prisma = fakePrisma();
+    const primeiroEvento = new Date("2026-08-14T12:00:00.000Z");
+    const plan = planComCard(card({ id: "c1", shortUrl: "https://trello.com/c/x2" }), [
+      stage({ segments: [{ enteredAt: primeiroEvento }] }),
+    ]);
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    expect(criacaoGravada(prisma)).toEqual(primeiroEvento);
+  });
+
+  it("criação posterior ao primeiro evento é incoerente e cai na âncora", async () => {
+    const prisma = fakePrisma();
+    // 680b9786 = 2025-04-25; o evento medido é de 2024, ANTES da criação decodificada.
+    const primeiroEvento = new Date("2024-01-10T09:00:00.000Z");
+    const plan = planComCard(card({ id: "680b97863a68fa141b15a0f9", shortUrl: "https://t/x3" }), [
+      stage({ segments: [{ enteredAt: primeiroEvento }] }),
+    ]);
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    expect(criacaoGravada(prisma)).toEqual(primeiroEvento);
+  });
+});
+
+describe("applyImportPlan — o início nunca é posterior à conclusão", () => {
+  it("demanda cuja única data medida é uma SAÍDA começa nela — saída prova que já tinha começado", async () => {
+    const prisma = fakePrisma();
+    const saida = new Date("2026-01-07T10:00:00.000Z");
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          stages: [stage({ segments: [{ exitedAt: saida }] })],
+          dueDate: new Date("2025-11-01T00:00:00.000Z"),
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    const carimbos = (prisma.task.updateMany as ReturnType<typeof vi.fn>).mock.calls
+      .filter((c) => c[0]?.data?.startedAt !== undefined)
+      .map((c) => c[0]);
+    expect(carimbos).toHaveLength(1);
+    expect(carimbos[0].data.startedAt).toEqual(saida);
+  });
+
+  it("conclusão anterior a todo segmento datado também conta como data medida", async () => {
+    const prisma = fakePrisma();
+    // O caso real do card "Trend Que venden?": dateCompleted às 11:56, único anexo às 12:05.
+    const conclusao = new Date("2026-08-03T11:56:41.545Z");
+    const anexo = new Date("2026-08-03T12:05:46.449Z");
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-08", name: "AtlanticoShop 2026-08", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          monthKey: "2026-08",
+          status: "COMPLETED",
+          completedAt: conclusao,
+          stages: [stage({ segments: [{ enteredAt: anexo }], completed: true })],
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    const carimbos = (prisma.task.updateMany as ReturnType<typeof vi.fn>).mock.calls
+      .filter((c) => c[0]?.data?.startedAt !== undefined)
+      .map((c) => c[0]);
+    expect(carimbos).toHaveLength(1);
+    // Sem isto, startedAt (12:05) seria POSTERIOR a completedAt (11:56) — lead time negativo.
+    expect(carimbos[0].data.startedAt).toEqual(conclusao);
+  });
+});
+
 describe("applyImportPlan — pré-condição do template", () => {
   it("aborta antes de escrever quando o template não tem uma etapa que o plano precisa", async () => {
     const prisma = fakePrisma();
