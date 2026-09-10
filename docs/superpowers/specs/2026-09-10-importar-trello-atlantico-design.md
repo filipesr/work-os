@@ -156,8 +156,13 @@ concluídos nem seguem pendentes, e o próprio schema descreve esse estado como 
 pendentes/%". Marcá-los `COMPLETED` inventaria 83 conclusões em audiovisual; deixá-los
 `IN_PROGRESS` encheria a fila de trabalho que ninguém vai fazer.
 
-`Task.completedAt` recebe `dateClosed` **apenas** quando o status for `COMPLETED` — é o que alimenta
-lead time, e datá-lo com o arquivamento de um card abandonado corromperia a medida.
+`Task.completedAt` só existe quando o status for `COMPLETED` — é o que alimenta lead time, e
+datá-lo com o arquivamento de um card abandonado corromperia a medida. A data vem, nesta ordem, da
+**movimentação registrada para `Concluido`** (o evento, datado: 41 dos 52 cards da lista) ou de
+`dateCompleted` (38); juntas cobrem 48 das 51 demandas concluídas, e as 3 restantes ficam sem data
+em vez de ganharem uma inventada. `dateClosed` **não** serve aqui: ele só é preenchido em card
+arquivado, e card arquivado fora de `Concluido` é `OBSOLETE` — nos 52 da lista `Concluido` ele está
+nulo em 52.
 
 A prioridade sai dos rótulos, e só deles: `URGENTE` → `URGENT`; `PRIORIDAD` ou `IMPORTANTE` → `HIGH`;
 sem rótulo → o padrão `MEDIUM`. São 26 cards com algum desses rótulos; os outros 203 ficam no padrão.
@@ -240,13 +245,13 @@ uma etapa incluída) valem por construção, não por reimplementação.
 
 ### As linhas que o histórico precisa escrever
 
-| Linha             | O que a importação grava                                                                             |
-| ----------------- | ---------------------------------------------------------------------------------------------------- |
-| `Task`            | título com prefixo de rótulo, descrição, prazo, prioridade, status, `completedAt` quando `COMPLETED` |
-| `TaskActiveStage` | uma por etapa incluída, com responsável quando conhecido                                             |
-| `TaskStageLog`    | `enteredAt` / `exitedAt` **históricos** — é daqui que sai o tempo por etapa                          |
-| `StageTransition` | a sequência observada, datada                                                                        |
-| `ReworkEvent`     | as devoluções da revisão — ver abaixo                                                                |
+| Linha             | O que a importação grava                                                                                                                                                                                               |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Task`            | título com prefixo de rótulo, descrição, prazo, prioridade, status, `completedAt` quando `COMPLETED`, `startedAt` quando há data medida (111 das 204)                                                                  |
+| `TaskActiveStage` | uma por etapa incluída, com responsável quando conhecido. Etapa não concluída de demanda `COMPLETED` ou `OBSOLETE` nasce `INACTIVE`, não `ACTIVE`: o trabalho parou, e deixá-la ativa a jogaria na carga atual do time |
+| `TaskStageLog`    | `enteredAt` / `exitedAt` **históricos** — é daqui que sai o tempo por etapa. Só para segmento com **entrada medida** (187 dos 326): sem entrada, não há permanência a medir                                            |
+| `StageTransition` | a sequência observada, datada. Segmento sem entrada medida grava só a saída                                                                                                                                            |
+| `ReworkEvent`     | as devoluções da revisão — ver abaixo                                                                                                                                                                                  |
 
 **As 21 devoluções viram `ReworkEvent` de tipo `INTERNAL`** (pego dentro do processo, antes do
 cliente). A `sourceStage` é a etapa que **injetou** o defeito — `Desenho` ou `Audio Visual` —, não a
