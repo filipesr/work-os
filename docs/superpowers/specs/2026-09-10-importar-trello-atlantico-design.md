@@ -47,13 +47,13 @@ para revisão individual.
 
 | Evidência                           | Demandas |
 | ----------------------------------- | -------: |
-| Descrição                           |      175 |
-| Prazo (`due`)                       |      108 |
-| Responsável declarado (`idMembers`) |      106 |
-| Anexo com autor e data              |       95 |
-| **Só o título**                     |   **14** |
+| Descrição                           |      176 |
+| Prazo (`due`)                       |      122 |
+| Responsável declarado (`idMembers`) |      116 |
+| Anexo com autor e data              |      109 |
+| **Só o título**                     |   **11** |
 
-As 14 entram assim mesmo. São demanda pelo critério acordado, e deixá-las fora criaria uma segunda
+As 11 entram assim mesmo. São demanda pelo critério acordado, e deixá-las fora criaria uma segunda
 lista de exceções para alguém revisar depois — custo maior que o de importá-las pobres.
 
 ## O fluxo real, extraído das movimentações
@@ -105,7 +105,7 @@ da importação (P1 — nada num dado é inerentemente informacional; só o uso 
 **Projetos:** um por mês, **17 no total** (2025-05 → 2026-09), nomeados `AtlanticoShop YYYY-MM`. O mês
 sai do `due` quando existe, senão de `dateLastActivity`. O mês de 2025-04 tinha uma única demanda sem
 etapa mapeável, que caiu nos descartados. A distribuição é desigual (julho e agosto de
-2026 concentram 90 das 204), mas isso é o histórico, não distorção da importação.
+2026 concentram 89 das 204), mas isso é o histórico, não distorção da importação.
 
 **Template:** `Demanda GoOn`, com as etapas:
 
