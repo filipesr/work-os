@@ -1,4 +1,5 @@
 import type { ArtifactMediaType, Prisma, PrismaClient } from "@prisma/client";
+import { recordStageTransition } from "@/lib/stage-transitions";
 import { createTaskCore } from "@/lib/task-create-core";
 import type { ReworkEvent } from "@/lib/trello/map-rework";
 import type { StageName } from "@/lib/trello/map-stages";
@@ -127,13 +128,31 @@ async function resolveWriteContext(
     }
   }
 
+  // Rodada de conserto 1: `clientId` é DADO (plan.ts), não texto derivado do nome do projeto — ver
+  // BuildImportPlanOptions.clientId. Checar aqui, antes de abrir a primeira transação, é a mesma
+  // lógica do template acima: um plano sem cliente é a importação inteira mal configurada, não "um
+  // mês quebrado" — nenhum mês deveria ser tocado.
+  const monthWithoutClient = plan.projects.find((p) => !p.clientId);
+  if (monthWithoutClient) {
+    throw new Error(
+      `Projeto "${monthWithoutClient.name}" sem clientId — quem monta o plano precisa passar ` +
+        `opts.clientId em buildImportPlan (lib/trello/plan.ts). Abortando antes de escrever ` +
+        `qualquer coisa.`
+    );
+  }
+
   return { templateId: template?.id ?? "", stageIdByName, importedById };
 }
 
-/** Acha o projeto mensal pelo nome (idempotência do projeto) ou cria, contra o Client já existente. */
+/** Acha o projeto mensal pelo nome (idempotência do projeto) ou cria contra `proj.clientId` — o
+ * dado que o plano já carrega, não mais derivado cortando o sufixo " <monthKey>" do nome (rodada
+ * de conserto 1: essa derivação amarrava a identidade do Client a uma convenção de texto de outro
+ * módulo — um projeto renomeado, ou uma mudança no formato de `plan.ts`, faria procurar o cliente
+ * errado, ou nenhum). Se `proj.clientId` apontar para um Client inexistente, o `project.create`
+ * abaixo lança por violação de FK — falha alta e clara, não um cliente adivinhado. */
 async function resolveProjectId(
   tx: Prisma.TransactionClient,
-  proj: { monthKey: string; name: string },
+  proj: { monthKey: string; name: string; clientId: string },
   report: ImportReport
 ): Promise<string> {
   const existing = await tx.project.findFirst({ where: { name: proj.name }, select: { id: true } });
@@ -142,17 +161,7 @@ async function resolveProjectId(
     return existing.id;
   }
 
-  // O nome do projeto é "<clientName> <monthKey>" (plan.ts) — tirar o sufixo " <monthKey>" devolve
-  // o clientName sem duplicar a regra de nomeação aqui.
-  const clientName = proj.name.slice(0, proj.name.length - proj.monthKey.length - 1);
-  const client = await tx.client.findFirst({ where: { name: clientName }, select: { id: true } });
-  if (!client) {
-    throw new Error(
-      `Cliente "${clientName}" não encontrado — a importação espera que ele já exista.`
-    );
-  }
-
-  const created = await tx.project.create({ data: { name: proj.name, clientId: client.id } });
+  const created = await tx.project.create({ data: { name: proj.name, clientId: proj.clientId } });
   report.projectsCreated += 1;
   return created.id;
 }
@@ -205,14 +214,17 @@ async function writeTask(
     await fixupStage(tx, taskId, stage, ctx.stageIdByName, historicalAt);
   }
 
-  // O log que createTaskStages abriu sozinho (só para a etapa de ENTRADA, com `at` genérico) não
-  // reflete a jornada real — reconstruímos do zero, um TaskStageLog por segmento de cada etapa.
-  // Sem restrição de unicidade em TaskStageLog (ao contrário de TaskActiveStage): é assim que uma
-  // etapa revisitada duas vezes vira duas linhas de log e permanece UMA linha de TaskActiveStage.
+  // O log e as transições que createTaskCore→createTaskStages abriram sozinhos (só para a etapa de
+  // ENTRADA, num único instante genérico) não refletem a jornada real — reconstruímos os dois do
+  // zero, um TaskStageLog E um par de StageTransition (entrada/saída) por SEGMENTO de cada etapa.
+  // Sem restrição de unicidade em TaskStageLog nem em StageTransition (ao contrário de
+  // TaskActiveStage): é assim que uma etapa revisitada duas vezes vira duas linhas de log,
+  // transições datadas nos dois instantes reais, e permanece UMA linha de TaskActiveStage.
   await tx.taskStageLog.deleteMany({ where: { taskId } });
+  await tx.stageTransition.deleteMany({ where: { taskId } });
   const reworkTimes = new Set(task.rework.map((r) => r.at.getTime()));
   for (const stage of task.stages) {
-    await writeStageLogs(
+    await writeStageHistory(
       tx,
       taskId,
       stage,
@@ -266,15 +278,32 @@ async function fixupStage(
 }
 
 /**
- * Um `TaskStageLog` por segmento (por visita à etapa). `status`:
+ * Um `TaskStageLog` E um par de `StageTransition` (entrada/saída) por segmento (por visita à
+ * etapa) — as duas tabelas que reconstroem a jornada real, escritas juntas porque compartilham a
+ * mesma pergunta ("este segmento fechou como quê?").
+ *
+ * `TaskStageLog.status`:
  *   - segmento ainda sem saída → `null` (em curso, mesma semântica do produto vivo);
  *   - segmento de "Quality Control" cuja saída bate com o instante de um retrabalho → `REVERTED`
  *     — é o que liga o log ao `ReworkEvent` (mesmo carimbo `at`/`exitedAt`, ver map-rework.ts);
  *   - qualquer outro segmento com saída → `COMPLETED`.
  * `userId`: o responsável pela etapa quando conhecido (é quem de fato moveu a tarefa), senão quem
  * rodou a importação.
+ *
+ * `StageTransition` (rodada de conserto 1 — Task 1 desta entrega deu `at` a `recordStageTransition`
+ * exatamente para isto, e não estava sendo usado): toda entrada de segmento grava `ACTIVE` na data
+ * de entrada — é o que `lib/actions/project-timeline.ts`/`reporting.ts`/`client-load.ts` leem para
+ * a linha do tempo e os relatórios de fluxo, e sem isto as 204 demandas históricas apareceriam com
+ * transições datadas do momento da importação, não do Trello. Toda SAÍDA de segmento grava:
+ *   - `INACTIVE` na data da saída, quando REVERTED — NÃO um "REVERTED" inventado (o enum
+ *     `ActiveStageStatus` não tem esse valor): é o status exato que `revertTaskStage`
+ *     (lib/actions/task.ts) já grava para a etapa de onde se reverte (reset — "a ser reconquistada",
+ *     via `recordStageTransitions(..., "INACTIVE")` sobre as etapas de order maior que o alvo).
+ *     Reusar o mesmo valor em vez de inventar um novo mantém `statusDurations`
+ *     (lib/stage-transitions.ts) lendo a mesma máquina de estados nos dois caminhos.
+ *   - `COMPLETED` na data da saída, nos demais casos.
  */
-async function writeStageLogs(
+async function writeStageHistory(
   tx: Prisma.TransactionClient,
   taskId: string,
   stage: PlannedStage,
@@ -287,9 +316,11 @@ async function writeStageLogs(
   const userId = stage.assigneeUserId ?? importedById;
 
   for (const seg of stage.segments) {
-    let status: "COMPLETED" | "REVERTED" | null = null;
+    const enteredAt = seg.enteredAt ?? historicalAt;
+
+    let logStatus: "COMPLETED" | "REVERTED" | null = null;
     if (seg.exitedAt) {
-      status =
+      logStatus =
         stage.stageName === "Quality Control" && reworkTimes.has(seg.exitedAt.getTime())
           ? "REVERTED"
           : "COMPLETED";
@@ -300,11 +331,17 @@ async function writeStageLogs(
         taskId,
         stageId,
         userId,
-        enteredAt: seg.enteredAt ?? historicalAt,
+        enteredAt,
         exitedAt: seg.exitedAt ?? null,
-        status,
+        status: logStatus,
       },
     });
+
+    await recordStageTransition(tx, taskId, stageId, "ACTIVE", enteredAt);
+    if (seg.exitedAt) {
+      const exitStatus = logStatus === "REVERTED" ? "INACTIVE" : "COMPLETED";
+      await recordStageTransition(tx, taskId, stageId, exitStatus, seg.exitedAt);
+    }
   }
 }
 

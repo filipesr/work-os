@@ -35,6 +35,7 @@ function fakePrisma(opts: { artifactExistsFor?: string[] } = {}) {
   const existingArtifactUrls = new Set(opts.artifactExistsFor ?? []);
   const projectsByName = new Map<string, { id: string }>();
   const stageLogRows: Array<Record<string, unknown>> = [];
+  const stageTransitionRows: Array<Record<string, unknown>> = [];
   let taskSeq = 0;
   let projectSeq = 0;
 
@@ -42,9 +43,9 @@ function fakePrisma(opts: { artifactExistsFor?: string[] } = {}) {
     workflowTemplate: {
       findFirst: vi.fn().mockResolvedValue(TEMPLATE),
     },
-    client: {
-      findFirst: vi.fn().mockResolvedValue({ id: "client1", name: "AtlanticoShop" }),
-    },
+    // Sem mock de `client` (o model `Client`, não a variável `client` deste fake): rodada de
+    // conserto 1 tirou a derivação por nome do projeto — o escritor usa `proj.clientId` direto,
+    // nunca consulta o model `Client`.
     project: {
       findFirst: vi.fn().mockImplementation(async ({ where }: { where: { name: string } }) => {
         return projectsByName.get(where.name) ?? null;
@@ -92,8 +93,23 @@ function fakePrisma(opts: { artifactExistsFor?: string[] } = {}) {
       _rows: stageLogRows,
     },
     stageTransition: {
-      create: vi.fn().mockResolvedValue({}),
+      // Mesmo motivo do `_rows` de `taskStageLog` acima: `writer.ts` agora também apaga e
+      // reconstrói StageTransition por segmento (rodada de conserto 1) — sem estado real, os
+      // testes veriam a transição fantasma que createTaskCore→createTaskStages grava na criação.
+      create: vi.fn().mockImplementation(async ({ data }: { data: Record<string, unknown> }) => {
+        const row = { id: `trans-${stageTransitionRows.length + 1}`, at: new Date(), ...data };
+        stageTransitionRows.push(row);
+        return row;
+      }),
       createMany: vi.fn().mockResolvedValue({}),
+      deleteMany: vi.fn().mockImplementation(async ({ where }: { where: { taskId: string } }) => {
+        const before = stageTransitionRows.length;
+        for (let i = stageTransitionRows.length - 1; i >= 0; i--) {
+          if (stageTransitionRows[i].taskId === where.taskId) stageTransitionRows.splice(i, 1);
+        }
+        return { count: before - stageTransitionRows.length };
+      }),
+      _rows: stageTransitionRows,
     },
     taskComment: {
       createMany: vi.fn().mockResolvedValue({}),
@@ -155,7 +171,7 @@ function plannedTask(overrides: Partial<PlannedTask> = {}): PlannedTask {
 function planCom(urls: string[]): ImportPlan {
   const tasks = urls.map((url, i) => plannedTask({ card: card({ id: `c${i}`, shortUrl: url }) }));
   return {
-    projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01" }],
+    projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
     tasks,
     skipped: [],
     unmatchedPeople: [],
@@ -212,7 +228,7 @@ describe("applyImportPlan — artefatos", () => {
   it("cada demanda ganha o artefato do card original e um por anexo", async () => {
     const prisma = fakePrisma();
     const plan: ImportPlan = {
-      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01" }],
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
       tasks: [
         plannedTask({
           card: card({
@@ -267,8 +283,8 @@ describe("applyImportPlan — transação por projeto mensal", () => {
 
     const plan: ImportPlan = {
       projects: [
-        { monthKey: "2026-01", name: "AtlanticoShop 2026-01" },
-        { monthKey: "2026-02", name: "AtlanticoShop 2026-02" },
+        { monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" },
+        { monthKey: "2026-02", name: "AtlanticoShop 2026-02", clientId: "client1" },
       ],
       tasks: [
         plannedTask({
@@ -299,7 +315,7 @@ describe("applyImportPlan — o estado da etapa reflete o que aconteceu", () => 
     const saiuDesenho = new Date("2026-01-06T10:00:00.000Z");
 
     const plan: ImportPlan = {
-      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01" }],
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
       tasks: [
         plannedTask({
           stages: [
@@ -341,7 +357,7 @@ describe("applyImportPlan — o estado da etapa reflete o que aconteceu", () => 
   it("atribuição histórica ignora o time efetivo de hoje — é fato passado, não roteamento novo", async () => {
     const prisma = fakePrisma();
     const plan: ImportPlan = {
-      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01" }],
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
       tasks: [
         plannedTask({
           stages: [stage({ stageName: "Desenho", assigneeUserId: "designer-fora-do-time" })],
@@ -366,7 +382,7 @@ describe("applyImportPlan — o log de etapa, um por segmento", () => {
     const devolvidoEm = new Date("2026-01-03T10:00:00.000Z");
 
     const plan: ImportPlan = {
-      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01" }],
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
       tasks: [
         plannedTask({
           stages: [
@@ -419,12 +435,118 @@ describe("applyImportPlan — o log de etapa, um por segmento", () => {
     expect(desenhoLogs[1].status).toBeNull(); // ainda em curso — sem saída, sem status
   });
 
+  it("a mesma ida-e-volta produz StageTransition datadas no passado, uma entrada por segmento e uma saída por segmento fechado", async () => {
+    const prisma = fakePrisma();
+    const entrouDesenho1 = new Date("2026-01-01T10:00:00.000Z");
+    const entrouQC = new Date("2026-01-02T10:00:00.000Z");
+    const devolvidoEm = new Date("2026-01-03T10:00:00.000Z");
+    const antesDoTeste = new Date();
+
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          stages: [
+            stage({
+              stageName: "Desenho",
+              segments: [
+                { enteredAt: entrouDesenho1, exitedAt: entrouQC },
+                { enteredAt: devolvidoEm }, // reaberta pela devolução, ainda em curso — só entrada
+              ],
+              completed: false,
+            }),
+            stage({
+              stageName: "Quality Control",
+              segments: [{ enteredAt: entrouQC, exitedAt: devolvidoEm }],
+              completed: true,
+            }),
+          ],
+          rework: [
+            {
+              at: devolvidoEm,
+              kind: "INTERNAL",
+              sourceStageName: "Desenho",
+              reason: "Devolução da revisão",
+            },
+          ],
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    expect(prisma.stageTransition.deleteMany).toHaveBeenCalledWith({
+      where: { taskId: expect.any(String) },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const transitions = (prisma.stageTransition as any)._rows as any[];
+    // 3 segmentos ao todo (2 no Desenho + 1 na QC); os 2 fechados geram entrada+saída, o aberto só
+    // entrada — 2+2+1 = 5. É a "mesma quantidade dos segmentos" que a rodada de conserto pediu:
+    // cada segmento fechado conta 2 transições, cada aberto conta 1.
+    expect(transitions).toHaveLength(5);
+
+    // Datadas no PASSADO real (a data do Trello), não no instante da importação — é a garantia que
+    // a Task 1 desta entrega (o parâmetro `at`) existe para sustentar.
+    for (const t of transitions) {
+      expect((t.at as Date).getTime()).toBeLessThan(antesDoTeste.getTime());
+    }
+
+    const desenhoTransitions = transitions.filter((t) => t.stageId === "s-desenho");
+    expect(desenhoTransitions).toEqual([
+      {
+        id: expect.any(String),
+        taskId: expect.any(String),
+        stageId: "s-desenho",
+        status: "ACTIVE",
+        at: entrouDesenho1,
+      },
+      {
+        id: expect.any(String),
+        taskId: expect.any(String),
+        stageId: "s-desenho",
+        status: "COMPLETED",
+        at: entrouQC,
+      },
+      {
+        id: expect.any(String),
+        taskId: expect.any(String),
+        stageId: "s-desenho",
+        status: "ACTIVE",
+        at: devolvidoEm,
+      },
+      // segundo segmento ainda aberto: sem transição de saída.
+    ]);
+
+    // A saída da QC foi por devolução — INACTIVE (o mesmo status que `revertTaskStage` grava para a
+    // etapa de onde se reverte), não um "REVERTED" inventado (ActiveStageStatus não tem esse valor).
+    const qcTransitions = transitions.filter((t) => t.stageId === "s-qc");
+    expect(qcTransitions).toEqual([
+      {
+        id: expect.any(String),
+        taskId: expect.any(String),
+        stageId: "s-qc",
+        status: "ACTIVE",
+        at: entrouQC,
+      },
+      {
+        id: expect.any(String),
+        taskId: expect.any(String),
+        stageId: "s-qc",
+        status: "INACTIVE",
+        at: devolvidoEm,
+      },
+    ]);
+  });
+
   it("retrabalho vira ReworkEvent com a etapa-origem e o responsável capturado na reversão", async () => {
     const prisma = fakePrisma();
     const devolvidoEm = new Date("2026-01-03T10:00:00.000Z");
 
     const plan: ImportPlan = {
-      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01" }],
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
       tasks: [
         plannedTask({
           stages: [
@@ -493,7 +615,7 @@ describe("applyImportPlan — pré-condição do template", () => {
       stages: [{ id: "s-desenho", name: "Desenho" }], // falta "Audio Visual" etc.
     });
     const plan: ImportPlan = {
-      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01" }],
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
       tasks: [plannedTask({ stages: [stage({ stageName: "Quality Control" })] })],
       skipped: [],
       unmatchedPeople: [],

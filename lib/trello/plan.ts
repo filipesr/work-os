@@ -25,6 +25,18 @@ export interface BuildImportPlanOptions {
    * caixas diferentes ("Concluido" e "concluido") — casar por nome exato replica a mesma escolha já
    * fixada em map-task.test.ts (`CONCLUIDO_LIST_ID`), sem inventar um critério novo aqui. */
   concludoListName?: string;
+  /** ID do `Client` (WorkOS) dono dos projetos mensais — repassado verbatim para
+   * `ImportPlan.projects[].clientId`, sem tocar o banco aqui (plan.ts continua puro). Usado pelo
+   * escritor (Task 9, lib/trello/writer.ts) para criar/achar o `Project` de cada mês.
+   *
+   * Rodada de conserto 1: antes, o escritor DERIVAVA o cliente cortando o sufixo " <monthKey>" do
+   * nome do projeto — amarrava a identidade de uma entidade a uma convenção de texto de outro
+   * módulo (`clientName` abaixo, que só serve pra COMPOR O NOME, nunca para achar o registro).
+   * Passar o id explícito aqui fecha essa amarra: quem monta o plano decide o cliente com um dado,
+   * não com um recorte de string. Padrão `""` só para não quebrar quem constrói plano sem cliente
+   * real (testes de plan.ts, que não escrevem no banco); o escritor recusa `clientId` vazio antes
+   * de abrir qualquer transação — ver `resolveWriteContext` em writer.ts. */
+  clientId?: string;
 }
 
 /**
@@ -66,7 +78,7 @@ export interface SkippedCard {
 }
 
 export interface ImportPlan {
-  projects: { monthKey: string; name: string }[];
+  projects: { monthKey: string; name: string; clientId: string }[];
   tasks: PlannedTask[];
   skipped: SkippedCard[];
   unmatchedPeople: TrelloMember[];
@@ -154,9 +166,11 @@ export function buildImportPlan(
     });
   }
 
+  const clientId = opts.clientId ?? "";
   const projects = [...monthKeys].sort().map((monthKey) => ({
     monthKey,
     name: `${clientName} ${monthKey}`,
+    clientId,
   }));
 
   return { projects, tasks, skipped, unmatchedPeople: unmatched };

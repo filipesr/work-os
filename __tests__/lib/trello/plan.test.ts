@@ -128,6 +128,16 @@ describe("buildImportPlan", () => {
     expect(p.projects.map((x) => x.name)).toContain("OutroCliente 2026-07");
   });
 
+  it("opts.clientId vira o clientId de cada projeto — dado, não recorte do nome", () => {
+    const p = buildImportPlan(baseBoard, USERS, { clientId: "client-real-id" });
+    expect(p.projects.every((x) => x.clientId === "client-real-id")).toBe(true);
+  });
+
+  it("sem opts.clientId, o projeto nasce com clientId vazio — plan.ts continua puro, sem inventar id", () => {
+    const p = buildImportPlan(baseBoard, USERS, {});
+    expect(p.projects.every((x) => x.clientId === "")).toBe(true);
+  });
+
   it("membro do Trello sem casamento no WorkOS vai para unmatchedPeople", () => {
     const p = buildImportPlan(baseBoard, [], {});
     expect(p.unmatchedPeople.map((m) => m.id)).toContain("tMartin");
