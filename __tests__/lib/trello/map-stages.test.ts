@@ -251,4 +251,121 @@ describe("planStages", () => {
     // A lista ("DISEÑO - MARTIN") resolveria "tMartin" via ctx — mas nível 2 não pode herdar isso.
     expect(r.stages[0].assigneeTrelloId).toBeUndefined();
   });
+
+  describe("nível 2 — lista sem correspondência de produção: o mimeType do anexo decide a etapa", () => {
+    // "L_JULIO" não está em listNamesById (ctx()) — mapeia para nenhuma etapa, como as listas
+    // organizacionais reais do quadro (Julio, ANOTACIONES, Concluido sem movimentação). É evidência,
+    // não inferência: o arquivo anexado prova o que foi produzido, mesmo quando a lista não prova
+    // por onde o card andou.
+    it("anexo de vídeo vira Audio Visual", () => {
+      const r = planStages(
+        card({
+          idList: "L_JULIO",
+          attachments: [
+            anexo({ idMember: "tAlguem", date: "2026-04-01T10:00:00Z", mimeType: "video/mp4" }),
+          ],
+        }),
+        [],
+        ctx()
+      );
+      expect(r.tier).toBe(2);
+      expect(r.stages).toHaveLength(1);
+      expect(r.stages[0].stageName).toBe("Audio Visual");
+    });
+
+    it("anexo de imagem vira Desenho", () => {
+      const r = planStages(
+        card({
+          idList: "L_JULIO",
+          attachments: [
+            anexo({ idMember: "tAlguem", date: "2026-04-01T10:00:00Z", mimeType: "image/png" }),
+          ],
+        }),
+        [],
+        ctx()
+      );
+      expect(r.tier).toBe(2);
+      expect(r.stages).toHaveLength(1);
+      expect(r.stages[0].stageName).toBe("Desenho");
+    });
+
+    it("anexo PDF também vira Desenho", () => {
+      const r = planStages(
+        card({
+          idList: "L_JULIO",
+          attachments: [
+            anexo({
+              idMember: "tAlguem",
+              date: "2026-04-01T10:00:00Z",
+              mimeType: "application/pdf",
+            }),
+          ],
+        }),
+        [],
+        ctx()
+      );
+      expect(r.stages[0].stageName).toBe("Desenho");
+    });
+
+    it("anexo misto (imagem e vídeo no mesmo card): vídeo vence — produzir o vídeo já implica ter produzido as artes que entram nele", () => {
+      const r = planStages(
+        card({
+          idList: "L_JULIO",
+          attachments: [
+            anexo({
+              id: "a1",
+              idMember: "tAlguem",
+              date: "2026-04-01T09:00:00Z",
+              mimeType: "image/png",
+            }),
+            anexo({
+              id: "a2",
+              idMember: "tAlguem",
+              date: "2026-04-01T10:00:00Z",
+              mimeType: "video/mp4",
+            }),
+          ],
+        }),
+        [],
+        ctx()
+      );
+      expect(r.stages).toHaveLength(1);
+      expect(r.stages[0].stageName).toBe("Audio Visual");
+    });
+
+    it("anexo de tipo não reconhecido (nem vídeo, nem imagem, nem PDF) continua sem etapa — indeterminado", () => {
+      const r = planStages(
+        card({
+          idList: "L_JULIO",
+          attachments: [
+            anexo({
+              idMember: "tAlguem",
+              date: "2026-04-01T10:00:00Z",
+              mimeType: "application/zip",
+            }),
+          ],
+        }),
+        [],
+        ctx()
+      );
+      expect(r.tier).toBe(2);
+      expect(r.stages).toEqual([]);
+    });
+
+    it("quando a lista JÁ é de produção, o mimeType não é consultado — a lista continua decidindo", () => {
+      // Card em "DISEÑO - MARTIN" com anexo de vídeo: a lista já resolve a etapa (Desenho); o
+      // mimeType só entra como desempate quando a lista NÃO decide.
+      const r = planStages(
+        card({
+          idList: "L_MARTIN",
+          attachments: [
+            anexo({ idMember: "tMartin", date: "2026-04-01T10:00:00Z", mimeType: "video/mp4" }),
+          ],
+        }),
+        [],
+        ctx()
+      );
+      expect(r.stages[0].stageName).toBe("Desenho");
+    });
+  });
 });

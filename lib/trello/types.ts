@@ -8,6 +8,11 @@ export interface Card {
     idMember?: string;
     /** Data do anexo (ISO 8601). Usado por planStages (map-stages.ts) para datar a entrada na etapa de produção quando não há movimentação (nível 2 de evidência). */
     date?: string | null;
+    /** Tipo MIME do arquivo anexado (ex.: "video/mp4", "image/png", "application/pdf"). Usado por
+     * planStages (map-stages.ts) para derivar a etapa de produção (Desenho ou Audio Visual) quando a
+     * lista onde o card parou não é de produção — é evidência do que foi de fato produzido, não uma
+     * suposição sobre por onde o card andou. */
+    mimeType?: string | null;
   }>;
   /** ID da lista. Usado por mapCardToTask para determinar status (COMPLETED se em "Concluido"). */
   idList?: string;

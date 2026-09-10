@@ -218,16 +218,16 @@ describe("contra o export real", () => {
   const exportExists = fs.existsSync(exportPath);
 
   it.skipIf(!exportExists)(
-    // Números medidos contra o export real (não os 230/18/73 otimistas da spec de desenho, escrita
-    // ANTES desta task existir): a soma bate — 148 + 155 = 303 = total de cards —, mas 82 das 230
-    // demandas (por natureza) ficam de fora por "sem etapa mapeável". A causa: nível 3 de
-    // planStages (map-stages.ts, Task 6) só afirma etapa de produção quando o card está parado em
-    // DISEÑO-*/AUDIOVISUAL; cards parados em listas organizacionais (ANOTACIONES, SM, "Julio",
-    // "Fechas Conmemorativas", BRIEFINGS, ARQUITECTURA) ou em REVISIÓN/LIBERADO/Concluido SEM
-    // movimentação registrada não têm evidência nenhuma — por desenho, não por bug. Essa é
-    // exatamente a armadilha que esta task existe para não deixar virar transação quebrada na
-    // gravação (Task 9): vira descarte com motivo, não demanda vazia. Ver task-8-report.md.
-    "a soma bate com o total de cards, e o descarte por falta de etapa é real, não hipotético (arquivo fora do repo, não existe em CI)",
+    // Números medidos contra o export real, na Rodada de conserto 1 (não os 230/18/73 otimistas da
+    // spec de desenho, escrita ANTES desta task existir, nem os 148/155/82 da primeira rodada desta
+    // task): a soma bate — 204 + 99 = 303 = total de cards. Dos 82 "sem etapa mapeável" da primeira
+    // rodada, 57 tinham anexo datado e só ficavam de fora porque a lista onde o card parou não era
+    // de produção (Julio, Concluido, ANOTACIONES, LIBERADO, COMUNICADOR); map-stages.ts (Task 6)
+    // passou a derivar a etapa do mimeType do anexo nesse caso (vídeo → Audio Visual; imagem/PDF →
+    // Desenho) quando a lista não decide. Restam 26 genuinamente sem evidência nenhuma (sem
+    // movimento, sem anexo, em listas organizacionais como "Fechas Conmemorativas" e "SM") — esses
+    // continuam descartados, com motivo. Ver task-8-report.md.
+    "a soma bate com o total de cards, e o descarte por falta de etapa reflete só o que é mesmo sem evidência (arquivo fora do repo, não existe em CI)",
     () => {
       const data = JSON.parse(fs.readFileSync(exportPath, "utf-8"));
       const realBoard: TrelloBoardExport = {
@@ -252,10 +252,10 @@ describe("contra o export real", () => {
       expect(porMotivo["referencia"]).toBe(10);
       // As duas categorias de descarte que só o joiner decide (não a natureza do card):
       expect(porMotivo["sem mês"]).toBeUndefined();
-      expect(porMotivo["sem etapa mapeável"]).toBe(82);
+      expect(porMotivo["sem etapa mapeável"]).toBe(26);
 
-      expect(p.tasks.length).toBe(148);
-      expect(p.skipped.length).toBe(155);
+      expect(p.tasks.length).toBe(204);
+      expect(p.skipped.length).toBe(99);
 
       for (const t of p.tasks) expect(t.stages.length).toBeGreaterThan(0);
     }

@@ -161,8 +161,14 @@ interface AttachmentEvidence {
 
 /**
  * Nível 2: sem movimentação, mas com anexo. O anexo diz quem produziu (autor) e quando (data) —
- * nada sobre revisão ou aprovação, então a etapa continua sendo só a de produção, resolvida pela
- * mesma lista de origem do nível 3.
+ * nada sobre revisão ou aprovação, então a etapa continua sendo só a de produção.
+ *
+ * QUAL etapa de produção (Desenho ou Audio Visual) vem, em ordem: primeiro a lista de origem do
+ * nível 3 (resolveOriginProductionStage) — se o card parou numa lista de produção, ela decide, como
+ * sempre decidiu. Só quando a lista NÃO decide (parado numa lista organizacional — "Julio",
+ * "ANOTACIONES", "Concluido" sem movimentação — o achado real da revisão desta importação) o
+ * mimeType do anexo entra como segunda evidência: ver deriveStageFromMimeTypes. Se nem a lista nem o
+ * mimeType decidirem, não há etapa nível 2 (cai para descarte no plano — plan.ts).
  *
  * O responsável vem SÓ do anexo — nunca herda o da lista (resolveOriginProductionStage), mesmo
  * quando o anexo não tem autor. Nível 2 existe porque o anexo fala; se ele não disser quem, a
@@ -173,17 +179,58 @@ function planFromAttachment(
   ctx: MapStagesContext,
   attachment: AttachmentEvidence
 ): StagePlan[] {
-  const origin = resolveOriginProductionStage(card, ctx);
-  if (!origin) return [];
+  const stageName =
+    resolveOriginProductionStage(card, ctx)?.stageName ??
+    deriveStageFromMimeTypes(card.attachments);
+  if (!stageName) return [];
 
   return [
     {
-      stageName: origin.stageName,
+      stageName,
       assigneeTrelloId: attachment.assigneeTrelloId,
       segments: [{ enteredAt: attachment.enteredAt ? new Date(attachment.enteredAt) : undefined }],
       completed: false,
     },
   ];
+}
+
+const VIDEO_MIME_PATTERN = /^video\//i;
+const IMAGEM_OU_PDF_MIME_PATTERN = /^(image\/|application\/pdf$)/i;
+
+/**
+ * Deriva a etapa de produção a partir do mimeType dos anexos, quando a lista onde o card parou não
+ * decide (não é `DISEÑO -*`/`AUDIOVISUAL`). É evidência, não inferência: um anexo de vídeo é prova de
+ * que houve produção audiovisual; um anexo de imagem ou PDF é prova de arte/design — não estamos
+ * deduzindo por onde o card andou, estamos lendo o que foi de fato produzido e anexado. Achado real
+ * da revisão desta importação: 57 demandas do export ficavam sem etapa nenhuma só porque a lista
+ * onde pararam (`Julio`, `ANOTACIONES`, `Concluido`, `LIBERADO`, `COMUNICADOR`) não é de produção,
+ * mesmo tendo anexo datado — o tipo do arquivo resolve isso sem inventar nada.
+ *
+ * Anexo misto (imagem E vídeo no mesmo card): vídeo vence. Produzir um vídeo normalmente implica ter
+ * produzido as artes que entram nele (capas, thumbnails, roteiro visual) — o vídeo é o entregável
+ * mais avançado no funil de produção deste quadro, então ele é a etapa mais defensável para o card
+ * inteiro. (Decisão registrada aqui porque não há como medir esse caso no export: é escolha, não
+ * contagem.)
+ *
+ * Só considera anexos com data — a mesma evidência mínima que bestAttachmentEvidence exige para o
+ * nível 2 existir; anexo sem data não sustenta nada, tipo de arquivo ou não. Tipo não reconhecido
+ * (nem vídeo, nem imagem, nem PDF) devolve `undefined` — fica indeterminado, não vira etapa nenhuma.
+ */
+function deriveStageFromMimeTypes(
+  attachments: Card["attachments"]
+): ProductionStageName | undefined {
+  if (!attachments) return undefined;
+  const comData = attachments.filter((a) => a.date);
+
+  const hasVideo = comData.some((a) => a.mimeType && VIDEO_MIME_PATTERN.test(a.mimeType));
+  if (hasVideo) return "Audio Visual";
+
+  const hasImagemOuPdf = comData.some(
+    (a) => a.mimeType && IMAGEM_OU_PDF_MIME_PATTERN.test(a.mimeType)
+  );
+  if (hasImagemOuPdf) return "Desenho";
+
+  return undefined;
 }
 
 /**
