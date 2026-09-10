@@ -708,6 +708,81 @@ describe("applyImportPlan — data histórica, não a de hoje", () => {
   });
 });
 
+// A visita de ORIGEM da primeira movimentação nasce sem `enteredAt`: ninguém sabe quando o card
+// entrou na primeira lista, só quando saiu (map-stages.ts). Com `enteredAt: seg.enteredAt ??
+// historicalAt` — e `historicalAt` sendo, por construção, o `exitedAt` DESSA MESMA visita — isso
+// virava um TaskStageLog de duração zero e um par de transições no mesmo instante: "0 h em
+// Desenho" gravado como MEDIÇÃO, em 46 segmentos do plano real. É a mesma falta que a Ruling 11
+// consertou uma vez (fundir visitas fabrica duração), reaparecendo na primeira visita.
+describe("applyImportPlan — segmento sem entrada medida não fabrica permanência", () => {
+  const saiu = new Date("2026-01-06T10:00:00.000Z");
+
+  function planComSegmento(seg: { enteredAt?: Date; exitedAt?: Date }): ImportPlan {
+    return {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          stages: [
+            stage({ stageName: "Desenho", segments: [seg], completed: seg.exitedAt !== undefined }),
+          ],
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+  }
+
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  function linhas(prisma: PrismaClient) {
+    return {
+      logs: (prisma.taskStageLog as any)._rows as any[],
+      transitions: (prisma.stageTransition as any)._rows as any[],
+    };
+  }
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+
+  it("segmento só com saída: zero TaskStageLog e exatamente uma transição, na data da saída", async () => {
+    const prisma = fakePrisma();
+    await applyImportPlan(prisma, planComSegmento({ exitedAt: saiu }), {
+      commit: true,
+      importedById: "u1",
+    });
+
+    const { logs, transitions } = linhas(prisma);
+    // `TaskStageLog.enteredAt` é obrigatório no schema e não há valor honesto para ele — a entrada
+    // não aconteceu num instante conhecido, então a linha não existe.
+    expect(logs).toHaveLength(0);
+    expect(transitions).toHaveLength(1);
+    expect(transitions[0]).toMatchObject({ stageId: "s-desenho", status: "COMPLETED", at: saiu });
+  });
+
+  it("segmento completo continua produzindo o log e o par de transições", async () => {
+    const prisma = fakePrisma();
+    const entrou = new Date("2026-01-05T10:00:00.000Z");
+    await applyImportPlan(prisma, planComSegmento({ enteredAt: entrou, exitedAt: saiu }), {
+      commit: true,
+      importedById: "u1",
+    });
+
+    const { logs, transitions } = linhas(prisma);
+    expect(logs).toHaveLength(1);
+    expect(logs[0]).toMatchObject({ enteredAt: entrou, exitedAt: saiu, status: "COMPLETED" });
+    expect(transitions.map((t) => [t.status, t.at])).toEqual([
+      ["ACTIVE", entrou],
+      ["COMPLETED", saiu],
+    ]);
+  });
+
+  it("segmento sem entrada NEM saída medidas não grava nada — nível 3 é etapa sabida, não medida", async () => {
+    const prisma = fakePrisma();
+    await applyImportPlan(prisma, planComSegmento({}), { commit: true, importedById: "u1" });
+
+    const { logs, transitions } = linhas(prisma);
+    expect(logs).toHaveLength(0);
+    expect(transitions).toHaveLength(0);
+  });
+});
+
 // `createTaskCore` só carimba `startedAt` quando `initialAssigned` é verdadeiro, e o escritor não
 // passa `assignments` de propósito (ver o comentário em writer.ts) — sem este conserto, nenhuma das
 // 204 nasceria com `startedAt`, e `getCycleTimePercentiles` (reporting.ts) filtra

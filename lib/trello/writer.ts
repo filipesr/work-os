@@ -296,15 +296,7 @@ async function writeTask(
   await tx.stageTransition.deleteMany({ where: { taskId } });
   const reworkTimes = new Set(task.rework.map((r) => r.at.getTime()));
   for (const stage of task.stages) {
-    await writeStageHistory(
-      tx,
-      taskId,
-      stage,
-      ctx.stageIdByName,
-      ctx.importedById,
-      reworkTimes,
-      historicalAt
-    );
+    await writeStageHistory(tx, taskId, stage, ctx.stageIdByName, ctx.importedById, reworkTimes);
   }
 
   for (const rework of task.rework) {
@@ -384,6 +376,20 @@ function stageStatusFor(
  * etapa) — as duas tabelas que reconstroem a jornada real, escritas juntas porque compartilham a
  * mesma pergunta ("este segmento fechou como quê?").
  *
+ * **Cada metade do segmento é escrita só se estiver MEDIDA.** A visita de ORIGEM da primeira
+ * movimentação não tem `enteredAt` — ninguém sabe quando o card entrou na primeira lista, só
+ * quando saiu (map-stages.ts). Datar essa entrada com a âncora da demanda fabricava permanência:
+ * `historicalAt` é, por construção de `earliestKnownDate`, o `exitedAt` DESSA MESMA visita, então
+ * o log nascia com `enteredAt == exitedAt` e as duas transições no mesmo instante — 46 segmentos
+ * do plano real, 27 deles em Desenho, gravando "0 h em Desenho" como MEDIÇÃO. É a mesma falta que
+ * a Ruling 11 já consertou uma vez (fundir visitas fabrica duração), reaparecendo na primeira
+ * visita. Sem entrada medida: nenhum `TaskStageLog` (o campo `enteredAt` é obrigatório no schema e
+ * não há valor honesto para ele) e nenhuma transição `ACTIVE` — só a transição de SAÍDA, que
+ * aconteceu e está datada. Sem entrada nem saída medidas: nada.
+ *
+ * `fixupStage` continua usando `historicalAt` como `activatedAt` — aquilo é o carimbo de criação
+ * da LINHA, não uma medição de permanência.
+ *
  * `TaskStageLog.status`:
  *   - segmento ainda sem saída → `null` (em curso, mesma semântica do produto vivo);
  *   - segmento de "Quality Control" cuja saída bate com o instante de um retrabalho → `REVERTED`
@@ -411,15 +417,12 @@ async function writeStageHistory(
   stage: PlannedStage,
   stageIdByName: Map<StageName, string>,
   importedById: string,
-  reworkTimes: Set<number>,
-  historicalAt: Date
+  reworkTimes: Set<number>
 ): Promise<void> {
   const stageId = stageIdByName.get(stage.stageName)!;
   const userId = stage.assigneeUserId ?? importedById;
 
   for (const seg of stage.segments) {
-    const enteredAt = seg.enteredAt ?? historicalAt;
-
     let logStatus: "COMPLETED" | "REVERTED" | null = null;
     if (seg.exitedAt) {
       logStatus =
@@ -428,18 +431,23 @@ async function writeStageHistory(
           : "COMPLETED";
     }
 
-    await tx.taskStageLog.create({
-      data: {
-        taskId,
-        stageId,
-        userId,
-        enteredAt,
-        exitedAt: seg.exitedAt ?? null,
-        status: logStatus,
-      },
-    });
+    // Só a ENTRADA medida gera o log e a transição de entrada. Um segmento sem `enteredAt` (e sem
+    // `exitedAt`) não gera nada: as duas condições abaixo simplesmente não disparam.
+    if (seg.enteredAt) {
+      await tx.taskStageLog.create({
+        data: {
+          taskId,
+          stageId,
+          userId,
+          enteredAt: seg.enteredAt,
+          exitedAt: seg.exitedAt ?? null,
+          status: logStatus,
+        },
+      });
 
-    await recordStageTransition(tx, taskId, stageId, "ACTIVE", enteredAt);
+      await recordStageTransition(tx, taskId, stageId, "ACTIVE", seg.enteredAt);
+    }
+
     if (seg.exitedAt) {
       const exitStatus = logStatus === "REVERTED" ? "INACTIVE" : "COMPLETED";
       await recordStageTransition(tx, taskId, stageId, exitStatus, seg.exitedAt);
