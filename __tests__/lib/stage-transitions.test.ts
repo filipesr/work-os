@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
+  recordStageTransition,
   statusDurations,
   flowEfficiencyRatio,
   statusAt,
@@ -9,6 +10,25 @@ import {
 const H = 3.6e6; // ms per hour
 const base = new Date("2026-07-01T00:00:00.000Z").getTime();
 const at = (hours: number) => new Date(base + hours * H);
+
+describe("recordStageTransition", () => {
+  const makeClient = () => ({ stageTransition: { create: vi.fn().mockResolvedValue({}) } });
+
+  it("sem data explícita, não inclui o campo `at` — o default do banco assume", async () => {
+    const client = makeClient();
+    await recordStageTransition(client as never, "t1", "s1", "ACTIVE");
+    const data = client.stageTransition.create.mock.calls[0][0].data;
+    expect(data).not.toHaveProperty("at");
+  });
+
+  it("com data explícita, grava o campo `at` com a data pedida", async () => {
+    const client = makeClient();
+    const quando = new Date("2025-08-14T10:00:00.000Z");
+    await recordStageTransition(client as never, "t1", "s1", "ACTIVE", quando);
+    const data = client.stageTransition.create.mock.calls[0][0].data;
+    expect(data.at).toEqual(quando);
+  });
+});
 
 describe("statusDurations", () => {
   it("empty input → all zeros", () => {

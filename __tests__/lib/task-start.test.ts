@@ -44,4 +44,19 @@ describe("markTaskStarted", () => {
       expect.objectContaining({ where: { id: "task-2", startedAt: null } })
     );
   });
+
+  it("sem data explícita, carimba agora", async () => {
+    const client = makeClient();
+    const antes = Date.now();
+    await markTaskStarted(client as never, "t1");
+    const gravado = client.task.updateMany.mock.calls[0][0].data.startedAt as Date;
+    expect(gravado.getTime()).toBeGreaterThanOrEqual(antes);
+  });
+
+  it("com data explícita, carimba a data pedida — é o que a importação histórica precisa", async () => {
+    const client = makeClient();
+    const quando = new Date("2025-08-14T10:00:00.000Z");
+    await markTaskStarted(client as never, "t1", quando);
+    expect(client.task.updateMany.mock.calls[0][0].data.startedAt).toEqual(quando);
+  });
 });

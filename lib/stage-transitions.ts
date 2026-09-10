@@ -19,9 +19,13 @@ export async function recordStageTransition(
   client: TransitionWriter,
   taskId: string,
   stageId: string,
-  status: ActiveStageStatus
+  status: ActiveStageStatus,
+  /** Quando a transição aconteceu. Padrão: o default do banco (agora) — por
+   * isso o campo fica de FORA do `data` quando `at` não é passado, em vez de
+   * gravar `new Date()` explicitamente. */
+  at?: Date
 ): Promise<void> {
-  await client.stageTransition.create({ data: { taskId, stageId, status } });
+  await client.stageTransition.create({ data: { taskId, stageId, status, ...(at ? { at } : {}) } });
 }
 
 /** Append the same `status` entry for several stages of one task (e.g. the
@@ -30,11 +34,13 @@ export async function recordStageTransitions(
   client: TransitionWriter,
   taskId: string,
   stageIds: string[],
-  status: ActiveStageStatus
+  status: ActiveStageStatus,
+  /** Quando as transições aconteceram. Padrão: o default do banco (agora). */
+  at?: Date
 ): Promise<void> {
   if (stageIds.length === 0) return;
   await client.stageTransition.createMany({
-    data: stageIds.map((stageId) => ({ taskId, stageId, status })),
+    data: stageIds.map((stageId) => ({ taskId, stageId, status, ...(at ? { at } : {}) })),
   });
 }
 

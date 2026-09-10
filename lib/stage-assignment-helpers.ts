@@ -194,6 +194,12 @@ export async function createTaskStages(
     teams?: Record<string, string>;
     /** { stageId: texto } — o que precisa ser feito naquela etapa coringa. */
     instructions?: Record<string, string>;
+    /** Quando estas etapas nasceram. Padrão: agora. A importação histórica passa
+     * a data real — sem isto, 19 meses de histórico importado nasceriam todos
+     * datados de hoje. Alcança os três pontos que hoje dependem de "agora":
+     * `assignedAt`, o `TaskStageLog.enteredAt` e a chamada a
+     * `recordStageTransition`. */
+    at?: Date;
   }
 ): Promise<{ initialAssigned: boolean }> {
   const {
@@ -204,6 +210,7 @@ export async function createTaskStages(
     selectedStageIds,
     teams = {},
     instructions = {},
+    at,
   } = args;
 
   const stages = await tx.templateStage.findMany({
@@ -281,7 +288,7 @@ export async function createTaskStages(
         assigneeId,
         ...(teamId ? { teamId } : {}),
         ...(note ? { instructions: note } : {}),
-        ...(assigneeId ? { assignedAt: new Date() } : {}),
+        ...(assigneeId ? { assignedAt: at ?? new Date() } : {}),
       },
     });
     if (isStart) {
@@ -289,11 +296,11 @@ export async function createTaskStages(
     }
     // Anchor the transition log at creation so the first real transition pairs
     // correctly (the entry stage starts ACTIVE; the rest start INACTIVE).
-    await recordStageTransition(tx, taskId, stage.id, isStart ? "ACTIVE" : "INACTIVE");
+    await recordStageTransition(tx, taskId, stage.id, isStart ? "ACTIVE" : "INACTIVE", at);
 
     if (isStart) {
       await tx.taskStageLog.create({
-        data: { taskId, stageId: stage.id, enteredAt: new Date(), exitedAt: null, userId },
+        data: { taskId, stageId: stage.id, enteredAt: at ?? new Date(), exitedAt: null, userId },
       });
     }
   }

@@ -25,9 +25,14 @@ type TaskStartWriter = Pick<Prisma.TransactionClient, "task">;
  * cada re-promoção — inclusive depois de uma reversão de tarefa concluída, o
  * que reiniciaria a contagem. Retrabalho deve ALONGAR o cycle time, não zerá-lo.
  */
-export async function markTaskStarted(client: TaskStartWriter, taskId: string): Promise<void> {
+export async function markTaskStarted(
+  client: TaskStartWriter,
+  taskId: string,
+  /** Data do início. Padrão: agora. A importação histórica passa a data real. */
+  at?: Date
+): Promise<void> {
   await client.task.updateMany({
     where: { id: taskId, startedAt: null },
-    data: { startedAt: new Date() },
+    data: { startedAt: at ?? new Date() },
   });
 }

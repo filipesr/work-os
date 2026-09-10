@@ -84,6 +84,77 @@ describe("createTaskStages — seleção de etapas", () => {
   });
 });
 
+describe("createTaskStages — data explícita (`at`)", () => {
+  // Etapa única, com time padrão já preenchido — assignments[s1] gera assigneeId,
+  // que é a condição para assignedAt ser gravado.
+  const stages = [
+    {
+      id: "s1",
+      optional: false,
+      order: 1,
+      defaultTeamId: "tA",
+      defaultTeam: { members: [{ id: "uA" }] },
+    },
+  ];
+
+  function makeTx() {
+    const create = vi.fn().mockResolvedValue({ id: "row1", instructions: null });
+    const tx = {
+      templateStage: { findMany: vi.fn().mockResolvedValue(stages) },
+      taskActiveStage: { create },
+      taskStageLog: { create: vi.fn().mockResolvedValue({}) },
+      stageTransition: {
+        create: vi.fn().mockResolvedValue({}),
+        createMany: vi.fn().mockResolvedValue({}),
+      },
+    };
+    return { tx: tx as unknown as Prisma.TransactionClient, raw: tx };
+  }
+
+  it("com `at`, grava assignedAt, TaskStageLog.enteredAt e a transição com essa mesma data — é o que a importação histórica precisa", async () => {
+    const { tx, raw } = makeTx();
+    const quando = new Date("2025-08-14T10:00:00.000Z");
+
+    await createTaskStages(tx, {
+      taskId: "t1",
+      templateId: "tpl",
+      userId: "u1",
+      assignments: { s1: "uA" },
+      at: quando,
+    });
+
+    const created = raw.taskActiveStage.create.mock.calls[0][0].data as Record<string, unknown>;
+    expect(created.assignedAt).toEqual(quando);
+
+    const log = raw.taskStageLog.create.mock.calls[0][0].data as Record<string, unknown>;
+    expect(log.enteredAt).toEqual(quando);
+
+    const transition = raw.stageTransition.create.mock.calls[0][0].data as Record<string, unknown>;
+    expect(transition.at).toEqual(quando);
+  });
+
+  it("sem `at`, o padrão continua sendo agora nos três pontos", async () => {
+    const { tx, raw } = makeTx();
+    const antes = Date.now();
+
+    await createTaskStages(tx, {
+      taskId: "t1",
+      templateId: "tpl",
+      userId: "u1",
+      assignments: { s1: "uA" },
+    });
+
+    const created = raw.taskActiveStage.create.mock.calls[0][0].data as Record<string, unknown>;
+    const log = raw.taskStageLog.create.mock.calls[0][0].data as Record<string, unknown>;
+    const transition = raw.stageTransition.create.mock.calls[0][0].data as Record<string, unknown>;
+
+    expect((created.assignedAt as Date).getTime()).toBeGreaterThanOrEqual(antes);
+    expect((log.enteredAt as Date).getTime()).toBeGreaterThanOrEqual(antes);
+    // recordStageTransition sem `at`: o campo fica de fora, e é o default do banco que assume.
+    expect(transition).not.toHaveProperty("at");
+  });
+});
+
 describe("computeStageReadiness", () => {
   const linear = [
     { id: "A", dependsOnIds: [] },
