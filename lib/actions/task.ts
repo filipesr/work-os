@@ -29,6 +29,7 @@ import {
 } from "@/lib/stage-assignment-helpers";
 import { recordStageTransition, recordStageTransitions } from "@/lib/stage-transitions";
 import { markTaskStarted } from "@/lib/task-start";
+import { createTaskCore } from "@/lib/task-create-core";
 import { needsReason, type StageNoteReasonValue } from "@/lib/stage-completion-note";
 import { getStageReferences } from "@/lib/planning/stage-reference";
 import { closeActivityLog, hoursBetween } from "@/lib/activity-close";
@@ -116,45 +117,24 @@ export async function createTask(formData: FormData) {
   const stageTeams = parseStageTeams(formData);
   const stageInstructions = parseStageInstructions(formData);
 
-  // Execute task creation within a transaction
-  const task = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const newTask = await tx.task.create({
-      data: {
-        title,
-        description: description || null,
-        priority: priority || "MEDIUM",
-        dueDate,
-        status: "BACKLOG",
-        projectId,
-        workflowTemplateId: templateId,
-        // Quem gerou a demanda assina a instrução das etapas dela — inclusive as que outra pessoa
-        // vai executar. É por isso que este campo existe.
-        createdById: userId,
-      },
-    });
-
-    const { initialAssigned } = await createTaskStages(tx, {
-      taskId: newTask.id,
+  // Execute task creation within a transaction. O miolo (lib/task-create-core.ts) é
+  // compartilhado com a importação do histórico do Trello — ela chama a mesma função,
+  // fora de uma requisição, sem os pedaços abaixo (revalidatePath/redirect).
+  const task = await prisma.$transaction((tx: Prisma.TransactionClient) =>
+    createTaskCore(tx, {
+      title,
+      description: description || null,
+      priority: priority || "MEDIUM",
+      dueDate,
+      projectId,
       templateId,
       userId,
       assignments,
       selectedStageIds,
       teams: stageTeams,
       instructions: stageInstructions,
-    });
-
-    // Pré-atribuir a etapa inicial na criação já coloca a tarefa em andamento:
-    // o fluxo de "reivindicar" (que promove BACKLOG→IN_PROGRESS) não roda quando
-    // a etapa já nasce com responsável, então a tarefa ficaria presa em BACKLOG.
-    if (initialAssigned) {
-      await tx.task.update({ where: { id: newTask.id }, data: { status: "IN_PROGRESS" } });
-      // Começou na criação → startedAt == createdAt, ou seja, queue time zero.
-      // É a leitura correta: ninguém esperou na fila, o trabalho já tinha dono.
-      await markTaskStarted(tx, newTask.id);
-    }
-
-    return newTask;
-  });
+    })
+  );
 
   // Revalidate relevant paths
   revalidatePath(`/admin/tasks`);
