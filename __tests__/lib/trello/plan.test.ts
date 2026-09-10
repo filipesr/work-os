@@ -525,6 +525,60 @@ describe("buildImportPlan — quem criou o card responde pelas etapas pendentes"
     return buildImportPlan(board([c], { members: MEMBROS }), USUARIOS, {});
   }
 
+  it("a aprovação PERCORRIDA também é do criador, não de quem o card declara", () => {
+    // O card passou por LIBERADO (portão de aprovação) e declara um designer como membro. Aprovar
+    // é do atendimento — quem abriu a demanda —, não de quem está declarado no card: era assim
+    // que Martin, designer, aparecia aprovando 8 demandas.
+    const p = buildImportPlan(
+      board(
+        [
+          card({
+            id: "k3",
+            idList: "L_LIBERADO",
+            idMemberCreator: "tPedro",
+            idMembers: ["tMartin"],
+            due: "2026-07-15T00:00:00Z",
+          }),
+        ],
+        {
+          members: [...MEMBROS, member("tMartin", "martingoonmkt", "Martin")],
+          actions: [
+            action("DISEÑO - MARTIN", "REVISIÓN", "2026-07-02T10:00:00Z", "k3"),
+            action("REVISIÓN", "LIBERADO", "2026-07-03T10:00:00Z", "k3"),
+          ],
+        }
+      ),
+      [...USUARIOS, user("um", "Martin", "martin@goon.com")],
+      {}
+    );
+    const ap = p.tasks[0].stages.find((s) => s.stageName === "Aprovação")!;
+    expect(ap.assigneeUserId).toBe("up");
+  });
+
+  it("aprovação percorrida de card cujo criador não casa fica sem dono", () => {
+    const p = buildImportPlan(
+      board(
+        [
+          card({
+            id: "k4",
+            idList: "L_LIBERADO",
+            idMemberCreator: "tFantasma",
+            idMembers: ["tPedro"],
+            due: "2026-07-15T00:00:00Z",
+          }),
+        ],
+        {
+          members: MEMBROS,
+          actions: [action("DISEÑO - MARTIN", "LIBERADO", "2026-07-03T10:00:00Z", "k4")],
+        }
+      ),
+      USUARIOS,
+      {}
+    );
+    const ap = p.tasks[0].stages.find((s) => s.stageName === "Aprovação")!;
+    expect(ap.assigneeUserId).toBeUndefined();
+  });
+
   it("aprovação e relatório pendentes ficam com o criador do card", () => {
     const p = planoDe(
       card({

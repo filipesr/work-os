@@ -205,6 +205,13 @@ sobrenome parciais** (`Mathias Gonzalez` ↔ `Benicio Mathias Gonzalez Delgado`)
 O que não casar entra numa lista de repescagem manual — inclusive **dois autores de anexo que já
 saíram do quadro** e não estão em `members`.
 
+**Aprovar é de quem abriu a demanda.** `Aprovação` sai do criador do card (`idMemberCreator`),
+tenha o card passado pelo portão `LIBERADO` ou não — a mesma regra para a etapa percorrida e para a
+pendente. Sem isto a percorrida caía no membro declarado no card, e o Martin, que é designer,
+aparecia aprovando 8 demandas. Resultado: 39 de Pedro, 3 de Sara e 2 sem dono nas percorridas; 31,
+10 e 4 (Lèli) nas pendentes. Criador que não casa com usuário do WorkOS deixa a etapa sem dono, em
+vez de cair em alguém.
+
 **Quem desenhou está no nome da lista, e só ali.** `Desenho` é a etapa com a regra mais estrita do
 módulo: sem nome na lista (`DISEÑO - MARTIN`, `DISEÑO - FABRICIO`…), a etapa fica sem dono. As duas
 outras evidências não servem para ela — o autor do anexo é quem SUBIU o arquivo, com frequência o

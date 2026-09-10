@@ -186,7 +186,12 @@ export function buildImportPlan(
       ...s,
       // A evidência de execução manda: quem está no nome da lista ou anexou o arquivo fez o
       // trabalho. O membro declarado no card só entra onde ela não disse nada.
-      assigneeUserId: assigneeFor(s, byTrelloId, userIdByDesignerName, declaredOwner),
+      assigneeUserId: assigneeFor(s, {
+        byTrelloId,
+        userIdByDesignerName,
+        declaredOwner,
+        creatorUserId,
+      }),
     }));
 
     monthKeys.add(mapped.monthKey);
@@ -316,7 +321,13 @@ function groupMovementsByCard(actions: TrelloAction[]): Map<string, CardMovement
 /**
  * O dono de uma etapa percorrida, da evidência mais forte para a mais fraca.
  *
- * **`Desenho` é a exceção, e é a regra mais estrita do módulo: quem desenhou está no NOME da
+ * **`Aprovação` é de quem ABRIU a demanda**, tenha o card passado pelo portão ou não —
+ * `CREATOR_OWNED_STAGES` vale para a etapa percorrida e para a pendente, pela mesma razão: aprovar
+ * é do atendimento. Sem isto a aprovação percorrida caía no membro declarado no card, e o Martin,
+ * que é designer, aparecia aprovando 8 demandas. Quando o criador não casa com usuário do WorkOS,
+ * fica sem dono em vez de cair em alguém.
+ *
+ * **`Desenho` é a outra exceção, e é a regra mais estrita do módulo: quem desenhou está no NOME da
  * lista, e só ali.** Sem nome na lista, a etapa fica sem dono. As outras duas evidências não
  * servem para esta etapa: o autor do anexo é quem SUBIU o arquivo — no quadro real, com frequência
  * o atendimento, e era assim que Pedro e Sara apareciam como responsáveis por 16 desenhos — e o
@@ -329,18 +340,25 @@ function groupMovementsByCard(actions: TrelloAction[]): Map<string, CardMovement
  */
 function assigneeFor(
   stage: StagePlan,
-  byTrelloId: Map<string, string>,
-  userIdByDesignerName: Record<string, string>,
-  declaredOwner: string | undefined
+  ctx: {
+    byTrelloId: Map<string, string>;
+    userIdByDesignerName: Record<string, string>;
+    declaredOwner: string | undefined;
+    creatorUserId: string | undefined;
+  }
 ): string | undefined {
-  const doNome = stage.designerName ? userIdByDesignerName[stage.designerName] : undefined;
-  const doTrello = stage.assigneeTrelloId ? byTrelloId.get(stage.assigneeTrelloId) : undefined;
+  const doNome = stage.designerName ? ctx.userIdByDesignerName[stage.designerName] : undefined;
+  const doTrello = stage.assigneeTrelloId ? ctx.byTrelloId.get(stage.assigneeTrelloId) : undefined;
 
   if (stage.stageName === "Desenho") {
     return stage.designerName ? (doTrello ?? doNome) : undefined;
   }
 
-  return doTrello ?? doNome ?? declaredOwner;
+  if (CREATOR_OWNED_STAGES.includes(stage.stageName)) {
+    return ctx.creatorUserId;
+  }
+
+  return doTrello ?? doNome ?? ctx.declaredOwner;
 }
 
 /** As etapas pendentes que ficam com quem ABRIU a demanda. `Quality Control` de propósito fora: o
