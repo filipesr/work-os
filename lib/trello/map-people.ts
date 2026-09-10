@@ -46,9 +46,8 @@ export function matchMembers(
   // Agora detectar ambiguidades: se um usuário do WorkOS é atribuído a múltiplos membros do Trello
   const userToMembers = new Map<string, string[]>();
   for (const [trelloId, userIds] of candidates) {
-    // Se o membro do Trello tem múltiplas opções, já é ambíguo
+    // Se o membro do Trello tem múltiplas opções, já é ambíguo (tratado no laço final)
     if (userIds.length > 1) {
-      userToMembers.set(`__ambiguous_${trelloId}`, [trelloId]);
       continue;
     }
 
@@ -123,7 +122,8 @@ function matchesByFullName(member: TrelloMember, user: WorkOSUser): boolean {
 
 /**
  * Estratégia 3: Nome e sobrenome contidos no nome completo do WorkOS.
- * Quebra o fullName em palavras e verifica se todas estão no nome do usuário.
+ * Quebra o fullName em palavras e verifica se cada palavra é um elemento exato
+ * do array de palavras do nome do usuário. Não usa substring matching.
  */
 function matchesByNameParts(member: TrelloMember, user: WorkOSUser): boolean {
   const memberParts = normalize(member.fullName)
@@ -134,6 +134,9 @@ function matchesByNameParts(member: TrelloMember, user: WorkOSUser): boolean {
     return false;
   }
 
-  const userNameNorm = normalize(user.name);
-  return memberParts.every((part) => userNameNorm.includes(part));
+  const userParts = normalize(user.name)
+    .split(/\s+/)
+    .filter((p) => p.length > 0);
+
+  return memberParts.every((part) => userParts.includes(part));
 }

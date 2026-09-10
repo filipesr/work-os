@@ -90,4 +90,28 @@ describe("matchMembers", () => {
     const r = matchMembers([m({ id: "t1", username: "LeliGoon", fullName: "Test" })], users);
     expect(r.byTrelloId.get("t1")).toBe("u3");
   });
+
+  describe("adversariais: substring NÃO é palavra", () => {
+    it("'Ana Silva' NÃO casa com 'Mariana Silvana Costa' — vai para repescagem", () => {
+      const users2 = [{ id: "u1", name: "Mariana Silvana Costa", email: "mariana@test.com" }];
+      const r = matchMembers([m({ id: "t1", fullName: "Ana Silva" })], users2);
+      expect(r.byTrelloId.has("t1")).toBe(false);
+      expect(r.unmatched.map((x) => x.id)).toEqual(["t1"]);
+    });
+
+    it("'Martin' NÃO casa com 'Maysa Martins' — vai para repescagem", () => {
+      const users2 = [{ id: "u1", name: "Maysa Martins", email: "maysa@test.com" }];
+      const r = matchMembers([m({ id: "t1", fullName: "Martin" })], users2);
+      expect(r.byTrelloId.has("t1")).toBe(false);
+      expect(r.unmatched.map((x) => x.id)).toEqual(["t1"]);
+    });
+
+    it("'Mathias Gonzalez' SIM casa com 'Benicio Mathias Gonzalez Delgado' — palavra inteira funciona", () => {
+      const users2 = [
+        { id: "u1", name: "Benicio Mathias Gonzalez Delgado", email: "mathias@test.com" },
+      ];
+      const r = matchMembers([m({ id: "t1", fullName: "Mathias Gonzalez" })], users2);
+      expect(r.byTrelloId.get("t1")).toBe("u1");
+    });
+  });
 });
