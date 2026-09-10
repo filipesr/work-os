@@ -48,6 +48,20 @@ const MANUAL_MATCHES: Record<string, string> = {
  * inventar. Os outros sete nomes (MARTIN, HENRIQUE, MATHIAS, VINICIUS, FABRICIO, DIEGO, JORGE)
  * casam sozinhos com um usuário do WorkOS e não precisam de linha aqui.
  */
+/**
+ * As listas de CONCLUÍDO do quadro.
+ *
+ * Quando o mês vira, `Concluido` é RENOMEADA para o mês e uma nova nasce: hoje o quadro tem
+ * `Concluido` (35 cards de agosto, 13 de setembro, 4 de julho) e `Julio` (33 dos seus 35 cards são
+ * de julho, e 33 têm `dateCompleted`). Sem declarar `Julio`, 34 demandas ENTREGUES entram como "em
+ * andamento" e julho aparece com 23% de conclusão.
+ *
+ * Fica declarado, e não adivinhado por nome de mês: o quadro tem `ABRIL ATL` e `concluido` como
+ * listas arquivadas e vazias, então a convenção não é estável, e uma lista mal identificada viraria
+ * conclusão inventada. Cada renome futuro é uma linha aqui.
+ */
+const COMPLETED_LIST_NAMES = ["Concluido", "Julio"];
+
 const DESIGNER_ALIASES: Record<string, string> = {
   SUPERVISIÓN: "dalbiranmktgoon@gmail.com",
 };
@@ -161,6 +175,7 @@ async function main(): Promise<number> {
       clientId: args.clientId,
       manualMatches: MANUAL_MATCHES,
       designerAliases: DESIGNER_ALIASES,
+      completedListNames: COMPLETED_LIST_NAMES,
     });
 
     // O --commit imprime o MESMO relatório do ensaio antes de gravar — quem manda gravar precisa

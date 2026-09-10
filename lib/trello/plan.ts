@@ -27,11 +27,14 @@ export type { ExportCard, TrelloAction, TrelloBoardExport, TrelloList } from "./
 export interface BuildImportPlanOptions {
   /** Prefixo do nome do projeto mensal: `"<clientName> <monthKey>"`. Padrão: `"AtlanticoShop"`. */
   clientName?: string;
-  /** Nome exato (sensível a maiúsculas) da lista "concluído", usada para achar seu ID e assim
-   * decidir `Task.status`. Padrão: `"Concluido"`. O export real tem DUAS listas com esse nome em
-   * caixas diferentes ("Concluido" e "concluido") — casar por nome exato replica a mesma escolha já
-   * fixada em map-task.test.ts (`CONCLUIDO_LIST_ID`), sem inventar um critério novo aqui. */
-  concludoListName?: string;
+  /** Nomes exatos (sensíveis a maiúsculas) das listas de CONCLUÍDO. Padrão: `["Concluido"]`.
+   *
+   * São várias porque, quando o mês vira, a lista `Concluido` é RENOMEADA para o mês (`Julio`) e
+   * uma nova nasce — o card que ficou na renomeada foi entregue igual. Quem roda a importação
+   * declara quais são, e é decisão dele: o quadro real tem `ABRIL ATL` e `concluido` como listas
+   * arquivadas e vazias, então a convenção de nome não é estável o bastante para ser adivinhada, e
+   * uma lista mal identificada viraria conclusão inventada. */
+  completedListNames?: string[];
   /** ID do `Client` (WorkOS) dono dos projetos mensais — repassado verbatim para
    * `ImportPlan.projects[].clientId`, sem tocar o banco aqui (plan.ts continua puro). Usado pelo
    * escritor (Task 9, lib/trello/writer.ts) para criar/achar o `Project` de cada mês.
@@ -99,7 +102,13 @@ export interface PlannedFutureStage {
   assigneeUserId?: string;
 }
 
-export type SkipReason = "separador" | "ausencia" | "referencia" | "sem mês" | "sem etapa mapeável";
+export type SkipReason =
+  | "arquivado"
+  | "separador"
+  | "ausencia"
+  | "referencia"
+  | "sem mês"
+  | "sem etapa mapeável";
 
 export interface SkippedCard {
   card: ExportCard;
@@ -134,11 +143,13 @@ export function buildImportPlan(
   opts: BuildImportPlanOptions = {}
 ): ImportPlan {
   const clientName = opts.clientName ?? "AtlanticoShop";
-  const concludoListName = opts.concludoListName ?? "Concluido";
+  const completedListNames = opts.completedListNames ?? ["Concluido"];
 
   const labelsById = buildLabelsById(board);
   const listNamesById = buildListNamesById(board);
-  const concludoListId = board.lists.find((l) => l.name === concludoListName)?.id ?? "";
+  const completedListIds = board.lists
+    .filter((l) => completedListNames.includes(l.name))
+    .map((l) => l.id);
   const trelloIdByDesignerName = deriveTrelloIdByDesignerName(board.lists, board.members);
   const userIdByDesignerName = deriveUserIdByDesignerName(
     board.lists,
@@ -149,7 +160,7 @@ export function buildImportPlan(
   const { byTrelloId, unmatched } = matchMembers(board.members, workosUsers, opts.manualMatches);
 
   const stagesCtx: MapStagesContext = { listNamesById, trelloIdByDesignerName };
-  const taskCtx: MapTaskContext = { labelsById, concludoListId, concludoListName };
+  const taskCtx: MapTaskContext = { labelsById, completedListIds, completedListNames };
   const movementsByCardId = groupMovementsByCard(board.actions);
 
   const tasks: PlannedTask[] = [];
@@ -157,6 +168,15 @@ export function buildImportPlan(
   const monthKeys = new Set<string>();
 
   for (const card of board.cards) {
+    if (card.closed) {
+      // Arquivar é DESCARTAR neste quadro: as listas mensais de concluído são renomeadas quando o
+      // mês vira e somem quando envelhecem, e o que sobra dos meses antigos é o entulho. Vem antes
+      // do descarte por natureza de propósito — um separador arquivado é UM card, e contá-lo em
+      // dois motivos quebraria a conferência da soma contra o total (report.ts).
+      skipped.push({ card, reason: "arquivado" });
+      continue;
+    }
+
     const nature = cardNature(card, labelsById);
     if (nature !== "demanda") {
       skipped.push({ card, reason: nature });

@@ -277,15 +277,21 @@ arquivo, com frequência o atendimento. Se alguém souber de quem eram essas 44,
 
 **O desempate do responsável pode inflar quem supervisiona.** Quando o card declara 2 a 4 membros e nada desempata, a etapa fica com o **primeiro da lista do card** — decisão explícita do dono do projeto, e é escolha, não medição: a ordem em que o Trello guarda os membros não significa nada. Vale para `Audio Visual`, `Quality Control`, `Aprovação` e `Relatório` — nunca para `Desenho`, que exige o nome da lista. Quem olhar métrica de execução por pessoa precisa saber disso antes de concluir qualquer coisa.
 
-**A reclassificação de "arquivado" (2026-09-10).** O desenho original marcava `OBSOLETE` todo card
-arquivado fora de `Concluido`, e isso deixou 12 projetos mensais com 100% das demandas descartadas —
-63 peças entregues que o sistema exibia como nada. A evidência derrubou a decisão: 100 das 101
-arquivadas pararam numa lista de produção ou no portão, o arquivamento está espalhado por 84 dias
-distintos em 14 meses, e a mediana da distância entre o prazo e o arquivamento é ZERO dia. Hoje a
-importação não produz `OBSOLETE`: 152 concluídas e 52 abertas. **O que fica em aberto é o inverso:**
-se alguma daquelas 152 tiver sido de fato abandonada, ela agora conta como entregue e infla o
-throughput daquele mês. Não há no export como distinguir uma da outra — quem conhecer um caso
-específico corrige à mão.
+**Arquivar é descartar, e as listas de concluído mudam de nome (2026-09-10).** O desenho passou por
+três leituras deste ponto — "arquivado é descartado", depois "arquivado é entregue", e de volta —
+antes de quem opera o quadro explicar a prática: quando o mês vira, `Concluido` é renomeada para o
+mês e uma nova nasce; as renomeadas envelhecem e somem, e o que sobra dos meses antigos é o entulho.
+Hoje card arquivado não vira demanda, e as listas de concluído (`Concluido` e `Julio`) são
+declaradas no script. **O que fica em aberto:** cada mês novo que for renomeado precisa de uma linha
+em `COMPLETED_LIST_NAMES` (`scripts/import-trello/run.ts`) antes de uma reimportação — sem ela, as
+demandas daquele mês entram como "em andamento". Não dá para adivinhar por nome de mês: o quadro tem
+`ABRIL ATL` e `concluido` como listas arquivadas, e uma lista mal identificada viraria conclusão
+inventada.
+
+**O histórico anterior a março de 2026 não existe no export.** De maio de 2025 a fevereiro de 2026,
+100% dos cards estão arquivados — zero abertos. O que o quadro sustenta são 103 demandas em 5
+projetos (2026-03, 2026-06, 2026-07, 2026-08, 2026-09), das quais 38, 43 e 20 nos três últimos.
+Quem quiser aquele histórico precisa de outra fonte: ele não está no Trello.
 
 **Quality Control pendente fica sem dono.** As 45 etapas de revisão que as demandas abertas têm pela frente nascem sem responsável, de propósito: o portão de qualidade é do time de qualidade, não de quem abriu a demanda. Se o processo quiser um dono ali, é uma linha em `CREATOR_OWNED_STAGES` (`lib/trello/plan.ts`).
 

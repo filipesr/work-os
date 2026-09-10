@@ -245,6 +245,88 @@ describe("buildImportPlan", () => {
 // As demandas ABERTAS não são registro do passado: as etapas que faltam são o trabalho que ainda
 // vai acontecer. Sem isto, ao concluir o Desenho de uma demanda importada não haveria Quality
 // Control nem Aprovação para ativar, e ela terminaria pulando o portão de qualidade.
+// Arquivar é DESCARTAR neste quadro. As listas mensais de concluído são renomeadas quando o mês
+// vira (`Concluido` → `Julio`) e somem quando envelhecem; o que sobra dos meses antigos é o
+// entulho. Medido: 157 dos 303 cards estão arquivados, e 100% dos cards de maio/2025 a
+// fevereiro/2026 são deles — aqueles meses não têm entrega nenhuma no export.
+describe("buildImportPlan — card arquivado não vira demanda", () => {
+  it("card arquivado vai para descartados com motivo próprio", () => {
+    const arquivado = card({
+      id: "z1",
+      idList: "L_DESENHO",
+      closed: true,
+      dateClosed: "2025-06-26T10:00:00Z",
+      due: "2025-06-20T00:00:00Z",
+    });
+    const p = buildImportPlan(board([arquivado]), USERS, {});
+    expect(p.tasks).toHaveLength(0);
+    expect(p.skipped).toEqual([{ card: arquivado, reason: "arquivado" }]);
+  });
+
+  it("card arquivado não abre projeto mensal nenhum", () => {
+    const p = buildImportPlan(
+      board([card({ id: "z2", idList: "L_DESENHO", closed: true, due: "2025-06-20T00:00:00Z" })]),
+      USERS,
+      {}
+    );
+    expect(p.projects).toEqual([]);
+  });
+
+  it("o descarte por arquivamento vem ANTES do da natureza — o motivo mais forte manda", () => {
+    // Um separador arquivado é descartado como arquivado: é o que ele é agora, e contar o mesmo
+    // card em dois motivos quebraria a conferência da soma contra o total de cards.
+    const p = buildImportPlan(board([card({ id: "z3", name: "-----", closed: true })]), USERS, {});
+    expect(p.skipped.map((x) => x.reason)).toEqual(["arquivado"]);
+  });
+});
+
+describe("buildImportPlan — as listas de concluído renomeadas", () => {
+  it("card na lista do mês passado vira demanda CONCLUÍDA", () => {
+    const p = buildImportPlan(
+      board(
+        [
+          card({
+            id: "j1",
+            idList: "L_JULIO",
+            dateCompleted: "2026-07-28T10:00:00Z",
+            due: "2026-07-15T00:00:00Z",
+            attachments: [{ id: "a", mimeType: "image/png", date: "2026-07-20T10:00:00Z" }],
+          }),
+        ],
+        {
+          lists: [...LISTS, trelloList("L_JULIO", "Julio")],
+        }
+      ),
+      USERS,
+      { completedListNames: ["Concluido", "Julio"] }
+    );
+    expect(p.tasks[0].status).toBe("COMPLETED");
+    expect(p.tasks[0].completedAt).toEqual(new Date("2026-07-28T10:00:00Z"));
+  });
+
+  it("sem declarar a lista renomeada, o mesmo card fica em andamento", () => {
+    const p = buildImportPlan(
+      board(
+        [
+          card({
+            id: "j2",
+            idList: "L_JULIO",
+            dateCompleted: "2026-07-28T10:00:00Z",
+            due: "2026-07-15T00:00:00Z",
+            attachments: [{ id: "a", mimeType: "image/png", date: "2026-07-20T10:00:00Z" }],
+          }),
+        ],
+        {
+          lists: [...LISTS, trelloList("L_JULIO", "Julio")],
+        }
+      ),
+      USERS,
+      {}
+    );
+    expect(p.tasks[0].status).toBe("IN_PROGRESS");
+  });
+});
+
 describe("buildImportPlan — a demanda aberta recebe o resto da sequência do template", () => {
   function planoDe(c: ExportCard, actions: TrelloAction[] = []) {
     return buildImportPlan(board([c], { actions }), USERS, {});
@@ -287,15 +369,22 @@ describe("buildImportPlan — a demanda aberta recebe o resto da sequência do t
     expect(t.futureStages).toEqual([]);
   });
 
-  it("demanda arquivada não ganha etapa nenhuma pela frente — foi entregue, não pausada", () => {
-    const p = planoDe(
-      card({
-        id: "a4",
-        idList: "L_DESENHO",
-        closed: true,
-        dateClosed: "2026-07-20T10:00:00Z",
-        due: "2026-07-15T00:00:00Z",
-      })
+  it("demanda concluída não ganha etapa nenhuma pela frente — o trabalho acabou", () => {
+    const p = buildImportPlan(
+      board(
+        [
+          card({
+            id: "a4",
+            idList: "L_CONC",
+            dateCompleted: "2026-07-20T10:00:00Z",
+            due: "2026-07-15T00:00:00Z",
+            attachments: [{ id: "x", mimeType: "image/png", date: "2026-07-10T10:00:00Z" }],
+          }),
+        ],
+        {}
+      ),
+      USERS,
+      {}
     );
     const t = p.tasks.find((x) => x.card.id === "a4")!;
     expect(t.status).toBe("COMPLETED");
@@ -633,7 +722,9 @@ describe("contra o export real", () => {
         actions: data.actions,
       };
 
-      const p = buildImportPlan(realBoard, [], {});
+      // As MESMAS opções do script (scripts/import-trello/run.ts): sem declarar `Julio` como lista
+      // de concluído, 34 demandas entregues em julho entrariam como "em andamento".
+      const p = buildImportPlan(realBoard, [], { completedListNames: ["Concluido", "Julio"] });
 
       const total = p.tasks.length + p.skipped.length;
       expect(total).toBe(realBoard.cards.length);
@@ -642,15 +733,32 @@ describe("contra o export real", () => {
       const porMotivo: Record<string, number> = {};
       for (const s of p.skipped) porMotivo[s.reason] = (porMotivo[s.reason] ?? 0) + 1;
 
-      expect(porMotivo["separador"]).toBe(38);
-      expect(porMotivo["ausencia"]).toBe(25);
-      expect(porMotivo["referencia"]).toBe(10);
+      // Arquivar é descartar, e o descarte por arquivamento vem antes do da natureza — por isso
+      // separador e referência caem para o que sobrou VIVO no quadro, e ausência zera (os 25
+      // registros de feriado e férias estão todos arquivados).
+      expect(porMotivo["arquivado"]).toBe(157);
+      expect(porMotivo["separador"]).toBe(17);
+      expect(porMotivo["ausencia"]).toBeUndefined();
+      expect(porMotivo["referencia"]).toBe(6);
       // As duas categorias de descarte que só o joiner decide (não a natureza do card):
       expect(porMotivo["sem mês"]).toBeUndefined();
-      expect(porMotivo["sem etapa mapeável"]).toBe(26);
+      expect(porMotivo["sem etapa mapeável"]).toBe(20);
 
-      expect(p.tasks.length).toBe(204);
-      expect(p.skipped.length).toBe(99);
+      expect(p.tasks.length).toBe(103);
+      expect(p.skipped.length).toBe(200);
+
+      // O quadro só sustenta de 2026-03 em diante: 100% dos cards de maio/2025 a fevereiro/2026
+      // estão arquivados.
+      expect(p.projects.map((x) => x.monthKey)).toEqual([
+        "2026-03",
+        "2026-06",
+        "2026-07",
+        "2026-08",
+        "2026-09",
+      ]);
+      const porStatus: Record<string, number> = {};
+      for (const t of p.tasks) porStatus[t.status] = (porStatus[t.status] ?? 0) + 1;
+      expect(porStatus).toEqual({ COMPLETED: 85, IN_PROGRESS: 18 });
 
       for (const t of p.tasks) expect(t.stages.length).toBeGreaterThan(0);
     }

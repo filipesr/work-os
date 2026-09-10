@@ -4,12 +4,17 @@ import type { Card, CardMovement, LabelsById } from "./types";
 export interface MapTaskContext {
   /** Mapa de ID de rótulo para seu nome. */
   labelsById: LabelsById;
-  /** ID da lista "Concluido" no quadro — casa com `card.idList` para decidir o status. */
-  concludoListId: string;
-  /** NOME da lista "Concluido" no quadro. Necessário além do id porque `CardMovement` carrega o
-   * NOME da lista (`toListName`), não o id — é por ele que se acha a movimentação de conclusão,
-   * a evidência datada de que o card foi concluído. */
-  concludoListName: string;
+  /** IDs das listas de CONCLUÍDO do quadro — casam com `card.idList` para decidir o status.
+   *
+   * São várias, e não uma: quando o mês vira, a lista `Concluido` é RENOMEADA para o mês
+   * (`Julio`) e uma nova `Concluido` nasce. O card que ficou na renomeada foi entregue igual, só
+   * num mês anterior. Quem roda a importação declara quais são — ver `completedListNames` em
+   * BuildImportPlanOptions (plan.ts) e a constante do script. */
+  completedListIds: string[];
+  /** Os NOMES das mesmas listas. Necessários além dos ids porque `CardMovement` carrega o NOME da
+   * lista (`toListName`), não o id — é por ele que se acha a movimentação de conclusão, a
+   * evidência datada de que o card foi concluído. */
+  completedListNames: string[];
 }
 
 /** Resultado do mapeamento: campos da demanda. */
@@ -120,46 +125,39 @@ function extractPriority(card: Card, labelsById: LabelsById): "LOW" | "MEDIUM" |
  * Extrai status e completedAt.
  *
  * Regras:
- * - Card na lista Concluido → COMPLETED
- * - Card ARQUIVADO → COMPLETED (arquivar era o ato de entregar neste quadro; ver abaixo)
- * - Card aberto fora de Concluido → IN_PROGRESS + null
+ * - Card numa lista de CONCLUÍDO → COMPLETED
+ * - Qualquer outro card aberto → IN_PROGRESS + null
  *
- * **Por que arquivado é entregue.** O desenho decidiu o contrário no começo, para não inventar 83
- * conclusões em audiovisual, e a evidência derrubou essa decisão: das 101 demandas arquivadas, 100
- * pararam numa lista de PRODUÇÃO (`AUDIOVISUAL`, `DISEÑO -*`) ou no portão (`LIBERADO`); o
- * arquivamento está espalhado por 84 dias distintos ao longo de 14 meses, então não foi faxina de
- * quadro; e, entre as 61 com prazo, a mediana da distância entre o PRAZO e o arquivamento é ZERO
- * dia, com 51 caindo entre 3 dias antes e 30 depois. Ninguém abandona trabalho exatamente na data
- * de entrega, 51 vezes. A ausência de anexo nos cards antigos, que sustentava a decisão anterior, é
- * mudança de prática ao longo do tempo — não prova de não-entrega.
+ * **As listas de concluído são várias.** Quando o mês vira, `Concluido` é RENOMEADA para o mês e
+ * uma nova nasce — hoje o quadro tem `Concluido` (agosto e setembro) e `Julio` (33 dos seus 35
+ * cards são de julho, e 33 têm `dateCompleted`). Sem reconhecer a renomeada, 34 demandas entregues
+ * entravam como "em andamento", e julho aparecia com 23% de conclusão.
+ *
+ * **Card arquivado não chega aqui.** Arquivar é DESCARTAR neste quadro — as listas mensais de
+ * concluído somem quando o mês envelhece, e o que sobra dos meses antigos é justamente o entulho.
+ * `buildImportPlan` (plan.ts) manda o arquivado para `skipped`.
  *
  * `completedAt` sai, nesta ordem de precedência:
- *   1. a data da ÚLTIMA movimentação do card para a lista `Concluido` — o EVENTO da entrega,
- *      datado pela ação do Trello (`updateCard`), cobre 41 dos 52 cards da lista;
- *   2. `card.dateCompleted` — a marcação de conclusão do próprio Trello, cobre 38 lá e 4 entre os
- *      arquivados;
- *   3. `card.dateClosed` — o arquivamento, preenchido em 156 dos 157 arquivados. É o mais fraco
- *      dos três porque é o ato de GUARDAR, não o de entregar: quando existe marca explícita de
- *      conclusão, ela manda;
- *   4. `null` — 3 cards em `Concluido` e 1 arquivado não têm nenhuma das três.
+ *   1. a data da ÚLTIMA movimentação do card para QUALQUER lista de concluído — o EVENTO da
+ *      entrega, datado pela ação do Trello (`updateCard`);
+ *   2. `card.dateCompleted` — a marcação de conclusão do próprio Trello;
+ *   3. `null` — sem nenhuma das duas, nenhuma data é inventada.
  */
 function extractStatusAndCompletedAt(
   card: Card,
   movements: CardMovement[],
   ctx: MapTaskContext
 ): { status: "IN_PROGRESS" | "COMPLETED"; completedAt: Date | null } {
-  const isInConcluido = card.idList === ctx.concludoListId;
+  const isInCompleted = !!card.idList && ctx.completedListIds.includes(card.idList);
 
-  if (!isInConcluido && !card.closed) {
-    // Card aberto fora de Concluido: o trabalho não terminou.
+  if (!isInCompleted) {
+    // Fora das listas de concluído, o trabalho não terminou. Card ARQUIVADO nem chega aqui:
+    // arquivar é descartar neste quadro, e `buildImportPlan` o manda para `skipped`.
     return { status: "IN_PROGRESS", completedAt: null };
   }
 
-  const movedAt = lastMoveToList(movements, ctx.concludoListName);
-  const completedAt =
-    movedAt ??
-    (card.dateCompleted ? new Date(card.dateCompleted) : null) ??
-    (card.dateClosed ? new Date(card.dateClosed) : null);
+  const movedAt = lastMoveToCompleted(movements, ctx.completedListNames);
+  const completedAt = movedAt ?? (card.dateCompleted ? new Date(card.dateCompleted) : null);
 
   return { status: "COMPLETED", completedAt };
 }
@@ -172,10 +170,10 @@ function extractStatusAndCompletedAt(
  * carrega o NOME da lista (não o id), e o casamento é exato, sensível a maiúsculas, como no resto
  * do módulo — o quadro real tem "Concluido" e "concluido" como listas diferentes.
  */
-function lastMoveToList(movements: CardMovement[], listName: string): Date | null {
+function lastMoveToCompleted(movements: CardMovement[], listNames: string[]): Date | null {
   let latest: Date | null = null;
   for (const m of movements) {
-    if (m.toListName !== listName) continue;
+    if (!listNames.includes(m.toListName)) continue;
     const at = new Date(m.at);
     if (!latest || at > latest) latest = at;
   }

@@ -143,49 +143,59 @@ duas — o join pretendido.
 
 ### O estado e a prioridade da demanda
 
-**Arquivar era o ato de entregar.** Esta seção dizia o contrário, e a evidência derrubou a decisão
-— vale registrar as duas versões, porque a primeira parecia a escolha conservadora e não era.
+**Arquivar é descartar — e as listas de concluído mudam de nome.** Esta seção já disse as duas
+coisas contrárias, e vale registrar o caminho, porque o erro do meio parecia a leitura conservadora.
 
-O desenho original marcava `OBSOLETE` todo card arquivado fora de `Concluido`, para não inventar 83
-conclusões em audiovisual. O efeito, visto depois da primeira gravação: **12 projetos mensais, de
-maio de 2025 a fevereiro de 2026, com 100% das demandas descartadas** — 63 peças entregues que o
-sistema mostrava como nada. O que reabriu a questão foram três medições:
+A prática do quadro, dita por quem o opera: quando o mês vira, a lista `Concluido` é **renomeada
+para o mês** e uma nova `Concluido` nasce. As renomeadas envelhecem e somem. O que sobra dos meses
+antigos, portanto, **não** é a entrega — é o que ficou pelo caminho, e foi arquivado.
 
-- **100 das 101 demandas arquivadas pararam numa lista de PRODUÇÃO** (`AUDIOVISUAL` 76,
-  `DISEÑO -*` 21) ou no portão (`LIBERADO` 3). Só uma parou numa lista organizacional.
-- O arquivamento está espalhado por **84 dias distintos ao longo de 14 meses** — não foi faxina de
-  quadro, foi hábito diário.
-- E o decisivo: entre as 61 arquivadas com prazo, a **mediana da distância entre o PRAZO e o
-  arquivamento é ZERO dia**, com 51 caindo entre 3 dias antes e 30 depois. Ninguém abandona
-  trabalho exatamente na data de entrega, 51 vezes.
+Isso resolve de uma vez duas coisas que o desenho errava:
 
-A evidência que sustentava a decisão anterior era a ausência de anexo nos cards antigos (só 9 dos
-157 arquivados têm algum). Ela é mudança de prática ao longo do tempo — os anexos se concentram nos
-cards recentes —, não prova de não-entrega. A correlação com o prazo é muito mais forte.
+1. **Card arquivado não vira demanda.** São 157 dos 303, e eles saem como descarte com motivo
+   próprio (`arquivado`), antes do descarte por natureza — um separador arquivado é UM card, e
+   contá-lo em dois motivos quebraria a conferência da soma contra o total.
+2. **As listas de concluído são várias.** Hoje o quadro tem `Concluido` (35 de agosto, 13 de
+   setembro, 4 de julho) e `Julio` (33 dos seus 35 cards são de julho, 33 com `dateCompleted`). Sem
+   reconhecer a renomeada, **34 demandas entregues entravam como "em andamento"**, e julho aparecia
+   com 23% de conclusão. Os nomes são **declarados no script**, não adivinhados por padrão de mês:
+   o quadro tem `ABRIL ATL` e `concluido` como listas arquivadas e vazias, então a convenção não é
+   estável, e uma lista mal identificada viraria conclusão inventada.
 
-| Lista onde parou            | `Task.status` |
-| --------------------------- | ------------- |
-| `Concluido`                 | `COMPLETED`   |
-| qualquer outra, arquivado   | `COMPLETED`   |
-| qualquer outra, card aberto | `IN_PROGRESS` |
+**O que a medição anterior tinha lido ao contrário.** A decisão intermediária — "arquivado é
+entregue" — se apoiou em três medições: 100 das 101 arquivadas pararam numa lista de produção; o
+arquivamento se espalha por 84 dias em 14 meses; e a mediana entre o PRAZO e o arquivamento é zero
+dia. As três continuam verdadeiras, e nenhuma delas prova entrega: um card abandonado é arquivado
+justamente **na data em que deveria ter sido entregue**, e é isso que a correlação com o prazo
+mostra. Evidência que casa com duas hipóteses opostas não decide entre elas — só quem opera o
+quadro decidia, e decidiu.
 
-A importação deixou de produzir `OBSOLETE`: 152 demandas concluídas e 52 abertas.
+**O custo, dito sem rodeio.** Os 19 meses de histórico nunca estiveram no export. De maio de 2025 a
+fevereiro de 2026, **100% dos cards estão arquivados** — zero abertos. Aqueles 12 projetos mensais
+eram feitos inteiramente de entulho. O que o quadro sustenta:
 
-`Task.completedAt` só existe quando o status for `COMPLETED` — é o que alimenta lead time. A data
-vem, nesta ordem: **movimentação registrada para `Concluido`** (o evento, datado: 41 dos 52 cards da
-lista); `dateCompleted`, a marcação do próprio Trello (38 na lista, 4 entre os arquivados); e
-`dateClosed`, o arquivamento (156 dos 157 arquivados). O arquivamento é o mais fraco dos três porque
-é o ato de GUARDAR, não o de entregar: quando existe marca explícita de conclusão, ela manda. Juntas
-cobrem **149 das 152**; as 3 restantes ficam sem data em vez de ganharem uma inventada.
+|           |                                                                                |
+| --------- | ------------------------------------------------------------------------------ |
+| demandas  | **103** (85 concluídas, 18 em andamento)                                       |
+| projetos  | **5** — 2026-03 (1), 2026-06 (1), 2026-07 (38), 2026-08 (43), 2026-09 (20)     |
+| descartes | **200** — 157 arquivados, 17 separadores, 6 referências, 20 sem etapa mapeável |
 
-**A conclusão não cria um início.** `Task.startedAt` continua saindo só de data medida em segmento
-de etapa (111 demandas). Deixar a conclusão criá-lo faria as demandas antigas — cuja única data é o
-arquivamento — nascerem com início igual à entrega: tempo de ciclo ZERO, fabricado e indistinguível
-de um medido, em cerca de 100 demandas. Pela mesma razão, a data medida que NÃO é anterior à
-entrega também não é início: o card cujo único anexo tem o instante da conclusão — ou é posterior a
-ela, como "Trend Que venden?", concluído às 11:56 com o anexo às 12:05 — não diz quando o trabalho
-começou, diz quando ele foi entregue. Sem evidência de um começo distinto da entrega, `startedAt`
-fica nulo. São 8 demandas, e sem esta regra elas nasceriam com ciclo zero ou negativo.
+Três meses cheios de história medida valem mais que dezenove forjados.
+
+| Lista onde parou            | `Task.status`   |
+| --------------------------- | --------------- |
+| uma das listas de concluído | `COMPLETED`     |
+| qualquer outra, card aberto | `IN_PROGRESS`   |
+| card arquivado              | não é importado |
+
+`Task.completedAt` vem, nesta ordem: **movimentação registrada para qualquer lista de concluído** (o
+evento, datado); `dateCompleted`, a marcação do próprio Trello; e `null`, sem nenhuma das duas.
+
+**A conclusão não cria um início.** `Task.startedAt` sai só de data medida em segmento de etapa.
+Deixar a conclusão criá-lo daria início igual à entrega — tempo de ciclo ZERO, fabricado e
+indistinguível de um medido. Pela mesma razão, a data medida que não é ANTERIOR à entrega também não
+é início: o card cujo único anexo tem o instante da conclusão diz quando foi entregue, não quando
+começou. Sem evidência de um começo distinto da entrega, `startedAt` fica nulo.
 
 **A etapa fecha com a demanda.** Numa demanda entregue, a etapa de produção terminou até a entrega:
 ela nasce `COMPLETED`, datada pela saída medida quando existe e pela própria entrega quando não.

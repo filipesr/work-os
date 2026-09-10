@@ -11,7 +11,7 @@ import type { ImportReport } from "./writer";
  * "por falta de evidência" (decisão do joiner, buildImportPlan) porque são categorias de origem
  * diferente, e misturá-las esconderia a proporção que mais importa: quanto foi perdido por a
  * evidência não sustentar uma demanda, contra quanto nunca foi demanda para começo de conversa. */
-const REASONS_POR_NATUREZA: SkipReason[] = ["separador", "ausencia", "referencia"];
+const REASONS_POR_NATUREZA: SkipReason[] = ["arquivado", "separador", "ausencia", "referencia"];
 const REASONS_POR_EVIDENCIA: SkipReason[] = ["sem mês", "sem etapa mapeável"];
 
 /**

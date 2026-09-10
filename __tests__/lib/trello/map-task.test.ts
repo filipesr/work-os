@@ -10,6 +10,11 @@ const CONCLUIDO_LIST_ID = "6a7496abe3c32fb0e00ed39b";
  * "concluido"); o casamento é exato, sensível a maiúsculas, como no resto do módulo. */
 const CONCLUIDO_LIST_NAME = "Concluido";
 
+/** A lista de concluído do mês passado: quando o mês vira, `Concluido` é RENOMEADA para o mês e uma
+ * nova `Concluido` nasce. No quadro real são duas com card: `Concluido` (agosto e setembro) e
+ * `Julio` (33 dos seus 35 cards são de julho). */
+const JULHO_LIST_ID = "lista-julio";
+
 /** Helper: cria um card com os valores padrão para teste. */
 function card(overrides: Partial<Card> = {}): Card {
   return {
@@ -35,8 +40,8 @@ function moveu(fromListName: string, toListName: string, at: string): CardMoveme
 function ctx(overrides: Partial<MapTaskContext> = {}): MapTaskContext {
   return {
     labelsById: {},
-    concludoListId: CONCLUIDO_LIST_ID,
-    concludoListName: CONCLUIDO_LIST_NAME,
+    completedListIds: [CONCLUIDO_LIST_ID, JULHO_LIST_ID],
+    completedListNames: [CONCLUIDO_LIST_NAME, "Julio"],
     ...overrides,
   };
 }
@@ -158,25 +163,26 @@ describe("mapCardToTask", () => {
     });
   });
 
-  describe("status — arquivar era entregar", () => {
-    it("arquivado fora de Concluido é CONCLUÍDO, datado pelo arquivamento", () => {
-      // Arquivar era o ato de entregar neste quadro: 100 das 101 demandas arquivadas pararam numa
-      // lista de produção ou no portão, o arquivamento está espalhado por 84 dias distintos em 14
-      // meses (não foi faxina) e a mediana da distância entre o PRAZO e o arquivamento é 0 dia —
-      // 51 de 61 caem entre 3 dias antes e 30 depois. Ver o desenho, "O estado da demanda".
+  describe("status — a lista de concluído, e as renomeadas", () => {
+    it("card na lista de concluído do mês PASSADO também é concluído", () => {
+      // Quando o mês vira, a lista `Concluido` é renomeada para o mês (`Julio`) e uma nova nasce.
+      // O card que ficou na renomeada foi entregue igual — só num mês anterior.
       const r = mapCardToTask(
-        card({ idList: "L_AV", closed: true, dateClosed: "2025-06-26T10:00:00Z" }),
+        card({ idList: JULHO_LIST_ID, dateCompleted: "2026-07-28T10:00:00Z" }),
         [],
         ctx()
       );
       expect(r.status).toBe("COMPLETED");
-      expect(r.completedAt).toEqual(new Date("2025-06-26T10:00:00Z"));
+      expect(r.completedAt).toEqual(new Date("2026-07-28T10:00:00Z"));
     });
 
-    it("arquivado SEM data de arquivamento fica concluído sem data — não se inventa uma", () => {
-      const r = mapCardToTask(card({ idList: "L_AV", closed: true }), [], ctx());
-      expect(r.status).toBe("COMPLETED");
-      expect(r.completedAt).toBeNull();
+    it("a movimentação para a lista renomeada também data a conclusão", () => {
+      const r = mapCardToTask(
+        card({ idList: JULHO_LIST_ID }),
+        [moveu("AUDIOVISUAL", "Julio", "2026-07-30T09:00:00Z")],
+        ctx()
+      );
+      expect(r.completedAt).toEqual(new Date("2026-07-30T09:00:00Z"));
     });
 
     it("card aberto em Concluido ainda é COMPLETED (se passou por Concluido, está concluído)", () => {
@@ -255,30 +261,16 @@ describe("mapCardToTask", () => {
       expect(r.completedAt).toEqual(new Date("2026-07-01T08:00:00Z"));
     });
 
-    it("3º: sem movimentação nem dateCompleted, o arquivamento data a entrega", () => {
-      const r = mapCardToTask(
-        card({
-          idList: CONCLUIDO_LIST_ID,
-          closed: true,
-          dateClosed: "2026-07-02T10:00:00Z",
-        }),
-        [],
-        ctx()
-      );
-      expect(r.status).toBe("COMPLETED");
-      expect(r.completedAt).toEqual(new Date("2026-07-02T10:00:00Z"));
-    });
-
-    it("4º: sem nenhuma das três, fica NULO — nenhuma data é inventada", () => {
+    it("3º: sem nenhuma das duas, fica NULO — nenhuma data é inventada", () => {
       const r = mapCardToTask(card({ idList: CONCLUIDO_LIST_ID }), [], ctx());
       expect(r.status).toBe("COMPLETED");
       expect(r.completedAt).toBeNull();
     });
 
-    it("arquivado com dateCompleted usa o dateCompleted, não o arquivamento", () => {
-      // A ordem é: movimentação para Concluido, depois dateCompleted, depois o arquivamento. O
-      // arquivamento é o mais fraco dos três porque é o ato de guardar, não o de entregar — quando
-      // existe uma marca de conclusão explícita, ela manda.
+    it("card arquivado nem chega a mapCardToTask — mas se chegar, não é concluído", () => {
+      // `buildImportPlan` manda o arquivado para `skipped` antes daqui (arquivar é descartar).
+      // Esta é a rede: nem `dateCompleted` nem `dateClosed` fazem um card fora das listas de
+      // concluído virar entrega.
       const r = mapCardToTask(
         card({
           idList: "L_AV",
@@ -289,8 +281,8 @@ describe("mapCardToTask", () => {
         [],
         ctx()
       );
-      expect(r.status).toBe("COMPLETED");
-      expect(r.completedAt).toEqual(new Date("2026-07-18T09:00:00Z"));
+      expect(r.status).toBe("IN_PROGRESS");
+      expect(r.completedAt).toBeNull();
     });
   });
 
