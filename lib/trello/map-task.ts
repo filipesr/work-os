@@ -1,11 +1,15 @@
-import type { Card, LabelsById } from "./types";
+import type { Card, CardMovement, LabelsById } from "./types";
 
 /** Contexto necessário para mapear um card para task. */
 export interface MapTaskContext {
   /** Mapa de ID de rótulo para seu nome. */
   labelsById: LabelsById;
-  /** ID da lista "Concluido" no quadro. */
+  /** ID da lista "Concluido" no quadro — casa com `card.idList` para decidir o status. */
   concludoListId: string;
+  /** NOME da lista "Concluido" no quadro. Necessário além do id porque `CardMovement` carrega o
+   * NOME da lista (`toListName`), não o id — é por ele que se acha a movimentação de conclusão,
+   * a evidência datada de que o card foi concluído. */
+  concludoListName: string;
 }
 
 /** Resultado do mapeamento: campos da demanda. */
@@ -33,19 +37,23 @@ const TYPE_LABELS = new Set(["STORIES", "SOCIAL MEDIA", "REELS"]);
  * Mapeia um card do Trello para os campos da demanda.
  *
  * Regras principais:
- * - Status COMPLETED: card na lista Concluido (dateClosed apenas para COMPLETED)
+ * - Status COMPLETED: card na lista Concluido (completedAt só para COMPLETED, e só com evidência)
  * - Status OBSOLETE: card arquivado em outra lista (sem completedAt)
  * - Status IN_PROGRESS: card aberto fora de Concluido
  * - Prioridade: URGENTE→URGENT, PRIORIDAD/IMPORTANTE→HIGH, padrão→MEDIUM
  * - Mês: from due, else dateLastActivity, else null
  */
-export function mapCardToTask(card: Card, ctx: MapTaskContext): MappedTask {
+export function mapCardToTask(
+  card: Card,
+  movements: CardMovement[],
+  ctx: MapTaskContext
+): MappedTask {
   const typeLabel = extractTypeLabel(card, ctx.labelsById);
   const title = typeLabel ? `[${typeLabel}] ${card.name}` : card.name;
   const description = card.desc || "";
   const dueDate = card.due ? new Date(card.due) : null;
   const priority = extractPriority(card, ctx.labelsById);
-  const { status, completedAt } = extractStatusAndCompletedAt(card, ctx.concludoListId);
+  const { status, completedAt } = extractStatusAndCompletedAt(card, movements, ctx);
   const monthKey = extractMonthKey(card);
 
   return {
@@ -112,19 +120,29 @@ function extractPriority(card: Card, labelsById: LabelsById): "LOW" | "MEDIUM" |
  * Extrai status e completedAt.
  *
  * Regras:
- * - Card na lista Concluido → COMPLETED + completedAt
- * - Card arquivado em outra lista → OBSOLETE + null
+ * - Card na lista Concluido → COMPLETED + completedAt (quando há evidência datada; ver abaixo)
+ * - Card arquivado em outra lista → OBSOLETE + null (o card foi abandonado, não entregue)
  * - Card aberto → IN_PROGRESS + null
+ *
+ * `completedAt` de uma demanda COMPLETED sai, nesta ordem de precedência:
+ *   1. a data da ÚLTIMA movimentação do card para a lista `Concluido` — o EVENTO da entrega,
+ *      datado pela ação do Trello (`updateCard`), cobre 41 dos 52 cards do export real;
+ *   2. `card.dateCompleted` — a marcação de conclusão do próprio Trello, cobre 38;
+ *   3. `null` — 3 cards não têm nenhuma das duas, e uma data plausível não se inventa.
+ *
+ * `card.dateClosed` NÃO entra: é o carimbo do arquivamento, nulo nos 52 (ver types.ts).
  */
 function extractStatusAndCompletedAt(
   card: Card,
-  concludoListId: string
+  movements: CardMovement[],
+  ctx: MapTaskContext
 ): { status: "IN_PROGRESS" | "COMPLETED" | "OBSOLETE"; completedAt: Date | null } {
-  const isInConcluido = card.idList === concludoListId;
+  const isInConcluido = card.idList === ctx.concludoListId;
 
   if (isInConcluido) {
     // Card na lista Concluido é sempre COMPLETED
-    const completedAt = card.dateClosed ? new Date(card.dateClosed) : null;
+    const movedAt = lastMoveToList(movements, ctx.concludoListName);
+    const completedAt = movedAt ?? (card.dateCompleted ? new Date(card.dateCompleted) : null);
     return { status: "COMPLETED", completedAt };
   }
 
@@ -135,6 +153,24 @@ function extractStatusAndCompletedAt(
 
   // Card aberto fora de Concluido é IN_PROGRESS
   return { status: "IN_PROGRESS", completedAt: null };
+}
+
+/**
+ * A data da ÚLTIMA movimentação do card PARA a lista dada, ou `null` se não houver nenhuma.
+ *
+ * A última, não a primeira: um card devolvido de `Concluido` e reconcluído depois foi entregue na
+ * segunda vez — datar pela primeira contaria como entregue um trabalho que voltou. `CardMovement`
+ * carrega o NOME da lista (não o id), e o casamento é exato, sensível a maiúsculas, como no resto
+ * do módulo — o quadro real tem "Concluido" e "concluido" como listas diferentes.
+ */
+function lastMoveToList(movements: CardMovement[], listName: string): Date | null {
+  let latest: Date | null = null;
+  for (const m of movements) {
+    if (m.toListName !== listName) continue;
+    const at = new Date(m.at);
+    if (!latest || at > latest) latest = at;
+  }
+  return latest;
 }
 
 /**

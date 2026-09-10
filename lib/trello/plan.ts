@@ -115,7 +115,7 @@ export function buildImportPlan(
   const { byTrelloId, unmatched } = matchMembers(board.members, workosUsers);
 
   const stagesCtx: MapStagesContext = { listNamesById, trelloIdByDesignerName };
-  const taskCtx: MapTaskContext = { labelsById, concludoListId };
+  const taskCtx: MapTaskContext = { labelsById, concludoListId, concludoListName };
   const movementsByCardId = groupMovementsByCard(board.actions);
 
   const tasks: PlannedTask[] = [];
@@ -129,7 +129,8 @@ export function buildImportPlan(
       continue;
     }
 
-    const mapped = mapCardToTask(card, taskCtx);
+    const movements = movementsByCardId.get(card.id) ?? [];
+    const mapped = mapCardToTask(card, movements, taskCtx);
     if (!mapped.monthKey) {
       // Checar o mês antes da etapa: um card sem os dois ganha um motivo só, e o mês é o mais
       // barato de verificar (não precisa resolver movimentações).
@@ -137,7 +138,6 @@ export function buildImportPlan(
       continue;
     }
 
-    const movements = movementsByCardId.get(card.id) ?? [];
     const { stages } = planStages(card, movements, stagesCtx);
 
     if (stages.length === 0) {

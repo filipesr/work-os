@@ -188,7 +188,9 @@ describe("buildImportPlan", () => {
       name: "Banner campanha",
       idList: "L_CONC",
       due: "2026-08-20T00:00:00Z",
-      dateClosed: "2026-08-22T09:00:00Z",
+      // Sem `dateClosed` de propósito: a data de conclusão sai da ÚLTIMA movimentação para
+      // "Concluido" (a última ação abaixo), não do arquivamento — ver fix-final-brief.md,
+      // conserto 1. Com o campo aqui, o teste passaria pelos dois caminhos e não provaria nada.
     });
     const acts = [
       action("DISEÑO - MARTIN", "REVISIÓN", "2026-08-20T10:00:00Z", "c7"),

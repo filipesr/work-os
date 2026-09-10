@@ -22,8 +22,15 @@ export interface Card {
   }>;
   /** ID da lista. Usado por mapCardToTask para determinar status (COMPLETED se em "Concluido"). */
   idList?: string;
-  /** Timestamp do fechamento do card. Usado por mapCardToTask para datar completedAt quando status é COMPLETED. */
+  /** Timestamp do ARQUIVAMENTO do card. NÃO serve para datar `completedAt`: medido no export real,
+   * é nulo nos 52 cards da lista `Concluido` (nenhum está arquivado), e card arquivado FORA de
+   * `Concluido` vira OBSOLETE, status em que a data é descartada de propósito. Fica declarado
+   * porque existe no export e é o que `closed` data — nenhum mapeamento o lê. */
   dateClosed?: string | null;
+  /** Data de conclusão marcada no próprio Trello (casada com `dueComplete`). Usado por
+   * mapCardToTask como SEGUNDA evidência de `completedAt`, atrás da movimentação para a lista
+   * `Concluido` — presente em 38 dos 52 cards concluídos do export real. */
+  dateCompleted?: string | null;
   /** Data da última atividade no card. Usado por mapCardToTask para extrair monthKey quando due não existe. */
   dateLastActivity?: string | null;
   /** Indica se o card foi arquivado. Usado por mapCardToTask para determinar status (OBSOLETE se arquivado). */
