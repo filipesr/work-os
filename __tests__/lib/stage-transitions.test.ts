@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   recordStageTransition,
+  recordStageTransitions,
   statusDurations,
   flowEfficiencyRatio,
   statusAt,
@@ -27,6 +28,35 @@ describe("recordStageTransition", () => {
     await recordStageTransition(client as never, "t1", "s1", "ACTIVE", quando);
     const data = client.stageTransition.create.mock.calls[0][0].data;
     expect(data.at).toEqual(quando);
+  });
+});
+
+describe("recordStageTransitions (plural)", () => {
+  // Usada em produção no reset de reversão (lib/actions/task.ts) — sem cobertura própria até
+  // aqui, nem do comportamento antigo nem do `at` novo.
+  const makeClient = () => ({ stageTransition: { createMany: vi.fn().mockResolvedValue({}) } });
+
+  it("stageIds vazio: no-op, não chama createMany", async () => {
+    const client = makeClient();
+    await recordStageTransitions(client as never, "t1", [], "INACTIVE");
+    expect(client.stageTransition.createMany).not.toHaveBeenCalled();
+  });
+
+  it("sem data explícita, não inclui o campo `at` em nenhuma linha — o default do banco assume", async () => {
+    const client = makeClient();
+    await recordStageTransitions(client as never, "t1", ["s1", "s2"], "INACTIVE");
+    const rows = client.stageTransition.createMany.mock.calls[0][0].data;
+    expect(rows).toHaveLength(2);
+    for (const row of rows) expect(row).not.toHaveProperty("at");
+  });
+
+  it("com data explícita, grava o campo `at` com a data pedida em todas as linhas", async () => {
+    const client = makeClient();
+    const quando = new Date("2025-08-14T10:00:00.000Z");
+    await recordStageTransitions(client as never, "t1", ["s1", "s2"], "INACTIVE", quando);
+    const rows = client.stageTransition.createMany.mock.calls[0][0].data;
+    expect(rows).toHaveLength(2);
+    for (const row of rows) expect(row.at).toEqual(quando);
   });
 });
 

@@ -327,7 +327,14 @@ export async function createTaskStages(
       createdById: task?.createdById ?? null,
       ativadas: [linhaInicial],
     });
-    if (comentarios.length > 0) await tx.taskComment.createMany({ data: comentarios });
+    // Quarto ponto dependente de "agora": TaskComment.createdAt tem @default(now()) no schema.
+    // Mesmo critério dos outros três — com `at`, grava; sem `at`, omite o campo e deixa o
+    // default do banco agir.
+    if (comentarios.length > 0) {
+      await tx.taskComment.createMany({
+        data: comentarios.map((c) => ({ ...c, ...(at ? { createdAt: at } : {}) })),
+      });
+    }
   }
 
   return { initialAssigned };

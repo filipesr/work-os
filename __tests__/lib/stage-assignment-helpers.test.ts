@@ -455,4 +455,31 @@ describe("createTaskStages — a instrução da PRIMEIRA etapa também é entreg
     });
     expect(createMany).not.toHaveBeenCalled();
   });
+
+  it("com `at`, o comentário da instrução nasce com createdAt igual à data pedida", async () => {
+    // Quarto ponto dependente de "agora": TaskComment.createdAt tem @default(now()) no schema, e
+    // este createMany não passava o campo — o mesmo padrão que recordStageTransition tinha antes
+    // desta task. Sem ele, a instrução coringa da importação histórica nasceria com data de hoje.
+    const { tx, createMany } = makeTx();
+    const quando = new Date("2025-08-14T10:00:00.000Z");
+    await createTaskStages(tx, {
+      taskId: "t1",
+      templateId: "tpl",
+      userId: "gestor1",
+      instructions: { s1: "Gravar no estúdio B" },
+      at: quando,
+    });
+    expect(createMany.mock.calls[0][0].data[0].createdAt).toEqual(quando);
+  });
+
+  it("sem `at`, o comentário não leva createdAt — o default do banco assume", async () => {
+    const { tx, createMany } = makeTx();
+    await createTaskStages(tx, {
+      taskId: "t1",
+      templateId: "tpl",
+      userId: "gestor1",
+      instructions: { s1: "Gravar no estúdio B" },
+    });
+    expect(createMany.mock.calls[0][0].data[0]).not.toHaveProperty("createdAt");
+  });
 });
