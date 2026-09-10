@@ -18,6 +18,22 @@ import type { ExportCard } from "@/lib/trello/types";
 
 const TEMPLATE_NAME = "Demanda GoOn";
 
+/**
+ * O padrão do Prisma para `$transaction` interativa é `timeout: 5000ms` — e não serve aqui.
+ *
+ * Cada mês faz CENTENAS de consultas SEQUENCIAIS (uma demanda são ~10: artefato de idempotência,
+ * task, etapas, logs, transições, retrabalho, artefatos), contra um banco REMOTO (Neon em
+ * sa-east-1, via pooler), onde cada consulta é uma ida-e-volta de rede. Contadas no plano real:
+ * 1011 consultas em 2026-08, 717 em 2026-07, 658 em 2026-09 — a 10-30 ms por ida-e-volta, de 15 s
+ * a 1 min só nesses meses. Com o padrão, o Prisma fecha a transação no meio e a gravação falha com
+ * `P2028 — Transaction already closed`, de forma determinística e reproduzível: reexecutar dá o
+ * mesmo erro.
+ *
+ * `maxWait` é a espera por uma conexão livre do pool antes de a transação começar (o padrão de 2 s
+ * é apertado para um pooler remoto); `timeout` é o tempo que a transação pode ficar aberta.
+ */
+const TRANSACTION_OPTIONS = { timeout: 600_000, maxWait: 30_000 } as const;
+
 export type ApplyImportPlanOptions =
   | { commit: false }
   | {
@@ -91,7 +107,7 @@ export async function applyImportPlan(
         for (const task of tasksOfMonth) {
           await writeTask(tx, task, projectId, ctx, report);
         }
-      });
+      }, TRANSACTION_OPTIONS);
     } catch (error) {
       report.failedMonths.push({ monthKey: proj.monthKey, error: String(error) });
     }
