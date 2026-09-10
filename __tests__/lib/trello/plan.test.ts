@@ -255,7 +255,11 @@ describe("buildImportPlan — a demanda aberta recebe o resto da sequência do t
     const t = p.tasks.find((x) => x.card.id === "a1")!;
     expect(t.status).toBe("IN_PROGRESS");
     expect(t.stages.map((s) => s.stageName)).toEqual(["Desenho"]);
-    expect(t.futureStageNames).toEqual(["Quality Control", "Aprovação", "Relatório"]);
+    expect(t.futureStages.map((f) => f.stageName)).toEqual([
+      "Quality Control",
+      "Aprovação",
+      "Relatório",
+    ]);
   });
 
   it("demanda aberta que já passou pela aprovação só tem o relatório pela frente", () => {
@@ -265,7 +269,7 @@ describe("buildImportPlan — a demanda aberta recebe o resto da sequência do t
     ]);
     const t = p.tasks.find((x) => x.card.id === "a2")!;
     expect(t.stages.map((s) => s.stageName)).toContain("Aprovação");
-    expect(t.futureStageNames).toEqual(["Relatório"]);
+    expect(t.futureStages.map((f) => f.stageName)).toEqual(["Relatório"]);
   });
 
   it("demanda concluída não ganha etapa nenhuma pela frente — o trabalho acabou", () => {
@@ -280,7 +284,7 @@ describe("buildImportPlan — a demanda aberta recebe o resto da sequência do t
     );
     const t = p.tasks.find((x) => x.card.id === "a3")!;
     expect(t.status).toBe("COMPLETED");
-    expect(t.futureStageNames).toEqual([]);
+    expect(t.futureStages).toEqual([]);
   });
 
   it("demanda obsoleta não ganha etapa nenhuma pela frente — foi abandonada, não pausada", () => {
@@ -289,7 +293,7 @@ describe("buildImportPlan — a demanda aberta recebe o resto da sequência do t
     );
     const t = p.tasks.find((x) => x.card.id === "a4")!;
     expect(t.status).toBe("OBSOLETE");
-    expect(t.futureStageNames).toEqual([]);
+    expect(t.futureStages).toEqual([]);
   });
 });
 
@@ -369,6 +373,100 @@ describe("buildImportPlan — o responsável declarado no card vira dono da etap
   it("card sem membro nenhum continua sem dono — nada é inventado", () => {
     const p = planoDe(card({ id: "m6", idList: "L_AV", due: "2026-07-15T00:00:00Z" }));
     expect(p.tasks[0].stages[0].assigneeUserId).toBeUndefined();
+  });
+});
+
+// Três designers do quadro (FABRICIO, DIEGO, JORGE) não são membros do Trello, mas existem no
+// WorkOS: o caminho lista → membro do Trello → usuário se rompia no meio e a etapa ficava sem dono.
+// E `SUPERVISIÓN` não é nome de gente — quem responde por ela é declarado por quem roda a
+// importação, não adivinhado.
+describe("buildImportPlan — o nome da lista alcança o usuário do WorkOS", () => {
+  const LISTAS_D = [
+    trelloList("L_FAB", "DISEÑO - FABRICIO"),
+    trelloList("L_SUP", "DISEÑO - SUPERVISIÓN"),
+    trelloList("L_AV", "AUDIOVISUAL"),
+  ];
+  const USUARIOS = [
+    user("uf", "Fabricio Benitez", "fabriciogoonmkt@gmail.com"),
+    user("ud", "Dalbiran Soares de Barros", "dalbiranmktgoon@gmail.com"),
+  ];
+
+  function planoDe(c: ExportCard, opts: Record<string, unknown> = {}) {
+    return buildImportPlan(
+      { cards: [c], labels: [], lists: LISTAS_D, members: [], actions: [] },
+      USUARIOS,
+      opts
+    );
+  }
+
+  it("designer que não é membro do Trello vira dono pelo nome, casado no WorkOS", () => {
+    const p = planoDe(card({ id: "d1", idList: "L_FAB", due: "2026-07-15T00:00:00Z" }));
+    expect(p.tasks[0].stages[0]).toMatchObject({ stageName: "Desenho", assigneeUserId: "uf" });
+  });
+
+  it("nome de lista que não é pessoa fica sem dono, a menos que declarado", () => {
+    const semAlias = planoDe(card({ id: "d2", idList: "L_SUP", due: "2026-07-15T00:00:00Z" }));
+    expect(semAlias.tasks[0].stages[0].assigneeUserId).toBeUndefined();
+
+    const comAlias = planoDe(card({ id: "d3", idList: "L_SUP", due: "2026-07-15T00:00:00Z" }), {
+      designerAliases: { SUPERVISIÓN: "dalbiranmktgoon@gmail.com" },
+    });
+    expect(comAlias.tasks[0].stages[0].assigneeUserId).toBe("ud");
+  });
+
+  it("nome que casa com dois usuários não escolhe nenhum", () => {
+    const p = buildImportPlan(
+      {
+        cards: [card({ id: "d4", idList: "L_FAB", due: "2026-07-15T00:00:00Z" })],
+        labels: [],
+        lists: LISTAS_D,
+        members: [],
+        actions: [],
+      },
+      [
+        user("u1", "Fabricio Benitez", "a@x.com"),
+        user("u2", "Fabricio Outro Sobrenome", "b@x.com"),
+      ],
+      {}
+    );
+    expect(p.tasks[0].stages[0].assigneeUserId).toBeUndefined();
+  });
+});
+
+// As etapas pendentes de aprovação e relatório são do atendimento — de quem abriu a demanda.
+describe("buildImportPlan — quem criou o card responde pelas etapas pendentes", () => {
+  const MEMBROS = [member("tPedro", "pedro_villalba", "Pedro Villalba")];
+  const USUARIOS = [user("up", "Pedro Fernando Villalba Brandel", "pedrogoonmkt@gmail.com")];
+
+  function planoDe(c: ExportCard) {
+    return buildImportPlan(board([c], { members: MEMBROS }), USUARIOS, {});
+  }
+
+  it("aprovação e relatório pendentes ficam com o criador do card", () => {
+    const p = planoDe(
+      card({
+        id: "k1",
+        idList: "L_DESENHO",
+        idMemberCreator: "tPedro",
+        due: "2026-07-15T00:00:00Z",
+      })
+    );
+    const f = Object.fromEntries(
+      p.tasks[0].futureStages.map((x) => [x.stageName, x.assigneeUserId])
+    );
+    expect(f).toEqual({ "Quality Control": undefined, Aprovação: "up", Relatório: "up" });
+  });
+
+  it("criador que não casa com usuário nenhum não deixa dono em lugar nenhum", () => {
+    const p = planoDe(
+      card({
+        id: "k2",
+        idList: "L_DESENHO",
+        idMemberCreator: "tFantasma",
+        due: "2026-07-15T00:00:00Z",
+      })
+    );
+    expect(p.tasks[0].futureStages.every((x) => x.assigneeUserId === undefined)).toBe(true);
   });
 });
 

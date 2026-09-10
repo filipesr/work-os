@@ -179,7 +179,10 @@ async function resolveWriteContext(
   for (const s of template?.stages ?? []) stageIdByName.set(s.name as StageName, s.id);
 
   const requiredNames = new Set(
-    plan.tasks.flatMap((t) => [...t.stages.map((s) => s.stageName), ...t.futureStageNames])
+    plan.tasks.flatMap((t) => [
+      ...t.stages.map((s) => s.stageName),
+      ...t.futureStages.map((f) => f.stageName),
+    ])
   );
   for (const name of requiredNames) {
     if (!stageIdByName.has(name)) {
@@ -266,7 +269,10 @@ async function writeTask(
   // As etapas com evidência MAIS as que a demanda aberta tem pela frente: as duas viram linha de
   // `TaskActiveStage`, mas só as primeiras recebem fixup e histórico (abaixo). Sem as futuras,
   // concluir o Desenho de uma demanda importada não teria revisão nem aprovação para ativar.
-  const stageNames = [...task.stages.map((s) => s.stageName), ...task.futureStageNames];
+  const stageNames = [
+    ...task.stages.map((s) => s.stageName),
+    ...task.futureStages.map((f) => f.stageName),
+  ];
   const selectedStageIds = new Set(stageNames.map((n) => ctx.stageIdByName.get(n)!));
 
   // De propósito SEM `assignments`: createTaskStages só atribui quem pertence ao time EFETIVO da
@@ -304,6 +310,7 @@ async function writeTask(
     await fixupStage(tx, taskId, stage, task.status, ctx.stageIdByName, historicalAt);
   }
 
+  await assignFutureStages(tx, taskId, task, ctx.stageIdByName);
   await promoteNextStageIfIdle(tx, taskId, task, ctx.stageIdByName);
 
   // O log e as transições que createTaskCore→createTaskStages abriram sozinhos (só para a etapa de
@@ -392,6 +399,32 @@ function stageStatusFor(
 }
 
 /**
+ * Escreve o dono das etapas PELA FRENTE que têm um.
+ *
+ * Isto não é histórico — é roteamento: `Aprovação` e `Relatório` ficam com quem abriu a demanda no
+ * Trello (ver `CREATOR_OWNED_STAGES` em plan.ts), que é quem responde por aprová-la e relatá-la.
+ * Por isso `assignedAt` é AGORA e não a âncora histórica: a atribuição está sendo feita neste
+ * instante, pela importação, e datá-la no passado afirmaria uma decisão que ninguém tomou lá.
+ *
+ * Etapa pela frente sem dono não recebe update nenhum: ela já nasceu certa em `createTaskStages`.
+ */
+async function assignFutureStages(
+  tx: Prisma.TransactionClient,
+  taskId: string,
+  task: PlannedTask,
+  stageIdByName: Map<StageName, string>
+): Promise<void> {
+  const agora = new Date();
+  for (const futura of task.futureStages) {
+    if (!futura.assigneeUserId) continue;
+    await tx.taskActiveStage.update({
+      where: { taskId_stageId: { taskId, stageId: stageIdByName.get(futura.stageName)! } },
+      data: { assigneeId: futura.assigneeUserId, assignedAt: agora },
+    });
+  }
+}
+
+/**
  * Ativa a primeira etapa PELA FRENTE quando a demanda está aberta e nenhuma etapa com evidência
  * ficou ativa — isto é, quando a última que ela percorreu já fechou.
  *
@@ -413,12 +446,12 @@ async function promoteNextStageIfIdle(
 ): Promise<void> {
   if (task.status !== "IN_PROGRESS") return;
   if (task.stages.some((s) => !s.completed)) return; // alguma já ficou ACTIVE no fixup
-  const proxima = task.futureStageNames[0];
+  const proxima = task.futureStages[0];
   if (!proxima) return;
 
   const fim = lastKnownExit(task);
   await tx.taskActiveStage.update({
-    where: { taskId_stageId: { taskId, stageId: stageIdByName.get(proxima)! } },
+    where: { taskId_stageId: { taskId, stageId: stageIdByName.get(proxima.stageName)! } },
     data: { status: "ACTIVE", activatedAt: fim },
   });
 }

@@ -44,6 +44,10 @@ export interface BuildImportPlanOptions {
    * real (testes de plan.ts, que não escrevem no banco); o escritor recusa `clientId` vazio antes
    * de abrir qualquer transação — ver `resolveWriteContext` em writer.ts. */
   clientId?: string;
+  /** Quem responde por um nome de lista de design que não é nome de pessoa,
+   * `{ nome na lista: e-mail no WorkOS }` — `DISEÑO - SUPERVISIÓN` é o caso do quadro real. Sem
+   * isso a lista fica sem dono, que é o certo: adivinhar quem supervisiona seria inventar. */
+  designerAliases?: Record<string, string>;
   /** Casamentos declarados à mão, `{ apelido no Trello: e-mail no WorkOS }`, repassados a
    * `matchMembers` (map-people.ts) para a pessoa cujo cadastro foge do padrão que as três chaves
    * automáticas reconhecem. Quem roda a importação declara isso — plan.ts não adivinha. */
@@ -76,15 +80,25 @@ export interface PlannedTask {
   completedAt: Date | null;
   /** Nunca vazio — cards sem etapa mapeável vão para `ImportPlan.skipped`, não viram PlannedTask. */
   stages: PlannedStage[];
-  /** As etapas que a demanda tem PELA FRENTE, sem evidência nenhuma e por isso sem data, sem dono e
-   * sem histórico: só existem para que a demanda aberta continue o fluxo no produto. Vazio em
-   * demanda concluída ou obsoleta. Ver `futureStagesFor` (map-stages.ts). */
-  futureStageNames: StageName[];
+  /** As etapas que a demanda tem PELA FRENTE, sem evidência nenhuma e por isso sem data e sem
+   * histórico: só existem para que a demanda aberta continue o fluxo no produto. Vazio em demanda
+   * concluída ou obsoleta. Ver `futureStagesFor` (map-stages.ts).
+   *
+   * `assigneeUserId` não é evidência de trabalho feito — é ROTEAMENTO: `Aprovação` e `Relatório`
+   * ficam com quem abriu a demanda, que é quem responde por aprová-la e relatá-la. `Quality
+   * Control` não: o portão é do time de qualidade, não do atendimento. */
+  futureStages: PlannedFutureStage[];
   rework: ReworkEvent[];
 }
 
 /** Motivo do descarte de um card. Os três primeiros vêm da natureza (classify.ts); os dois últimos
  * são decisões do joiner: um card sem mês ou sem etapa mapeável nunca vira demanda planejada. */
+/** Uma etapa que a demanda aberta tem pela frente. Sem segmentos, porque não houve permanência. */
+export interface PlannedFutureStage {
+  stageName: StageName;
+  assigneeUserId?: string;
+}
+
 export type SkipReason = "separador" | "ausencia" | "referencia" | "sem mês" | "sem etapa mapeável";
 
 export interface SkippedCard {
@@ -126,6 +140,11 @@ export function buildImportPlan(
   const listNamesById = buildListNamesById(board);
   const concludoListId = board.lists.find((l) => l.name === concludoListName)?.id ?? "";
   const trelloIdByDesignerName = deriveTrelloIdByDesignerName(board.lists, board.members);
+  const userIdByDesignerName = deriveUserIdByDesignerName(
+    board.lists,
+    workosUsers,
+    opts.designerAliases ?? {}
+  );
 
   const { byTrelloId, unmatched } = matchMembers(board.members, workosUsers, opts.manualMatches);
 
@@ -162,12 +181,19 @@ export function buildImportPlan(
 
     const rework = planRework(movements, stagesCtx);
     const declaredOwner = declaredOwnerOf(card, byTrelloId);
+    const creatorUserId = card.idMemberCreator ? byTrelloId.get(card.idMemberCreator) : undefined;
     const plannedStages: PlannedStage[] = stages.map((s) => ({
       ...s,
       // A evidência de execução manda: quem está no nome da lista ou anexou o arquivo fez o
       // trabalho. O membro declarado no card só entra onde ela não disse nada.
+      // A escada, da evidência mais forte para a mais fraca: o membro do Trello que a lista ou o
+      // anexo apontou; o NOME que a lista carrega, casado direto no WorkOS (é como FABRICIO, DIEGO
+      // e JORGE são alcançados — eles desenham para este quadro sem serem membros dele); e, por
+      // último, quem o card declara em `idMembers`.
       assigneeUserId:
-        (s.assigneeTrelloId ? byTrelloId.get(s.assigneeTrelloId) : undefined) ?? declaredOwner,
+        (s.assigneeTrelloId ? byTrelloId.get(s.assigneeTrelloId) : undefined) ??
+        (s.designerName ? userIdByDesignerName[s.designerName] : undefined) ??
+        declaredOwner,
     }));
 
     monthKeys.add(mapped.monthKey);
@@ -181,10 +207,13 @@ export function buildImportPlan(
       status: mapped.status,
       completedAt: mapped.completedAt,
       stages: plannedStages,
-      futureStageNames: futureStagesFor(
+      futureStages: futureStagesFor(
         mapped.status,
         plannedStages.map((s) => s.stageName)
-      ),
+      ).map((stageName) => ({
+        stageName,
+        assigneeUserId: CREATOR_OWNED_STAGES.includes(stageName) ? creatorUserId : undefined,
+      })),
       rework,
     });
   }
@@ -291,6 +320,47 @@ function groupMovementsByCard(actions: TrelloAction[]): Map<string, CardMovement
  * sem casamento único (zero ou mais de um membro) fica de fora do mapa, e planStages (map-stages.ts)
  * já trata a ausência de entrada como "sem responsável conhecido", nunca inferido.
  */
+/** As etapas pendentes que ficam com quem ABRIU a demanda. `Quality Control` de propósito fora: o
+ * portão de qualidade é do time de qualidade, não de quem pediu a peça. */
+const CREATOR_OWNED_STAGES: StageName[] = ["Aprovação", "Relatório"];
+
+/**
+ * `{ NOME NA LISTA: id do usuário WorkOS }` para os nomes que as listas de design carregam.
+ *
+ * Existe porque o caminho lista → membro do Trello → usuário se rompe no meio: FABRICIO, DIEGO e
+ * JORGE desenham para este quadro sem serem membros dele, e sem esta ponte a etapa deles nascia
+ * sem dono. O casamento é por palavra inteira no nome do usuário e só vale quando é ÚNICO — dois
+ * usuários com a mesma palavra no nome não escolhem nenhum, pela mesma razão de sempre.
+ *
+ * `aliases` cobre o nome que não é de pessoa (`SUPERVISIÓN`): quem roda a importação declara quem
+ * responde por ele, e sem declaração fica sem dono.
+ */
+function deriveUserIdByDesignerName(
+  lists: TrelloList[],
+  users: WorkOSUser[],
+  aliases: Record<string, string>
+): Record<string, string> {
+  const userIdByEmail = new Map(users.map((u) => [u.email.toLowerCase(), u.id]));
+  const result: Record<string, string> = {};
+
+  for (const list of lists) {
+    const designerName = mapListToStage(list.name)?.designerName?.toUpperCase();
+    if (!designerName || result[designerName]) continue;
+
+    const alias = aliases[designerName];
+    if (alias) {
+      const userId = userIdByEmail.get(alias.toLowerCase());
+      if (userId) result[designerName] = userId;
+      continue;
+    }
+
+    const matches = users.filter((u) => fullNameHasWord(u.name, designerName));
+    if (matches.length === 1) result[designerName] = matches[0].id;
+  }
+
+  return result;
+}
+
 function deriveTrelloIdByDesignerName(
   lists: TrelloList[],
   members: TrelloMember[]

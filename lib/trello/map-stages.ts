@@ -69,6 +69,10 @@ export interface StageSegment {
 export interface StagePlan {
   stageName: StageName;
   assigneeTrelloId?: string;
+  /** O nome que a lista de design carrega (`DISEÑO - MARTIN` → `"MARTIN"`), em caixa alta, quando
+   * houver. Viaja mesmo sem `assigneeTrelloId`: três designers do quadro real (FABRICIO, DIEGO,
+   * JORGE) não são membros do Trello mas existem no WorkOS, e é plan.ts quem faz essa ponte. */
+  designerName?: string;
   segments: StageSegment[];
   /** true quando o ÚLTIMO segmento tem saída conhecida (a etapa foi encerrada, não só visitada). */
   completed: boolean;
@@ -162,7 +166,7 @@ function resolveDesignerAssignee(
 function resolveOriginProductionStage(
   card: Card,
   ctx: MapStagesContext
-): { stageName: ProductionStageName; assigneeTrelloId?: string } | null {
+): { stageName: ProductionStageName; assigneeTrelloId?: string; designerName?: string } | null {
   if (!card.idList) return null;
 
   const listName = ctx.listNamesById[card.idList];
@@ -175,6 +179,7 @@ function resolveOriginProductionStage(
   return {
     stageName: mapped.stageName,
     assigneeTrelloId: resolveDesignerAssignee(mapped.designerName, ctx),
+    designerName: mapped.designerName?.toUpperCase(),
   };
 }
 
@@ -190,6 +195,7 @@ function planFromOriginList(card: Card, ctx: MapStagesContext): StagePlan[] {
     {
       stageName: origin.stageName,
       assigneeTrelloId: origin.assigneeTrelloId,
+      designerName: origin.designerName,
       segments: [{}],
       completed: false,
     },
@@ -222,15 +228,23 @@ function planFromAttachment(
   ctx: MapStagesContext,
   attachment: AttachmentEvidence
 ): StagePlan[] {
-  const stageName =
-    resolveOriginProductionStage(card, ctx)?.stageName ??
-    deriveStageFromMimeTypes(card.attachments);
+  const origin = resolveOriginProductionStage(card, ctx);
+  const stageName = origin?.stageName ?? deriveStageFromMimeTypes(card.attachments);
   if (!stageName) return [];
+
+  // O NOME DA LISTA MANDA sobre o autor do anexo. `DISEÑO - MARTIN` é a afirmação de quem desenhou
+  // a peça; o autor do anexo diz só quem subiu o arquivo, e no quadro real isso é com frequência o
+  // supervisor ou alguém que já saiu. Quando a lista nomeia alguém, é dele a etapa — e o nome viaja
+  // junto mesmo sem id do Trello, porque FABRICIO, DIEGO e JORGE não são membros do quadro e é
+  // plan.ts quem os alcança nos usuários do WorkOS. Sem nome na lista (AUDIOVISUAL, ou lista que
+  // não decide), o autor do anexo continua sendo a evidência disponível.
+  const daLista = origin?.designerName !== undefined;
 
   return [
     {
       stageName,
-      assigneeTrelloId: attachment.assigneeTrelloId,
+      assigneeTrelloId: daLista ? origin!.assigneeTrelloId : attachment.assigneeTrelloId,
+      designerName: origin?.designerName,
       segments: [{ enteredAt: attachment.enteredAt ? new Date(attachment.enteredAt) : undefined }],
       completed: false,
     },
@@ -356,6 +370,7 @@ function planFromMovements(movements: CardMovement[], ctx: MapStagesContext): St
   const order: StageName[] = [];
   const segmentsByStage = new Map<StageName, StageSegment[]>();
   const assigneeByStage = new Map<StageName, string | undefined>();
+  const designerByStage = new Map<StageName, string | undefined>();
 
   for (const visit of visits) {
     const mapped = mapListToStage(visit.listName);
@@ -364,7 +379,16 @@ function planFromMovements(movements: CardMovement[], ctx: MapStagesContext): St
     if (!segmentsByStage.has(mapped.stageName)) {
       order.push(mapped.stageName);
       segmentsByStage.set(mapped.stageName, []);
+    }
+
+    // O dono da etapa é quem está com ela AGORA — a última lista de designer por onde o card
+    // passou, não a primeira. Um card devolvido de `DISEÑO - SUPERVISIÓN` para `DISEÑO - HENRIQUE`
+    // é do Henrique; a passagem anterior continua no histórico de segmentos, que é onde ela cabe.
+    // Visita sem nome de designer (REVISIÓN, LIBERADO) não escreve nada: ela não afirma um dono
+    // novo nem apaga o conhecido — os dois mapas devolvem `undefined` para chave que nunca entrou.
+    if (mapped.designerName) {
       assigneeByStage.set(mapped.stageName, resolveDesignerAssignee(mapped.designerName, ctx));
+      designerByStage.set(mapped.stageName, mapped.designerName.toUpperCase());
     }
 
     segmentsByStage.get(mapped.stageName)!.push({
@@ -379,6 +403,7 @@ function planFromMovements(movements: CardMovement[], ctx: MapStagesContext): St
     return {
       stageName: name,
       assigneeTrelloId: assigneeByStage.get(name),
+      designerName: designerByStage.get(name),
       segments,
       completed: lastSegment.exitedAt !== undefined,
     };

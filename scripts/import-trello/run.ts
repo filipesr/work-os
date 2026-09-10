@@ -39,6 +39,19 @@ const MANUAL_MATCHES: Record<string, string> = {
   saragoon1: "saragoonmmkt@gmail.com",
 };
 
+/**
+ * Quem responde por um nome de lista de design que não é nome de pessoa,
+ * `{ nome na lista: e-mail no WorkOS }`.
+ *
+ * `DISEÑO - SUPERVISIÓN` é o único caso do quadro: a lista existe, tem cards, e nenhum usuário se
+ * chama "Supervisión". Sem declaração ela fica sem dono — adivinhar quem supervisiona seria
+ * inventar. Os outros sete nomes (MARTIN, HENRIQUE, MATHIAS, VINICIUS, FABRICIO, DIEGO, JORGE)
+ * casam sozinhos com um usuário do WorkOS e não precisam de linha aqui.
+ */
+const DESIGNER_ALIASES: Record<string, string> = {
+  SUPERVISIÓN: "dalbiranmktgoon@gmail.com",
+};
+
 export interface Args {
   file: string;
   clientId: string;
@@ -147,6 +160,7 @@ async function main(): Promise<number> {
     const plan = buildImportPlan(board, workosUsers, {
       clientId: args.clientId,
       manualMatches: MANUAL_MATCHES,
+      designerAliases: DESIGNER_ALIASES,
     });
 
     // O --commit imprime o MESMO relatório do ensaio antes de gravar — quem manda gravar precisa

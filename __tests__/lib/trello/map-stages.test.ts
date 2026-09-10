@@ -224,9 +224,11 @@ describe("planStages", () => {
     });
 
     it("três anexos de A contra um de B mais antigo — vence A, não quem anexou primeiro", () => {
+      // Lista SEM nome de designer (AUDIOVISUAL): é aqui que a disputa entre autores de anexo
+      // decide. Numa lista `DISEÑO - <NOME>` quem manda é a lista — ver o describe do fim.
       const r = planStages(
         card({
-          idList: "L_MARTIN",
+          idList: "L_AV",
           attachments: [
             anexo({ id: "a1", idMember: "tB", date: "2026-04-01T09:00:00Z" }), // B: mais antigo, só 1
             anexo({ id: "a2", idMember: "tA", date: "2026-04-01T10:00:00Z" }),
@@ -241,14 +243,13 @@ describe("planStages", () => {
     });
   });
 
-  it("anexo sem idMember não herda o responsável da lista — o nível 2 vem só do anexo, ponto", () => {
+  it("anexo sem autor numa lista sem designer fica sem dono — não se inventa quem produziu", () => {
     const r = planStages(
-      card({ idList: "L_MARTIN", attachments: [anexo({ date: "2026-04-01T10:00:00Z" })] }), // sem idMember
+      card({ idList: "L_AV", attachments: [anexo({ date: "2026-04-01T10:00:00Z" })] }), // sem idMember
       [],
       ctx()
     );
     expect(r.tier).toBe(2);
-    // A lista ("DISEÑO - MARTIN") resolveria "tMartin" via ctx — mas nível 2 não pode herdar isso.
     expect(r.stages[0].assigneeTrelloId).toBeUndefined();
   });
 
@@ -367,5 +368,102 @@ describe("planStages", () => {
       );
       expect(r.stages[0].stageName).toBe("Desenho");
     });
+  });
+});
+
+// O nome da lista é a afirmação mais forte de quem desenhou: `DISEÑO - MARTIN` diz de quem é a
+// peça. O autor do anexo diz só quem subiu o arquivo — pode ser o supervisor, ou alguém que nem
+// está no quadro. Sem isto, um card parado em `DISEÑO - MARTIN` com anexo de outra pessoa nascia
+// atribuído a essa outra pessoa (caso real: 3 de 20 na primeira gravação, e 7 sem dono nenhum).
+describe("planStages — o nome da lista manda sobre o autor do anexo", () => {
+  it("card parado numa lista de designer: o dono é o da lista, não quem anexou", () => {
+    const r = planStages(
+      card({
+        idList: "L_MARTIN",
+        attachments: [anexo({ idMember: "tOutro", date: "2026-07-02T10:00:00Z" })],
+      }),
+      [],
+      ctx()
+    );
+    expect(r.tier).toBe(2);
+    expect(r.stages[0]).toMatchObject({ stageName: "Desenho", assigneeTrelloId: "tMartin" });
+    expect(r.stages[0].designerName).toBe("MARTIN");
+  });
+
+  it("lista de produção sem nome de designer: o autor do anexo continua valendo", () => {
+    const r = planStages(
+      card({
+        idList: "L_AV",
+        attachments: [anexo({ idMember: "tOutro", date: "2026-07-02T10:00:00Z" })],
+      }),
+      [],
+      ctx()
+    );
+    expect(r.stages[0]).toMatchObject({ stageName: "Audio Visual", assigneeTrelloId: "tOutro" });
+    expect(r.stages[0].designerName).toBeUndefined();
+  });
+
+  it("lista de designer sem membro correspondente: o nome viaja mesmo sem id do Trello", () => {
+    const r = planStages(
+      card({
+        idList: "L_FABRICIO",
+        attachments: [anexo({ idMember: "tOutro", date: "2026-07-02T10:00:00Z" })],
+      }),
+      [],
+      ctx({
+        listNamesById: {
+          L_FABRICIO: "DISEÑO - FABRICIO",
+          L_AV: "AUDIOVISUAL",
+        },
+      })
+    );
+    // Sem id do Trello (Fabricio não é membro do quadro), mas o NOME segue no plano para plan.ts
+    // resolver contra os usuários do WorkOS. E o autor do anexo não toma o lugar dele.
+    expect(r.stages[0]).toMatchObject({ stageName: "Desenho", designerName: "FABRICIO" });
+    expect(r.stages[0].assigneeTrelloId).toBeUndefined();
+  });
+
+  it("card passado de um designer para outro fica com o ÚLTIMO, não com o primeiro", () => {
+    // Caso real: "Flyer Historias: Lanzamiento de Apple" saiu de DISEÑO - SUPERVISIÓN para
+    // DISEÑO - HENRIQUE. A linha de TaskActiveStage tem UM dono, e o dono de uma etapa é quem está
+    // com ela agora — a passagem anterior fica no histórico de segmentos, não no dono.
+    const r = planStages(
+      card({ idList: "L_HENRIQUE" }),
+      [mov("DISEÑO - SUPERVISIÓN", "DISEÑO - HENRIQUE", "2026-08-20T13:45:25.440Z")],
+      ctx({
+        listNamesById: { L_HENRIQUE: "DISEÑO - HENRIQUE" },
+        trelloIdByDesignerName: { HENRIQUE: "tHenrique", SUPERVISIÓN: "tSup" },
+      })
+    );
+    const d = r.stages.find((x) => x.stageName === "Desenho")!;
+    expect(d.designerName).toBe("HENRIQUE");
+    expect(d.assigneeTrelloId).toBe("tHenrique");
+  });
+
+  it("visita posterior sem nome de designer não apaga o dono já conhecido", () => {
+    const r = planStages(
+      card({ idList: "L_REVISION" }),
+      [
+        mov("DISEÑO - MARTIN", "REVISIÓN", "2026-07-02T10:00:00Z"),
+        mov("REVISIÓN", "DISEÑO - MARTIN", "2026-07-03T10:00:00Z"),
+        mov("DISEÑO - MARTIN", "REVISIÓN", "2026-07-04T10:00:00Z"),
+      ],
+      ctx()
+    );
+    expect(r.stages.find((x) => x.stageName === "Desenho")?.assigneeTrelloId).toBe("tMartin");
+  });
+
+  it("nível 3 e nível 1 também carregam o nome da lista", () => {
+    const t3 = planStages(card({ idList: "L_MARTIN" }), [], ctx());
+    expect(t3.tier).toBe(3);
+    expect(t3.stages[0].designerName).toBe("MARTIN");
+
+    const t1 = planStages(
+      card({ idList: "L_REVISION" }),
+      [mov("DISEÑO - MARTIN", "REVISIÓN", "2026-07-02T10:00:00Z")],
+      ctx()
+    );
+    expect(t1.tier).toBe(1);
+    expect(t1.stages.find((s) => s.stageName === "Desenho")?.designerName).toBe("MARTIN");
   });
 });

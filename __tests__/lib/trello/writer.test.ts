@@ -186,7 +186,7 @@ function plannedTask(overrides: Partial<PlannedTask> = {}): PlannedTask {
     status: "IN_PROGRESS",
     completedAt: null,
     stages: [stage()],
-    futureStageNames: [],
+    futureStages: [],
     rework: [],
     ...overrides,
   };
@@ -1004,7 +1004,11 @@ describe("applyImportPlan — as etapas pela frente entram sem histórico", () =
               segments: [{ enteredAt: new Date("2026-01-05T09:00:00.000Z") }],
             }),
           ],
-          futureStageNames: ["Quality Control", "Aprovação", "Relatório"],
+          futureStages: [
+            { stageName: "Quality Control" },
+            { stageName: "Aprovação" },
+            { stageName: "Relatório" },
+          ],
         }),
       ],
       skipped: [],
@@ -1020,6 +1024,47 @@ describe("applyImportPlan — as etapas pela frente entram sem histórico", () =
       (c) => c[0].data.stageId
     );
     expect(new Set(criadas)).toEqual(new Set(["s-desenho", "s-qc", "s-aprov", "s-relatorio"]));
+  });
+
+  it("a etapa pela frente COM dono declarado recebe o dono, e só ele", async () => {
+    const prisma = fakePrisma();
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          stages: [
+            stage({
+              stageName: "Desenho",
+              segments: [{ enteredAt: new Date("2026-01-05T09:00:00.000Z") }],
+            }),
+          ],
+          futureStages: [
+            { stageName: "Quality Control" },
+            { stageName: "Aprovação", assigneeUserId: "u-pedro" },
+            { stageName: "Relatório", assigneeUserId: "u-pedro" },
+          ],
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    const comDono = (prisma.taskActiveStage.update as ReturnType<typeof vi.fn>).mock.calls
+      .map((c) => c[0])
+      .filter((c) => c.data.assigneeId === "u-pedro");
+    expect(comDono.map((c) => c.where.taskId_stageId.stageId).sort()).toEqual([
+      "s-aprov",
+      "s-relatorio",
+    ]);
+    // A atribuição de uma etapa pendente é roteamento feito AGORA, não fato histórico.
+    for (const c of comDono) expect(c.data.assignedAt).toBeInstanceOf(Date);
+    // A etapa sem dono declarado continua sem ninguém.
+    const qc = (prisma.taskActiveStage.update as ReturnType<typeof vi.fn>).mock.calls
+      .map((c) => c[0])
+      .filter((c) => c.where.taskId_stageId.stageId === "s-qc");
+    expect(qc).toEqual([]);
   });
 
   it("a etapa pela frente não recebe data, dono nem registro de permanência", async () => {
@@ -1066,7 +1111,7 @@ describe("applyImportPlan — demanda aberta nunca fica sem etapa ativa", () => 
           // Sempre com etapa pela frente, inclusive na CONCLUÍDA: o plano nunca produz isso
           // (futureStagesFor devolve vazio fora de IN_PROGRESS), e é justamente por isso que o
           // teste precisa montar o caso à mão — senão a fixture provaria a guarda por acidente.
-          futureStageNames: ["Relatório"],
+          futureStages: [{ stageName: "Relatório" }],
         }),
       ],
       skipped: [],

@@ -22,6 +22,10 @@ export interface Card {
   }>;
   /** ID da lista. Usado por mapCardToTask para determinar status (COMPLETED se em "Concluido"). */
   idList?: string;
+  /** ID do membro do Trello que CRIOU o card. Usado por buildImportPlan (plan.ts) para dar dono às
+   * etapas pendentes de `Aprovação` e `Relatório`: quem abriu a demanda é quem responde por
+   * aprová-la e relatá-la. Preenchido em 303 de 303 cards do export real. */
+  idMemberCreator?: string;
   /** IDs dos membros do Trello declarados no card. Usado por buildImportPlan (plan.ts) para dar
    * dono às etapas que a evidência de execução (nome na lista, autor do anexo) deixou sem
    * responsável — 127 cards do export real declaram alguém. */
