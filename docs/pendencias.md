@@ -246,3 +246,26 @@ Não são pendências desta lista, mas quem lê aqui costuma precisar delas:
   precisa saber que `PENDING` significa **duas coisas diferentes** conforme o artefato tenha ou
   não um `url`: upload de navegador fica órfão e entra na expiração do cron; importação volta
   sozinha para `PENDING` quando a reserva vence, sem o cron entrar em ação.
+
+---
+
+## Limitações da importação do Trello (2026-09)
+
+**Cards de instrução ficam fora.** 10 cards que não têm anexo nenhum — o conteúdo está no título
+e na descrição — merecem decisão humana, um a um. São: `MODELO - Checklist materiais campanhas` (×2) ·
+`ACCESSOS` · `TAMAÑO - Banners Web` · `TAMAÑO OOH - Tienda` · `TAMAÑO DOOH` ·
+`MODELO - SOLICITAÇÃO Tráfego` · `TAMAÑO - Contenido de Tráfego` · `Modelo - Pedido Tráfego` ·
+`MODELO - SOLICITAÇÃO Briefing`. Nenhum é demanda; todos ficam para revisão manual.
+
+**O que não foi importado e por quê.** Além das 10 instruções acima, a importação descarta:
+
+- **38 separadores visuais** (`PRIORIDAD 👆`, `EN PROCESO ⬆️`, `-----`, `☝ ALTERACIÓN ☝`) — mobília de quadro, não trabalho.
+- **25 registros de ausência** (`FERIADO`, `FÉRIAS`, `DIA LIBRE`, `REUNIÓN`) — eventos e faltas, não demandas.
+- **26 demandas sem etapa mapeável** — nenhuma evidência de por onde passaram no processo (movimentação, anexo com data ou lista de origem reconhecida). Importá-las marcaria etapa inventada — o oposto do combinado.
+- **Comentários (33 no export).** O export do Trello corta em 1000 ações no total, cobrindo só 2026-08-12 → 2026-09-09. Importar comentários antigos cortados e novos sem contexto não paga o custo de mapeá-los.
+
+**Anexos são LINK para o Trello, não cópias.** 454 dos 455 arquivos são `isUpload: true` e hospedados atrás de autenticação (`curl 'URL' → 401`). A importação para o NAS não consegue baixá-los. Cada um entra como **artefato de link**, com nome, tipo de mídia e a URL original. **Se o quadro do Trello for apagado ou a conta encerrada, as referências morrem junto.** É consequência aceita da decisão de não guardar credencial do Trello para uma migração única — mas quem depender desses arquivos (3,47 GB, maior arquivo 201 MB) precisa saber.
+
+**A repescagem manual de pessoas.** 6 dos 17 membros do Trello não casaram com usuário do WorkOS por regra exata: `FSRezende`, `Franciele Souza`, `Paola Palma`, `Sara Goon`, `Vladimir Goon`, `rocio bernal`. O trabalho deles fica sem responsável até alguém mapear à mão.
+
+**Decisão em aberto: o cliente que já existe.** O cliente `AtlanticoShop` já tem um projeto (`Black Friday 2026`, com 3 demandas de teste). Ele convive com os 17 projetos mensais da importação ou é absorvido? É decisão do dono do projeto.

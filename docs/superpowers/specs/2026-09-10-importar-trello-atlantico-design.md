@@ -28,29 +28,32 @@ Classificando por título, rótulo e anexos:
 
 | Natureza                                                                      |   Cards | Destino                     |
 | ----------------------------------------------------------------------------- | ------: | --------------------------- |
-| **Demanda**                                                                   | **229** | importar                    |
+| **Demanda**                                                                   | **204** | importar                    |
 | Separador visual (`PRIORIDAD 👆`, `EN PROCESO ⬆️`, `☝ ALTERACIÓN ☝`, `-----`) |      38 | descartar                   |
-| Ausência / evento (`FERIADO 14/05`, `FÉRIAS 09 A 16/06`, `REUNIÓN`)           |      26 | descartar                   |
+| Ausência / evento (`FERIADO 14/05`, `FÉRIAS 09 A 16/06`, `REUNIÓN`)           |      25 | descartar                   |
 | Instrução / referência (`TAMAÑO - Banners Web`, `ACCESSOS`, `MODELO -`)       |      10 | **ignorar**, listar em nota |
+| Sem etapa mapeável                                                            |      26 | descartar                   |
 
 Os 38 separadores e os 25 registros de ausência são mobília de quadro, não trabalho. Importá-los
-encheria o histórico de demandas que nunca existiram.
+encheria o histórico de demandas que nunca existiram. As 26 demandas sem etapa mapeável — sem
+movimentação, sem anexo com data e fora das listas reconhecidas — não têm evidência de por onde
+passaram no processo e seriam etapa inventada.
 
 Os 10 cards de instrução **não têm anexo nenhum** — o conteúdo está no título e na descrição, não em
 arquivo. Não há artefato a extrair. Ficam de fora, com a lista nominal na nota final desta spec,
 para revisão individual.
 
-### O que as 230 demandas carregam
+### O que as 204 demandas carregam
 
 | Evidência                           | Demandas |
 | ----------------------------------- | -------: |
-| Descrição                           |      197 |
-| Prazo (`due`)                       |      124 |
-| Responsável declarado (`idMembers`) |      122 |
-| Anexo com autor e data              |      109 |
-| **Só o título**                     |   **16** |
+| Descrição                           |      175 |
+| Prazo (`due`)                       |      108 |
+| Responsável declarado (`idMembers`) |      106 |
+| Anexo com autor e data              |       95 |
+| **Só o título**                     |   **14** |
 
-As 16 entram assim mesmo. São demanda pelo critério acordado, e deixá-las fora criaria uma segunda
+As 14 entram assim mesmo. São demanda pelo critério acordado, e deixá-las fora criaria uma segunda
 lista de exceções para alguém revisar depois — custo maior que o de importá-las pobres.
 
 ## O fluxo real, extraído das movimentações
@@ -81,7 +84,8 @@ aprovado — é o achado mais interessante, e só aparece medindo etapa a etapa.
 ## O que NÃO é recuperável, e não vamos fingir que é
 
 **A jornada da maioria.** Só 49 dos 303 cards têm movimentação registrada. Para os outros 254 não há
-evidência de por onde passaram. O export corta em 1000 ações **no total** do quadro.
+evidência de por onde passaram — 26 deles estão entre as 204 demandas importadas e ficam sem etapa.
+O export corta em 1000 ações **no total** do quadro.
 
 **"Arquivado" não é "concluído".** 83 dos 157 arquivados pararam em `AUDIOVISUAL`, 17 em
 `DISEÑO - MARTIN`. As pessoas arquivaram o card de onde ele estava. `dateCompleted` está preenchido
@@ -98,9 +102,10 @@ da importação (P1 — nada num dado é inerentemente informacional; só o uso 
 
 **Cliente:** `AtlanticoShop`, que já existe (pasta `AtlanticoShop`, 1 projeto).
 
-**Projetos:** um por mês, **18 no total** (2025-04 → 2026-09), nomeados `AtlanticoShop YYYY-MM`. O mês
-sai do `due` quando existe, senão de `dateLastActivity`. A distribuição é desigual (julho e agosto de
-2026 concentram 104 das 229), mas isso é o histórico, não distorção da importação.
+**Projetos:** um por mês, **17 no total** (2025-05 → 2026-09), nomeados `AtlanticoShop YYYY-MM`. O mês
+sai do `due` quando existe, senão de `dateLastActivity`. O mês de 2025-04 tinha uma única demanda sem
+etapa mapeável, que caiu nos descartados. A distribuição é desigual (julho e agosto de
+2026 concentram 90 das 204), mas isso é o histórico, não distorção da importação.
 
 **Template:** `Demanda GoOn`, com as etapas:
 
@@ -308,7 +313,7 @@ descrição, quatro não têm nada além do título:
 
 E duas coisas que a importação vai expor e que são decisão de processo, não de código:
 
-**O projeto que já existe** no cliente AtlanticoShop convive com os 18 mensais, ou é absorvido?
+**O projeto que já existe** no cliente AtlanticoShop convive com os 17 mensais, ou é absorvido?
 
 **Decidido:** os rótulos de tipo entram como **prefixo do título** (`[STORIES] Carrusel de
 carnaval`). O WorkOS não tem rótulo livre de demanda, e o título é o único lugar onde a informação
