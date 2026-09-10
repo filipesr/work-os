@@ -13,6 +13,12 @@ export interface Card {
      * lista onde o card parou não é de produção — é evidência do que foi de fato produzido, não uma
      * suposição sobre por onde o card andou. */
     mimeType?: string | null;
+    /** Nome do arquivo anexado. Usado por writer.ts (Task 9) como título do artefato de link do
+     * anexo — sem ele, o artefato ficaria sem nome legível na tela. */
+    name?: string;
+    /** URL do anexo no Trello (`trello.com/1/cards/.../download/...`). Usado por writer.ts (Task 9)
+     * para gravar o artefato de link do anexo — ver "Por que os anexos ficam como link" na spec. */
+    url?: string;
   }>;
   /** ID da lista. Usado por mapCardToTask para determinar status (COMPLETED se em "Concluido"). */
   idList?: string;
