@@ -412,6 +412,69 @@ describe("applyImportPlan — o estado da etapa reflete o que aconteceu", () => 
   });
 });
 
+// Os painéis de gestão (getTeamCurrentLoad em reporting.ts, team-health.ts, person-metrics.ts) NÃO
+// usam `availableStageWhere` — filtram só pelo status da ETAPA. Uma etapa ACTIVE numa demanda
+// morta vira carga de trabalho de alguém, e `person-metrics.ts` ainda calcula aging sobre
+// `activatedAt`, que a importação carimba em 2025: toda etapa importada estouraria o SLA.
+// `INACTIVE` é o mesmo valor que `revertTaskStage` grava para "etapa a ser reconquistada" — não
+// afirma um trabalho que não aconteceu, ao contrário de `COMPLETED`.
+describe("applyImportPlan — etapa aberta de demanda morta não é trabalho de ninguém", () => {
+  async function statusDaEtapa(
+    taskStatus: PlannedTask["status"],
+    etapaFechada: boolean
+  ): Promise<string> {
+    const prisma = fakePrisma();
+    const entrou = new Date("2026-01-05T10:00:00.000Z");
+    const saiu = new Date("2026-01-06T10:00:00.000Z");
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          status: taskStatus,
+          stages: [
+            stage({
+              stageName: "Desenho",
+              segments: [{ enteredAt: entrou, exitedAt: etapaFechada ? saiu : undefined }],
+              completed: etapaFechada,
+            }),
+          ],
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    const update = (prisma.taskActiveStage.update as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    return update.data.status as string;
+  }
+
+  it("demanda IN_PROGRESS, etapa fechada → COMPLETED", async () => {
+    expect(await statusDaEtapa("IN_PROGRESS", true)).toBe("COMPLETED");
+  });
+
+  it("demanda IN_PROGRESS, etapa aberta → ACTIVE (o trabalho parou ali, e continua sendo trabalho)", async () => {
+    expect(await statusDaEtapa("IN_PROGRESS", false)).toBe("ACTIVE");
+  });
+
+  it("demanda COMPLETED, etapa fechada → COMPLETED", async () => {
+    expect(await statusDaEtapa("COMPLETED", true)).toBe("COMPLETED");
+  });
+
+  it("demanda COMPLETED, etapa aberta → INACTIVE, nunca ACTIVE", async () => {
+    expect(await statusDaEtapa("COMPLETED", false)).toBe("INACTIVE");
+  });
+
+  it("demanda OBSOLETE, etapa fechada → COMPLETED", async () => {
+    expect(await statusDaEtapa("OBSOLETE", true)).toBe("COMPLETED");
+  });
+
+  it("demanda OBSOLETE, etapa aberta → INACTIVE, nunca ACTIVE", async () => {
+    expect(await statusDaEtapa("OBSOLETE", false)).toBe("INACTIVE");
+  });
+});
+
 describe("applyImportPlan — o log de etapa, um por segmento", () => {
   it("segmento fechado por devolução da revisão vira log REVERTED; os demais fecham COMPLETED", async () => {
     const prisma = fakePrisma();

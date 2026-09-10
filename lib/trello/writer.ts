@@ -270,7 +270,7 @@ async function writeTask(
   });
 
   for (const stage of task.stages) {
-    await fixupStage(tx, taskId, stage, ctx.stageIdByName, historicalAt);
+    await fixupStage(tx, taskId, stage, task.status, ctx.stageIdByName, historicalAt);
   }
 
   // O log e as transições que createTaskCore→createTaskStages abriram sozinhos (só para a etapa de
@@ -307,7 +307,8 @@ async function writeTask(
  * Corrige o `TaskActiveStage` que `createTaskCore` criou com o padrão de demanda NOVA (entrada
  * ACTIVE, demais INACTIVE) para o que a evidência do Trello mostra:
  *   - último segmento com saída → COMPLETED, com `completedAt` na data da saída;
- *   - último segmento SEM saída (o trabalho parou ali) → ACTIVE.
+ *   - último segmento SEM saída (o trabalho parou ali) → ACTIVE **só se a demanda ainda estiver
+ *     viva**; numa demanda COMPLETED ou OBSOLETE, → INACTIVE (ver `stageStatusFor`).
  * `activatedAt`/`assignedAt` recebem a data do PRIMEIRO segmento quando conhecida — é quando a
  * etapa realmente começou — e caem para `historicalAt` (a mesma âncora do resto da demanda) quando
  * não há data (nível 3: só a lista de origem, sem movimentação nem anexo).
@@ -316,6 +317,7 @@ async function fixupStage(
   tx: Prisma.TransactionClient,
   taskId: string,
   stage: PlannedStage,
+  taskStatus: PlannedTask["status"],
   stageIdByName: Map<StageName, string>,
   historicalAt: Date
 ): Promise<void> {
@@ -327,13 +329,41 @@ async function fixupStage(
   await tx.taskActiveStage.update({
     where: { taskId_stageId: { taskId, stageId } },
     data: {
-      status: stage.completed ? "COMPLETED" : "ACTIVE",
+      status: stageStatusFor(taskStatus, stage.completed),
       completedAt: stage.completed ? (last.exitedAt ?? null) : null,
       activatedAt,
       assigneeId: stage.assigneeUserId ?? null,
       assignedAt: stage.assigneeUserId ? activatedAt : null,
     },
   });
+}
+
+/**
+ * O status do `TaskActiveStage` de uma etapa importada, cruzando o que aconteceu com a ETAPA e o
+ * que aconteceu com a DEMANDA.
+ *
+ * Uma etapa não concluída de demanda que não está mais viva não é trabalho de ninguém — e ACTIVE
+ * afirmaria que é. `availableStageWhere` (lib/task-availability.ts) protege as telas de execução,
+ * mas os painéis de gestão não usam esse fragmento e filtram só pelo status da ETAPA:
+ * `getTeamCurrentLoad` (lib/actions/reporting.ts), lib/actions/team-health.ts e
+ * lib/actions/person-metrics.ts — este último calculando aging sobre `activatedAt`, que a
+ * importação carimba em 2025, o que faria toda etapa importada estourar o SLA. Medido antes deste
+ * conserto: 163 etapas ACTIVE, 101 em demandas OBSOLETE e 11 em COMPLETED, 72 delas com
+ * responsável.
+ *
+ * `INACTIVE` é o valor que `revertTaskStage` (lib/actions/task.ts) já grava para "etapa a ser
+ * reconquistada" — nenhuma máquina de estados nova entra no sistema — e, ao contrário de
+ * `COMPLETED`, não afirma um trabalho que não aconteceu.
+ *
+ * `mapCardToTask` (map-task.ts) só produz IN_PROGRESS, COMPLETED e OBSOLETE; qualquer outro status
+ * cai no lado conservador (INACTIVE), que nunca inventa trabalho vivo.
+ */
+function stageStatusFor(
+  taskStatus: PlannedTask["status"],
+  stageCompleted: boolean
+): "COMPLETED" | "ACTIVE" | "INACTIVE" {
+  if (stageCompleted) return "COMPLETED";
+  return taskStatus === "IN_PROGRESS" ? "ACTIVE" : "INACTIVE";
 }
 
 /**
