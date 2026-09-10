@@ -1036,6 +1036,86 @@ describe("applyImportPlan — as etapas pela frente entram sem histórico", () =
   });
 });
 
+// Uma demanda ABERTA precisa ter uma etapa ativa: etapa nenhuma ativa é trabalho que não aparece na
+// fila de ninguém. Quando a última etapa com evidência já fechou, o produto teria promovido a
+// seguinte na hora daquele fechamento — a importação escreve o estado direto, então essa promoção
+// não acontece sozinha. Caso real da primeira gravação: "202602 - Atlantico - Animación para LEDs",
+// com Aprovação fechada e Relatório parado em INACTIVE, sem nada para ativá-lo.
+describe("applyImportPlan — demanda aberta nunca fica sem etapa ativa", () => {
+  const saida = new Date("2026-08-19T11:41:25.894Z");
+
+  function planoCom(status: "IN_PROGRESS" | "COMPLETED", completa: boolean): ImportPlan {
+    return {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          status,
+          completedAt: status === "COMPLETED" ? saida : null,
+          stages: [
+            stage({
+              stageName: "Aprovação",
+              segments: [
+                {
+                  enteredAt: new Date("2026-08-01T09:00:00.000Z"),
+                  exitedAt: completa ? saida : undefined,
+                },
+              ],
+              completed: completa,
+            }),
+          ],
+          // Sempre com etapa pela frente, inclusive na CONCLUÍDA: o plano nunca produz isso
+          // (futureStagesFor devolve vazio fora de IN_PROGRESS), e é justamente por isso que o
+          // teste precisa montar o caso à mão — senão a fixture provaria a guarda por acidente.
+          futureStageNames: ["Relatório"],
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+  }
+
+  function promocoes(prisma: PrismaClient) {
+    return (prisma.taskActiveStage.update as ReturnType<typeof vi.fn>).mock.calls
+      .map((c) => c[0])
+      .filter((c) => c.data.status === "ACTIVE");
+  }
+
+  it("etapa com evidência já fechada: a próxima pela frente é ativada na hora do fechamento", async () => {
+    const prisma = fakePrisma();
+    await applyImportPlan(prisma, planoCom("IN_PROGRESS", true), {
+      commit: true,
+      importedById: "u1",
+    });
+
+    const ativadas = promocoes(prisma);
+    expect(ativadas).toHaveLength(1);
+    expect(ativadas[0].where.taskId_stageId.stageId).toBe("s-relatorio");
+    // A ativação é datada pelo fim da etapa anterior — o instante em que o produto teria promovido.
+    expect(ativadas[0].data.activatedAt).toEqual(saida);
+  });
+
+  it("etapa com evidência ainda aberta: ela já é a ativa, nada é promovido", async () => {
+    const prisma = fakePrisma();
+    await applyImportPlan(prisma, planoCom("IN_PROGRESS", false), {
+      commit: true,
+      importedById: "u1",
+    });
+
+    const ativadas = promocoes(prisma);
+    expect(ativadas.map((c) => c.where.taskId_stageId.stageId)).toEqual(["s-aprov"]);
+  });
+
+  it("demanda concluída não promove nada — não há trabalho pela frente", async () => {
+    const prisma = fakePrisma();
+    await applyImportPlan(prisma, planoCom("COMPLETED", true), {
+      commit: true,
+      importedById: "u1",
+    });
+
+    expect(promocoes(prisma)).toEqual([]);
+  });
+});
+
 describe("applyImportPlan — pré-condição do template", () => {
   it("aborta antes de escrever quando o template não tem uma etapa que o plano precisa", async () => {
     const prisma = fakePrisma();

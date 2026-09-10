@@ -304,6 +304,8 @@ async function writeTask(
     await fixupStage(tx, taskId, stage, task.status, ctx.stageIdByName, historicalAt);
   }
 
+  await promoteNextStageIfIdle(tx, taskId, task, ctx.stageIdByName);
+
   // O log e as transições que createTaskCore→createTaskStages abriram sozinhos (só para a etapa de
   // ENTRADA, num único instante genérico) não refletem a jornada real — reconstruímos os dois do
   // zero, um TaskStageLog E um par de StageTransition (entrada/saída) por SEGMENTO de cada etapa.
@@ -387,6 +389,49 @@ function stageStatusFor(
 ): "COMPLETED" | "ACTIVE" | "INACTIVE" {
   if (stageCompleted) return "COMPLETED";
   return taskStatus === "IN_PROGRESS" ? "ACTIVE" : "INACTIVE";
+}
+
+/**
+ * Ativa a primeira etapa PELA FRENTE quando a demanda está aberta e nenhuma etapa com evidência
+ * ficou ativa — isto é, quando a última que ela percorreu já fechou.
+ *
+ * No produto vivo essa promoção acontece sozinha: fechar uma etapa ativa a seguinte. A importação
+ * escreve o estado final direto, então ninguém dispara a promoção, e a demanda nasce ABERTA sem
+ * etapa ativa nenhuma — trabalho que não aparece na fila de ninguém, invisível para as telas de
+ * execução e para os painéis de carga. Foi o que aconteceu com "202602 - Atlantico - Animación
+ * para LEDs" na primeira gravação: `Aprovação` fechada, `Relatório` parado em `INACTIVE`.
+ *
+ * A ativação é datada pelo FIM da etapa anterior — o instante em que o produto teria promovido —,
+ * não por "agora"; e cai para a âncora histórica se aquele fim não for conhecido. Demanda fechada
+ * ou obsoleta não promove nada: não há trabalho pela frente.
+ */
+async function promoteNextStageIfIdle(
+  tx: Prisma.TransactionClient,
+  taskId: string,
+  task: PlannedTask,
+  stageIdByName: Map<StageName, string>
+): Promise<void> {
+  if (task.status !== "IN_PROGRESS") return;
+  if (task.stages.some((s) => !s.completed)) return; // alguma já ficou ACTIVE no fixup
+  const proxima = task.futureStageNames[0];
+  if (!proxima) return;
+
+  const fim = lastKnownExit(task);
+  await tx.taskActiveStage.update({
+    where: { taskId_stageId: { taskId, stageId: stageIdByName.get(proxima)! } },
+    data: { status: "ACTIVE", activatedAt: fim },
+  });
+}
+
+/** O instante em que a demanda fechou a última etapa que percorreu. */
+function lastKnownExit(task: PlannedTask): Date {
+  let latest: Date | undefined;
+  for (const stage of task.stages) {
+    for (const seg of stage.segments) {
+      if (seg.exitedAt && (!latest || seg.exitedAt > latest)) latest = seg.exitedAt;
+    }
+  }
+  return latest ?? earliestKnownDate(task);
 }
 
 /**
