@@ -54,3 +54,59 @@ export interface CardMovement {
   /** Data ISO 8601 da movimentação (`action.date`). */
   at: string;
 }
+
+/**
+ * Um card tal como aparece em `board.cards` no export do Trello — o `Card` de classificação e
+ * mapeamento, mais os campos que só o joiner (buildImportPlan, plan.ts) precisa: o ID para casar o
+ * card com suas movimentações (derivadas de `board.actions`) e referenciá-lo nos itens do plano
+ * (tarefas planejadas e descartes), e a URL curta que a Task 9 (o escritor) vai usar como chave de
+ * idempotência.
+ */
+export interface ExportCard extends Card {
+  /** ID do card no Trello. Usado por buildImportPlan para agrupar `board.actions` por card. */
+  id: string;
+  /** URL curta e estável do card (ex.: `https://trello.com/c/abc123`). Carregada no plano para a
+   * Task 9 montar o artefato "card original no Trello"; buildImportPlan não a usa. */
+  shortUrl?: string;
+}
+
+/** Rótulo do quadro, como aparece em `board.labels`. Usado por buildImportPlan para montar `LabelsById`. */
+export interface TrelloLabel {
+  id: string;
+  name: string;
+}
+
+/** Lista do quadro, como aparece em `board.lists`. Usado por buildImportPlan para montar
+ * `listNamesById` (contexto de planStages/planRework) e para achar a lista "Concluido". */
+export interface TrelloList {
+  id: string;
+  name: string;
+}
+
+/**
+ * Ação do Trello, como aparece em `board.actions`. Usado por buildImportPlan para reconstruir as
+ * `CardMovement[]` de cada card — só os campos de `updateCard` com troca de lista importam; ações de
+ * outro tipo (comentário, anexo, etc.) são ignoradas por não terem `listBefore`/`listAfter`.
+ */
+export interface TrelloAction {
+  type: string;
+  /** Data ISO 8601 da ação. */
+  date: string;
+  data: {
+    card?: { id: string };
+    listBefore?: { name: string };
+    listAfter?: { name: string };
+  };
+}
+
+/**
+ * O export do quadro do Trello, na forma mínima que buildImportPlan (plan.ts) consome — o `board`
+ * do contrato `buildImportPlan(board, workosUsers, opts)`.
+ */
+export interface TrelloBoardExport {
+  cards: ExportCard[];
+  labels: TrelloLabel[];
+  lists: TrelloList[];
+  members: TrelloMember[];
+  actions: TrelloAction[];
+}
