@@ -287,12 +287,18 @@ describe("buildImportPlan — a demanda aberta recebe o resto da sequência do t
     expect(t.futureStages).toEqual([]);
   });
 
-  it("demanda obsoleta não ganha etapa nenhuma pela frente — foi abandonada, não pausada", () => {
+  it("demanda arquivada não ganha etapa nenhuma pela frente — foi entregue, não pausada", () => {
     const p = planoDe(
-      card({ id: "a4", idList: "L_DESENHO", closed: true, due: "2026-07-15T00:00:00Z" })
+      card({
+        id: "a4",
+        idList: "L_DESENHO",
+        closed: true,
+        dateClosed: "2026-07-20T10:00:00Z",
+        due: "2026-07-15T00:00:00Z",
+      })
     );
     const t = p.tasks.find((x) => x.card.id === "a4")!;
-    expect(t.status).toBe("OBSOLETE");
+    expect(t.status).toBe("COMPLETED");
     expect(t.futureStages).toEqual([]);
   });
 });

@@ -120,39 +120,48 @@ function extractPriority(card: Card, labelsById: LabelsById): "LOW" | "MEDIUM" |
  * Extrai status e completedAt.
  *
  * Regras:
- * - Card na lista Concluido → COMPLETED + completedAt (quando há evidência datada; ver abaixo)
- * - Card arquivado em outra lista → OBSOLETE + null (o card foi abandonado, não entregue)
- * - Card aberto → IN_PROGRESS + null
+ * - Card na lista Concluido → COMPLETED
+ * - Card ARQUIVADO → COMPLETED (arquivar era o ato de entregar neste quadro; ver abaixo)
+ * - Card aberto fora de Concluido → IN_PROGRESS + null
  *
- * `completedAt` de uma demanda COMPLETED sai, nesta ordem de precedência:
+ * **Por que arquivado é entregue.** O desenho decidiu o contrário no começo, para não inventar 83
+ * conclusões em audiovisual, e a evidência derrubou essa decisão: das 101 demandas arquivadas, 100
+ * pararam numa lista de PRODUÇÃO (`AUDIOVISUAL`, `DISEÑO -*`) ou no portão (`LIBERADO`); o
+ * arquivamento está espalhado por 84 dias distintos ao longo de 14 meses, então não foi faxina de
+ * quadro; e, entre as 61 com prazo, a mediana da distância entre o PRAZO e o arquivamento é ZERO
+ * dia, com 51 caindo entre 3 dias antes e 30 depois. Ninguém abandona trabalho exatamente na data
+ * de entrega, 51 vezes. A ausência de anexo nos cards antigos, que sustentava a decisão anterior, é
+ * mudança de prática ao longo do tempo — não prova de não-entrega.
+ *
+ * `completedAt` sai, nesta ordem de precedência:
  *   1. a data da ÚLTIMA movimentação do card para a lista `Concluido` — o EVENTO da entrega,
- *      datado pela ação do Trello (`updateCard`), cobre 41 dos 52 cards do export real;
- *   2. `card.dateCompleted` — a marcação de conclusão do próprio Trello, cobre 38;
- *   3. `null` — 3 cards não têm nenhuma das duas, e uma data plausível não se inventa.
- *
- * `card.dateClosed` NÃO entra: é o carimbo do arquivamento, nulo nos 52 (ver types.ts).
+ *      datado pela ação do Trello (`updateCard`), cobre 41 dos 52 cards da lista;
+ *   2. `card.dateCompleted` — a marcação de conclusão do próprio Trello, cobre 38 lá e 4 entre os
+ *      arquivados;
+ *   3. `card.dateClosed` — o arquivamento, preenchido em 156 dos 157 arquivados. É o mais fraco
+ *      dos três porque é o ato de GUARDAR, não o de entregar: quando existe marca explícita de
+ *      conclusão, ela manda;
+ *   4. `null` — 3 cards em `Concluido` e 1 arquivado não têm nenhuma das três.
  */
 function extractStatusAndCompletedAt(
   card: Card,
   movements: CardMovement[],
   ctx: MapTaskContext
-): { status: "IN_PROGRESS" | "COMPLETED" | "OBSOLETE"; completedAt: Date | null } {
+): { status: "IN_PROGRESS" | "COMPLETED"; completedAt: Date | null } {
   const isInConcluido = card.idList === ctx.concludoListId;
 
-  if (isInConcluido) {
-    // Card na lista Concluido é sempre COMPLETED
-    const movedAt = lastMoveToList(movements, ctx.concludoListName);
-    const completedAt = movedAt ?? (card.dateCompleted ? new Date(card.dateCompleted) : null);
-    return { status: "COMPLETED", completedAt };
+  if (!isInConcluido && !card.closed) {
+    // Card aberto fora de Concluido: o trabalho não terminou.
+    return { status: "IN_PROGRESS", completedAt: null };
   }
 
-  if (card.closed) {
-    // Card arquivado em outra lista é OBSOLETE, sem completedAt
-    return { status: "OBSOLETE", completedAt: null };
-  }
+  const movedAt = lastMoveToList(movements, ctx.concludoListName);
+  const completedAt =
+    movedAt ??
+    (card.dateCompleted ? new Date(card.dateCompleted) : null) ??
+    (card.dateClosed ? new Date(card.dateClosed) : null);
 
-  // Card aberto fora de Concluido é IN_PROGRESS
-  return { status: "IN_PROGRESS", completedAt: null };
+  return { status: "COMPLETED", completedAt };
 }
 
 /**

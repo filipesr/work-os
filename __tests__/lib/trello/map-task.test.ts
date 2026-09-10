@@ -158,18 +158,24 @@ describe("mapCardToTask", () => {
     });
   });
 
-  describe("status — arquivado NÃO é concluído", () => {
-    it("arquivado em OUTRA lista é OBSOLETE e NÃO leva completedAt", () => {
+  describe("status — arquivar era entregar", () => {
+    it("arquivado fora de Concluido é CONCLUÍDO, datado pelo arquivamento", () => {
+      // Arquivar era o ato de entregar neste quadro: 100 das 101 demandas arquivadas pararam numa
+      // lista de produção ou no portão, o arquivamento está espalhado por 84 dias distintos em 14
+      // meses (não foi faxina) e a mediana da distância entre o PRAZO e o arquivamento é 0 dia —
+      // 51 de 61 caem entre 3 dias antes e 30 depois. Ver o desenho, "O estado da demanda".
       const r = mapCardToTask(
-        card({
-          idList: "L_AV",
-          closed: true,
-          dateClosed: "2026-07-02T10:00:00Z",
-        }),
+        card({ idList: "L_AV", closed: true, dateClosed: "2025-06-26T10:00:00Z" }),
         [],
         ctx()
       );
-      expect(r.status).toBe("OBSOLETE");
+      expect(r.status).toBe("COMPLETED");
+      expect(r.completedAt).toEqual(new Date("2025-06-26T10:00:00Z"));
+    });
+
+    it("arquivado SEM data de arquivamento fica concluído sem data — não se inventa uma", () => {
+      const r = mapCardToTask(card({ idList: "L_AV", closed: true }), [], ctx());
+      expect(r.status).toBe("COMPLETED");
       expect(r.completedAt).toBeNull();
     });
 
@@ -198,10 +204,10 @@ describe("mapCardToTask", () => {
     });
   });
 
-  // A data de conclusão vem do EVENTO datado (a movimentação para Concluido), não de `dateClosed`:
-  // medido no export real, `dateClosed` é nulo nos 52 cards de Concluido — só existe em card
-  // ARQUIVADO, e card arquivado fora de Concluido vira OBSOLETE, onde a data é descartada de
-  // propósito. Ver fix-final-brief.md, conserto 1.
+  // A data de conclusão vem do EVENTO datado, na ordem: movimentação para Concluido (41 dos 52
+  // cards da lista), `dateCompleted` (38 lá, 4 entre os arquivados) e o arquivamento `dateClosed`
+  // (156 dos 157 arquivados). O arquivamento é o mais fraco porque é o ato de GUARDAR, não o de
+  // entregar — mas é datado, e no quadro real a mediana da distância entre o prazo e ele é 0 dia.
   describe("completedAt — a evidência datada, nesta ordem", () => {
     it("1º: a movimentação para Concluido manda, mesmo com dateCompleted diferente", () => {
       const r = mapCardToTask(
@@ -249,7 +255,7 @@ describe("mapCardToTask", () => {
       expect(r.completedAt).toEqual(new Date("2026-07-01T08:00:00Z"));
     });
 
-    it("3º: sem nenhuma das duas, fica NULO — dateClosed não substitui evidência", () => {
+    it("3º: sem movimentação nem dateCompleted, o arquivamento data a entrega", () => {
       const r = mapCardToTask(
         card({
           idList: CONCLUIDO_LIST_ID,
@@ -260,21 +266,31 @@ describe("mapCardToTask", () => {
         ctx()
       );
       expect(r.status).toBe("COMPLETED");
+      expect(r.completedAt).toEqual(new Date("2026-07-02T10:00:00Z"));
+    });
+
+    it("4º: sem nenhuma das três, fica NULO — nenhuma data é inventada", () => {
+      const r = mapCardToTask(card({ idList: CONCLUIDO_LIST_ID }), [], ctx());
+      expect(r.status).toBe("COMPLETED");
       expect(r.completedAt).toBeNull();
     });
 
-    it("demanda OBSOLETE continua sem completedAt, mesmo com dateCompleted e movimentação", () => {
+    it("arquivado com dateCompleted usa o dateCompleted, não o arquivamento", () => {
+      // A ordem é: movimentação para Concluido, depois dateCompleted, depois o arquivamento. O
+      // arquivamento é o mais fraco dos três porque é o ato de guardar, não o de entregar — quando
+      // existe uma marca de conclusão explícita, ela manda.
       const r = mapCardToTask(
         card({
           idList: "L_AV",
           closed: true,
-          dateCompleted: "2026-07-01T08:00:00Z",
+          dateClosed: "2026-07-20T10:00:00Z",
+          dateCompleted: "2026-07-18T09:00:00Z",
         }),
-        [moveu("LIBERADO", "Concluido", "2026-07-02T10:00:00Z")],
+        [],
         ctx()
       );
-      expect(r.status).toBe("OBSOLETE");
-      expect(r.completedAt).toBeNull();
+      expect(r.status).toBe("COMPLETED");
+      expect(r.completedAt).toEqual(new Date("2026-07-18T09:00:00Z"));
     });
   });
 

@@ -143,26 +143,51 @@ duas — o join pretendido.
 
 ### O estado e a prioridade da demanda
 
-`Task.status` não sai de "arquivado" (que não significa concluído). Sai da lista onde o card parou:
+**Arquivar era o ato de entregar.** Esta seção dizia o contrário, e a evidência derrubou a decisão
+— vale registrar as duas versões, porque a primeira parecia a escolha conservadora e não era.
 
-| Lista onde parou               | `Task.status`                                                |
-| ------------------------------ | ------------------------------------------------------------ |
-| `Concluido`                    | `COMPLETED`                                                  |
-| qualquer outra, card arquivado | `OBSOLETE` — descartada, fora de pendentes e dos percentuais |
-| qualquer outra, card aberto    | `IN_PROGRESS`                                                |
+O desenho original marcava `OBSOLETE` todo card arquivado fora de `Concluido`, para não inventar 83
+conclusões em audiovisual. O efeito, visto depois da primeira gravação: **12 projetos mensais, de
+maio de 2025 a fevereiro de 2026, com 100% das demandas descartadas** — 63 peças entregues que o
+sistema mostrava como nada. O que reabriu a questão foram três medições:
 
-O `OBSOLETE` é a escolha honesta para os 157 arquivados que não estão em `Concluido`: eles não foram
-concluídos nem seguem pendentes, e o próprio schema descreve esse estado como "arquival, fora de
-pendentes/%". Marcá-los `COMPLETED` inventaria 83 conclusões em audiovisual; deixá-los
-`IN_PROGRESS` encheria a fila de trabalho que ninguém vai fazer.
+- **100 das 101 demandas arquivadas pararam numa lista de PRODUÇÃO** (`AUDIOVISUAL` 76,
+  `DISEÑO -*` 21) ou no portão (`LIBERADO` 3). Só uma parou numa lista organizacional.
+- O arquivamento está espalhado por **84 dias distintos ao longo de 14 meses** — não foi faxina de
+  quadro, foi hábito diário.
+- E o decisivo: entre as 61 arquivadas com prazo, a **mediana da distância entre o PRAZO e o
+  arquivamento é ZERO dia**, com 51 caindo entre 3 dias antes e 30 depois. Ninguém abandona
+  trabalho exatamente na data de entrega, 51 vezes.
 
-`Task.completedAt` só existe quando o status for `COMPLETED` — é o que alimenta lead time, e
-datá-lo com o arquivamento de um card abandonado corromperia a medida. A data vem, nesta ordem, da
-**movimentação registrada para `Concluido`** (o evento, datado: 41 dos 52 cards da lista) ou de
-`dateCompleted` (38); juntas cobrem 48 das 51 demandas concluídas, e as 3 restantes ficam sem data
-em vez de ganharem uma inventada. `dateClosed` **não** serve aqui: ele só é preenchido em card
-arquivado, e card arquivado fora de `Concluido` é `OBSOLETE` — nos 52 da lista `Concluido` ele está
-nulo em 52.
+A evidência que sustentava a decisão anterior era a ausência de anexo nos cards antigos (só 9 dos
+157 arquivados têm algum). Ela é mudança de prática ao longo do tempo — os anexos se concentram nos
+cards recentes —, não prova de não-entrega. A correlação com o prazo é muito mais forte.
+
+| Lista onde parou            | `Task.status` |
+| --------------------------- | ------------- |
+| `Concluido`                 | `COMPLETED`   |
+| qualquer outra, arquivado   | `COMPLETED`   |
+| qualquer outra, card aberto | `IN_PROGRESS` |
+
+A importação deixou de produzir `OBSOLETE`: 152 demandas concluídas e 52 abertas.
+
+`Task.completedAt` só existe quando o status for `COMPLETED` — é o que alimenta lead time. A data
+vem, nesta ordem: **movimentação registrada para `Concluido`** (o evento, datado: 41 dos 52 cards da
+lista); `dateCompleted`, a marcação do próprio Trello (38 na lista, 4 entre os arquivados); e
+`dateClosed`, o arquivamento (156 dos 157 arquivados). O arquivamento é o mais fraco dos três porque
+é o ato de GUARDAR, não o de entregar: quando existe marca explícita de conclusão, ela manda. Juntas
+cobrem **149 das 152**; as 3 restantes ficam sem data em vez de ganharem uma inventada.
+
+**A conclusão não cria um início.** `Task.startedAt` continua saindo só de data medida em segmento
+de etapa (111 demandas). Deixar a conclusão criá-lo faria as demandas antigas — cuja única data é o
+arquivamento — nascerem com início igual à entrega: tempo de ciclo ZERO, fabricado e indistinguível
+de um medido, em cerca de 100 demandas. O que a conclusão faz é limitar o início por cima, para que
+nenhuma demanda comece depois de ter sido entregue.
+
+**A etapa fecha com a demanda.** Numa demanda entregue, a etapa de produção terminou até a entrega:
+ela nasce `COMPLETED`, datada pela saída medida quando existe e pela própria entrega quando não.
+Deixá-la `INACTIVE` mostraria demanda concluída com etapa que nunca ativou. Nenhuma PERMANÊNCIA é
+inventada com isso — `TaskStageLog` e as transições continuam só para segmento com entrada medida.
 
 A prioridade sai dos rótulos, e só deles: `URGENTE` → `URGENT`; `PRIORIDAD` ou `IMPORTANTE` → `HIGH`;
 sem rótulo → o padrão `MEDIUM`. São 26 cards com algum desses rótulos; os outros 203 ficam no padrão.

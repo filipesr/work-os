@@ -316,7 +316,7 @@
       "client": "Cliente",
       "completion": "Conclusão",
       "completionState": {
-        "empty": "Sem tarefas",
+        "empty": "Sem tarefas ativas",
         "pending": "Pendente",
         "completed": "Concluído"
       },

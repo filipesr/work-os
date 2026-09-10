@@ -307,7 +307,7 @@ async function writeTask(
   }
 
   for (const stage of task.stages) {
-    await fixupStage(tx, taskId, stage, task.status, ctx.stageIdByName, historicalAt);
+    await fixupStage(tx, taskId, stage, task, ctx.stageIdByName, historicalAt);
   }
 
   await assignFutureStages(tx, taskId, task, ctx.stageIdByName);
@@ -349,7 +349,7 @@ async function fixupStage(
   tx: Prisma.TransactionClient,
   taskId: string,
   stage: PlannedStage,
-  taskStatus: PlannedTask["status"],
+  task: PlannedTask,
   stageIdByName: Map<StageName, string>,
   historicalAt: Date
 ): Promise<void> {
@@ -357,12 +357,17 @@ async function fixupStage(
   const first = stage.segments[0];
   const last = stage.segments[stage.segments.length - 1];
   const activatedAt = first?.enteredAt ?? historicalAt;
+  // A demanda entregue fecha as etapas dela: a produção terminou até a entrega, e deixar a etapa
+  // aberta mostraria demanda concluída com etapa que nunca ativou. A data é a saída medida quando
+  // existe; senão a da própria entrega. Nenhuma PERMANÊNCIA é inventada com isso — `TaskStageLog`
+  // e as transições só são escritos para segmento com entrada medida (ver `writeStageHistory`).
+  const fechada = stage.completed || task.status === "COMPLETED";
 
   await tx.taskActiveStage.update({
     where: { taskId_stageId: { taskId, stageId } },
     data: {
-      status: stageStatusFor(taskStatus, stage.completed),
-      completedAt: stage.completed ? (last.exitedAt ?? null) : null,
+      status: stageStatusFor(task.status, fechada),
+      completedAt: fechada ? (last.exitedAt ?? task.completedAt ?? null) : null,
       activatedAt,
       assigneeId: stage.assigneeUserId ?? null,
       assignedAt: stage.assigneeUserId ? activatedAt : null,
@@ -657,16 +662,19 @@ function deriveAttachmentMediaType(mimeType?: string | null): ArtifactMediaType 
  */
 function earliestMeasuredDate(task: PlannedTask): Date | undefined {
   let earliest: Date | undefined = undefined;
-  const consider = (d: Date | undefined | null) => {
-    if (d && (!earliest || d < earliest)) earliest = d;
-  };
   for (const stage of task.stages) {
     for (const seg of stage.segments) {
-      consider(seg.enteredAt);
-      consider(seg.exitedAt);
+      for (const d of [seg.enteredAt, seg.exitedAt]) {
+        if (d && (!earliest || d < earliest)) earliest = d;
+      }
     }
   }
-  consider(task.completedAt);
+  // A CONCLUSÃO não cria um início — ela só o limita por cima. Deixá-la criar faria as demandas
+  // antigas, cuja única data é o arquivamento, nascerem com início igual à entrega: tempo de ciclo
+  // ZERO, fabricado e indistinguível de um medido, em ~100 demandas. Quando existe segmento datado
+  // e a conclusão é ANTERIOR a ele (o card marcado como concluído antes do último anexo), é a
+  // conclusão que vale — senão a demanda começaria depois de ter sido entregue.
+  if (earliest && task.completedAt && task.completedAt < earliest) return task.completedAt;
   return earliest;
 }
 

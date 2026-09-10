@@ -501,8 +501,11 @@ describe("applyImportPlan — etapa aberta de demanda morta não é trabalho de 
     expect(await statusDaEtapa("COMPLETED", true)).toBe("COMPLETED");
   });
 
-  it("demanda COMPLETED, etapa aberta → INACTIVE, nunca ACTIVE", async () => {
-    expect(await statusDaEtapa("COMPLETED", false)).toBe("INACTIVE");
+  it("demanda COMPLETED, etapa SEM saída medida → COMPLETED, fechada junto com a demanda", async () => {
+    // A demanda foi entregue; a etapa de produção terminou até ali. Deixá-la INACTIVE mostraria
+    // uma demanda entregue com etapa que nunca ativou. Nenhum registro de PERMANÊNCIA é inventado:
+    // TaskStageLog só é escrito quando há entrada medida (writeStageHistory).
+    expect(await statusDaEtapa("COMPLETED", false)).toBe("COMPLETED");
   });
 
   it("demanda OBSOLETE, etapa fechada → COMPLETED", async () => {
@@ -510,7 +513,34 @@ describe("applyImportPlan — etapa aberta de demanda morta não é trabalho de 
   });
 
   it("demanda OBSOLETE, etapa aberta → INACTIVE, nunca ACTIVE", async () => {
+    // A importação não produz mais OBSOLETE (arquivar era entregar), mas `MappedTask["status"]`
+    // admite o valor e o produto o usa — a etapa aberta de uma demanda descartada continua não
+    // sendo trabalho de ninguém.
     expect(await statusDaEtapa("OBSOLETE", false)).toBe("INACTIVE");
+  });
+
+  it("a etapa fechada junto com a demanda leva a data de conclusão DELA", async () => {
+    const prisma = fakePrisma();
+    const entregue = new Date("2025-06-26T10:00:00.000Z");
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2025-06", name: "AtlanticoShop 2025-06", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          monthKey: "2025-06",
+          status: "COMPLETED",
+          completedAt: entregue,
+          stages: [stage({ stageName: "Desenho", segments: [{}] })],
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    const update = (prisma.taskActiveStage.update as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(update.data.status).toBe("COMPLETED");
+    expect(update.data.completedAt).toEqual(entregue);
   });
 });
 
@@ -862,6 +892,30 @@ describe("applyImportPlan — startedAt só com data medida", () => {
     expect(carimbos[0].data.startedAt).toEqual(maisAntiga);
     // Compare-and-set: só carimba se ainda estiver nulo (markTaskStarted, lib/task-start.ts).
     expect(carimbos[0].where.startedAt).toBeNull();
+  });
+
+  it("demanda só com data de CONCLUSÃO não começa — entrega não é evidência de início", async () => {
+    // O arquivamento data a entrega das demandas antigas, e nenhuma delas tem segmento datado. Se
+    // a conclusão contasse como início, ~100 demandas nasceriam com tempo de ciclo ZERO — um
+    // número fabricado, indistinguível de um medido. O que a conclusão faz é limitar o início por
+    // cima (teste seguinte), nunca criá-lo.
+    const prisma = fakePrisma();
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          status: "COMPLETED",
+          completedAt: new Date("2025-06-26T10:00:00.000Z"),
+          stages: [stage({ segments: [{}] })],
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "u1" });
+
+    expect(carimbosDeInicio(prisma)).toHaveLength(0);
   });
 
   it("demanda sem NENHUM segmento datado fica com startedAt nulo — a âncora inferida não é medição", async () => {

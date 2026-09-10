@@ -118,7 +118,14 @@ export default async function ProjectsPage({
                   <StatusBadge tone={projectStatusTone(p.status)} label={t(`status.${p.status}`)} />
                   <StatusBadge
                     tone={projectCompletionTone(completion.state)}
-                    label={t("completionPct", { pct: completion.pct })}
+                    label={
+                      // Projeto sem nenhuma tarefa ativa não é "0% concluído" — não há denominador.
+                      // Mostrar 0% ali faz um projeto cujas tarefas foram todas descartadas parecer
+                      // idêntico a um onde nada foi feito.
+                      completion.state === "empty"
+                        ? t("noActiveTasks")
+                        : t("completionPct", { pct: completion.pct })
+                    }
                   />
                   <span className="text-xs text-muted-foreground">
                     {t("tasksCount", { count: completion.total })}
@@ -126,17 +133,21 @@ export default async function ProjectsPage({
                 </div>
 
                 {/* Barra de conclusão: a leitura de relance que o número sozinho
-                    não dá quando são 12 cards lado a lado. */}
-                <div
-                  className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"
-                  role="img"
-                  aria-label={t("completionPct", { pct: completion.pct })}
-                >
+                    não dá quando são 12 cards lado a lado. Some quando não há
+                    tarefa ativa — barra vazia lê como "nada feito", que é o
+                    engano que o rótulo acima acabou de evitar. */}
+                {completion.state !== "empty" && (
                   <div
-                    className="h-full bg-primary transition-all"
-                    style={{ width: `${completion.pct}%` }}
-                  />
-                </div>
+                    className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"
+                    role="img"
+                    aria-label={t("completionPct", { pct: completion.pct })}
+                  >
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${completion.pct}%` }}
+                    />
+                  </div>
+                )}
 
                 <Link
                   href={`/projects/${p.id}`}
