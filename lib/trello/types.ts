@@ -2,7 +2,13 @@
 export interface Card {
   name: string;
   idLabels?: string[];
-  attachments?: Array<{ id: string }>;
+  attachments?: Array<{
+    id: string;
+    /** ID do membro do Trello que anexou o arquivo. Usado por planStages (map-stages.ts) para atribuir responsável na etapa de produção quando não há movimentação registrada (nível 2 de evidência). */
+    idMember?: string;
+    /** Data do anexo (ISO 8601). Usado por planStages (map-stages.ts) para datar a entrada na etapa de produção quando não há movimentação (nível 2 de evidência). */
+    date?: string | null;
+  }>;
   /** ID da lista. Usado por mapCardToTask para determinar status (COMPLETED se em "Concluido"). */
   idList?: string;
   /** Timestamp do fechamento do card. Usado por mapCardToTask para datar completedAt quando status é COMPLETED. */
@@ -35,4 +41,16 @@ export interface WorkOSUser {
   id: string;
   name: string;
   email: string;
+}
+
+/**
+ * Movimentação de um card entre listas, derivada da ação "updateCard" do Trello
+ * (`action.data.listBefore.name` / `action.data.listAfter.name` / `action.date`).
+ * Usado por planStages (map-stages.ts) para reconstruir a jornada de nível 1, com data por etapa.
+ */
+export interface CardMovement {
+  fromListName: string;
+  toListName: string;
+  /** Data ISO 8601 da movimentação (`action.date`). */
+  at: string;
 }
