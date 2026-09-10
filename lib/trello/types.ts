@@ -22,3 +22,17 @@ export type CardNature = "demanda" | "separador" | "ausencia" | "referencia";
 
 /** Mapa de ID de rótulo para seu nome (ex: { "L1": "MODELO", "L2": "URGENTE" }). */
 export type LabelsById = Record<string, string>;
+
+/** Membro do Trello. Usado por matchMembers para mapear para usuários do WorkOS. */
+export interface TrelloMember {
+  id: string;
+  username: string;
+  fullName: string;
+}
+
+/** Usuário do WorkOS. Usado por matchMembers para receber matching. */
+export interface WorkOSUser {
+  id: string;
+  name: string;
+  email: string;
+}
