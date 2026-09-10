@@ -270,7 +270,12 @@ e na descrição — merecem decisão humana, um a um. São: `MODELO - Checklist
 
 **O `Black Friday 2026` deixou de existir.** A pergunta era se aquele projeto de teste conviveria com os 17 mensais; o dono do projeto apagou os projetos de teste antes da gravação, então a importação entrou em terreno limpo. Não há decisão pendente aqui.
 
-**O desempate do responsável pode inflar quem supervisiona.** Quando o card declara 2 a 4 membros e nada desempata, a etapa fica com o **primeiro da lista do card** — decisão explícita do dono do projeto, e é escolha, não medição: a ordem em que o Trello guarda os membros não significa nada. Efeito medido: Pedro Villalba fica com 115 etapas, das quais 65 são as pendentes de aprovação e relatório (dele de fato, por ter aberto as demandas) e 14 são Desenho vindas desse desempate. Quem olhar métrica de execução por pessoa precisa saber disso antes de concluir qualquer coisa.
+**O Desenho só tem dono quando a lista diz o nome.** 44 das 96 etapas de `Desenho` ficam sem
+responsável: são os cards que nunca pararam nem passaram por uma lista `DISEÑO - <NOME>`, e para
+eles o quadro não diz quem desenhou. O autor do anexo não serve como resposta — é quem SUBIU o
+arquivo, com frequência o atendimento. Se alguém souber de quem eram essas 44, é correção manual.
+
+**O desempate do responsável pode inflar quem supervisiona.** Quando o card declara 2 a 4 membros e nada desempata, a etapa fica com o **primeiro da lista do card** — decisão explícita do dono do projeto, e é escolha, não medição: a ordem em que o Trello guarda os membros não significa nada. Vale para `Audio Visual`, `Quality Control`, `Aprovação` e `Relatório` — nunca para `Desenho`, que exige o nome da lista. Quem olhar métrica de execução por pessoa precisa saber disso antes de concluir qualquer coisa.
 
 **A reclassificação de "arquivado" (2026-09-10).** O desenho original marcava `OBSOLETE` todo card
 arquivado fora de `Concluido`, e isso deixou 12 projetos mensais com 100% das demandas descartadas —
