@@ -77,6 +77,16 @@ describe("mapCardToTask", () => {
       // Primeiro rótulo de tipo na ordem
       expect(r.title).toBe("[STORIES] Conteúdo");
     });
+
+    it("múltiplos rótulos de tipo invertidos: honra ordem do card, não ordem fixa (prova mutação)", () => {
+      const r = mapCardToTask(
+        card({ name: "Conteúdo", idLabels: ["L1", "L2"] }),
+        ctx({ labelsById: { L1: "REELS", L2: "STORIES" } })
+      );
+      // REELS aparece primeiro no card, então deve ser prefixo, não STORIES
+      // (se implementação iterasse ordem fixa, pegaria STORIES)
+      expect(r.title).toBe("[REELS] Conteúdo");
+    });
   });
 
   describe("prioridade — sai dos rótulos, e só deles", () => {

@@ -3,17 +3,17 @@ export interface Card {
   name: string;
   idLabels?: string[];
   attachments?: Array<{ id: string }>;
-  /** ID da lista: usado para determinar se card está em "Concluido" */
+  /** ID da lista. Usado por mapCardToTask para determinar status (COMPLETED se em "Concluido"). */
   idList?: string;
-  /** Timestamp do fechamento do card (quando foi arquivado). */
+  /** Timestamp do fechamento do card. Usado por mapCardToTask para datar completedAt quando status é COMPLETED. */
   dateClosed?: string | null;
-  /** Data da última atividade no card. */
+  /** Data da última atividade no card. Usado por mapCardToTask para extrair monthKey quando due não existe. */
   dateLastActivity?: string | null;
-  /** Indica se o card foi arquivado. */
+  /** Indica se o card foi arquivado. Usado por mapCardToTask para determinar status (OBSOLETE se arquivado). */
   closed?: boolean;
-  /** Descrição do card. */
+  /** Descrição do card. Usado por mapCardToTask para preencher description. */
   desc?: string;
-  /** Data de vencimento do card. */
+  /** Data de vencimento do card. Usado por mapCardToTask para preencher dueDate e extrair monthKey. */
   due?: string | null;
 }
 
