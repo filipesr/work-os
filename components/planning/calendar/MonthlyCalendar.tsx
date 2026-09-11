@@ -135,21 +135,15 @@ export function MonthlyCalendar({
                 </button>
               </div>
 
-              {/* Events */}
-              <div className="space-y-1">
-                {events.map((event) => (
-                  <EventPill
-                    key={event.id}
-                    event={event}
-                    variant="calendar"
-                    onSelect={() => setBatch({ date: event.iso, eventTitle: event.title })}
-                  />
-                ))}
-              </div>
-
-              {/* Client demands */}
+              {/* Demandas do cliente PRIMEIRO, e com peso.
+                  A célula responde "o que a agência tem para entregar neste dia?". As datas
+                  comemorativas são o pano de fundo dessa pergunta — importantes, mas contexto.
+                  Antes as duas usavam a MESMA paleta (`bg-primary/10 text-primary`) e a mesma
+                  altura, com as datas em cima: num dia com três comemorativas, a demanda do cliente
+                  virava a quarta linha de uma pilha uniforme e passava despercebida. Agora a
+                  demanda vem antes, preenchida e maior; a data fica em texto, sem bloco pintado. */}
               {shownClients.length > 0 && (
-                <div className="mt-1 space-y-1">
+                <div className="mb-1 space-y-1">
                   {shownClients.map((client) => (
                     <button
                       key={client.clientId}
@@ -162,10 +156,10 @@ export function MonthlyCalendar({
                         })
                       }
                       title={client.clientName}
-                      className="flex w-full items-center gap-1 rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary hover:border-primary/40 transition-colors"
+                      className="flex w-full items-center gap-1 rounded bg-primary px-1.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                     >
                       <span className="truncate">{client.clientName}</span>
-                      <span className="ml-auto shrink-0 rounded-full bg-primary/70 px-1.5 text-[10px] font-bold">
+                      <span className="ml-auto shrink-0 rounded-full bg-primary-foreground/25 px-1.5 text-[10px] font-bold">
                         {client.tasks.length}
                       </span>
                     </button>
@@ -181,6 +175,18 @@ export function MonthlyCalendar({
                   )}
                 </div>
               )}
+
+              {/* Datas do calendário — contexto do dia, abaixo do que é para fazer nele. */}
+              <div className="space-y-1">
+                {events.map((event) => (
+                  <EventPill
+                    key={event.id}
+                    event={event}
+                    variant="calendar"
+                    onSelect={() => setBatch({ date: event.iso, eventTitle: event.title })}
+                  />
+                ))}
+              </div>
 
               {/* Anniversaries — discrete footer line (amber, first names, truncated) */}
               {annivFirstNames.length > 0 && (

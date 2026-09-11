@@ -21,10 +21,14 @@ export function EventPill({ event, variant, onSelect }: EventPillProps) {
         type="button"
         onClick={onSelect}
         title={event.title}
-        className={`block w-full truncate rounded border px-1.5 py-0.5 text-left text-[11px] font-medium transition-colors ${
+        // A data é CONTEXTO da célula, não o assunto dela: sem preenchimento e sem borda, para
+        // não disputar atenção com a demanda do cliente, que é o que o gestor vai olhar. O
+        // feriado mantém o tom de alerta porque muda o que é possível fazer no dia — mas em
+        // texto, não em bloco pintado. Ver o comentário da ordem em MonthlyCalendar.
+        className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] transition-colors ${
           event.type === "holiday"
-            ? "border-danger/40 bg-danger-subtle text-danger hover:border-danger/40"
-            : "border-primary/20 bg-primary/10 text-primary hover:border-primary/40"
+            ? "font-medium text-danger hover:bg-danger-subtle"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground"
         }`}
       >
         <span className="mr-1">{flags}</span>
