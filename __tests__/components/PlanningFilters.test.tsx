@@ -167,6 +167,29 @@ describe("PlanningFilters", () => {
     expect(replace).toHaveBeenCalledWith("/planning/week?week=2026-09-07", { scroll: false });
   });
 
+  it("um campo pode LIMPAR outro ao mudar", async () => {
+    // A dependência real: trocar a equipe limpa a pessoa, que pode não pertencer à nova. Mantê-la
+    // filtraria por alguém que nem aparece no seletor, e a grade viria vazia sem explicar por quê.
+    paramsAtuais = new URLSearchParams("user=u1");
+    montar([
+      {
+        kind: "single",
+        param: "team",
+        label: "Equipe",
+        allLabel: "Todas",
+        options: [{ id: "tm1", name: "Criação" }],
+        selected: undefined,
+        clears: ["user"],
+      },
+      pessoas(["u1"]),
+    ]);
+    await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: /Equipe/ }), "tm1");
+    expect(screen.getByLabelText("Ana")).not.toBeChecked();
+    await userEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    expect(replace).toHaveBeenCalledWith("/planning/week?team=tm1", { scroll: false });
+  });
+
   it("a escolha é guardada para a próxima visita", () => {
     paramsAtuais = new URLSearchParams("user=u1,u2");
     montar([pessoas(["u1", "u2"])]);

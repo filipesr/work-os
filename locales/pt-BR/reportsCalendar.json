@@ -3,6 +3,10 @@
   "title": "Semanal",
   "subtitle": "Visão semanal das tarefas em andamento por equipe",
   "filters": {
+    "apply": "Aplicar",
+    "filtersTitle": "Filtros",
+    "filtersSubtitle": "Recorte o que a grade mostra. Fica visível como tag na barra.",
+    "selectedCount": "{label}: {count}",
     "team": "Equipe",
     "project": "Projeto",
     "user": "Colaborador",

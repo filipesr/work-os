@@ -24,35 +24,41 @@ export interface FilterOption {
  * Um campo do diálogo. `param` é o nome do parâmetro na URL — é ele que o servidor lê, e é ele que
  * o armazenamento local guarda.
  */
-export type PlanningFilterField =
+/** Campos que este campo LIMPA quando muda. Existe para a dependência real entre filtros: trocar a
+ *  equipe precisa limpar a pessoa, que pode não pertencer à nova — mantê-la filtraria por alguém
+ *  que nem aparece no seletor, e a grade viria vazia sem explicar por quê. */
+type ComDependentes = { clears?: string[] };
+
+export type PlanningFilterField = ComDependentes &
   /** Escolha de VÁRIOS (pessoas, clientes). Lista vazia é TODOS, nunca NENHUM. */
-  | { kind: "multi"; param: string; label: string; options: FilterOption[]; selected: string[] }
-  /**
-   * Escolha de vários COM MODOS especiais antes da lista — o filtro de equipes da mesa, que tem
-   * três estados e um padrão que esconde as equipes de apoio (ver `lib/planning/team-filter.ts`).
-   * `modes[].value` vazio significa TIRAR o parâmetro, que é como o padrão se escreve.
-   */
-  | {
-      kind: "modes";
-      param: string;
-      label: string;
-      modes: { value: string; label: string; hint?: string }[];
-      options: FilterOption[];
-      selected: string[];
-      /** O modo em vigor quando não há lista escolhida. Vazio = o padrão. */
-      activeMode: string;
-    }
-  /** Escolha de UM, com a opção "todos" no topo. */
-  | {
-      kind: "single";
-      param: string;
-      label: string;
-      allLabel: string;
-      options: FilterOption[];
-      selected?: string;
-    }
-  /** Liga/desliga. O rótulo é o que a tag mostra quando está ligado. */
-  | { kind: "check"; param: string; label: string; checked: boolean };
+  (| { kind: "multi"; param: string; label: string; options: FilterOption[]; selected: string[] }
+    /**
+     * Escolha de vários COM MODOS especiais antes da lista — o filtro de equipes da mesa, que tem
+     * três estados e um padrão que esconde as equipes de apoio (ver `lib/planning/team-filter.ts`).
+     * `modes[].value` vazio significa TIRAR o parâmetro, que é como o padrão se escreve.
+     */
+    | {
+        kind: "modes";
+        param: string;
+        label: string;
+        modes: { value: string; label: string; hint?: string }[];
+        options: FilterOption[];
+        selected: string[];
+        /** O modo em vigor quando não há lista escolhida. Vazio = o padrão. */
+        activeMode: string;
+      }
+    /** Escolha de UM, com a opção "todos" no topo. */
+    | {
+        kind: "single";
+        param: string;
+        label: string;
+        allLabel: string;
+        options: FilterOption[];
+        selected?: string;
+      }
+    /** Liga/desliga. O rótulo é o que a tag mostra quando está ligado. */
+    | { kind: "check"; param: string; label: string; checked: boolean }
+  );
 
 /** O valor de um campo como ele vai para a URL (`null` = parâmetro ausente). */
 function valorAtual(field: PlanningFilterField): string | null {
@@ -129,8 +135,12 @@ export function PlanningFilters({
   const emEdicao = (param: string) =>
     param in rascunho ? rascunho[param] : (aplicado[param] ?? null);
 
-  const editar = (param: string, valor: string | null) =>
-    setRascunho((r) => ({ ...r, [param]: valor }));
+  const editar = (param: string, valor: string | null, clears: string[] = []) =>
+    setRascunho((r) => ({
+      ...r,
+      [param]: valor,
+      ...Object.fromEntries(clears.map((c) => [c, null])),
+    }));
 
   const abrir = (aberto: boolean) => {
     // Toda abertura começa do que está APLICADO. Sem isto, quem fechasse sem aplicar reencontraria
@@ -239,7 +249,7 @@ export function PlanningFilters({
                     <input
                       type="checkbox"
                       checked={ligado}
-                      onChange={() => editar(field.param, ligado ? null : "1")}
+                      onChange={() => editar(field.param, ligado ? null : "1", field.clears)}
                     />
                     {field.label}
                   </label>
@@ -255,7 +265,7 @@ export function PlanningFilters({
                     <select
                       className={selectClass}
                       value={emEdicao(field.param) ?? ""}
-                      onChange={(e) => editar(field.param, e.target.value || null)}
+                      onChange={(e) => editar(field.param, e.target.value || null, field.clears)}
                     >
                       <option value="">{field.allLabel}</option>
                       {field.options.map((o) => (
@@ -295,7 +305,7 @@ export function PlanningFilters({
                             className="mt-1"
                             name={`${field.param}-modo`}
                             checked={modoEmVigor === m.value}
-                            onChange={() => editar(field.param, m.value || null)}
+                            onChange={() => editar(field.param, m.value || null, field.clears)}
                           />
                           <span className="flex flex-col">
                             <span>{m.label}</span>

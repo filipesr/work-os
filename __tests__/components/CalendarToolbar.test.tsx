@@ -57,7 +57,7 @@ describe("CalendarToolbar", () => {
 
   it("sem filtro, nenhuma tag e nenhuma contagem", () => {
     abrir(SEM_FILTRO);
-    expect(screen.getByRole("button", { name: /^title/ }).textContent).not.toMatch(/\d/);
+    expect(screen.getByRole("button", { name: /^filtersTitle/ }).textContent).not.toMatch(/\d/);
   });
 
   it("filtro ativo vira tag com o NOME, não com o id", () => {
@@ -69,7 +69,7 @@ describe("CalendarToolbar", () => {
 
   it("conta os filtros ativos no botão", () => {
     abrir({ teamId: "tm1", projectId: "p1", userId: "u1", showCompleted: true });
-    expect(screen.getByRole("button", { name: /^title/ }).textContent).toContain("4");
+    expect(screen.getByRole("button", { name: /^filtersTitle/ }).textContent).toContain("4");
   });
 
   it("clicar na tag remove aquele filtro", () => {
@@ -90,9 +90,22 @@ describe("CalendarToolbar", () => {
     // A pessoa selecionada pode não pertencer ao novo time; mantê-la filtraria
     // por alguém que nem aparece no seletor.
     const user = userEvent.setup();
-    abrir(SEM_FILTRO);
-    await user.click(screen.getByRole("button", { name: /^title/ }));
+    abrir({ userId: "u1", showCompleted: false });
+    await user.click(screen.getByRole("button", { name: /^filtersTitle/ }));
     await user.selectOptions(screen.getByRole("combobox", { name: /^team/ }), "tm1");
+    await user.click(screen.getByRole("button", { name: "apply" }));
     expect(setParams).toHaveBeenCalledWith({ team: "tm1", user: null });
+  });
+
+  it("mexer nos selects NÃO recarrega a grade — só o Aplicar", async () => {
+    // Antes, cada select navegava sozinho: montar um recorte de três campos custava três recargas,
+    // e as duas primeiras mostravam algo que ninguém pediu.
+    const user = userEvent.setup();
+    abrir(SEM_FILTRO);
+    await user.click(screen.getByRole("button", { name: /^filtersTitle/ }));
+    await user.selectOptions(screen.getByRole("combobox", { name: /^team/ }), "tm1");
+    await user.selectOptions(screen.getByRole("combobox", { name: /^project/ }), "p1");
+    expect(setParams).not.toHaveBeenCalled();
+    expect(setParam).not.toHaveBeenCalled();
   });
 });
