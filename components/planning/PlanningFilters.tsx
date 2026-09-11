@@ -122,7 +122,7 @@ export function PlanningFilters({
   extra?: ReactNode;
 }) {
   const t = useTranslations(namespace);
-  const { setParam, setParams } = useUrlFilters({ replace: true });
+  const { setParam, setParams, isPending } = useUrlFilters({ replace: true });
   const [open, setOpen] = useState(false);
   const [rascunho, setRascunho] = useState<Rascunho>({});
 
@@ -152,6 +152,9 @@ export function PlanningFilters({
   const aplicar = () => {
     setParams(rascunho);
     setRascunho({});
+    // Fecha na hora, sem esperar a grade voltar. Manter o diálogo aberto com o botão girando
+    // esconderia justamente o que a pessoa quer ver mudar; quem avisa que ainda está carregando é
+    // a barra do topo, que não tapa nada.
     setOpen(false);
   };
 
@@ -222,7 +225,10 @@ export function PlanningFilters({
             type="button"
             className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+            <SlidersHorizontal
+              className={`h-4 w-4 ${isPending ? "animate-spin" : ""}`}
+              aria-hidden="true"
+            />
             {t("filtersTitle")}
             {ativos.length > 0 && (
               <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground">

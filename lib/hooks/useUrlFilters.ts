@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { navegacaoIniciou, navegacaoTerminou } from "@/lib/navigation-busy";
 
 interface UseUrlFiltersOptions {
   /** Parâmetro resetado quando qualquer outro filtro muda (padrão: "page"). */
@@ -23,6 +24,13 @@ interface UseUrlFiltersOptions {
  *   o `resetKey` (paginação) automaticamente.
  * - setParams({...}): várias mudanças de uma vez.
  * - clearParams(keys?): remove os `keys` informados (ou todos).
+ * - isPending: a navegação ainda está em voo.
+ *
+ * **Por que a navegação vai dentro de `useTransition`.** Trocar um parâmetro re-renderiza a página
+ * no SERVIDOR, e com o banco a ~300ms de ida e volta isso leva de 0,8 a 2 segundos. Sem transição
+ * não existe sinal nenhum de que algo está acontecendo: a tela antiga fica na frente, intacta, e
+ * quem clicou conclui que o clique não pegou — e clica de novo. `isPending` é o que permite ao
+ * controle responder, e é ele que acende a barra do topo (`lib/navigation-busy.ts`).
  */
 export function useUrlFilters(options?: UseUrlFiltersOptions) {
   const router = useRouter();
@@ -32,12 +40,25 @@ export function useUrlFilters(options?: UseUrlFiltersOptions) {
   const scroll = options?.scroll ?? false;
   const replace = options?.replace ?? false;
 
+  const [isPending, startTransition] = useTransition();
+
+  // O contador do topo segue o `isPending`, e não as chamadas: assim cada navegação soma UMA vez,
+  // mesmo que o commit seja chamado duas vezes seguidas, e o "fim" acontece quando a navegação
+  // realmente termina — não quando a função retorna, que é imediato.
+  useEffect(() => {
+    if (!isPending) return;
+    navegacaoIniciou();
+    return () => navegacaoTerminou();
+  }, [isPending]);
+
   const commit = useCallback(
     (sp: URLSearchParams) => {
       const qs = sp.toString();
       const url = qs ? `${pathname}?${qs}` : pathname;
-      if (replace) router.replace(url, { scroll });
-      else router.push(url, { scroll });
+      startTransition(() => {
+        if (replace) router.replace(url, { scroll });
+        else router.push(url, { scroll });
+      });
     },
     [router, pathname, scroll, replace]
   );
@@ -76,5 +97,5 @@ export function useUrlFilters(options?: UseUrlFiltersOptions) {
     [searchParams, commit]
   );
 
-  return { searchParams, setParam, setParams, clearParams };
+  return { searchParams, setParam, setParams, clearParams, isPending };
 }

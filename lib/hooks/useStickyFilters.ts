@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useUrlFilters } from "@/lib/hooks/useUrlFilters";
 import { readSticky, writeSticky, type StickyFilters } from "@/lib/planning/sticky-filters";
@@ -40,9 +40,15 @@ export function useStickyFilters(scope: string, keys: string[]): void {
   }, [searchParams, chaves]);
 
   const temFiltroNaUrl = Object.keys(naUrl).length > 0;
+  const jaDecidiu = useRef(false);
 
+  // A decisão de restaurar acontece UMA VEZ. Não é otimização: `setParams` navega dentro de uma
+  // transição, a transição re-renderiza, e um efeito que reavalia a cada render voltaria a chamar
+  // `setParams` — laço infinito que come a memória do processo. (Foi exatamente o que aconteceu
+  // quando a transição entrou no `useUrlFilters`.)
   useEffect(() => {
-    if (pronto) return;
+    if (jaDecidiu.current) return;
+    jaDecidiu.current = true;
 
     if (temFiltroNaUrl) {
       setPronto(true);
@@ -55,11 +61,16 @@ export function useStickyFilters(scope: string, keys: string[]): void {
       return;
     }
 
-    // Não marca `pronto` aqui: a navegação vai trazer os filtros para a URL, o efeito roda de novo
-    // com `temFiltroNaUrl` verdadeiro, e só então o hook passa a gravar. Marcar agora abriria uma
-    // janela em que o efeito de gravação salvaria o estado VAZIO por cima do que acabou de ser lido.
+    // Não marca `pronto` aqui: a navegação vai trazer os filtros para a URL, o efeito ABAIXO vê
+    // isso e só então o hook passa a gravar. Marcar agora abriria uma janela em que o efeito de
+    // gravação salvaria o estado VAZIO por cima do que acabou de ser lido.
     setParams(salvo);
-  }, [pronto, temFiltroNaUrl, scope, chaves, setParams]);
+  }, [temFiltroNaUrl, scope, chaves, setParams]);
+
+  // Os filtros restaurados chegaram à URL: daqui em diante o hook grava normalmente.
+  useEffect(() => {
+    if (!pronto && temFiltroNaUrl) setPronto(true);
+  }, [pronto, temFiltroNaUrl]);
 
   useEffect(() => {
     if (!pronto) return;

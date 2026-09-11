@@ -349,3 +349,39 @@ aparecem na tela. Vale uma passada de quem conhece o vocabulário da operação 
 têm nome próprio de campanha. O `kind` também: classifiquei como `COMMERCIAL` tudo que não é
 feriado nacional, então `Dia do Programador` e `Dia da Cachaça` estão no mesmo balde que
 `Dia do Cliente`. Se a distinção importar para o planejamento, o schema já tem `EVENT` livre.
+
+---
+
+## A latência do banco, medida (2026-09-11)
+
+A lentidão percebida nos cliques **não é do código** — é distância até o banco. Medido contra o
+Neon em `sa-east-1`, de uma máquina em desenvolvimento:
+
+| consulta                          | tempo      |
+| --------------------------------- | ---------- |
+| `select 1` (só a ida e volta)     | **304 ms** |
+| etapas da semana (mesa do gestor) | 333 ms     |
+| demandas do mês (calendário)      | 253 ms     |
+| ocorrências do mês                | 57 ms      |
+| pessoas da mesa                   | 59 ms      |
+
+Uma tela dessas faz de quatro a seis consultas. Mesmo em paralelo, o piso é o tempo de ida e volta;
+somados o render do servidor e a viagem do HTML, cada navegação custa de 0,8 a 2 segundos.
+
+**O que já foi feito:** feedback. Transição nos filtros e na navegação de semana (o controle
+clicado responde), barra de progresso no topo, e `loading.tsx` nas quatro rotas que não tinham
+(`planning/week`, `planning/client-load`, `planning/my-week`, `projects` — antes elas mostravam a
+tela anterior intacta até o servidor terminar).
+
+**O que NÃO foi feito, e é a raiz:** reduzir quantas idas e voltas cada tela paga. Caminhos a
+investigar, em ordem de retorno esperado:
+
+1. **Consultas em série que poderiam ser paralelas.** Algumas telas buscam uma lista para validar
+   um filtro e só então a consulta principal — é correto (ver `coverage` e `client-load`), mas paga
+   duas viagens em vez de uma. Dá para resolver validando o recorte contra o resultado, não antes.
+2. **Campos trazidos sem uso.** Vários `select` carregam relações inteiras (`task.stageLogs`,
+   `project.client`) onde a tela usa um campo.
+3. **Cache entre navegações.** Lista de equipes, clientes e projetos muda raramente e é buscada em
+   toda navegação de toda tela de planejamento.
+4. **Região do banco.** Se a operação é toda no Paraguai/Brasil, `sa-east-1` já é a melhor opção da
+   região; o ganho aqui seria trocar dev remoto por um banco local em desenvolvimento.

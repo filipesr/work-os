@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/navbar";
 import { HeartbeatProvider } from "@/components/HeartbeatProvider";
 import { RefreshOnFocus } from "@/components/RefreshOnFocus";
+import { NavigationProgress } from "@/components/NavigationProgress";
 
 // Every protected route reads the session and live data, so opt the whole
 // segment out of static rendering explicitly (rather than relying on Next
@@ -11,6 +12,9 @@ export const dynamic = "force-dynamic";
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
+      {/* Fora do <main> e antes do cabeçalho: a barra é fixa no topo da janela e precisa
+          aparecer com a página rolada. */}
+      <NavigationProgress />
       <HeartbeatProvider />
       <RefreshOnFocus />
       <Navbar />

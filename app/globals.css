@@ -85,3 +85,16 @@ body {
     @apply flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring;
   }
 }
+
+/* Barra de progresso de navegação (components/NavigationProgress.tsx).
+   Indeterminada: o bloco atravessa a largura e recomeça. Não há percentual real a mostrar — o que
+   se afirma é "ainda estou trabalhando", e uma barra que finge saber quanto falta ensina a
+   desconfiar dela. */
+@keyframes navprogress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
