@@ -9,6 +9,15 @@
     "allTeams": "Todos los equipos",
     "allProjects": "Todos los proyectos",
     "allUsers": "Todos los colaboradores",
+    "dateKind": "Tipo de fecha",
+    "allKinds": "Todos los tipos",
+    "kind": {
+      "HOLIDAY": "Feriados",
+      "COMMERCIAL": "Fechas comerciales",
+      "EVENT": "Eventos propios"
+    },
+    "country": "País",
+    "allCountries": "Todos los países",
     "showCompleted": "Mostrar completadas",
     "clear": "Limpiar filtros",
     "title": "Filtros",

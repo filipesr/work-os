@@ -21,6 +21,10 @@ export interface CalendarSearchParams {
   user?: string;
   showCompleted?: string;
   plan?: string;
+  /** Recorte das datas do calendário: tipo (`HOLIDAY`/`COMMERCIAL`/`EVENT`) e país (`AR`/`BR`/`PY`).
+   *  Ver lib/calendar/occurrence-filter.ts — valor desconhecido é ignorado, não esvazia a grade. */
+  dateKind?: string;
+  country?: string;
 }
 
 /** Opções de time/projeto/pessoa da barra de filtros. A lista de pessoas segue o

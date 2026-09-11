@@ -25,7 +25,15 @@ export interface CalendarFilterSelection {
   projectId?: string;
   userId?: string;
   showCompleted: boolean;
+  /** Recorte das DATAS do calendário (feriados, comemorativas, eventos próprios). Só a visão
+   *  mensal mostra datas, então estes dois só aparecem lá — oferecê-los na semana seria um
+   *  controle que não faz nada. */
+  dateKind?: string;
+  country?: string;
 }
+
+const KINDS = ["HOLIDAY", "COMMERCIAL", "EVENT"] as const;
+const COUNTRIES = ["AR", "BR", "PY"] as const;
 
 /**
  * Barra única do calendário: navegação ao CENTRO, ações à direita.
@@ -89,10 +97,27 @@ export function CalendarToolbar({
       rotulo: selected.showCompleted ? t("showCompleted") : undefined,
       limpar: () => setParam("showCompleted", null),
     },
+    {
+      chave: "dateKind",
+      rotulo: selected.dateKind ? t(`kind.${selected.dateKind}`) : undefined,
+      limpar: () => setParam("dateKind", null),
+    },
+    {
+      chave: "country",
+      rotulo: selected.country,
+      limpar: () => setParam("country", null),
+    },
   ].filter((f) => f.rotulo);
 
   const limparTudo = () =>
-    setParams({ team: null, project: null, user: null, showCompleted: null });
+    setParams({
+      team: null,
+      project: null,
+      user: null,
+      showCompleted: null,
+      dateKind: null,
+      country: null,
+    });
 
   const selectClass =
     "h-10 w-full rounded-lg border-2 border-input-border bg-input px-3 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 transition-colors";
@@ -202,6 +227,47 @@ export function CalendarToolbar({
                     ))}
                   </select>
                 </label>
+
+                {/* Só no mês: é a única visão que desenha as datas do calendário. */}
+                {view === "month" && (
+                  <>
+                    <label className="block text-sm">
+                      <span className="mb-1.5 block font-medium text-muted-foreground">
+                        {t("dateKind")}
+                      </span>
+                      <select
+                        className={selectClass}
+                        value={selected.dateKind ?? ""}
+                        onChange={(e) => setParam("dateKind", e.target.value || null)}
+                      >
+                        <option value="">{t("allKinds")}</option>
+                        {KINDS.map((k) => (
+                          <option key={k} value={k}>
+                            {t(`kind.${k}`)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="block text-sm">
+                      <span className="mb-1.5 block font-medium text-muted-foreground">
+                        {t("country")}
+                      </span>
+                      <select
+                        className={selectClass}
+                        value={selected.country ?? ""}
+                        onChange={(e) => setParam("country", e.target.value || null)}
+                      >
+                        <option value="">{t("allCountries")}</option>
+                        {COUNTRIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </>
+                )}
 
                 <label className="flex items-center gap-2 pt-1 text-sm text-foreground">
                   <input

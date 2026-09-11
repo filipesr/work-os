@@ -5,6 +5,7 @@ import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getMonthlyCalendarDemands, getTeamAnniversaries } from "@/lib/actions/reporting";
 import { getOccurrencesInRange } from "@/lib/actions/calendar-occurrence";
+import { filterOccurrences, parseOccurrenceFilter } from "@/lib/calendar/occurrence-filter";
 import {
   parseMonthParam,
   monthRangeFromFirst,
@@ -108,7 +109,9 @@ async function MonthGrid({
   }
 
   const eventsByDay: Record<string, MonthEvent[]> = {};
-  for (const e of rawEvents) {
+  // O recorte por tipo e país acontece AQUI, e não na consulta: o filtro é de leitura, e manter a
+  // consulta igual para todo mundo deixa o cache da rota servir a grade inteira uma vez só.
+  for (const e of filterOccurrences(rawEvents, parseOccurrenceFilter(params))) {
     (eventsByDay[e.iso] ??= []).push({
       id: e.id,
       iso: e.iso,
@@ -163,6 +166,7 @@ export default async function MonthCalendarPage({
   const params = await searchParams;
   const planning = params.plan === "1";
   const showCompleted = params.showCompleted === "1";
+  const dateFilter = parseOccurrenceFilter(params);
 
   const first = parseMonthParam(params.month);
   const isCurrentPeriod = formatYearMonth(first) === formatYearMonth(firstOfMonth());
@@ -205,6 +209,10 @@ export default async function MonthCalendarPage({
             projectId: params.project,
             userId: options.validUserId,
             showCompleted,
+            // Do FILTRO já validado, não do parâmetro cru: assim a tag da barra nunca mostra um
+            // recorte que a grade não aplicou (`?dateKind=feriado` some dos dois lugares junto).
+            dateKind: dateFilter.kind,
+            country: dateFilter.country,
           }}
         />
         <PlanningModeBanner enabled={planning} />
