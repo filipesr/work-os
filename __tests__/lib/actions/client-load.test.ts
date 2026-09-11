@@ -674,3 +674,60 @@ describe("getClientLoad", () => {
     });
   });
 });
+
+// A tela tem o CLIENTE como eixo, igual à cobertura semanal: quem atende três precisa enxergar a
+// carga deles sem a base inteira no meio.
+describe("getClientLoad — recorte por cliente", () => {
+  const db = prisma as unknown as {
+    taskActiveStage: { findMany: ReturnType<typeof vi.fn> };
+    timeLog: { findMany: ReturnType<typeof vi.fn>; groupBy: ReturnType<typeof vi.fn> };
+    task: { findMany: ReturnType<typeof vi.fn> };
+    stageTransition: { findMany: ReturnType<typeof vi.fn> };
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+    db.timeLog.findMany.mockResolvedValue([]);
+    db.timeLog.groupBy.mockResolvedValue([]);
+    db.task.findMany.mockResolvedValue([]);
+    db.stageTransition.findMany.mockResolvedValue([]);
+  });
+
+  const whereEtapas = () =>
+    db.taskActiveStage.findMany.mock.calls[0][0].where as Record<string, unknown>;
+
+  const taskWhere = () => whereEtapas().task as Record<string, unknown>;
+
+  it("sem cliente escolhido, a consulta não ganha recorte de projeto", async () => {
+    await getClientLoad(SEGUNDA);
+    expect(taskWhere()).not.toHaveProperty("project");
+  });
+
+  it("lista vazia é TODOS, não NENHUM — a tela não abre em branco", async () => {
+    await getClientLoad(SEGUNDA, undefined, { clientIds: [] });
+    expect(taskWhere()).not.toHaveProperty("project");
+  });
+
+  it("com clientes escolhidos, só a carga deles entra", async () => {
+    await getClientLoad(SEGUNDA, undefined, { clientIds: ["c1", "c9"] });
+    expect(taskWhere().project).toEqual({ clientId: { in: ["c1", "c9"] } });
+  });
+
+  it("o recorte de cliente NÃO leva embora o filtro de descartadas", async () => {
+    // `notDiscardedStageWhere()` escreve na MESMA chave `task`. Espalhar um `{ task: {...} }` ao
+    // lado dele substituiria o fragmento inteiro, e demanda cancelada ou obsoleta voltaria a
+    // ocupar o dia de alguém — sem nada quebrar, que é o pior tipo de regressão.
+    await getClientLoad(SEGUNDA, undefined, { clientIds: ["c1"] });
+    // A ordem dentro do `notIn` é do fragmento, não deste teste — comparar como conjunto evita
+    // um teste que quebra ao reordenar uma lista que o Prisma trata como conjunto.
+    const status = taskWhere().status as { notIn: string[] };
+    expect(new Set(status.notIn)).toEqual(new Set(["CANCELLED", "OBSOLETE"]));
+  });
+
+  it("o recorte de cliente convive com o de equipe, sem um apagar o outro", async () => {
+    await getClientLoad(SEGUNDA, "tm1", { clientIds: ["c1"] });
+    expect(whereEtapas().assignee).toEqual({ teams: { some: { id: "tm1" } } });
+    expect(taskWhere().project).toEqual({ clientId: { in: ["c1"] } });
+  });
+});

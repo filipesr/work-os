@@ -1,5 +1,6 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import {
@@ -130,7 +131,16 @@ export type ClientWeek = {
 
 export type ClientLoad = { days: string[]; clients: ClientWeek[] };
 
-export async function getClientLoad(mondayISO: string, teamId?: string): Promise<ClientLoad> {
+export async function getClientLoad(
+  mondayISO: string,
+  teamId?: string,
+  opts: {
+    /** Clientes escolhidos na barra. **Lista vazia é TODOS, nunca NENHUM** — convenção de
+     *  `lib/planning/multi-param.ts`. Convive com o recorte de equipe: são perguntas diferentes
+     *  ("de quem é a carga" e "de qual cliente"), e um não pode apagar o outro. */
+    clientIds?: string[];
+  } = {}
+): Promise<ClientLoad> {
   await requireManagerOrAdmin();
 
   const days = weekDays(mondayISO);
@@ -145,9 +155,15 @@ export async function getClientLoad(mondayISO: string, teamId?: string): Promise
 
   const linhas = await prisma.taskActiveStage.findMany({
     where: {
-      // Demanda descartada não ocupa dia de ninguém — ver lib/task-availability.ts.
-      ...notDiscardedStageWhere(),
       ...(teamId ? { assignee: { teams: { some: { id: teamId } } } } : {}),
+      // Demanda descartada não ocupa dia de ninguém — ver lib/task-availability.ts. O recorte de
+      // cliente entra DENTRO do mesmo `task`, e não como uma chave nova: espalhar
+      // `{ task: { project: ... } }` ao lado SUBSTITUIRIA o `task` do fragmento e levaria embora o
+      // filtro de descartadas, sem nada quebrar — é a mesma armadilha que já custou caro aqui.
+      task: {
+        ...(notDiscardedStageWhere().task as Prisma.TaskWhereInput),
+        ...(opts.clientIds?.length ? { project: { clientId: { in: opts.clientIds } } } : {}),
+      },
       OR: [
         // 1. Programada para a semana e ainda não concluída.
         {

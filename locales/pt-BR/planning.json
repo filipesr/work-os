@@ -224,6 +224,13 @@
     "queued": "sem dia · na fila"
   },
   "clientLoad": {
+    "apply": "Aplicar",
+    "filtersTitle": "Filtros",
+    "filtersSubtitle": "Recorte o que a grade mostra. Fica visível como tag na barra.",
+    "clearAll": "Limpar todos os filtros",
+    "clearOne": "Remover filtro {filter}",
+    "selectedCount": "{label}: {count}",
+    "clientsLabel": "Clientes",
     "kicker": "Planejamento",
     "title": "Carga por cliente",
     "subtitle": "Onde cada cliente está pegando a semana.",

@@ -224,6 +224,13 @@
     "queued": "sin día · en la cola"
   },
   "clientLoad": {
+    "apply": "Aplicar",
+    "filtersTitle": "Filtros",
+    "filtersSubtitle": "Recorta lo que muestra la grilla. Queda visible como etiqueta en la barra.",
+    "clearAll": "Limpiar todos los filtros",
+    "clearOne": "Quitar filtro {filter}",
+    "selectedCount": "{label}: {count}",
+    "clientsLabel": "Clientes",
     "kicker": "Planificación",
     "title": "Carga por cliente",
     "subtitle": "Cómo ocupa la semana cada cliente.",

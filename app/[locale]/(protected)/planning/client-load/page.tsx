@@ -13,6 +13,8 @@ import {
 import prisma from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
+import { PlanningFilters } from "@/components/planning/PlanningFilters";
+import { parseMultiParam } from "@/lib/planning/multi-param";
 import { ClientLoadControls } from "./ClientLoadControls";
 
 export const metadata: Metadata = { title: "Carga por cliente" };
@@ -20,7 +22,11 @@ export const metadata: Metadata = { title: "Carga por cliente" };
 export default async function ClientLoadPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string | string[]; team?: string | string[] }>;
+  searchParams: Promise<{
+    week?: string | string[];
+    team?: string | string[];
+    client?: string | string[];
+  }>;
 }) {
   try {
     await requireManagerOrAdmin();
@@ -34,8 +40,20 @@ export default async function ClientLoadPage({
   // array nesse caso — sem isto o tipo mentiria e o filtro do Prisma quebraria em runtime.
   const teamId = Array.isArray(sp.team) ? sp.team[0] : sp.team;
   const t = await getTranslations("planning.clientLoad");
+  // A lista de clientes vem ANTES da carga, e não em paralelo: é ela que valida o recorte da URL.
+  // Um link com cliente apagado precisa cair em "todos" — e não abrir a tela vazia com um filtro
+  // que não dá para desmarcar, porque a opção sumiu do seletor junto com o cliente.
+  const clients = await prisma.client.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  const clientIds = parseMultiParam(
+    Array.isArray(sp.client) ? sp.client.join(",") : sp.client,
+    clients.map((c) => c.id)
+  );
+
   const [carga, teams] = await Promise.all([
-    getClientLoad(formatISODate(monday), teamId),
+    getClientLoad(formatISODate(monday), teamId, { clientIds }),
     prisma.team.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
 
@@ -46,12 +64,38 @@ export default async function ClientLoadPage({
         title={t("title")}
         subtitle={`${t("subtitle")} · ${t("weekOf", { date: formatDisplayDate(monday) })}`}
         actions={
-          <ClientLoadControls
-            monday={monday}
-            isCurrentWeek={formatISODate(monday) === formatISODate(mondayOfWeek(todayInSaoPaulo()))}
-            teams={teams}
-            teamId={teamId}
-          />
+          <>
+            <PlanningFilters
+              scope="client-load"
+              namespace="planning.clientLoad"
+              fields={[
+                {
+                  kind: "multi",
+                  param: "client",
+                  label: t("clientsLabel"),
+                  options: clients,
+                  selected: clientIds,
+                },
+                {
+                  // A equipe segue sendo UMA (é assim que a consulta a recebe), mas sai do select
+                  // solto e entra no mesmo diálogo: dois controles de recorte em lugares
+                  // diferentes obrigam a procurar em qual deles está o que se quer mudar.
+                  kind: "single",
+                  param: "team",
+                  label: t("teamFilter"),
+                  allLabel: t("allTeams"),
+                  options: teams,
+                  selected: teamId,
+                },
+              ]}
+            />
+            <ClientLoadControls
+              monday={monday}
+              isCurrentWeek={
+                formatISODate(monday) === formatISODate(mondayOfWeek(todayInSaoPaulo()))
+              }
+            />
+          </>
         }
       />
 
