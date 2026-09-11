@@ -121,9 +121,43 @@ describe("estabilidade dos curatedId (snapshot)", () => {
     expect(ids).toContain("2026-10-12-d-a-del-ni-o-br");
     expect(ids).toContain("2026-11-27-black-friday");
     expect(ids).toContain("2026-01-01-a-o-nuevo");
-    expect(ids.length).toBe(41);
+    expect(ids.length).toBe(153);
     // Nenhum id duplicado — dois eventos no mesmo dia com o mesmo título
     // colidiriam na constraint única e quebrariam a materialização.
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+// O catálogo cresceu de 41 para 153 datas em 2026 quando a lista "Fechas Conmemorativas" do quadro
+// do cliente foi transcrita para cá. O risco que isso cria é duplicata silenciosa: uma data que já
+// existia sendo escrita de novo com outro título. `id` é `YYYY-MM-DD-<slug do título em espanhol>`
+// e é a chave de deduplicação do materializador — dois ids iguais viram duas linhas disputando o
+// mesmo `curatedId`, que é UNIQUE no schema, e a materialização quebra no meio.
+describe("integridade do catálogo", () => {
+  it("nenhum id se repete dentro do mesmo ano", () => {
+    for (const ano of [2025, 2026, 2027, 2028]) {
+      const ids = eventsForYear(ano).map((e) => e.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
+  it("toda data tem título nos dois idiomas e ao menos um país", () => {
+    for (const e of eventsForYear(2026)) {
+      expect(e.titlePt.trim().length).toBeGreaterThan(0);
+      expect(e.titleEs.trim().length).toBeGreaterThan(0);
+      expect(e.countries.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("toda data cai no ano pedido — nenhuma escapa por mês ou dia inválido", () => {
+    for (const e of eventsForYear(2027)) {
+      expect(e.iso).toMatch(/^2027-\d{2}-\d{2}$/);
+      expect(new Date(`${e.iso}T00:00:00Z`).toISOString().slice(0, 10)).toBe(e.iso);
+    }
+  });
+
+  it("as datas do cliente entraram: o catálogo passou de 41 para 153 em 2026", () => {
+    // Guarda contra remoção acidental do bloco inteiro num merge.
+    expect(eventsForYear(2026).length).toBe(153);
   });
 });
