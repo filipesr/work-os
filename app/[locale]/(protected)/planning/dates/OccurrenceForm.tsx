@@ -2,11 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 import { CalendarPlus, Pencil } from "lucide-react";
 import { FormDialog } from "@/components/ui/FormDialog";
 import { FieldLabel } from "@/components/ui/FieldLabel";
+import { formatCalendarDay } from "@/lib/dates";
 import { createOccurrence, updateOccurrence } from "@/lib/actions/calendar-occurrence";
 
 export interface OccurrenceDraft {
@@ -37,9 +38,14 @@ export function OccurrenceForm({
   maxDate?: string;
 }) {
   const t = useTranslations("planning.dates");
+  const locale = useLocale();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  // O que o campo tem AGORA, só para poder repetir a data por extenso abaixo dele. O valor que vai
+  // ao servidor continua saindo do FormData, não daqui — dois donos do mesmo dado é como um
+  // formulário passa a mentir.
+  const [iso, setIso] = useState(draft?.iso ?? "");
 
   const isEdit = Boolean(draft?.id);
   const formId = `occurrence-form-${draft?.id ?? "new"}`;
@@ -106,8 +112,21 @@ export function OccurrenceForm({
             min={minDate}
             max={maxDate}
             defaultValue={draft?.iso ?? ""}
+            onChange={(e) => setIso(e.target.value)}
             className={fieldClass}
           />
+          {/* A data escolhida, por extenso.
+              O campo `type="date"` desenha na ordem do SISTEMA de quem abre a tela: no notebook
+              configurado em inglês ele mostra mm/dd, e quem digita pensando em dd/mm cadastra 12 de
+              maio achando que cadastrou 5 de dezembro. O valor enviado nunca inverte — é sempre
+              ISO, e o servidor recusa qualquer outro formato —, então o que se conserta aqui não é
+              o dado, é a LEITURA: repetir a escolha por extenso, com o dia da semana, tira a
+              ambiguidade sem depender da configuração da máquina. */}
+          {iso && (
+            <p className="mt-1 text-sm font-medium text-foreground">
+              {formatCalendarDay(iso, locale)}
+            </p>
+          )}
           {minDate && maxDate && (
             <p className="mt-1 text-xs text-muted-foreground">
               {t("fields.dateHint", { min: minDate, max: maxDate })}

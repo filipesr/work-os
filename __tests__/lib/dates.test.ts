@@ -8,6 +8,7 @@ import {
   shiftWeek,
   monthRangeSaoPaulo,
   monthKeySaoPaulo,
+  formatCalendarDay,
 } from "@/lib/dates";
 
 describe("parseWeekParam", () => {
@@ -128,5 +129,35 @@ describe("monthKeySaoPaulo", () => {
     expect(monthKeySaoPaulo(new Date("2026-07-01T02:00:00.000Z"))).toBe("2026-06");
     // 03:00Z on Jul 1 is 00:00 of Jul 1 in SP → July
     expect(monthKeySaoPaulo(new Date("2026-07-01T03:00:00.000Z"))).toBe("2026-07");
+  });
+});
+
+// A linha do calendário guarda MEIA-NOITE UTC representando o dia em São Paulo. Formatar isso com
+// o fuso local devolve o dia ANTERIOR em qualquer máquina a oeste de Greenwich — é um erro que só
+// aparece para quem está em São Paulo, que é justamente quem usa o sistema.
+describe("formatCalendarDay", () => {
+  it("dd/mm/aa seguido do dia da semana", () => {
+    expect(formatCalendarDay("2026-12-25", "pt-BR")).toBe("25/12/26, sexta-feira");
+  });
+
+  it("segue o idioma pedido", () => {
+    expect(formatCalendarDay("2026-12-25", "es-ES")).toBe("25/12/26, viernes");
+  });
+
+  it("NÃO volta um dia — lê o instante como UTC, não como local", () => {
+    // Com o fuso de São Paulo (UTC-3), meia-noite UTC de 25/12 é 21h de 24/12. Sem `timeZone: UTC`
+    // a lista inteira mostraria a véspera de cada data.
+    expect(formatCalendarDay("2026-01-01", "pt-BR")).toContain("01/01/26");
+  });
+
+  it("aceita o Date que vem do banco, não só a string", () => {
+    expect(formatCalendarDay(new Date("2026-12-25T00:00:00.000Z"), "pt-BR")).toBe(
+      "25/12/26, sexta-feira"
+    );
+  });
+
+  it("data ausente vira o traço, como os outros formatadores", () => {
+    expect(formatCalendarDay(null, "pt-BR")).toBe("-");
+    expect(formatCalendarDay(undefined, "pt-BR")).toBe("-");
   });
 });

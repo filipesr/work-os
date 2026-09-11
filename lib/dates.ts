@@ -197,6 +197,37 @@ export function formatDisplayDate(date: Date | string | null | undefined, fallba
   });
 }
 
+/**
+ * `dd/mm/aa, dia da semana` — o formato da lista de datas do calendário.
+ *
+ * O dia da semana vem junto porque a pergunta que se faz diante de uma data comemorativa é "cai em
+ * que dia?": campanha de sábado se prepara na quinta, e a data sozinha obriga a abrir o calendário
+ * ao lado para descobrir isso.
+ *
+ * **Lê o instante como UTC, sempre.** `CalendarOccurrence.date` guarda MEIA-NOITE UTC representando
+ * o dia no calendário de São Paulo (ver o schema). Formatar isso no fuso local devolve o dia
+ * ANTERIOR em qualquer máquina a oeste de Greenwich — ou seja, para quem usa o sistema.
+ */
+export function formatCalendarDay(
+  date: Date | string | null | undefined,
+  locale: string,
+  fallback = "-"
+): string {
+  if (!date) return fallback;
+  const d = typeof date === "string" ? new Date(`${date}T00:00:00.000Z`) : date;
+  if (Number.isNaN(d.getTime())) return fallback;
+
+  const dia = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    timeZone: "UTC",
+  }).format(d);
+  const semana = new Intl.DateTimeFormat(locale, { weekday: "long", timeZone: "UTC" }).format(d);
+
+  return `${dia}, ${semana}`;
+}
+
 /** dd/mm/aaaa HH:mm em pt-BR. */
 export function formatDisplayDateTime(
   date: Date | string | null | undefined,

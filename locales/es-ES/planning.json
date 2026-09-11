@@ -46,6 +46,7 @@
     "coverage": "{covered} de {total} clientes",
     "columns": {
       "date": "Fecha",
+      "countries": "País",
       "name": "Nombre",
       "kind": "Tipo",
       "origin": "Origen",

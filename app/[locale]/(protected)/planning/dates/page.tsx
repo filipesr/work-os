@@ -13,7 +13,7 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ConfirmActionButton } from "@/components/ui/ConfirmActionButton";
-import { todayInSaoPaulo, formatISODate } from "@/lib/dates";
+import { todayInSaoPaulo, formatISODate, formatCalendarDay } from "@/lib/dates";
 import { planningHorizon } from "@/lib/calendar/horizon";
 import { OccurrenceForm } from "./OccurrenceForm";
 import { MaterializeYearButton } from "./MaterializeYearButton";
@@ -50,12 +50,6 @@ export default async function CalendarDatesPage() {
   ]);
 
   const isEs = locale.startsWith("es");
-  const fmt = new Intl.DateTimeFormat(locale, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
 
   const own = occurrences.filter((o) => o.source === "CUSTOM");
 
@@ -92,6 +86,7 @@ export default async function CalendarDatesPage() {
                 <thead className="bg-muted">
                   <tr>
                     <Th>{t("columns.date")}</Th>
+                    <Th>{t("columns.countries")}</Th>
                     <Th>{t("columns.name")}</Th>
                     <Th>{t("columns.kind")}</Th>
                     <Th>{t("columns.origin")}</Th>
@@ -101,8 +96,18 @@ export default async function CalendarDatesPage() {
                 <tbody className="divide-y divide-border bg-card">
                   {occurrences.map((o) => (
                     <tr key={o.id} className="transition-colors hover:bg-accent">
-                      <td className="whitespace-nowrap px-6 py-3 text-sm tabular-nums text-muted-foreground">
-                        {fmt.format(new Date(`${o.iso}T00:00:00Z`))}
+                      {/* `tabular-nums` só na parte numérica: com o dia da semana junto, a fonte
+                          tabular espaça o texto e a coluna fica com cara de planilha. */}
+                      <td className="whitespace-nowrap px-6 py-3 text-sm text-muted-foreground">
+                        {formatCalendarDay(o.iso, locale)}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-3">
+                        {/* Os três países quase sempre; por isso a lista, e não uma bandeira só.
+                            Quem procura "o que é feriado no Paraguai" precisa ver a diferença de
+                            relance, e ela está justamente nas linhas com UM país. */}
+                        <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                          {o.countries.join(" · ")}
+                        </span>
                       </td>
                       <td className="px-6 py-3">
                         <span className="font-medium text-foreground">
