@@ -6,6 +6,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { getMonthlyCalendarDemands, getTeamAnniversaries } from "@/lib/actions/reporting";
 import { getOccurrencesInRange } from "@/lib/actions/calendar-occurrence";
 import { filterOccurrences, parseOccurrenceFilter } from "@/lib/calendar/occurrence-filter";
+import { periodLabel } from "@/lib/calendar/period-label";
 import {
   parseMonthParam,
   monthRangeFromFirst,
@@ -181,11 +182,7 @@ export default async function MonthCalendarPage({
   ]);
   const isEs = locale.startsWith("es");
 
-  const monthLabel = new Intl.DateTimeFormat(locale, {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(first);
+  const monthLabel = periodLabel("month", first, locale);
 
   return (
     <div className="mx-auto max-w-[110rem] px-4 py-8 sm:px-6 lg:px-8">

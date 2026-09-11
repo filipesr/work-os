@@ -6,6 +6,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { getCalendarTasks } from "@/lib/actions/reporting";
 import { parseWeekParam, weekRangeFromMonday, formatISODate, mondayOfWeek } from "@/lib/dates";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { periodLabel } from "@/lib/calendar/period-label";
 import { CalendarToolbar } from "../CalendarToolbar";
 import { PlanningModeBanner } from "../PlanningModeBanner";
 import { CalendarGrid } from "@/components/planning/calendar/CalendarGrid";
@@ -92,8 +93,9 @@ export default async function WeekCalendarPage({
     loadFilterOptions(params.team, params.user),
   ]);
 
-  const fmt = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" });
-  const periodLabel = `${fmt.format(weekStart)} – ${fmt.format(weekEnd)}`;
+  // O mesmo formatador do cliente (`lib/calendar/period-label.ts`), que é quem monta o rótulo do
+  // período de DESTINO durante a navegação. Duas cópias divergiriam no primeiro ajuste de formato.
+  const label = periodLabel("week", weekStart, locale);
 
   return (
     <div className="mx-auto max-w-[110rem] px-4 py-8 sm:px-6 lg:px-8">
@@ -102,7 +104,7 @@ export default async function WeekCalendarPage({
         <CalendarToolbar
           view="week"
           anchor={weekStart}
-          periodLabel={periodLabel}
+          periodLabel={label}
           isCurrentPeriod={isCurrentPeriod}
           planning={planning}
           teams={options.teams}
