@@ -218,7 +218,17 @@ export default async function WeekPlanningPage({
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-muted">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-bold uppercase text-foreground">
+                  {/* A coluna de quem executa fica FIXA e estreita. Fixa porque, ao arrastar a
+                      grade para ver sexta-feira, o nome saía da tela e a linha virava uma fileira
+                      de números sem dono. Estreita porque ela não carrega o trabalho — carrega o
+                      rótulo dele —, e cada centímetro que ela toma é um dia a menos visível.
+                      `whitespace-normal` no lugar de `nowrap`: sem isso o nome comprido empurra a
+                      largura de volta e a trava não vale nada. E a divisória é `shadow-[inset...]`,
+                      não `border-r`: o preflight do Tailwind põe `border-collapse: collapse` em
+                      toda tabela, e com bordas colapsadas quem as pinta é a TABELA, não a célula —
+                      a linha sumiria justamente ao rolar na horizontal, que é quando ela precisa
+                      aparecer. */}
+                  <th className="sticky left-0 z-10 w-44 min-w-44 max-w-44 bg-muted px-3 py-3 text-left text-xs font-bold uppercase text-foreground shadow-[inset_-1px_0_0_0_var(--border)]">
                     ·
                   </th>
                   {plan.days.map((d) => (
@@ -234,7 +244,7 @@ export default async function WeekPlanningPage({
               <tbody className="divide-y divide-border">
                 {plan.people.map((p) => (
                   <tr key={p.userId} className="align-top">
-                    <td className="whitespace-nowrap px-4 py-3">
+                    <td className="sticky left-0 z-10 w-44 min-w-44 max-w-44 whitespace-normal bg-card px-3 py-3 shadow-[inset_-1px_0_0_0_var(--border)]">
                       <p className="text-sm font-semibold text-foreground">{p.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {/* Só o que a linha TEM: sem nada apontado, o número segue o de sempre.

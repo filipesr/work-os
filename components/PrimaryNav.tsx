@@ -103,7 +103,12 @@ export function PrimaryNav({ role, userName }: { role: AppRole; userName: string
     >
       <nav
         aria-label={t("mainNav")}
-        className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8"
+        // A MESMA largura das telas de grade (`max-w-[110rem]`). O topo é a moldura da página:
+        // com ele mais estreito que o conteúdo, a marca à esquerda ficava recuada em relação à
+        // primeira coluna da grade, e a barra parecia de outra tela. Nas telas ainda estreitas o
+        // topo passa a ser mais largo que o conteúdo, que é o lado tolerável do desalinhamento —
+        // uma barra que emoldura é normal; uma que corta o conteúdo, não.
+        className="mx-auto flex h-16 max-w-[110rem] items-center gap-3 px-4 sm:px-6 lg:px-8"
       >
         {/* Marca / home */}
         <Link
@@ -276,7 +281,7 @@ export function PrimaryNav({ role, userName }: { role: AppRole; userName: string
       {/* Menu mobile */}
       {mobileOpen && (
         <div className="border-t border-border bg-card px-4 py-3 lg:hidden">
-          <div className="mx-auto max-w-7xl space-y-1">
+          <div className="mx-auto max-w-[110rem] space-y-1">
             {items.map((item) =>
               isNavGroup(item) ? (
                 <MobileGroup key={item.id} item={item} activeId={activeId} labelOf={t} />
