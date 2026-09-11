@@ -51,16 +51,19 @@ const MANUAL_MATCHES: Record<string, string> = {
 /**
  * As listas de CONCLUÍDO do quadro.
  *
- * Quando o mês vira, `Concluido` é RENOMEADA para o mês e uma nova nasce: hoje o quadro tem
- * `Concluido` (35 cards de agosto, 13 de setembro, 4 de julho) e `Julio` (33 dos seus 35 cards são
- * de julho, e 33 têm `dateCompleted`). Sem declarar `Julio`, 34 demandas ENTREGUES entram como "em
- * andamento" e julho aparece com 23% de conclusão.
+ * Quando o mês vira, `Concluido` é RENOMEADA para o mês e uma nova nasce. O export de 2026-09-11
+ * mostra a prática acontecendo: `Concluido` com 17 cards (16 de setembro), `Agosto` com 39 (34 de
+ * agosto) e `Julio` com 35 (33 de julho) — a lista `Agosto` não existia no export da véspera.
+ *
+ * **Cada mês novo renomeado precisa de uma linha aqui antes da próxima importação.** Sem ela, as
+ * demandas ENTREGUES daquele mês entram como "em andamento" — foi o que aconteceu com julho, que
+ * aparecia com 23% de conclusão em vez de 95%.
  *
  * Fica declarado, e não adivinhado por nome de mês: o quadro tem `ABRIL ATL` e `concluido` como
  * listas arquivadas e vazias, então a convenção não é estável, e uma lista mal identificada viraria
- * conclusão inventada. Cada renome futuro é uma linha aqui.
+ * conclusão inventada.
  */
-const COMPLETED_LIST_NAMES = ["Concluido", "Julio"];
+const COMPLETED_LIST_NAMES = ["Concluido", "Agosto", "Julio"];
 
 const DESIGNER_ALIASES: Record<string, string> = {
   SUPERVISIÓN: "dalbiranmktgoon@gmail.com",

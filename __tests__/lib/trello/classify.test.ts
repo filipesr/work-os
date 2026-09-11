@@ -121,8 +121,11 @@ describe("contagem contra export real", () => {
 
       const total = counts.demanda + counts.separador + counts.ausencia + counts.referencia;
 
-      // Verificar contagens novas (corrigidas pelo briefing)
-      expect(counts.demanda).toBe(230);
+      // Contagens por NATUREZA, sobre os 306 cards do export — inclusive os arquivados, que
+      // `buildImportPlan` descarta depois por outro motivo (arquivar é descartar neste quadro).
+      // `demanda` aqui é "não é separador, ausência nem referência", não "vira demanda importada":
+      // das 233, só 106 sobrevivem ao descarte por arquivamento e por falta de etapa.
+      expect(counts.demanda).toBe(233);
       expect(counts.separador).toBe(38);
       expect(counts.ausencia).toBe(25);
       expect(counts.referencia).toBe(10);

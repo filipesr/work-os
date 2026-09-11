@@ -722,13 +722,16 @@ describe("contra o export real", () => {
         actions: data.actions,
       };
 
-      // As MESMAS opções do script (scripts/import-trello/run.ts): sem declarar `Julio` como lista
-      // de concluído, 34 demandas entregues em julho entrariam como "em andamento".
-      const p = buildImportPlan(realBoard, [], { completedListNames: ["Concluido", "Julio"] });
+      // As MESMAS opções do script (scripts/import-trello/run.ts). O export de 2026-09-11 já mostra
+      // a prática do renome acontecendo: `Agosto` nasceu entre um export e o outro. Sem declarar as
+      // renomeadas, 39 demandas ENTREGUES entram como "em andamento" — 56 em vez de 17.
+      const p = buildImportPlan(realBoard, [], {
+        completedListNames: ["Concluido", "Agosto", "Julio"],
+      });
 
       const total = p.tasks.length + p.skipped.length;
       expect(total).toBe(realBoard.cards.length);
-      expect(realBoard.cards.length).toBe(303);
+      expect(realBoard.cards.length).toBe(306);
 
       const porMotivo: Record<string, number> = {};
       for (const s of p.skipped) porMotivo[s.reason] = (porMotivo[s.reason] ?? 0) + 1;
@@ -744,7 +747,7 @@ describe("contra o export real", () => {
       expect(porMotivo["sem mês"]).toBeUndefined();
       expect(porMotivo["sem etapa mapeável"]).toBe(20);
 
-      expect(p.tasks.length).toBe(103);
+      expect(p.tasks.length).toBe(106);
       expect(p.skipped.length).toBe(200);
 
       // O quadro só sustenta de 2026-03 em diante: 100% dos cards de maio/2025 a fevereiro/2026
@@ -758,7 +761,7 @@ describe("contra o export real", () => {
       ]);
       const porStatus: Record<string, number> = {};
       for (const t of p.tasks) porStatus[t.status] = (porStatus[t.status] ?? 0) + 1;
-      expect(porStatus).toEqual({ COMPLETED: 85, IN_PROGRESS: 18 });
+      expect(porStatus).toEqual({ COMPLETED: 89, IN_PROGRESS: 17 });
 
       for (const t of p.tasks) expect(t.stages.length).toBeGreaterThan(0);
     }
