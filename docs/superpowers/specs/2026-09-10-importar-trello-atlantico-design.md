@@ -176,8 +176,8 @@ eram feitos inteiramente de entulho. O que o quadro sustenta:
 
 |           |                                                                                |
 | --------- | ------------------------------------------------------------------------------ |
-| demandas  | **103** (85 concluídas, 18 em andamento)                                       |
-| projetos  | **5** — 2026-03 (1), 2026-06 (1), 2026-07 (38), 2026-08 (43), 2026-09 (20)     |
+| demandas  | **106** (89 concluídas, 17 em andamento)                                       |
+| projetos  | **5** — 2026-03 (1), 2026-06 (1), 2026-07 (38), 2026-08 (43), 2026-09 (23)     |
 | descartes | **200** — 157 arquivados, 17 separadores, 6 referências, 20 sem etapa mapeável |
 
 Três meses cheios de história medida valem mais que dezenove forjados.
