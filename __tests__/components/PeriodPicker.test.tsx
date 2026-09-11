@@ -91,3 +91,35 @@ describe("PeriodPicker", () => {
     expect(push).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * O rótulo é a única coisa da barra que muda quando o período troca: "Setembro" vira "Outubro".
+ * Enquanto o servidor não responde, ele continua afirmando o período ANTIGO — com a grade já
+ * esqueletada ao lado — e depois troca de uma vez. É essa troca seca que se lê como piscada.
+ */
+describe("PeriodPicker — o rótulo durante a navegação", () => {
+  it("parado, o rótulo é clicável e abre o seletor", () => {
+    render(
+      <PeriodPicker view="month" anchor={new Date("2026-09-01T00:00:00Z")} label="Setembro" />
+    );
+    expect(screen.getByRole("button", { name: /Setembro/ })).toBeEnabled();
+  });
+
+  it("navegando, o rótulo BLOQUEIA — escolher sobre um período que já vai mudar não faz sentido", () => {
+    render(
+      <PeriodPicker view="month" anchor={new Date("2026-09-01T00:00:00Z")} label="Setembro" busy />
+    );
+    const botao = screen.getByRole("button", { name: /Setembro/ });
+    expect(botao).toBeDisabled();
+    expect(botao).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("navegando, o rótulo perde o destaque — ele ainda diz o período ANTIGO", () => {
+    render(
+      <PeriodPicker view="month" anchor={new Date("2026-09-01T00:00:00Z")} label="Setembro" busy />
+    );
+    expect(screen.getByRole("button", { name: /Setembro/ }).className).toContain(
+      "text-muted-foreground"
+    );
+  });
+});

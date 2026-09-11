@@ -101,7 +101,7 @@ export function PeriodNavigator({
       {/* O rótulo ENTRE as setas: é o padrão que a pessoa já leu em todo
           calendário, e vira o alvo do seletor sem custar um botão a mais. */}
       <span aria-live="polite">
-        <PeriodPicker view={view} anchor={anchor} label={label} />
+        <PeriodPicker view={view} anchor={anchor} label={label} busy={isPending} />
       </span>
 
       <Link

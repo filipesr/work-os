@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { formatISODate, formatYearMonth } from "@/lib/dates";
 import { mondaysTouchingMonth } from "@/lib/calendar/planning-dates";
+import { navegacaoIniciou, navegacaoTerminou } from "@/lib/navigation-busy";
 
 /**
  * Seletor de período, aberto pelo próprio rótulo da data.
@@ -31,11 +32,22 @@ export function PeriodPicker({
   view,
   anchor,
   label,
+  busy = false,
 }: {
   view: "week" | "month";
   /** Segunda-feira da semana, ou dia 1 do mês. */
   anchor: Date;
   label: string;
+  /**
+   * As SETAS ao lado estão navegando.
+   *
+   * O rótulo é a única coisa da barra que muda quando o período troca — "Setembro" vira "Outubro".
+   * Enquanto o servidor não responde, ele continua afirmando o período ANTIGO, com a grade já
+   * esqueletada ao lado; quando a resposta chega, ele troca de uma vez. É essa troca seca que se
+   * lê como piscada. Apagá-lo durante a espera é dizer "este número ainda não vale", que é a
+   * verdade.
+   */
+  busy?: boolean;
 }) {
   const t = useTranslations("reportsCalendar.navigation");
   const locale = useLocale();
@@ -48,14 +60,26 @@ export function PeriodPicker({
   // deveria já mudar o que se está olhando.
   const [foco, setFoco] = useState(() => new Date(anchor.getTime()));
 
+  const [navegando, startTransition] = useTransition();
+
+  // Alimenta a barra do topo, como as setas — escolher novembro no seletor custa a mesma viagem.
+  useEffect(() => {
+    if (!navegando) return;
+    navegacaoIniciou();
+    return () => navegacaoTerminou();
+  }, [navegando]);
+
   const irPara = (chave: "week" | "month", valor: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("week");
     params.delete("month");
     params.set(chave, valor);
     setOpen(false);
-    router.push(`?${params.toString()}`);
+    startTransition(() => router.push(`?${params.toString()}`));
   };
+
+  // Ou as setas, ou o próprio seletor: para o rótulo dá no mesmo.
+  const carregando = busy || navegando;
 
   const mudarAnoFoco = (delta: number) =>
     setFoco((d) => new Date(Date.UTC(d.getUTCFullYear() + delta, d.getUTCMonth(), 1)));
@@ -102,8 +126,15 @@ export function PeriodPicker({
         <button
           type="button"
           title={t("pick")}
-          className="whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold capitalize tabular-nums text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          // Bloqueado enquanto carrega: abrir um seletor cujo valor está prestes a mudar faria a
+          // escolha ser feita sobre um período que já não é o da tela.
+          disabled={carregando}
+          aria-busy={carregando}
+          className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold capitalize tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+            carregando ? "cursor-progress text-muted-foreground" : "text-foreground hover:bg-accent"
+          }`}
         >
+          {carregando && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
           {label}
         </button>
       </DialogTrigger>
