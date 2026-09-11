@@ -7,7 +7,7 @@ import { WeekGridSkeleton } from "../skeletons";
  */
 export default function WeekCalendarLoading() {
   return (
-    <div className="mx-auto max-w-7xl animate-pulse px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-[110rem] animate-pulse px-4 py-8 sm:px-6 lg:px-8">
       <header className="mb-6">
         <div className="h-4 w-24 rounded bg-muted" />
         <div className="mt-1.5 h-7 w-56 rounded bg-muted" />

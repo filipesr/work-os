@@ -96,7 +96,7 @@ export default async function WeekCalendarPage({
   const periodLabel = `${fmt.format(weekStart)} – ${fmt.format(weekEnd)}`;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-[110rem] px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader kicker={t("kicker")} title={t("title")} subtitle={t("subtitle")} />
       <div className="space-y-4">
         <CalendarToolbar

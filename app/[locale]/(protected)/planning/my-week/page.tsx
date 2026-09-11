@@ -46,7 +46,7 @@ export default async function MyWeekPage({
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-[110rem] px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         kicker={t("kicker")}
         title={t("title")}

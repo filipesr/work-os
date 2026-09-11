@@ -188,7 +188,7 @@ export default async function MonthCalendarPage({
   }).format(first);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-[110rem] px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         kicker={t("kicker")}
         title={t("monthly.title")}
