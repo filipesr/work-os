@@ -142,6 +142,7 @@ export default async function WeekPlanningPage({
           <>
             <PlanningFilters
               scope="week"
+              namespace="planning.week"
               fields={[
                 {
                   kind: "multi",
@@ -157,13 +158,6 @@ export default async function WeekPlanningPage({
                   checked: showCompleted,
                 },
               ]}
-              labels={{
-                title: t("filtersTitle"),
-                subtitle: t("filtersSubtitle"),
-                clearAll: t("clearAll"),
-                clearOne: (filter) => t("clearOne", { filter }),
-                count: (label, count) => t("peopleCount", { label, count }),
-              }}
             />
             <WeekControls
               monday={monday}

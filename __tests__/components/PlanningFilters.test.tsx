@@ -5,6 +5,27 @@ import userEvent from "@testing-library/user-event";
 const replace = vi.fn();
 let paramsAtuais = new URLSearchParams();
 
+// As mensagens saem do próprio componente (`useTranslations`), e não de propriedades: função não
+// atravessa a fronteira do servidor para o cliente, e passar `clearOne` como prop quebrava a tela
+// em execução sem quebrar o build nem este teste. O dublê imita o formatador do next-intl.
+const MENSAGENS: Record<string, string> = {
+  filtersTitle: "Filtros",
+  filtersSubtitle: "Recorte o que a grade mostra.",
+  clearAll: "Limpar todos os filtros",
+  clearOne: "Remover filtro {filter}",
+  selectedCount: "{label}: {count}",
+};
+
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string, vals?: Record<string, unknown>) => {
+    const bruto = MENSAGENS[key] ?? key;
+    return Object.entries(vals ?? {}).reduce(
+      (txt, [k, v]) => txt.replace(`{${k}}`, String(v)),
+      bruto
+    );
+  },
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace, push: vi.fn() }),
   usePathname: () => "/planning/week",
@@ -19,16 +40,8 @@ const PESSOAS = [
   { id: "u3", name: "Carla" },
 ];
 
-const LABELS = {
-  title: "Filtros",
-  subtitle: "Recorte o que a grade mostra.",
-  clearAll: "Limpar todos os filtros",
-  clearOne: (f: string) => `Remover filtro ${f}`,
-  count: (campo: string, n: number) => `${campo}: ${n}`,
-};
-
 function montar(fields: PlanningFilterField[]) {
-  return render(<PlanningFilters scope="teste" fields={fields} labels={LABELS} />);
+  return render(<PlanningFilters scope="teste" namespace="planning.teste" fields={fields} />);
 }
 
 const pessoas = (selected: string[]): PlanningFilterField => ({

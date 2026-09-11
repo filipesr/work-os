@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { SlidersHorizontal, X } from "lucide-react";
 import {
   Dialog,
@@ -53,25 +54,29 @@ export type PlanningFilterField =
  */
 export function PlanningFilters({
   scope,
+  namespace,
   fields,
-  labels,
   extra,
 }: {
   /** Identifica a tela no armazenamento local. Por tela: a mesa do gestor e o calendário filtram
    *  coisas diferentes, e herdar o filtro de uma na outra seria surpresa, não conveniência. */
   scope: string;
+  /**
+   * Namespace de tradução da tela. O componente busca as próprias mensagens porque **função não
+   * atravessa a fronteira do servidor para o cliente**: passar `clearOne: (f) => t(...)` como
+   * propriedade compila, passa no `next build` e quebra em execução com "Functions cannot be passed
+   * directly to Client Components". Teste de componente também não pega — no cliente puro a
+   * fronteira não existe. Daí o contrato ser por CHAVE, não por função.
+   *
+   * As chaves esperadas: `filtersTitle`, `filtersSubtitle`, `clearAll`, `clearOne` (com `{filter}`)
+   * e `selectedCount` (com `{label}` e `{count}`).
+   */
+  namespace: string;
   fields: PlanningFilterField[];
-  labels: {
-    title: string;
-    subtitle: string;
-    clearAll: string;
-    clearOne: (filtro: string) => string;
-    /** Como nomear N escolhidos num campo de vários. */
-    count: (campo: string, n: number) => string;
-  };
   /** Conteúdo extra dentro do diálogo, abaixo dos campos (ex.: um controle próprio da tela). */
   extra?: ReactNode;
 }) {
+  const t = useTranslations(namespace);
   const { setParam, setParams } = useUrlFilters({ replace: true });
   const [open, setOpen] = useState(false);
 
@@ -95,7 +100,7 @@ export function PlanningFilters({
           rotulo:
             f.selected.length === 1
               ? (nomeDe(f.options, f.selected[0]) ?? f.label)
-              : labels.count(f.label, f.selected.length),
+              : t("selectedCount", { label: f.label, count: f.selected.length }),
         };
       }
       if (f.kind === "single" && f.selected) {
@@ -122,7 +127,7 @@ export function PlanningFilters({
           type="button"
           onClick={() => setParam(f.param, null)}
           className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
-          aria-label={labels.clearOne(f.rotulo)}
+          aria-label={t("clearOne", { filter: f.rotulo })}
         >
           {f.rotulo}
           <X className="h-3 w-3" aria-hidden="true" />
@@ -136,7 +141,7 @@ export function PlanningFilters({
             className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
             <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-            {labels.title}
+            {t("filtersTitle")}
             {ativos.length > 0 && (
               <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground">
                 {ativos.length}
@@ -146,8 +151,8 @@ export function PlanningFilters({
         </DialogTrigger>
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
-            <DialogTitle>{labels.title}</DialogTitle>
-            <DialogDescription>{labels.subtitle}</DialogDescription>
+            <DialogTitle>{t("filtersTitle")}</DialogTitle>
+            <DialogDescription>{t("filtersSubtitle")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-1">
@@ -225,7 +230,7 @@ export function PlanningFilters({
               onClick={limparTudo}
               className="text-sm font-medium text-primary transition-colors hover:underline"
             >
-              {labels.clearAll}
+              {t("clearAll")}
             </button>
           )}
         </DialogContent>

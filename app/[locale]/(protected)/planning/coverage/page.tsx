@@ -86,6 +86,7 @@ export default async function CoveragePage({
           <>
             <PlanningFilters
               scope="coverage"
+              namespace="planning.coverage"
               fields={[
                 {
                   kind: "multi",
@@ -95,13 +96,6 @@ export default async function CoveragePage({
                   selected: clientIds,
                 },
               ]}
-              labels={{
-                title: t("filtersTitle"),
-                subtitle: t("filtersSubtitle"),
-                clearAll: t("clearAll"),
-                clearOne: (filter) => t("clearOne", { filter }),
-                count: (label, count) => t("clientsCount", { label, count }),
-              }}
             />
             <WeekWindowToggle current={weeks} />
           </>
