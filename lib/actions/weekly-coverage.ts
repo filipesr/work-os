@@ -78,8 +78,21 @@ export interface WeeklyCoverage {
  * (o que está agendado), não de entrega. Um cliente pode ter agenda cheia e nada
  * entregue; são perguntas diferentes e não devem se confundir numa célula só.
  */
-export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> {
+export async function getWeeklyCoverage(
+  weeks: number,
+  opts: {
+    /** Clientes escolhidos na barra. **Lista vazia é TODOS, nunca NENHUM** (convenção de
+     *  `lib/planning/multi-param.ts`). O recorte vale para o EIXO e para o CONTEÚDO: encolher só a
+     *  lista de clientes deixaria o card de uma data listando demanda de cliente escondido, que é
+     *  pior do que não ter recorte. */
+    clientIds?: string[];
+  } = {}
+): Promise<WeeklyCoverage> {
   await requireManagerOrAdmin();
+
+  const recorteDeCliente = opts.clientIds?.length
+    ? { project: { clientId: { in: opts.clientIds } } }
+    : {};
 
   const slots = weekSlots(weeks);
   const range = windowRange(slots);
@@ -92,7 +105,10 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
     // Cliente ativo = tem projeto ativo. Sem isso, um cliente arquivado
     // apareceria ocioso para sempre e afogaria o sinal real.
     prisma.client.findMany({
-      where: { projects: { some: { status: "ACTIVE" } } },
+      where: {
+        projects: { some: { status: "ACTIVE" } },
+        ...(opts.clientIds?.length ? { id: { in: opts.clientIds } } : {}),
+      },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
@@ -102,6 +118,7 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
         // Cancelada/obsoleta não é agenda: contá-las mostraria cobertura onde
         // não há trabalho previsto.
         status: { notIn: ["CANCELLED", "OBSOLETE"] },
+        ...recorteDeCliente,
       },
       orderBy: { dueDate: "asc" },
       select: {
@@ -136,6 +153,7 @@ export async function getWeeklyCoverage(weeks: number): Promise<WeeklyCoverage> 
         kind: true,
         source: true,
         tasks: {
+          ...(opts.clientIds?.length ? { where: recorteDeCliente } : {}),
           orderBy: { createdAt: "desc" },
           select: {
             id: true,

@@ -55,6 +55,12 @@
     "catalogReadOnly": "Do catálogo"
   },
   "coverage": {
+    "filtersTitle": "Filtros",
+    "filtersSubtitle": "Recorte o que a grade mostra. Fica visível como tag na barra.",
+    "clearAll": "Limpar todos os filtros",
+    "clearOne": "Remover filtro {filter}",
+    "clientsLabel": "Clientes",
+    "clientsCount": "{label}: {count}",
     "kicker": "Planejamento",
     "title": "Cobertura Semanal",
     "subtitle": "Quem tem agenda em cada semana e quem está parado. As datas do calendário aparecem como oportunidade dentro da semana.",

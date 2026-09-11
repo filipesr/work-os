@@ -138,3 +138,60 @@ describe("getWeeklyCoverage — o responsável vem da ETAPA", () => {
     expect(vinculada?.assigneeNames).toEqual(["Ana Souza"]);
   });
 });
+
+// A tela tem o cliente como EIXO: com 30+ clientes e 12 semanas, quem atende três precisa recortar
+// para enxergar o próprio buraco de agenda.
+describe("getWeeklyCoverage — recorte por cliente", () => {
+  const db = prisma as unknown as {
+    client: { findMany: ReturnType<typeof vi.fn> };
+    task: { findMany: ReturnType<typeof vi.fn> };
+    calendarOccurrence: { findMany: ReturnType<typeof vi.fn> };
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    db.client.findMany.mockResolvedValue([{ id: "c1", name: "Cliente A" }]);
+    db.task.findMany.mockResolvedValue([]);
+    db.calendarOccurrence.findMany.mockResolvedValue([]);
+  });
+
+  const whereCliente = () => db.client.findMany.mock.calls[0][0].where as Record<string, unknown>;
+  const whereDemanda = () => db.task.findMany.mock.calls[0][0].where as Record<string, unknown>;
+  const whereOcorrencia = () =>
+    db.calendarOccurrence.findMany.mock.calls[0][0].select.tasks.where as
+      | Record<string, unknown>
+      | undefined;
+
+  it("sem cliente escolhido, nenhuma das três consultas ganha recorte", async () => {
+    await getWeeklyCoverage(4);
+    expect(whereCliente()).not.toHaveProperty("id");
+    expect(whereDemanda()).not.toHaveProperty("project");
+    expect(whereOcorrencia()).toBeUndefined();
+  });
+
+  it("lista vazia é TODOS, não NENHUM — nas TRÊS consultas", async () => {
+    // A do eixo é a mais fácil de acertar e a menos perigosa de errar: com a lista vazia virando
+    // `in: []`, a das DEMANDAS devolveria zero e a tela mostraria todo mundo ocioso.
+    await getWeeklyCoverage(4, { clientIds: [] });
+    expect(whereCliente()).not.toHaveProperty("id");
+    expect(whereDemanda()).not.toHaveProperty("project");
+    expect(whereOcorrencia()).toBeUndefined();
+  });
+
+  it("com clientes escolhidos, o eixo da tela encolhe para eles", async () => {
+    await getWeeklyCoverage(4, { clientIds: ["c1", "c9"] });
+    expect(whereCliente().id).toEqual({ in: ["c1", "c9"] });
+  });
+
+  it("as demandas encolhem junto — senão a semana contaria cobertura de quem foi filtrado", async () => {
+    await getWeeklyCoverage(4, { clientIds: ["c1"] });
+    expect(whereDemanda().project).toEqual({ clientId: { in: ["c1"] } });
+  });
+
+  it("as demandas ligadas a uma DATA também encolhem", async () => {
+    // Sem isto, o card da data comemorativa listaria demandas de clientes que a tela escondeu —
+    // o recorte valeria para o eixo e não para o conteúdo, que é pior que não ter recorte.
+    await getWeeklyCoverage(4, { clientIds: ["c1"] });
+    expect(whereOcorrencia()).toEqual({ project: { clientId: { in: ["c1"] } } });
+  });
+});

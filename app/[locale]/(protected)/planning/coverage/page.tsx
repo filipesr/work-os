@@ -7,6 +7,8 @@ import { getWeeklyCoverage } from "@/lib/actions/weekly-coverage";
 import { getProjectsForSelect, getTemplatesForSelect } from "@/lib/actions/task";
 import { sumStageHours } from "../calendar/shared";
 import { getClients } from "@/lib/actions/client";
+import { PlanningFilters } from "@/components/planning/PlanningFilters";
+import { parseMultiParam } from "@/lib/planning/multi-param";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -38,16 +40,25 @@ export default async function CoveragePage({
 
   const sp = await searchParams;
   const weeks = parseWeekWindow(sp.weeks);
+  const clienteBruto = Array.isArray(sp.client) ? sp.client.join(",") : sp.client;
   const today = todayInSaoPaulo();
   const currentMonday = formatISODate(mondayOfWeek(today));
 
-  const [t, locale, coverage, rawProjects, rawTemplates, clients] = await Promise.all([
+  // A lista de clientes vem ANTES, e não em paralelo com a cobertura: é ela que valida o recorte
+  // da URL. Um link com cliente apagado precisa cair em "todos" — abrir a tela vazia com um filtro
+  // que não dá para desmarcar, porque a opção sumiu do seletor, é o pior dos dois mundos.
+  const clients = await getClients();
+  const clientIds = parseMultiParam(
+    clienteBruto,
+    clients.map((c) => c.id)
+  );
+
+  const [t, locale, coverage, rawProjects, rawTemplates] = await Promise.all([
     getTranslations("planning.coverage"),
     getLocale(),
-    getWeeklyCoverage(weeks),
+    getWeeklyCoverage(weeks, { clientIds }),
     getProjectsForSelect(),
     getTemplatesForSelect(),
-    getClients(),
   ]);
 
   const isEs = locale.startsWith("es");
@@ -71,7 +82,30 @@ export default async function CoveragePage({
         kicker={t("kicker")}
         title={t("title")}
         subtitle={t("subtitle")}
-        actions={<WeekWindowToggle current={weeks} />}
+        actions={
+          <>
+            <PlanningFilters
+              scope="coverage"
+              fields={[
+                {
+                  kind: "multi",
+                  param: "client",
+                  label: t("clientsLabel"),
+                  options: clients.map((c) => ({ id: c.id, name: c.name })),
+                  selected: clientIds,
+                },
+              ]}
+              labels={{
+                title: t("filtersTitle"),
+                subtitle: t("filtersSubtitle"),
+                clearAll: t("clearAll"),
+                clearOne: (filter) => t("clearOne", { filter }),
+                count: (label, count) => t("clientsCount", { label, count }),
+              }}
+            />
+            <WeekWindowToggle current={weeks} />
+          </>
+        }
       />
 
       <div className="space-y-6">

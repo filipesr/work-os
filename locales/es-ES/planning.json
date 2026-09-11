@@ -55,6 +55,12 @@
     "catalogReadOnly": "Del catálogo"
   },
   "coverage": {
+    "filtersTitle": "Filtros",
+    "filtersSubtitle": "Recorta lo que muestra la grilla. Queda visible como etiqueta en la barra.",
+    "clearAll": "Limpiar todos los filtros",
+    "clearOne": "Quitar filtro {filter}",
+    "clientsLabel": "Clientes",
+    "clientsCount": "{label}: {count}",
     "kicker": "Planificación",
     "title": "Cobertura Semanal",
     "subtitle": "Quién tiene agenda cada semana y quién está parado. Las fechas del calendario aparecen como oportunidad dentro de la semana.",
