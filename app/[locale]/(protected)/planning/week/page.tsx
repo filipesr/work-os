@@ -27,6 +27,9 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { ScheduleDialog } from "./ScheduleDialog";
 import { DayDone } from "@/components/planning/DayDone";
+import { PlanningFilters } from "@/components/planning/PlanningFilters";
+import { parseMultiParam } from "@/lib/planning/multi-param";
+import { EXECUTOR_WHERE } from "@/lib/planning/executors";
 import { WeekControls } from "./WeekControls";
 import { OrderControls } from "./OrderControls";
 
@@ -35,7 +38,12 @@ export const metadata: Metadata = { title: "Programação da semana" };
 export default async function WeekPlanningPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string | string[]; team?: string | string[] }>;
+  searchParams: Promise<{
+    week?: string | string[];
+    team?: string | string[];
+    user?: string | string[];
+    showCompleted?: string | string[];
+  }>;
 }) {
   // Tela cortês, não trava: a trava de verdade continua dentro de getWeekPlanning (e das três
   // ações). Sem isto, um MEMBER que digitasse a URL caía numa página de erro genérica em vez de ir
@@ -66,7 +74,26 @@ export default async function WeekPlanningPage({
     (t.raw("defaultHiddenTeams") as string[] | undefined) ?? []
   );
 
-  const plan = await getWeekPlanning(formatISODate(monday), teamIds);
+  // As pessoas do SELETOR saem de uma consulta própria, recortada só por equipe. Tirá-las do
+  // resultado filtrado deixaria o seletor com as já escolhidas e nenhuma outra — não haveria como
+  // ACRESCENTAR alguém depois de filtrar. O predicado é o mesmo da grade (`EXECUTOR_WHERE`), senão
+  // o seletor ofereceria gente que a grade nunca mostra.
+  const pessoasDisponiveis = await prisma.user.findMany({
+    where: {
+      ...EXECUTOR_WHERE,
+      ...(teamIds ? { teams: { some: { id: { in: teamIds } } } } : {}),
+    },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  const userIds = parseMultiParam(
+    Array.isArray(sp.user) ? sp.user.join(",") : sp.user,
+    pessoasDisponiveis.map((p) => p.id)
+  );
+  const showCompleted =
+    (Array.isArray(sp.showCompleted) ? sp.showCompleted[0] : sp.showCompleted) === "1";
+
+  const plan = await getWeekPlanning(formatISODate(monday), teamIds, { userIds, showCompleted });
   const pessoas = plan.people.map((p) => ({ id: p.userId, name: p.name }));
   const semanaCorrente = formatISODate(mondayOfWeek(todayInSaoPaulo())) === formatISODate(monday);
   // Um instante só para a tela inteira: cada célula recalculando `Date.now()` faria dois itens
@@ -112,12 +139,39 @@ export default async function WeekPlanningPage({
         title={t("title")}
         subtitle={`${t("subtitle")} · ${t("weekOf", { date: formatDisplayDate(monday) })}`}
         actions={
-          <WeekControls
-            monday={monday}
-            isCurrentWeek={semanaCorrente}
-            teams={teams}
-            mode={modoDeEquipe}
-          />
+          <>
+            <PlanningFilters
+              scope="week"
+              fields={[
+                {
+                  kind: "multi",
+                  param: "user",
+                  label: t("peopleLabel"),
+                  options: pessoasDisponiveis.map((p) => ({ id: p.id, name: p.name ?? p.id })),
+                  selected: userIds,
+                },
+                {
+                  kind: "check",
+                  param: "showCompleted",
+                  label: t("showCompleted"),
+                  checked: showCompleted,
+                },
+              ]}
+              labels={{
+                title: t("filtersTitle"),
+                subtitle: t("filtersSubtitle"),
+                clearAll: t("clearAll"),
+                clearOne: (filter) => t("clearOne", { filter }),
+                count: (label, count) => t("peopleCount", { label, count }),
+              }}
+            />
+            <WeekControls
+              monday={monday}
+              isCurrentWeek={semanaCorrente}
+              teams={teams}
+              mode={modoDeEquipe}
+            />
+          </>
         }
       />
 

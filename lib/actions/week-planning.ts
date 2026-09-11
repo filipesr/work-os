@@ -21,6 +21,7 @@ import { isEffectiveTeamMember } from "@/lib/stage-assignment-helpers";
 import { DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
 import { weekDays } from "@/lib/planning/week-days";
 import { availableStageWhere, notDiscardedStageWhere } from "@/lib/task-availability";
+import { EXECUTOR_WHERE } from "@/lib/planning/executors";
 import { applyDayReorder } from "@/lib/planning/reorder";
 
 /**
@@ -93,7 +94,16 @@ export async function getWeekPlanning(
   /** Recorte de equipes, JÁ RESOLVIDO por `lib/planning/team-filter.ts` — a tela decide o que
    *  "sem filtro" significa (o padrão esconde as equipes de apoio) e passa a lista pronta.
    *  `undefined` é sem recorte nenhum. */
-  teamIds?: string[]
+  teamIds?: string[],
+  opts: {
+    /** Pessoas escolhidas na barra. **Lista vazia é TODOS, nunca NENHUM** — é a convenção de
+     *  `lib/planning/multi-param.ts`, e aqui ela importa em dobro: a mesa abrindo em branco por um
+     *  clique a mais seria trabalho sumindo de vista. */
+    userIds?: string[];
+    /** Traz também a etapa CONCLUÍDA da semana. Fora por padrão porque a mesa responde "o que falta
+     *  fazer"; ligada, ela passa a responder também "o que esta pessoa entregou". */
+    showCompleted?: boolean;
+  } = {}
 ): Promise<WeekPlanning> {
   await requireManagerOrAdmin();
 
@@ -111,12 +121,11 @@ export async function getWeekPlanning(
   const [people, programados, livres] = await Promise.all([
     prisma.user.findMany({
       where: {
-        // A mesa é de quem executa: conta de portal (`CLIENT`) e ex-colaborador desativado
-        // ganhariam linha na grade — cada uma com o aviso de capacidade — e virariam alvo de
-        // atribuição no diálogo de programar.
-        role: { not: "CLIENT" },
-        disabledAt: null,
+        // A mesa é de quem executa — ver `lib/planning/executors.ts` para o porquê, e para o
+        // motivo de a regra morar fora daqui: o seletor de pessoas da barra usa a MESMA.
+        ...EXECUTOR_WHERE,
         ...(teamIds ? { teams: { some: { id: { in: teamIds } } } } : {}),
+        ...(opts.userIds?.length ? { id: { in: opts.userIds } } : {}),
       },
       select: { id: true, name: true, email: true, weeklyCapacityHours: true },
       orderBy: { name: "asc" },
@@ -126,7 +135,7 @@ export async function getWeekPlanning(
         // Na semana corrente, `lte: fim` sem piso: o item planejado para ANTES dela e não concluído
         // continua aparecendo (é realocado para o primeiro dia visível, logo abaixo). Numa semana
         // futura entra o piso — ver o comentário em `inicio`.
-        status: { not: "COMPLETED" },
+        ...(opts.showCompleted ? {} : { status: { not: "COMPLETED" } }),
         // Demanda descartada não ocupa dia de ninguém — ver lib/task-availability.ts.
         ...notDiscardedStageWhere(),
         ...(teamIds ? { assignee: { teams: { some: { id: { in: teamIds } } } } } : {}),

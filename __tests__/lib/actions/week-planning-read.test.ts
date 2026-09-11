@@ -369,3 +369,51 @@ describe("getWeekPlanning", () => {
     expect(pessoa?.doneHours).toBe(2.5);
   });
 });
+
+// O gestor que atende um cliente trabalha sempre com as mesmas três ou quatro pessoas. Sem recorte
+// por pessoa, ele filtra na cabeça toda vez que abre a mesa.
+describe("getWeekPlanning — recorte por pessoa e por concluídas", () => {
+  beforeEach(() => {
+    // Limpa as CHAMADAS (não as implementações): sem isto, `mock.calls[0]` seria a primeira
+    // chamada do arquivo inteiro, e os testes leriam os argumentos de outro caso.
+    vi.clearAllMocks();
+    db.user.findMany.mockResolvedValue([
+      { id: "u1", name: "Ana", email: "a@x", weeklyCapacityHours: null },
+    ]);
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+  });
+
+  const argsDeUsuario = () =>
+    db.user.findMany.mock.calls[0][0] as { where: Record<string, unknown> };
+
+  it("sem pessoas escolhidas, a consulta não ganha recorte nenhum", () => {
+    return getWeekPlanning("2026-08-31").then(() => {
+      expect(argsDeUsuario().where).not.toHaveProperty("id");
+    });
+  });
+
+  it("lista vazia é TODOS, não NENHUM — a mesa não pode abrir em branco", async () => {
+    await getWeekPlanning("2026-08-31", undefined, { userIds: [] });
+    expect(argsDeUsuario().where).not.toHaveProperty("id");
+  });
+
+  it("com pessoas escolhidas, só elas entram na grade", async () => {
+    await getWeekPlanning("2026-08-31", undefined, { userIds: ["u1", "u7"] });
+    expect(argsDeUsuario().where.id).toEqual({ in: ["u1", "u7"] });
+  });
+
+  it("por padrão a etapa CONCLUÍDA fica fora — a mesa é do que falta fazer", async () => {
+    await getWeekPlanning("2026-08-31");
+    expect(argsDaSemana().where.status).toEqual({ not: "COMPLETED" });
+  });
+
+  it("com `showCompleted`, a etapa concluída entra — é o que a pessoa entregou na semana", async () => {
+    await getWeekPlanning("2026-08-31", undefined, { showCompleted: true });
+    expect(argsDaSemana().where).not.toHaveProperty("status");
+  });
+
+  it("o poço não muda com `showCompleted`: etapa sem dono e concluída não é trabalho a distribuir", async () => {
+    await getWeekPlanning("2026-08-31", undefined, { showCompleted: true });
+    expect(argsDoPoco().where.assigneeId).toBeNull();
+  });
+});
