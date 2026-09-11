@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getClientLoad } from "@/lib/actions/client-load";
 import {
@@ -14,6 +14,7 @@ import prisma from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { PlanningFilters } from "@/components/planning/PlanningFilters";
+import { periodLabel } from "@/lib/calendar/period-label";
 import { parseMultiParam } from "@/lib/planning/multi-param";
 import { ClientLoadControls } from "./ClientLoadControls";
 
@@ -39,7 +40,7 @@ export default async function ClientLoadPage({
   // Mesmo tratamento da tela irmã (planning/week): a URL pode repetir `?team=`, e o Next entrega
   // array nesse caso — sem isto o tipo mentiria e o filtro do Prisma quebraria em runtime.
   const teamId = Array.isArray(sp.team) ? sp.team[0] : sp.team;
-  const t = await getTranslations("planning.clientLoad");
+  const [t, locale] = await Promise.all([getTranslations("planning.clientLoad"), getLocale()]);
   // A lista de clientes vem ANTES da carga, e não em paralelo: é ela que valida o recorte da URL.
   // Um link com cliente apagado precisa cair em "todos" — e não abrir a tela vazia com um filtro
   // que não dá para desmarcar, porque a opção sumiu do seletor junto com o cliente.
@@ -94,6 +95,7 @@ export default async function ClientLoadPage({
               isCurrentWeek={
                 formatISODate(monday) === formatISODate(mondayOfWeek(todayInSaoPaulo()))
               }
+              label={periodLabel("week", monday, locale)}
             />
           </>
         }

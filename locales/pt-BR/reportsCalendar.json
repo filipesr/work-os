@@ -29,24 +29,6 @@
     "clearAll": "Limpar todos os filtros",
     "clearOne": "Remover filtro {filter}"
   },
-  "navigation": {
-    "previous": {
-      "week": "Semana anterior",
-      "month": "Mês anterior"
-    },
-    "next": {
-      "week": "Próxima semana",
-      "month": "Próximo mês"
-    },
-    "today": "Hoje",
-    "weekOf": "Semana de {start} a {end}",
-    "range": "{start} – {end}",
-    "pick": "Escolher período",
-    "pickHint": {
-      "week": "Selecione a semana.",
-      "month": "Selecione o mês."
-    }
-  },
   "days": {
     "mon": "Seg",
     "tue": "Ter",

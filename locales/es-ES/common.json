@@ -1,4 +1,22 @@
 {
+  "periodNav": {
+    "previous": {
+      "week": "Semana anterior",
+      "month": "Mes anterior"
+    },
+    "next": {
+      "week": "Próxima semana",
+      "month": "Próximo mes"
+    },
+    "today": "Hoy",
+    "weekOf": "Semana del {start} al {end}",
+    "range": "{start} – {end}",
+    "pick": "Elegir período",
+    "pickHint": {
+      "week": "Selecciona la semana.",
+      "month": "Selecciona el mes."
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "tasks": "Tareas",

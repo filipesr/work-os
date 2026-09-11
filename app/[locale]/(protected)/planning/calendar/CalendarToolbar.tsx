@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { PlanningFilters, type PlanningFilterField } from "@/components/planning/PlanningFilters";
-import { PeriodNavigator } from "./PeriodNavigator";
+import { PeriodNavigator } from "@/components/planning/period/PeriodNavigator";
 import { PlanningModeToggle } from "./PlanningModeToggle";
 
 interface Option {

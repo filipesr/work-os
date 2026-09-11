@@ -1,25 +1,27 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { WeekNav } from "@/components/shared/WeekNav";
+import { PeriodNavigator } from "@/components/planning/period/PeriodNavigator";
 
 /**
- * A navegação de semana da mesa do gestor.
+ * A navegação de período da mesa do gestor.
  *
- * O filtro de equipes morava aqui, num menu próprio ao lado da navegação. Ele foi para o diálogo de
- * filtros (`components/planning/PlanningFilters.tsx`), junto com pessoas e concluídas, por dois
- * motivos: dois controles de recorte em lugares diferentes obrigam a procurar em qual deles está o
- * que se quer mudar, e o menu aplicava a cada clique — escolher três equipes recarregava a grade
- * três vezes, e as duas primeiras mostravam um recorte que ninguém pediu.
+ * É o MESMO controle do calendário (`components/planning/period/`), e não uma navegação própria:
+ * setas com o período entre elas, o rótulo abrindo o seletor, e o mesmo retorno de carregamento —
+ * o destino aparece apagado no instante do clique e acende quando a grade chega.
+ *
+ * Antes eram só duas setas: sem rótulo entre elas, saber em que semana se estava exigia ler o
+ * subtítulo do cabeçalho, e pular três semanas para a frente custava três cliques e três esperas.
+ * O filtro de equipes que morava aqui foi para o diálogo de filtros.
  */
-export function WeekControls({ monday, isCurrentWeek }: { monday: Date; isCurrentWeek: boolean }) {
-  const t = useTranslations("planning.week");
-
-  return (
-    <WeekNav
-      monday={monday}
-      isCurrentWeek={isCurrentWeek}
-      labels={{ previous: t("previousWeek"), next: t("nextWeek"), current: t("currentWeek") }}
-    />
-  );
+export function WeekControls({
+  monday,
+  isCurrentWeek,
+  label,
+}: {
+  monday: Date;
+  isCurrentWeek: boolean;
+  /** O rótulo do período, montado no servidor por `lib/calendar/period-label.ts`. */
+  label: string;
+}) {
+  return <PeriodNavigator view="week" anchor={monday} label={label} isCurrent={isCurrentWeek} />;
 }

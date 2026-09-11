@@ -1,30 +1,20 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { WeekNav } from "@/components/shared/WeekNav";
+import { PeriodNavigator } from "@/components/planning/period/PeriodNavigator";
 
 /**
- * A navegação de semana da carga por cliente.
- *
- * O select de equipe morava aqui, solto ao lado da navegação, e foi para o diálogo de filtros
- * (`components/planning/PlanningFilters.tsx`) junto com o recorte de cliente: dois controles de
- * recorte em lugares diferentes obrigam a procurar em qual deles está o que se quer mudar — e o
- * select aplicava a cada troca, sem chance de montar o recorte antes de a grade recarregar.
+ * A navegação de período da carga por cliente — o mesmo controle do calendário e da mesa do gestor
+ * (`components/planning/period/`). Ver `WeekControls` para o porquê de não ser uma navegação
+ * própria.
  */
 export function ClientLoadControls({
   monday,
   isCurrentWeek,
+  label,
 }: {
   monday: Date;
   isCurrentWeek: boolean;
+  label: string;
 }) {
-  const t = useTranslations("planning.clientLoad");
-
-  return (
-    <WeekNav
-      monday={monday}
-      isCurrentWeek={isCurrentWeek}
-      labels={{ previous: t("previousWeek"), next: t("nextWeek"), current: t("currentWeek") }}
-    />
-  );
+  return <PeriodNavigator view="week" anchor={monday} label={label} isCurrent={isCurrentWeek} />;
 }

@@ -35,7 +35,7 @@ export function PeriodNavigator({
    *  dia, e hidratação com valor diferente é erro silencioso. */
   isCurrent: boolean;
 }) {
-  const t = useTranslations("reportsCalendar.navigation");
+  const t = useTranslations("common.periodNav");
   const searchParams = useSearchParams();
 
   const periodKey = view === "week" ? "week" : "month";

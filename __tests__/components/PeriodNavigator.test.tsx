@@ -24,7 +24,7 @@ vi.mock("next-intl", () => ({
   useLocale: () => "pt-BR",
 }));
 
-import { PeriodNavigator } from "@/app/[locale]/(protected)/planning/calendar/PeriodNavigator";
+import { PeriodNavigator } from "@/components/planning/period/PeriodNavigator";
 
 beforeEach(() => {
   push.mockClear();

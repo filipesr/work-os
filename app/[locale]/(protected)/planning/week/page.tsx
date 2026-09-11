@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { AlertTriangle } from "lucide-react";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getWeekPlanning } from "@/lib/actions/week-planning";
@@ -33,6 +33,7 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { ScheduleDialog } from "./ScheduleDialog";
 import { DayDone } from "@/components/planning/DayDone";
 import { PlanningFilters } from "@/components/planning/PlanningFilters";
+import { periodLabel } from "@/lib/calendar/period-label";
 import { parseMultiParam } from "@/lib/planning/multi-param";
 import { EXECUTOR_WHERE } from "@/lib/planning/executors";
 import { WeekControls } from "./WeekControls";
@@ -59,7 +60,11 @@ export default async function WeekPlanningPage({
     redirect("/auth/signin");
   }
 
-  const [t, sp] = await Promise.all([getTranslations("planning.week"), searchParams]);
+  const [t, sp, locale] = await Promise.all([
+    getTranslations("planning.week"),
+    searchParams,
+    getLocale(),
+  ]);
   const monday = mondayOfWeek(parseWeekParam(sp.week));
   // As equipes vêm ANTES do plano, e não em paralelo com ele: é a lista que resolve o que "sem
   // filtro" significa (o padrão esconde as equipes de apoio). Consultar as duas juntas faria a
@@ -178,7 +183,11 @@ export default async function WeekPlanningPage({
                 },
               ]}
             />
-            <WeekControls monday={monday} isCurrentWeek={semanaCorrente} />
+            <WeekControls
+              monday={monday}
+              isCurrentWeek={semanaCorrente}
+              label={periodLabel("week", monday, locale)}
+            />
           </>
         }
       />

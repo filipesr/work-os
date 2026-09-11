@@ -13,7 +13,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("team=tm1&plan=1"),
 }));
 
-import { PeriodPicker } from "@/app/[locale]/(protected)/planning/calendar/PeriodPicker";
+import { PeriodPicker } from "@/components/planning/period/PeriodPicker";
 
 const abrirSeletor = async (user: ReturnType<typeof userEvent.setup>, rotulo: string) =>
   user.click(screen.getByRole("button", { name: rotulo }));

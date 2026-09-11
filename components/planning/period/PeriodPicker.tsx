@@ -49,7 +49,7 @@ export function PeriodPicker({
    */
   busy?: boolean;
 }) {
-  const t = useTranslations("reportsCalendar.navigation");
+  const t = useTranslations("common.periodNav");
   const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
