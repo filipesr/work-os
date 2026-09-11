@@ -55,6 +55,7 @@
     "catalogReadOnly": "Del catálogo"
   },
   "coverage": {
+    "apply": "Aplicar",
     "filtersTitle": "Filtros",
     "filtersSubtitle": "Recorta lo que muestra la grilla. Queda visible como etiqueta en la barra.",
     "clearAll": "Limpiar todos los filtros",
@@ -116,6 +117,7 @@
     "planState": "Situación en el plan"
   },
   "week": {
+    "apply": "Aplicar",
     "kicker": "Planificación",
     "title": "Programación de la semana",
     "subtitle": "Reparte las etapas entre las personas y mira dónde queda espacio.",

@@ -55,6 +55,7 @@
     "catalogReadOnly": "Do catálogo"
   },
   "coverage": {
+    "apply": "Aplicar",
     "filtersTitle": "Filtros",
     "filtersSubtitle": "Recorte o que a grade mostra. Fica visível como tag na barra.",
     "clearAll": "Limpar todos os filtros",
@@ -116,6 +117,7 @@
     "planState": "Situação no plano"
   },
   "week": {
+    "apply": "Aplicar",
     "kicker": "Planejamento",
     "title": "Programação da semana",
     "subtitle": "Distribua as etapas entre as pessoas e veja onde ainda há espaço.",

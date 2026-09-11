@@ -4,7 +4,12 @@ import { getTranslations } from "next-intl/server";
 import { AlertTriangle } from "lucide-react";
 import { requireManagerOrAdmin } from "@/lib/permissions";
 import { getWeekPlanning } from "@/lib/actions/week-planning";
-import { effectiveTeamMode, parseTeamParam, resolveTeamIds } from "@/lib/planning/team-filter";
+import {
+  TEAM_PARAM_ALL,
+  effectiveTeamMode,
+  parseTeamParam,
+  resolveTeamIds,
+} from "@/lib/planning/team-filter";
 // Não vêm de `week-planning.ts`: aquele arquivo é `"use server"`, que só pode exportar função
 // assíncrona — um `export const` lá quebra `next build` em runtime. Ver lib/planning/week-capacity.ts.
 import { DAY_VISUAL_HOURS, DEFAULT_WEEKLY_HOURS } from "@/lib/planning/week-capacity";
@@ -145,6 +150,20 @@ export default async function WeekPlanningPage({
               namespace="planning.week"
               fields={[
                 {
+                  // O filtro de equipes tem TRÊS estados e um padrão que esconde as equipes de
+                  // apoio — por isso é `modes`, e não uma lista comum. Ver team-filter.ts.
+                  kind: "modes",
+                  param: "team",
+                  label: t("teamFilter"),
+                  modes: [
+                    { value: "", label: t("teamsDefault"), hint: t("teamsDefaultHint") },
+                    { value: TEAM_PARAM_ALL, label: t("teamsAll") },
+                  ],
+                  options: teams,
+                  selected: Array.isArray(modoDeEquipe) ? modoDeEquipe : [],
+                  activeMode: modoDeEquipe === "all" ? TEAM_PARAM_ALL : "",
+                },
+                {
                   kind: "multi",
                   param: "user",
                   label: t("peopleLabel"),
@@ -159,12 +178,7 @@ export default async function WeekPlanningPage({
                 },
               ]}
             />
-            <WeekControls
-              monday={monday}
-              isCurrentWeek={semanaCorrente}
-              teams={teams}
-              mode={modoDeEquipe}
-            />
+            <WeekControls monday={monday} isCurrentWeek={semanaCorrente} />
           </>
         }
       />

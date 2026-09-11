@@ -25,8 +25,23 @@ export interface FilterOption {
  * o armazenamento local guarda.
  */
 export type PlanningFilterField =
-  /** Escolha de VÁRIOS (pessoas, equipes). Lista vazia é TODOS, nunca NENHUM. */
+  /** Escolha de VÁRIOS (pessoas, clientes). Lista vazia é TODOS, nunca NENHUM. */
   | { kind: "multi"; param: string; label: string; options: FilterOption[]; selected: string[] }
+  /**
+   * Escolha de vários COM MODOS especiais antes da lista — o filtro de equipes da mesa, que tem
+   * três estados e um padrão que esconde as equipes de apoio (ver `lib/planning/team-filter.ts`).
+   * `modes[].value` vazio significa TIRAR o parâmetro, que é como o padrão se escreve.
+   */
+  | {
+      kind: "modes";
+      param: string;
+      label: string;
+      modes: { value: string; label: string; hint?: string }[];
+      options: FilterOption[];
+      selected: string[];
+      /** O modo em vigor quando não há lista escolhida. Vazio = o padrão. */
+      activeMode: string;
+    }
   /** Escolha de UM, com a opção "todos" no topo. */
   | {
       kind: "single";
@@ -39,14 +54,38 @@ export type PlanningFilterField =
   /** Liga/desliga. O rótulo é o que a tag mostra quando está ligado. */
   | { kind: "check"; param: string; label: string; checked: boolean };
 
+/** O valor de um campo como ele vai para a URL (`null` = parâmetro ausente). */
+function valorAtual(field: PlanningFilterField): string | null {
+  switch (field.kind) {
+    case "multi":
+      return serializeMultiParam(field.selected);
+    case "modes":
+      return field.selected.length > 0
+        ? serializeMultiParam(field.selected)
+        : field.activeMode || null;
+    case "single":
+      return field.selected ?? null;
+    case "check":
+      return field.checked ? "1" : null;
+  }
+}
+
+type Rascunho = Record<string, string | null>;
+
 /**
  * A barra de filtros das telas de planejamento: tags do que está ativo à esquerda, botão que abre o
  * diálogo à direita.
  *
+ * **Nada dispara antes de confirmar.** O que se mexe no diálogo é rascunho; a grade só recarrega no
+ * "Aplicar". Sem isso, escolher quatro pessoas recarregava a tela quatro vezes, e as três primeiras
+ * mostravam um recorte que ninguém pediu. Fechar sem aplicar descarta — inclusive o "limpar tudo",
+ * que também é rascunho.
+ *
+ * A exceção é a TAG: clicar no X dela remove na hora, porque ali o clique já é a confirmação.
+ *
  * **As tags não são enfeite.** Elas são o que impede o pior caso da persistência: sem elas, quem
  * abrisse a tela com um filtro salvo de semanas atrás veria uma grade recortada e acharia que o
- * trabalho sumiu. Por isso toda escolha ativa aparece FORA do diálogo, removível com um clique, e
- * o botão carrega a contagem.
+ * trabalho sumiu. Por isso toda escolha ativa aparece FORA do diálogo, e o botão carrega a contagem.
  *
  * Os filtros ficam num diálogo, e não abertos na barra, porque na maior parte do tempo eles dizem
  * "todos / todos / todos" — ocupar a largura da tela para isso é gastar o espaço mais caro da
@@ -68,8 +107,8 @@ export function PlanningFilters({
    * directly to Client Components". Teste de componente também não pega — no cliente puro a
    * fronteira não existe. Daí o contrato ser por CHAVE, não por função.
    *
-   * As chaves esperadas: `filtersTitle`, `filtersSubtitle`, `clearAll`, `clearOne` (com `{filter}`)
-   * e `selectedCount` (com `{label}` e `{count}`).
+   * As chaves esperadas: `filtersTitle`, `filtersSubtitle`, `clearAll`, `apply`, `clearOne` (com
+   * `{filter}`) e `selectedCount` (com `{label}` e `{count}`).
    */
   namespace: string;
   fields: PlanningFilterField[];
@@ -79,29 +118,63 @@ export function PlanningFilters({
   const t = useTranslations(namespace);
   const { setParam, setParams } = useUrlFilters({ replace: true });
   const [open, setOpen] = useState(false);
+  const [rascunho, setRascunho] = useState<Rascunho>({});
 
   useStickyFilters(
     scope,
     fields.map((f) => f.param)
   );
 
-  const marcarMulti = (field: Extract<PlanningFilterField, { kind: "multi" }>, id: string) =>
-    setParam(field.param, serializeMultiParam(toggleInMulti(field.selected, id)));
+  const aplicado: Rascunho = Object.fromEntries(fields.map((f) => [f.param, valorAtual(f)]));
+  const emEdicao = (param: string) =>
+    param in rascunho ? rascunho[param] : (aplicado[param] ?? null);
+
+  const editar = (param: string, valor: string | null) =>
+    setRascunho((r) => ({ ...r, [param]: valor }));
+
+  const abrir = (aberto: boolean) => {
+    // Toda abertura começa do que está APLICADO. Sem isto, quem fechasse sem aplicar reencontraria
+    // as caixas do rascunho abandonado e acharia que a grade já estava daquele jeito.
+    if (aberto) setRascunho({});
+    setOpen(aberto);
+  };
+
+  const aplicar = () => {
+    setParams(rascunho);
+    setRascunho({});
+    setOpen(false);
+  };
+
+  /** Os ids marcados em edição. Num campo de MODOS o valor pode ser o modo, e não uma lista. */
+  const marcados = (field: PlanningFilterField): string[] => {
+    const valor = emEdicao(field.param);
+    if (!valor) return [];
+    if (field.kind === "modes" && field.modes.some((m) => m.value === valor && m.value !== "")) {
+      return [];
+    }
+    return valor.split(",").filter(Boolean);
+  };
 
   const nomeDe = (options: FilterOption[], id?: string) => options.find((o) => o.id === id)?.name;
+
+  const rotuloDeLista = (label: string, options: FilterOption[], ids: string[]) =>
+    ids.length === 1
+      ? (nomeDe(options, ids[0]) ?? label)
+      : t("selectedCount", { label, count: ids.length });
 
   const ativos = fields
     .map((f) => {
       if (f.kind === "multi" && f.selected.length > 0) {
-        return {
-          param: f.param,
-          // Um nome quando é um só; a contagem quando são vários — "Ana, Bruno, Carla, Diego" não
-          // cabe numa tag e o excesso viraria reticências que não dizem nada.
-          rotulo:
-            f.selected.length === 1
-              ? (nomeDe(f.options, f.selected[0]) ?? f.label)
-              : t("selectedCount", { label: f.label, count: f.selected.length }),
-        };
+        return { param: f.param, rotulo: rotuloDeLista(f.label, f.options, f.selected) };
+      }
+      if (f.kind === "modes") {
+        if (f.selected.length > 0) {
+          return { param: f.param, rotulo: rotuloDeLista(f.label, f.options, f.selected) };
+        }
+        // O PADRÃO não vira tag: ele não é um recorte que alguém pediu, é o estado de repouso da
+        // tela. Só o modo explícito (ex.: "todos os times") aparece.
+        const modo = f.modes.find((m) => m.value === f.activeMode && m.value !== "");
+        return modo ? { param: f.param, rotulo: modo.label } : null;
       }
       if (f.kind === "single" && f.selected) {
         return { param: f.param, rotulo: nomeDe(f.options, f.selected) };
@@ -113,8 +186,7 @@ export function PlanningFilters({
     })
     .filter((x): x is { param: string; rotulo: string } => !!x?.rotulo);
 
-  const limparTudo = () =>
-    setParams(Object.fromEntries(fields.map((f) => [f.param, null] as const)));
+  const limparTudo = () => setRascunho(Object.fromEntries(fields.map((f) => [f.param, null])));
 
   const selectClass =
     "h-10 w-full rounded-lg border-2 border-input-border bg-input px-3 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 transition-colors";
@@ -134,7 +206,7 @@ export function PlanningFilters({
         </button>
       ))}
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={abrir}>
         <DialogTrigger asChild>
           <button
             type="button"
@@ -155,9 +227,10 @@ export function PlanningFilters({
             <DialogDescription>{t("filtersSubtitle")}</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-1">
+          <div className="max-h-[60vh] space-y-3 overflow-y-auto py-1">
             {fields.map((field) => {
               if (field.kind === "check") {
+                const ligado = emEdicao(field.param) === "1";
                 return (
                   <label
                     key={field.param}
@@ -165,8 +238,8 @@ export function PlanningFilters({
                   >
                     <input
                       type="checkbox"
-                      checked={field.checked}
-                      onChange={() => setParam(field.param, field.checked ? null : "1")}
+                      checked={ligado}
+                      onChange={() => editar(field.param, ligado ? null : "1")}
                     />
                     {field.label}
                   </label>
@@ -181,8 +254,8 @@ export function PlanningFilters({
                     </span>
                     <select
                       className={selectClass}
-                      value={field.selected ?? ""}
-                      onChange={(e) => setParam(field.param, e.target.value || null)}
+                      value={emEdicao(field.param) ?? ""}
+                      onChange={(e) => editar(field.param, e.target.value || null)}
                     >
                       <option value="">{field.allLabel}</option>
                       {field.options.map((o) => (
@@ -195,13 +268,48 @@ export function PlanningFilters({
                 );
               }
 
+              const escolhidos = marcados(field);
+              const modoEmVigor =
+                field.kind === "modes" && escolhidos.length === 0
+                  ? (emEdicao(field.param) ?? "")
+                  : null;
+
               return (
                 <fieldset key={field.param} className="block text-sm">
                   <legend className="mb-1.5 block font-medium text-muted-foreground">
                     {field.label}
                   </legend>
+
+                  {field.kind === "modes" && (
+                    // Os modos primeiro, separados da lista: eles respondem "que recorte?", e a
+                    // lista abaixo responde "quais?". Misturá-los faria o padrão parecer mais uma
+                    // caixa de seleção, e não o estado de repouso da tela.
+                    <div className="mb-2 space-y-1">
+                      {field.modes.map((m) => (
+                        <label
+                          key={m.value || "padrao"}
+                          className="flex cursor-pointer items-start gap-2 rounded px-1 py-0.5 text-foreground hover:bg-accent"
+                        >
+                          <input
+                            type="radio"
+                            className="mt-1"
+                            name={`${field.param}-modo`}
+                            checked={modoEmVigor === m.value}
+                            onChange={() => editar(field.param, m.value || null)}
+                          />
+                          <span className="flex flex-col">
+                            <span>{m.label}</span>
+                            {m.hint && (
+                              <span className="text-xs text-muted-foreground">{m.hint}</span>
+                            )}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Rolagem própria: a lista de pessoas cresce com a empresa, e um diálogo que
-                      passa da altura da tela esconde o botão de fechar. */}
+                      passa da altura da tela esconde o botão de aplicar. */}
                   <div className="max-h-52 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
                     {field.options.map((o) => (
                       <label
@@ -210,8 +318,13 @@ export function PlanningFilters({
                       >
                         <input
                           type="checkbox"
-                          checked={field.selected.includes(o.id)}
-                          onChange={() => marcarMulti(field, o.id)}
+                          checked={escolhidos.includes(o.id)}
+                          onChange={() =>
+                            editar(
+                              field.param,
+                              serializeMultiParam(toggleInMulti(escolhidos, o.id))
+                            )
+                          }
                         />
                         {o.name}
                       </label>
@@ -224,15 +337,26 @@ export function PlanningFilters({
             {extra}
           </div>
 
-          {ativos.length > 0 && (
+          <div className="flex items-center justify-between gap-3 pt-1">
+            {ativos.length > 0 ? (
+              <button
+                type="button"
+                onClick={limparTudo}
+                className="text-sm font-medium text-primary transition-colors hover:underline"
+              >
+                {t("clearAll")}
+              </button>
+            ) : (
+              <span />
+            )}
             <button
               type="button"
-              onClick={limparTudo}
-              className="text-sm font-medium text-primary transition-colors hover:underline"
+              onClick={aplicar}
+              className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              {t("clearAll")}
+              {t("apply")}
             </button>
-          )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

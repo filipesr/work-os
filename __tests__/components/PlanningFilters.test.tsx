@@ -14,6 +14,7 @@ const MENSAGENS: Record<string, string> = {
   clearAll: "Limpar todos os filtros",
   clearOne: "Remover filtro {filter}",
   selectedCount: "{label}: {count}",
+  apply: "Aplicar",
 };
 
 vi.mock("next-intl", () => ({
@@ -89,26 +90,61 @@ describe("PlanningFilters", () => {
     expect(screen.getByText("Ana")).toBeInTheDocument();
   });
 
-  it("clicar na tag remove só aquele filtro", async () => {
+  it("clicar na tag remove só aquele filtro, na hora", async () => {
+    // A tag é ação direta, não rascunho: quem clica no X já confirmou ao clicar.
     paramsAtuais = new URLSearchParams("user=u1&showCompleted=1");
     montar([pessoas(["u1"]), concluidas(true)]);
     await userEvent.click(screen.getByRole("button", { name: "Remover filtro Ana" }));
     expect(replace).toHaveBeenCalledWith("/planning/week?showCompleted=1", { scroll: false });
   });
 
-  it("marcar uma pessoa ACRESCENTA à seleção, não substitui", async () => {
+  it("mexer no diálogo NÃO recarrega a tela — só o Aplicar dispara", async () => {
+    // Sem isto, escolher quatro pessoas recarregava a grade quatro vezes, e as três primeiras
+    // mostravam um recorte que ninguém pediu.
     paramsAtuais = new URLSearchParams("user=u1");
-    montar([pessoas(["u1"])]);
+    montar([pessoas(["u1"]), concluidas(false)]);
     await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
     await userEvent.click(screen.getByLabelText("Carla"));
-    expect(replace).toHaveBeenCalledWith("/planning/week?user=u1%2Cu3", { scroll: false });
+    await userEvent.click(screen.getByLabelText("Mostrar concluídas"));
+    expect(replace).not.toHaveBeenCalled();
   });
 
-  it("desmarcar a última pessoa TIRA o parâmetro — vazio é todos, não nenhum", async () => {
+  it("Aplicar manda tudo de uma vez", async () => {
+    paramsAtuais = new URLSearchParams("user=u1");
+    montar([pessoas(["u1"]), concluidas(false)]);
+    await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
+    await userEvent.click(screen.getByLabelText("Carla"));
+    await userEvent.click(screen.getByLabelText("Mostrar concluídas"));
+    await userEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith("/planning/week?user=u1%2Cu3&showCompleted=1", {
+      scroll: false,
+    });
+  });
+
+  it("fechar sem aplicar descarta o rascunho", async () => {
+    paramsAtuais = new URLSearchParams("user=u1");
+    const { rerender } = montar([pessoas(["u1"])]);
+    await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
+    await userEvent.click(screen.getByLabelText("Carla"));
+    await userEvent.keyboard("{Escape}");
+    expect(replace).not.toHaveBeenCalled();
+
+    // Reabrir mostra o que está APLICADO, não o que foi abandonado.
+    rerender(
+      <PlanningFilters scope="teste" namespace="planning.teste" fields={[pessoas(["u1"])]} />
+    );
+    await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
+    expect(screen.getByLabelText("Carla")).not.toBeChecked();
+    expect(screen.getByLabelText("Ana")).toBeChecked();
+  });
+
+  it("desmarcar a última pessoa e aplicar TIRA o parâmetro — vazio é todos, não nenhum", async () => {
     paramsAtuais = new URLSearchParams("user=u1");
     montar([pessoas(["u1"])]);
     await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
     await userEvent.click(screen.getByLabelText("Ana"));
+    await userEvent.click(screen.getByRole("button", { name: "Aplicar" }));
     expect(replace).toHaveBeenCalledWith("/planning/week", { scroll: false });
   });
 
@@ -118,11 +154,15 @@ describe("PlanningFilters", () => {
     expect(screen.queryByText("Limpar todos os filtros")).not.toBeInTheDocument();
   });
 
-  it("limpar tudo remove todos os parâmetros da tela de uma vez", async () => {
+  it("limpar tudo também é rascunho — some das caixas, e só o Aplicar grava", async () => {
     paramsAtuais = new URLSearchParams("user=u1&showCompleted=1&week=2026-09-07");
     montar([pessoas(["u1"]), concluidas(true)]);
     await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
     await userEvent.click(screen.getByText("Limpar todos os filtros"));
+    expect(screen.getByLabelText("Ana")).not.toBeChecked();
+    expect(replace).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Aplicar" }));
     // `week` é navegação, não filtro: limpar filtros não pode jogar a pessoa para outra semana.
     expect(replace).toHaveBeenCalledWith("/planning/week?week=2026-09-07", { scroll: false });
   });
@@ -131,5 +171,101 @@ describe("PlanningFilters", () => {
     paramsAtuais = new URLSearchParams("user=u1,u2");
     montar([pessoas(["u1", "u2"])]);
     expect(window.localStorage.getItem("workos:planning:filters:teste")).toContain("u1,u2");
+  });
+});
+
+// O filtro de equipes da mesa não é seleção múltipla comum: ele tem TRÊS estados, e o padrão (sem
+// parâmetro) esconde as equipes de apoio. Ver lib/planning/team-filter.ts.
+describe("PlanningFilters — campo de modos", () => {
+  const TIMES = [
+    { id: "t1", name: "Criação" },
+    { id: "t2", name: "Vídeo" },
+  ];
+
+  const equipes = (selected: string[], activeMode: string): PlanningFilterField => ({
+    kind: "modes",
+    param: "team",
+    label: "Equipes",
+    modes: [
+      { value: "", label: "Times de produção", hint: "sem os times de apoio" },
+      { value: "all", label: "Todos os times" },
+    ],
+    options: TIMES,
+    selected,
+    activeMode,
+  });
+
+  it("no padrão não há tag — o padrão não é um recorte que alguém pediu", () => {
+    montar([equipes([], "")]);
+    expect(screen.queryByRole("button", { name: /Remover filtro/ })).not.toBeInTheDocument();
+  });
+
+  it("o modo 'todos' vira tag, porque é escolha explícita", () => {
+    montar([equipes([], "all")]);
+    expect(
+      screen.getByRole("button", { name: "Remover filtro Todos os times" })
+    ).toBeInTheDocument();
+  });
+
+  it("no padrão, NENHUMA equipe aparece marcada", async () => {
+    // Marcá-las obrigaria quem quer ver duas equipes a desmarcar todas as outras uma a uma, e o
+    // atalho de filtrar viraria trabalho.
+    montar([equipes([], "")]);
+    await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
+    expect(screen.getByLabelText("Criação")).not.toBeChecked();
+    expect(screen.getByLabelText("Vídeo")).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: /Times de produção/ })).toBeChecked();
+  });
+
+  it("no modo `todos` também não marca nada — ele é um modo, não uma seleção", async () => {
+    montar([equipes([], "all")]);
+    await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
+    expect(screen.getByLabelText("Criação")).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: "Todos os times" })).toBeChecked();
+  });
+
+  it("dentro de uma seleção explícita, o clique ACUMULA", async () => {
+    paramsAtuais = new URLSearchParams("team=t1");
+    montar([equipes(["t1"], "")]);
+    await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
+    await userEvent.click(screen.getByLabelText("Vídeo"));
+    await userEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    expect(replace).toHaveBeenCalledWith("/planning/week?team=t1%2Ct2", { scroll: false });
+  });
+
+  it("escolher um modo é rascunho; aplicar é que grava", async () => {
+    montar([equipes([], "")]);
+    await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
+    await userEvent.click(screen.getByRole("radio", { name: "Todos os times" }));
+    expect(replace).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    expect(replace).toHaveBeenCalledWith("/planning/week?team=all", { scroll: false });
+  });
+
+  it("marcar uma equipe sai do modo e vira lista", async () => {
+    montar([equipes([], "all")]);
+    await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
+    await userEvent.click(screen.getByLabelText("Vídeo"));
+    await userEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    expect(replace).toHaveBeenCalledWith("/planning/week?team=t2", { scroll: false });
+  });
+
+  it("voltar ao padrão TIRA o parâmetro, em vez de gravar vazio", async () => {
+    paramsAtuais = new URLSearchParams("team=t1");
+    montar([equipes(["t1"], "")]);
+    await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
+    // O rótulo do padrão inclui a dica ("sem os times de apoio"), então a busca é por papel.
+    await userEvent.click(screen.getByRole("radio", { name: /Times de produção/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    expect(replace).toHaveBeenCalledWith("/planning/week", { scroll: false });
+  });
+
+  it("desmarcar a última equipe volta ao PADRÃO, não a uma grade vazia", async () => {
+    paramsAtuais = new URLSearchParams("team=t1");
+    montar([equipes(["t1"], "")]);
+    await userEvent.click(screen.getByRole("button", { name: /Filtros/ }));
+    await userEvent.click(screen.getByLabelText("Criação"));
+    await userEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    expect(replace).toHaveBeenCalledWith("/planning/week", { scroll: false });
   });
 });
