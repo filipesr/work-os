@@ -385,3 +385,30 @@ investigar, em ordem de retorno esperado:
    toda navegação de toda tela de planejamento.
 4. **Região do banco.** Se a operação é toda no Paraguai/Brasil, `sa-east-1` já é a melhor opção da
    região; o ganho aqui seria trocar dev remoto por um banco local em desenvolvimento.
+
+---
+
+## Formulários de ação sem proteção contra duplo envio (2026-09-11)
+
+`CreateTaskForm` usava `<form action={createTask}>` com o botão bloqueado apenas por falta de
+projeto ou template — nada impedia o segundo clique. Com o banco a ~300ms de ida e volta, a criação
+leva mais de um segundo sem nenhuma mudança visível no botão, e o segundo clique **criava uma
+demanda duplicada**. Corrigido com `components/ui/SubmitButton.tsx`, que usa `useFormStatus`.
+
+**O que ainda não foi coberto.** Estes arquivos também têm `type="submit"` dentro de um
+`<form action={...}>` sem estado de envio. Nenhum deles duplica DADO como a criação de demanda —
+por isso não entraram na mesma rodada —, mas todos aceitam o clique repetido em silêncio:
+
+- `components/PrimaryNav.tsx` (troca de idioma) e `components/auth/SignOutButton.tsx` — repetir é
+  inofensivo, só redundante.
+- `app/[locale]/auth/signin/page.tsx` — repetir dispara dois fluxos de login.
+- `components/admin/SimpleEntityCrudList.tsx`, `components/admin/TemplateHeader.tsx` e os quatro
+  `edit-*-header.tsx` de cliente, projeto e equipe — são edições (escrevem por cima), então o
+  segundo envio grava o mesmo valor em vez de criar linha nova. Incômodo, não perda.
+
+A troca é mecânica: substituir o `<button type="submit">` pelo `SubmitButton`. Ficou de fora por
+escopo, não por decisão.
+
+**E a proteção continua sendo só do lado do cliente.** Um duplo envio que escape do botão — rede
+lenta, clique antes da hidratação, requisição repetida — ainda cria duas linhas. Idempotência de
+verdade exigiria uma chave por envio, e isso é decisão de desenho, não ajuste de tela.

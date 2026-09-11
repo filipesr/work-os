@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { useRouter } from "next/navigation";
 import { createTask } from "@/lib/actions/task";
 import { getTemplateStagePreview } from "@/app/actions/templateActions";
@@ -581,14 +582,18 @@ export function CreateTaskForm({
             {t("create.creationLabel")}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">{t("create.creationNote")}</p>
-          <button
-            type="submit"
+          {/* `SubmitButton` e não um `<button>` cru: a criação leva mais de um segundo (o banco
+              está a ~300ms de ida e volta) e, sem bloquear o botão durante o envio, o segundo
+              clique CRIA UMA DEMANDA DUPLICADA. O `disabled` da tela (sem projeto ou template)
+              continua valendo — os dois bloqueios somam. */}
+          <SubmitButton
             disabled={!canSubmit}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary/90 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+            pendingLabel={t("create.creatingButton")}
+            icon={<Plus className="h-5 w-5" />}
+            className="mt-4 w-full"
           >
-            <Plus className="h-5 w-5" />
             {t("create.createButton")}
-          </button>
+          </SubmitButton>
           <a
             href="/admin/tasks"
             className="mt-2 block text-center text-sm font-medium text-muted-foreground hover:text-foreground"

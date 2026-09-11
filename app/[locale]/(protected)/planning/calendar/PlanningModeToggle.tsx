@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Lock, Unlock } from "lucide-react";
+import { Loader2, Lock, Unlock } from "lucide-react";
 import { useUrlFilters } from "@/lib/hooks/useUrlFilters";
 
 /**
@@ -21,21 +21,32 @@ import { useUrlFilters } from "@/lib/hooks/useUrlFilters";
  */
 export function PlanningModeToggle({ enabled }: { enabled: boolean }) {
   const t = useTranslations("reportsCalendar.planning");
-  const { setParam } = useUrlFilters({ replace: true });
+  const { setParam, isPending } = useUrlFilters({ replace: true });
 
   return (
     <button
       type="button"
       onClick={() => setParam("plan", enabled ? null : "1")}
+      // Ligar a trava re-renderiza a página inteira no servidor — mais de um segundo. Sem
+      // bloquear, o segundo clique DESLIGA o que o primeiro acabou de ligar, e a pessoa conclui
+      // que o botão não funciona.
+      disabled={isPending}
       aria-pressed={enabled}
+      aria-busy={isPending}
       title={enabled ? t("disableHint") : t("enableHint")}
       className={`inline-flex h-9 items-center gap-1.5 rounded-lg border-2 px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
         enabled
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border bg-card text-muted-foreground hover:bg-accent"
-      }`}
+      } disabled:cursor-not-allowed disabled:opacity-60`}
     >
-      {enabled ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+      {isPending ? (
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+      ) : enabled ? (
+        <Unlock className="h-4 w-4" />
+      ) : (
+        <Lock className="h-4 w-4" />
+      )}
       {t("toggle")}
     </button>
   );

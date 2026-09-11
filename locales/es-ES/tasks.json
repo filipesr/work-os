@@ -471,6 +471,7 @@
     "priorityLabel": "Prioridad *",
     "dueDateLabel": "Fecha de Vencimiento",
     "createButton": "Crear demanda",
+    "creatingButton": "Creando demanda…",
     "cancelButton": "Cancelar",
     "assign": {
       "unassigned": "Sin responsable",
