@@ -324,3 +324,28 @@ meses de uma vez. Corrigido em `20260910130000_drop_stale_assignee_team_trigger`
 função, view, índice de expressão. E a suíte, que mocka o Prisma, é estruturalmente incapaz de ver
 isso: nada aqui roda contra um banco de verdade. Enquanto for assim, a primeira escrita real depois
 de uma migração destrutiva é o teste.
+
+---
+
+## Datas comemorativas do cliente no catálogo (2026-09-11)
+
+As 112 datas da lista `Fechas Conmemorativas` do quadro do Trello foram transcritas para
+`lib/calendar/events.ts`. O catálogo passou de 41 para **153 datas no ano**, materializadas em 2026
+e 2027. A visão mensal ganhou filtro por tipo e por país (`lib/calendar/occurrence-filter.ts`).
+
+**O que ficou de fora, e o que custaria trazer:**
+
+- **Dezembro.** O card do mês está vazio no quadro. Nenhuma data comemorativa de dezembro entrou —
+  só as que o catálogo já tinha (Natal, Imaculada Conceição, Caacupé, Black Friday, Cyber Monday).
+  É o mês mais comercial do ano e está mais vazio que os outros. Quem tiver a lista, basta escrever.
+- **Datas móveis fixadas num dia de 2026:** os dois `Día no laborable con fines turísticos` da
+  Argentina (definidos por decreto a cada ano) e o `Día del perdón` (Yom Kippur, lunar). Ficariam
+  certas em 2026 e erradas em todo ano seguinte.
+- **`Fiesta del Sacrificio` e `Año Nuevo Judío`**, do bloco "Extras": lunares, sem cálculo no
+  catálogo. Entram quando alguém escrever o cálculo, como já existe para a Páscoa.
+
+**A revisão que falta.** Os 112 títulos em português são tradução minha do espanhol do quadro, e
+aparecem na tela. Vale uma passada de quem conhece o vocabulário da operação — em especial os que
+têm nome próprio de campanha. O `kind` também: classifiquei como `COMMERCIAL` tudo que não é
+feriado nacional, então `Dia do Programador` e `Dia da Cachaça` estão no mesmo balde que
+`Dia do Cliente`. Se a distinção importar para o planejamento, o schema já tem `EVENT` livre.
