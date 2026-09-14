@@ -42,22 +42,55 @@ para desenhar três colunas quase vazias. Isso NÃO se resolve com teto de taman
 origem do dado, e é da mesma família das correções manuais listadas em "Limitações da importação
 do Trello".
 
-## 2. `prisma migrate dev` está quebrado para todo mundo
+## O histórico de migrações tinha um buraco — reparado em 2026-09-14
 
-**O que é:** rodar `migrate dev` para replicar o histórico de migrações no shadow database falha
-com `P3006`: o tipo `ActiveStageStatus` não é criado por nenhum arquivo de migração — um buraco
-pré-existente na história, não desta entrega. `migrate deploy` (aplica os arquivos pendentes direto,
-sem shadow DB) funciona normalmente e foi o que a tela da etapa usou para gravar
-`TaskComment.activeStageId`/`kind` e `Task.createdById`.
+**O sintoma era `migrate dev` quebrado para todo mundo.** Rodar `prisma migrate dev` — o comando
+PADRÃO para criar a próxima migração — falhava com `P3006 / 42704: type "ActiveStageStatus" does
+not exist` ao replicar a história no shadow database. A mensagem apontava para a migração de
+26/jun, que é inocente: ela só era a primeira a tocar no que nunca fora criado. Só `migrate deploy`
+funcionava, porque ele aplica os arquivos pendentes direto, sem replicar nada.
 
-**Por que importa:** quem criar a PRÓXIMA migração vai tropeçar no mesmo `P3006` sem entender por
-quê, porque `migrate dev` é o comando padrão e o defeito não está na migração nova — está numa
-anterior.
+**A causa, achada rodando o histórico contra um Postgres limpo:** `prisma db push` escreveu
+objetos no banco sem deixar arquivo de migração. O histórico não criava `TaskActiveStage` — a
+tabela CENTRAL do fluxo de etapas, alterada por seis migrações posteriores — nem os tipos
+`ActiveStageStatus` e `ProjectStatus`. Com o replay destravado, `migrate diff` revelou o resto:
+**dezenove diferenças**, todas da mesma origem — colunas de `Client`, `Project`, `User` e
+`WorkflowTemplate`, a junção `_UserTeams` (pessoa pertence a várias equipes), três índices
+compostos de `TaskActiveStage`, e a regra `CASCADE` das chaves de `TaskArtifact`.
 
-**Direção:** achar a migração que deveria ter criado `ActiveStageStatus` e corrigi-la (ou recriar o
-tipo numa migração de reparo), depois confirmar que `migrate dev` volta a replicar limpo.
+**O reparo são duas migrações**, porque são dois problemas:
 
----
+- `20260626140000_repair_active_stage_objects` — datada ANTES da primeira migração que referencia
+  os objetos, senão o replay não chega até ela. Cria o enum com TRÊS valores, não quatro: quem
+  acrescenta `INACTIVE` é a migração seguinte, e criá-lo já completo faria aquele
+  `ALTER TYPE ... ADD VALUE` falhar por duplicidade. O reparo devolve a história como ela FOI, não
+  como ela terminou.
+- `20260914120000_repair_db_push_drift` — o resto do drift, no fim do histórico.
+
+**As duas são idempotentes de propósito** (`IF NOT EXISTS`, `DO $$ ... EXCEPTION WHEN
+duplicate_object $$`): em produção tudo isto já existe, e a migração precisa passar sem fazer nada.
+
+**Verificado, não presumido.** Contra um Postgres 16 em container:
+
+| o que                                                                    | resultado                                                           |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| replay das 38 migrações num banco vazio                                  | aplica limpo                                                        |
+| `migrate diff` histórico replicado × schema                              | **No difference detected**                                          |
+| `prisma migrate dev` com shadow database                                 | "Your database is now in sync" — **sem `P3006`**                    |
+| simulação de produção (`db push` + 36 marcadas, depois `migrate deploy`) | aplica sem erro                                                     |
+| o banco simulado × schema, depois do reparo                              | **No difference detected**                                          |
+| replay do zero × simulação de produção                                   | **No difference detected** — os dois caminhos chegam ao mesmo lugar |
+| reaplicar os dois reparos sobre banco completo                           | 0 erros, nenhuma mudança                                            |
+
+**Ainda PENDENTE em produção.** O build não roda `migrate deploy` (é `next build` + `prisma
+generate`), então commitar não aplica nada: produção segue com as 36 antigas e as duas de reparo
+esperando. Aplicar é um passo à parte e deliberado — e, pela idempotência, um nada-a-fazer lá.
+
+**A lição, que é maior que o defeito.** `db push` é conveniente e não deixa rastro; o histórico de
+migrações é a única memória reproduzível do schema. Um banco novo — a máquina de quem clonar, um
+ambiente de teste, o shadow database — só existe através dele. Enquanto alguém usar `db push` num
+schema versionado, este buraco volta a se abrir, e a próxima pessoa vai achar que a culpa é da
+migração que a mensagem de erro nomeia.
 
 ## Todo link existente está INTERNO por omissão
 

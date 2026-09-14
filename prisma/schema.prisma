@@ -521,6 +521,13 @@ model TaskComment {
   // `STAGE_INSTRUCTION` é direcionamento do gestor entregue no momento da liberação — tem título
   // próprio na tela e ninguém o edita. `USER` é conversa.
   kind CommentKind @default(USER)
+
+  // Não serve a nenhuma LEITURA — a tela da etapa busca por `taskId` e agrupa em memória. Serve ao
+  // DELETE: `activeStageId` é chave estrangeira com `ON DELETE SET NULL`, e o Postgres não indexa
+  // chave estrangeira sozinho, então apagar uma `TaskActiveStage` varreria esta tabela inteira.
+  // A migração 20260902120000 já o criava; faltava declará-lo aqui, e por isso o Prisma o lia como
+  // drift e propunha derrubá-lo.
+  @@index([activeStageId])
 }
 
 model TaskArtifact {
