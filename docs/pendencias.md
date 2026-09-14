@@ -347,10 +347,22 @@ consulta em série atravessa o Atlântico de novo** (`iad1`↔`sa-east-1`, ~120 
 de planejamento com três fases encadeadas: 76 + 134 + 3×120 + render + volta ≈ **0,9–1,2 s** — que
 é exatamente a faixa relatada.
 
-**Corrigido em 2026-09-14:** `vercel.json` fixa `"regions": ["gru1"]`. A função passa a executar ao
-lado do banco, o que remove os ~134 ms de deslocamento E derruba cada consulta de ~120 ms para a
-casa de 10 ms. **Confirmar no primeiro deploy:** se `x-vercel-id` continuar mostrando `iad1`, a
-mudança não pegou.
+**Corrigido e CONFIRMADO em 2026-09-14.** `vercel.json` fixa `"regions": ["gru1"]`. Depois do
+deploy, `x-vercel-id` passou de `gru1::iad1::…` para `gru1::gru1::…` — a função executa ao lado do
+banco. Medido de novo, mesmo método, 12 medidas cada:
+
+| rota                               | antes (`iad1`) | depois (`gru1`) | ganho              |
+| ---------------------------------- | -------------- | --------------- | ------------------ |
+| estático no edge — **controle**    | 76 ms          | 77 ms           | — inalterado       |
+| função + 1 consulta ao banco       | 210 ms         | **98 ms**       | **−112 ms (−53%)** |
+| função, página inteira renderizada | 262 ms         | **154 ms**      | **−108 ms (−41%)** |
+
+O controle é o que dá confiança no resto: o estático ficou idêntico, então o ganho vem da mudança e
+não de a rede estar melhor na hora da segunda medição. Descontando os 77 ms de rede até o edge,
+**função + consulta ao banco caiu de ~134 ms para ~21 ms** — cada fase de consulta em série agora
+custa a casa de 10 ms, como previsto.
+
+Para reconferir a qualquer momento (o esperado é `gru1::gru1`):
 
 ```
 curl -sI https://workos.goonmarketing.com/auth/signin | grep -i x-vercel-id
