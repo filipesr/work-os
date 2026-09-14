@@ -34,13 +34,36 @@ de novo e olhar as COLUNAS, não as demandas. É o eixo horizontal que fica ileg
 grade rola na vertical sem esforço, e na horizontal não. Acima de ~60 colunas vale desenhar o teto;
 aí a consulta ganha o limite de data que ela hoje não tem por onde respeitar.
 
-**O que a medição achou de passagem, e é outro problema.** A amplitude de `AtlanticoShop 2026-08` é
-de quase 17 meses — mas não por volume: são **três dias isolados em 2025** (25/abr, 31/mai, 11/jun)
-e depois um salto para fev/2026. Vieram da importação do Trello, que datou etapas pela data do
-anexo. Um projeto mensal chamado "2026-08" com movimento em abril de 2025 estica o eixo inteiro
-para desenhar três colunas quase vazias. Isso NÃO se resolve com teto de tamanho — se resolve na
-origem do dado, e é da mesma família das correções manuais listadas em "Limitações da importação
-do Trello".
+**Os três dias de 2025, investigados (2026-09-14) — não é defeito, é sinal.** A amplitude de quase
+17 meses de `AtlanticoShop 2026-08` vem de três dias isolados em 2025. **A suspeita registrada aqui
+antes estava errada:** ela dizia que a importação "datou etapas pela data do anexo" e que o conserto
+era na origem do dado. Rastreado, nada disso se sustenta.
+
+- **As datas estão certas.** `cardCreatedAt` decodifica a criação do id do card do Trello e só a
+  usa quando ela não contradiz o primeiro evento conhecido (`lib/trello/writer.ts`). Os artefatos
+  dessas demandas foram criados em 11/set/2026 — a data da importação —, não em 2025. Nada foi
+  datado por anexo.
+- **O projeto está certo.** `extractMonthKey` agrupa por `card.due || card.dateLastActivity`, ou
+  seja, pelo mês em que o trabalho ESTÁ acontecendo, não pelo de criação. Um card de 2025 mexido em
+  agosto/2026 pertence ao ciclo de agosto — é a regra, e ela é deliberada.
+
+**O que existe de verdade são duas demandas abertas há mais de 15 meses**, as únicas do sistema
+criadas antes de 2026:
+
+| criada em  | dias parada | demanda                                    |
+| ---------- | ----------- | ------------------------------------------ |
+| 2025-04-25 | 507         | `MANUAL DE MARCA - atlantico`              |
+| 2025-05-31 | 471         | `DISEÑO MOCKUP DE MARCAS - PEDIDO DE FRAN` |
+
+As duas estão `IN_PROGRESS` com `Desenho` ACTIVE, **sem responsável, sem dia planejado e sem
+prazo**. E **o sistema já as mostra**: as duas encabeçam a coluna "paradas" da carga por cliente
+(`/planning/client-load`), com o "parado há N dias" ao lado — são 2 de **11 paradas**, das quais 7
+em `Desenho` há mais de 60 dias.
+
+**Portanto não há o que consertar no código.** As três colunas quase vazias no eixo da linha do
+tempo são a consequência VISUAL de um fato REAL que a operação já tem sinalizado em outra tela.
+Esconder o eixo esconderia o sinal. O que falta é **decisão de quem opera**: fechar as duas como
+obsoletas, dar dono, ou mantê-las abertas sabendo o que isso significa.
 
 ## O histórico de migrações tinha um buraco — reparado em 2026-09-14
 
