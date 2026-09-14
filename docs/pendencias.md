@@ -549,6 +549,44 @@ continuaria valendo a pena, se algum dia pesar, é tratar `due` (data sem hora) 
 
 ---
 
+## ✅ RESOLVIDO · Documentação que afirmava o contrário do sistema (2026-09-14)
+
+A raiz do repositório guardava 13 documentos de fevereiro/2026. Auditados, **dois afirmavam coisas
+falsas sobre o sistema de hoje** — e foram APAGADOS (o git preserva o conteúdo; aqui fica o porquê).
+
+**`ASSIGNEE_TEAM_VALIDATION.md`** (570 linhas, datado 2025-11-04) descrevia como "🔴 CRÍTICA" uma
+regra cujas três partes morreram:
+
+```
+Se Task.assigneeId != null:
+  → User.teamId DEVE ser igual a Task.currentStage.defaultTeamId
+```
+
+- `Task.assigneeId` saiu em `20260901180000_drop_task_assignee` — nenhum caminho do fluxo a
+  escrevia, e três telas a liam achando que era a pessoa da demanda;
+- `User.teamId` virou a junção `_UserTeams`: pessoa pertence a VÁRIAS equipes;
+- o `CREATE TRIGGER check_task_assignee_team` que ele ensinava a criar **é o gatilho órfão que
+  impediu criar demanda de 1º a 10 de setembro** (seção abaixo).
+
+**Este é o motivo de ter sido apagado e não apenas marcado:** um documento que ensina a recriar um
+defeito conhecido é pior que documento nenhum. A regra que ele buscava — dono precisa pertencer ao
+time — existe hoje, mas na ETAPA e não na demanda, e em código, não em gatilho: ver o mapa de
+caminhos em "Limitações da importação do Trello".
+
+**`SKELETON_IMPLEMENTATION.md`** (549 linhas) descrevia três componentes que não existem:
+`components/StatsCards.tsx`, `components/dashboard/StatsCards.tsx` e
+`components/dashboard/ActiveStagesWidget.tsx`.
+
+**Os outros 11 ficaram.** Seis citam caminhos de antes do segmento `[locale]`
+(`app/(protected)/dashboard/page.tsx` → `app/[locale]/(protected)/dashboard/page.tsx`): o código
+existe, só o caminho envelheceu. É desatualização, não afirmação falsa.
+
+**E uma boa notícia da mesma auditoria:** o código não tem **nenhum** `TODO` ou `FIXME` real — os 14
+que o grep encontra são a palavra "TODOS" em português. Este projeto concentra pendência em
+documento em vez de espalhar marcador solto, e a auditoria mostra que funcionou.
+
+---
+
 ## ✅ RESOLVIDO · O gatilho órfão que impedia criar demanda (2026-09-10)
 
 `20250104160000_add_assignee_team_validation` criou o gatilho `check_task_assignee_team`, que lê

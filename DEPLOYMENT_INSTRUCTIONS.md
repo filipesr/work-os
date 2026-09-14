@@ -11,17 +11,20 @@ Os erros TypeScript que aparecem em `app/(protected)/dashboard/page.tsx` são **
 ## 📋 Passo a Passo de Deployment
 
 ### 1. Regenerar Prisma Client
+
 ```bash
 npx prisma generate
 ```
 
 Este comando irá:
+
 - Regenerar os tipos TypeScript do Prisma
 - Resolver todos os erros de tipo em `dashboard/page.tsx`
 
 ### 2. Aplicar Migration (Database Constraint)
 
 #### Se você receber erro P3005 (banco já existe):
+
 ```bash
 # Fazer baseline da migration existente
 npx prisma migrate resolve --applied 20250104160000_add_assignee_team_validation
@@ -31,25 +34,30 @@ npx prisma migrate deploy
 ```
 
 #### OU se estiver em desenvolvimento (recomendado):
+
 ```bash
 npx prisma migrate dev
 ```
 
 Este comando irá:
+
 - Criar o trigger `validate_task_assignee_team()` no PostgreSQL
 - Garantir integridade de dados a nível de banco
 
 ### 3. Verificar Status
+
 ```bash
 npx prisma migrate status
 ```
 
 Deve mostrar:
+
 ```
 Database schema is up to date!
 ```
 
 ### 4. Reiniciar Servidor
+
 ```bash
 npm run dev
 # ou
@@ -61,21 +69,25 @@ pnpm dev
 ## ✅ Validação do Fix
 
 ### Teste 1: Criar Nova Tarefa
+
 1. **Admin** cria uma tarefa no template
 2. **Verificar**: Tarefa aparece no **"Backlog da Equipe"** do time da primeira etapa
 3. **Verificar**: Tarefa **NÃO** aparece em "Minhas Tarefas" do admin
 
 ### Teste 2: Pegar Tarefa
+
 1. **Membro do time** clica em **"Pegar Tarefa"** no backlog
 2. **Verificar**: Tarefa some do backlog da equipe
 3. **Verificar**: Tarefa aparece em **"Minhas Tarefas"** do membro
 
 ### Teste 3: Avançar Etapa
+
 1. **Membro atual** avança tarefa para próxima etapa (outro time)
 2. **Verificar**: Tarefa some de suas "Minhas Tarefas"
 3. **Verificar**: Tarefa aparece no **"Backlog da Equipe"** do novo time
 
 ### Teste 4: Validação de Integridade (Database Trigger)
+
 1. **Tentar manualmente** atribuir tarefa a usuário de team errado
 2. **Verificar**: Operação **falha** com erro:
    ```
@@ -83,6 +95,7 @@ pnpm dev
    ```
 
 ### Teste 5: Mudança de Team
+
 1. **Admin** muda usuário de team (com tarefas ativas atribuídas)
 2. **Verificar**: Tarefas são **automaticamente desatribuídas**
 3. **Verificar**: Tarefas voltam ao backlog do team correto
@@ -92,11 +105,13 @@ pnpm dev
 ## 📊 O Que Foi Implementado
 
 ### ✅ Fase 1: Fix Criação de Tarefas
+
 - **Arquivo**: `lib/actions/task.ts`
 - **Mudança**: `assigneeId: null` (linha 87)
 - **Impacto**: Tarefas novas aparecem no backlog do team
 
 ### ✅ Fase 2: Validações de Backend
+
 - **Arquivo**: `lib/actions/task.ts`
 - **Novas funções**:
   - `claimTask()` - Usuário pega tarefa do backlog (com validação)
@@ -108,11 +123,13 @@ pnpm dev
   - `updateUser()` - Desatribui tarefas ao mudar team
 
 ### ✅ Fase 3: Database Constraint
+
 - **Arquivo**: `prisma/migrations/20250104160000_add_assignee_team_validation/migration.sql`
 - **Trigger**: `validate_task_assignee_team()`
 - **Impacto**: Impossível atribuir tarefa a usuário de team errado
 
 ### ✅ Fase 4: Interface do Usuário
+
 - **Arquivo**: `components/tasks/ClaimTaskButton.tsx` (novo)
 - **Componente**: Botão "Pegar Tarefa" com loading e error states
 - **Arquivo**: `app/(protected)/dashboard/page.tsx`
@@ -134,9 +151,10 @@ Documentação técnica criada durante o processo:
    - Validação de auditoria
    - Casos de uso
 
-3. **`ASSIGNEE_TEAM_VALIDATION.md`**
-   - Problema de integridade identificado
-   - Solução em 4 camadas
+3. ~~`ASSIGNEE_TEAM_VALIDATION.md`~~ — **apagado em 2026-09-14.** Descrevia uma regra cujas três
+   partes já não existem (`Task.assigneeId`, `User.teamId` e o gatilho `check_task_assignee_team`,
+   que foi o defeito que impediu criar demanda de 1º a 10 de setembro). Ver
+   `docs/pendencias.md`.
    - Especificação técnica
 
 ---
@@ -144,20 +162,26 @@ Documentação técnica criada durante o processo:
 ## 🐛 Troubleshooting
 
 ### Erro: "Module '@prisma/client' has no exported member 'TaskStatus'"
+
 **Solução**: Rodar `npx prisma generate`
 
 ### Erro: "User X does not belong to the team of the current stage"
+
 **Causa**: Trigger funcionando corretamente! Usuário tentou pegar tarefa de team incorreto
 **Solução**: Verificar que `User.teamId === TemplateStage.defaultTeamId`
 
 ### Tarefa não aparece no dashboard após criação
+
 **Verificar**:
+
 1. `Task.assigneeId` está `null`?
 2. `Task.currentStage.defaultTeamId === myTeamId`?
 3. `Task.status === 'BACKLOG'`?
 
 ### Botão "Pegar Tarefa" não funciona
+
 **Verificar**:
+
 1. Console do navegador para erros JavaScript
 2. Network tab para status da requisição
 3. Logs do servidor Next.js
@@ -167,6 +191,7 @@ Documentação técnica criada durante o processo:
 ## 📞 Suporte
 
 Se os erros persistirem após seguir os passos acima:
+
 1. Verificar logs do servidor Next.js
 2. Verificar logs do PostgreSQL
 3. Confirmar versão do Prisma: `npx prisma --version`

@@ -5,9 +5,11 @@ Este documento serve como índice central para toda a documentação do Work OS,
 ## 📚 Documentação Geral
 
 ### [README.md](./README.md)
+
 **Descrição:** Documento principal do projeto.
 
 **Conteúdo:**
+
 - Visão geral do sistema de workflow paralelo
 - Exemplo prático de Fork/Join
 - Setup inicial do projeto
@@ -21,9 +23,11 @@ Este documento serve como índice central para toda a documentação do Work OS,
 ---
 
 ### [CHANGELOG.md](./CHANGELOG.md)
+
 **Descrição:** Histórico de mudanças do projeto.
 
 **Conteúdo:**
+
 - Versão 2.0.0 (Sistema Paralelo)
 - Breaking changes detalhados
 - Novos recursos
@@ -39,9 +43,11 @@ Este documento serve como índice central para toda a documentação do Work OS,
 ## 🚀 Sistema de Workflow Paralelo
 
 ### [PARALLEL_WORKFLOW.md](./PARALLEL_WORKFLOW.md)
+
 **Descrição:** Documentação completa e técnica do sistema de workflow paralelo.
 
 **Conteúdo:**
+
 - Visão geral da arquitetura
 - Modelo de dados TaskActiveStage
 - Padrão Fork/Join explicado em detalhes
@@ -62,9 +68,11 @@ Este documento serve como índice central para toda a documentação do Work OS,
 ---
 
 ### [QUICK_START_PARALLEL.md](./QUICK_START_PARALLEL.md)
+
 **Descrição:** Guia prático de início rápido para testar o sistema paralelo.
 
 **Conteúdo:**
+
 - Setup inicial passo a passo
 - Teste 1: Fork simples
 - Teste 2: Join simples
@@ -81,9 +89,11 @@ Este documento serve como índice central para toda a documentação do Work OS,
 ---
 
 ### [API_REFERENCE.md](./API_REFERENCE.md)
+
 **Descrição:** Referência completa de APIs, funções e componentes.
 
 **Conteúdo:**
+
 - Tipos TypeScript
 - Funções core (completeStageAndAdvance, activateNextStages, etc.)
 - Queries do dashboard
@@ -103,9 +113,11 @@ Este documento serve como índice central para toda a documentação do Work OS,
 ## 📖 Fluxos e Exemplos
 
 ### [task-flow.md](./task-flow.md)
+
 **Descrição:** Demonstração narrativa do fluxo de trabalho.
 
 **Conteúdo:**
+
 - Jornada da tarefa "Landing Page"
 - Passo a passo de cada etapa
 - Explicação do handoff automático
@@ -124,6 +136,7 @@ Este documento serve como índice central para toda a documentação do Work OS,
 ## 📋 Documentos Técnicos Específicos
 
 ### [DASHBOARD_FIX_ARCHITECTURE.md](./DASHBOARD_FIX_ARCHITECTURE.md)
+
 **Descrição:** Análise técnica de correções no dashboard.
 
 **Público:** Desenvolvedores trabalhando no dashboard.
@@ -131,6 +144,7 @@ Este documento serve como índice central para toda a documentação do Work OS,
 ---
 
 ### [TASK_VISIBILITY_ANALYSIS.md](./TASK_VISIBILITY_ANALYSIS.md)
+
 **Descrição:** Análise de visibilidade de tarefas.
 
 **Público:** Desenvolvedores, arquitetos.
@@ -138,20 +152,15 @@ Este documento serve como índice central para toda a documentação do Work OS,
 ---
 
 ### [TASK_CREATION_RISK_ANALYSIS.md](./TASK_CREATION_RISK_ANALYSIS.md)
+
 **Descrição:** Análise de riscos na criação de tarefas.
 
 **Público:** Desenvolvedores, QA.
 
 ---
 
-### [ASSIGNEE_TEAM_VALIDATION.md](./ASSIGNEE_TEAM_VALIDATION.md)
-**Descrição:** Documentação sobre validação de times.
-
-**Público:** Desenvolvedores.
-
----
-
 ### [DEPLOYMENT_INSTRUCTIONS.md](./DEPLOYMENT_INSTRUCTIONS.md)
+
 **Descrição:** Instruções para deploy em produção.
 
 **Público:** DevOps, desenvolvedores.
@@ -163,29 +172,35 @@ Este documento serve como índice central para toda a documentação do Work OS,
 ## 🗺️ Guia de Navegação Rápida
 
 ### Quero entender o sistema paralelo (Fork/Join)
+
 1. Comece com: [README.md](./README.md) (seção de introdução)
 2. Aprofunde em: [PARALLEL_WORKFLOW.md](./PARALLEL_WORKFLOW.md)
 3. Veja exemplos práticos: [task-flow.md](./task-flow.md)
 
 ### Quero configurar e testar localmente
+
 1. Siga: [QUICK_START_PARALLEL.md](./QUICK_START_PARALLEL.md)
 2. Se tiver problemas: [QUICK_START_PARALLEL.md](./QUICK_START_PARALLEL.md#problemas-comuns)
 
 ### Quero desenvolver uma nova feature
+
 1. Referência de APIs: [API_REFERENCE.md](./API_REFERENCE.md)
 2. Arquitetura: [PARALLEL_WORKFLOW.md](./PARALLEL_WORKFLOW.md)
 3. Exemplos de código: [API_REFERENCE.md](./API_REFERENCE.md#exemplos-práticos)
 
 ### Quero atualizar de v1.0 para v2.0
+
 1. Leia: [CHANGELOG.md](./CHANGELOG.md) (Breaking Changes)
 2. Siga: [CHANGELOG.md](./CHANGELOG.md#migração)
 3. Teste: [QUICK_START_PARALLEL.md](./QUICK_START_PARALLEL.md)
 
 ### Quero apresentar o sistema para stakeholders
+
 1. Use: [task-flow.md](./task-flow.md)
 2. Apoie com: [README.md](./README.md) (exemplo prático)
 
 ### Quero fazer deploy em produção
+
 1. Siga: [DEPLOYMENT_INSTRUCTIONS.md](./DEPLOYMENT_INSTRUCTIONS.md)
 2. Valide com: [QUICK_START_PARALLEL.md](./QUICK_START_PARALLEL.md#verificações-de-sucesso)
 
@@ -210,7 +225,6 @@ work-os/
 │   ├── DASHBOARD_FIX_ARCHITECTURE.md
 │   ├── TASK_VISIBILITY_ANALYSIS.md
 │   ├── TASK_CREATION_RISK_ANALYSIS.md
-│   ├── ASSIGNEE_TEAM_VALIDATION.md
 │   └── DEPLOYMENT_INSTRUCTIONS.md
 │
 └── DOCUMENTATION_INDEX.md            # 📑 Este arquivo
@@ -256,32 +270,38 @@ work-os/
 ### Quando atualizar cada documento:
 
 **README.md**
+
 - Nova feature principal implementada
 - Mudança de arquitetura
 - Nova versão major
 
 **CHANGELOG.md**
+
 - Toda nova versão (patch, minor, major)
 - Toda breaking change
 - Todo bugfix importante
 
 **PARALLEL_WORKFLOW.md**
+
 - Mudança no modelo de dados
 - Nova função core
 - Mudança na lógica de fork/join
 
 **QUICK_START_PARALLEL.md**
+
 - Mudança no processo de setup
 - Novo teste importante
 - Problema comum identificado
 
 **API_REFERENCE.md**
+
 - Nova função pública
 - Mudança de assinatura
 - Nova prop de componente
 - Função depreciada
 
 **task-flow.md**
+
 - Novo caso de uso importante
 - Mudança no fluxo de trabalho
 
@@ -290,6 +310,7 @@ work-os/
 ## 📞 Suporte
 
 **Dúvidas sobre:**
+
 - **Conceitos:** Leia [PARALLEL_WORKFLOW.md](./PARALLEL_WORKFLOW.md)
 - **Implementação:** Consulte [API_REFERENCE.md](./API_REFERENCE.md)
 - **Setup:** Siga [QUICK_START_PARALLEL.md](./QUICK_START_PARALLEL.md)
