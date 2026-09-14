@@ -133,10 +133,47 @@ export async function storeStreamToNas(input: StoreStreamInput): Promise<StoreSt
 // disparado logo em seguida pode rodar ANTES desse open() terminar, e o arquivo reaparece depois
 // que achávamos ter limpado. Esperar o stream fechar de fato (`finished`, tolerando o erro que o
 // próprio destroy pode gerar) fecha essa corrida.
+/** Quanto esperar por uma limpeza antes de desistir dela e seguir em frente. */
+const CLEANUP_TIMEOUT_MS = 10_000;
+
+/**
+ * Corre a promessa contra um prazo. Ao estourar, RESOLVE (não rejeita) — quem chama está num
+ * caminho de limpeza, onde desistir é o comportamento certo e não há a quem relatar.
+ */
+export function comPrazo(p: Promise<unknown>, ms: number): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const t = setTimeout(resolve, ms);
+    t.unref?.();
+    void p.then(
+      () => {
+        clearTimeout(t);
+        resolve();
+      },
+      () => {
+        clearTimeout(t);
+        resolve();
+      }
+    );
+  });
+}
+
+/**
+ * Desiste da escrita e apaga o arquivo temporário — com PRAZO nos dois passos.
+ *
+ * Este é o caminho de desistência, e ele não pode ser o que trava. `finished(ws)` depois de
+ * `destroy()` resolve na hora no caso normal, mas num mount de NAS pendurado (NFS/SMB sem
+ * resposta) o fechamento do descritor não volta, e o `rm` seguinte tem o mesmo problema — são
+ * chamadas de sistema contra um disco que parou. Sem prazo, a rodada inteira do worker fica
+ * esperando uma limpeza, que é o custo mais caro possível para a operação mais barata.
+ *
+ * O que se perde ao estourar o prazo é um arquivo `.tmp` esquecido no NAS. É lixo, não corrupção:
+ * o nome carrega o id do artefato, nada o publica, e a próxima tentativa escreve por cima. Trocar
+ * um worker travado por um arquivo órfão é a troca certa.
+ */
 async function destroyAndUnlink(ws: ReturnType<typeof createWriteStream>, tmpPath: string) {
   ws.destroy();
-  await finished(ws).catch(() => {});
-  await safeUnlink(tmpPath);
+  await comPrazo(finished(ws), CLEANUP_TIMEOUT_MS);
+  await comPrazo(safeUnlink(tmpPath), CLEANUP_TIMEOUT_MS);
 }
 
 export async function safeUnlink(p: string): Promise<void> {

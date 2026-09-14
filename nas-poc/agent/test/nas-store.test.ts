@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { storeStreamToNas, StoreError } from "../src/nas-store";
+import { storeStreamToNas, StoreError, comPrazo } from "../src/nas-store";
 import { FetchSourceError } from "../src/fetch-source";
 
 let dir: string;
@@ -257,5 +257,45 @@ describe("storeStreamToNas", () => {
       hashMode: "deferred",
     });
     expect(rDeferred.msHash).toBeGreaterThan(0);
+  });
+});
+
+describe("comPrazo — o prazo do caminho de limpeza", () => {
+  it("segue adiante quando a limpeza TRAVA (é o motivo de existir)", async () => {
+    // Num mount de NAS pendurado, nem o fechamento do descritor nem o `rm` voltam: são chamadas de
+    // sistema contra um disco que parou. Sem prazo, a rodada inteira do worker fica esperando uma
+    // LIMPEZA — o custo mais caro possível para a operação mais barata.
+    vi.useFakeTimers();
+    const travada = new Promise(() => {});
+    let resolveu = false;
+
+    const p = comPrazo(travada, 10_000).then(() => {
+      resolveu = true;
+    });
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(resolveu, "não pode desistir antes do prazo").toBe(false);
+
+    await vi.advanceTimersByTimeAsync(2);
+    await p;
+    expect(resolveu).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it("não espera o prazo quando a limpeza termina", async () => {
+    vi.useFakeTimers();
+    let resolveu = false;
+    const p = comPrazo(Promise.resolve(), 10_000).then(() => {
+      resolveu = true;
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    await p;
+    expect(resolveu).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it("RESOLVE quando a limpeza rejeita — não propaga o erro", async () => {
+    // Quem chama está desistindo de uma escrita; não há a quem relatar, e uma rejeição aqui
+    // sequestraria o erro de verdade que está subindo (TOO_LARGE, ABORTED, o código da origem).
+    await expect(comPrazo(Promise.reject(new Error("EIO")), 10_000)).resolves.toBeUndefined();
   });
 });
