@@ -62,8 +62,12 @@ em `Desenho` há mais de 60 dias.
 
 **Portanto não há o que consertar no código.** As três colunas quase vazias no eixo da linha do
 tempo são a consequência VISUAL de um fato REAL que a operação já tem sinalizado em outra tela.
-Esconder o eixo esconderia o sinal. O que falta é **decisão de quem opera**: fechar as duas como
-obsoletas, dar dono, ou mantê-las abertas sabendo o que isso significa.
+Esconder o eixo esconderia o sinal.
+
+**Decidido em 2026-09-14: as duas ficam ABERTAS.** O dono do projeto optou por mantê-las, ciente de
+que estão paradas há mais de 15 meses. A consequência aceita: elas seguem no topo da coluna de
+paradas e continuam esticando o eixo da linha do tempo daquele projeto. Quem reabrir isto não
+precisa investigar de novo — a decisão é conhecida, e o que a mudaria é a operação, não o código.
 
 ## O histórico de migrações tinha um buraco — reparado em 2026-09-14
 
@@ -323,15 +327,40 @@ responsável: são os cards que nunca pararam nem passaram por uma lista `DISEÑ
 eles o quadro não diz quem desenhou. O autor do anexo não serve como resposta — é quem SUBIU o
 arquivo, com frequência o atendimento. Se alguém souber de quem eram essas 40, é correção manual.
 
-**A revisão de qualidade tem 12 donos que provavelmente estão errados.** As etapas de `Quality
-Control` percorridas ainda aceitam o membro declarado no card — a mesma fonte que foi tirada da
-aprovação —, e o resultado é Martin (designer) com 8, Pedro com 2, Vinícius e Lèli com 1. A lista
-`REVISIÓN` não nomeia ninguém, então o quadro não diz quem revisou. Aplicar a mesma régua deixaria
-as 49 etapas de QC sem responsável. Decisão do dono do projeto, ainda não tomada.
+**~~A revisão de qualidade tem 12 donos que provavelmente estão errados.~~ CORRIGIDO em
+2026-09-14.** As etapas de `Quality Control` percorridas aceitavam o membro declarado no card — a
+mesma fonte que já fora tirada da aprovação. O caso mais claro: **Luis (Designers) constava como
+quem fez o controle de qualidade de 8 flyers que ele mesmo desenhou.** Um portão assinado por quem
+ele deveria fiscalizar não é um portão.
 
-**E `Audio Visual` tem 2 demandas com o atendimento como produtor**, pelo mesmo motivo (autor do
-anexo). É pequeno hoje porque quase todo o audiovisual do quadro estava arquivado, mas a regra
-continua frouxa: se voltar a crescer, volta o problema.
+A régua aplicada, por decisão do dono do projeto: **sai o dono de toda etapa de portão cujo
+responsável não pertence ao time que a justifica** — não só os de equipe criativa. O argumento é
+que a lista `REVISIÓN` do Trello não nomeia ninguém, então QUALQUER dono ali era palpite promovido
+a dado. Sem dono é o estado honesto, e já era o de 25 das 52 etapas de QC.
+
+Ficou em `scripts/fix-gate-owners.mjs` (ensaio por padrão, `--commit` para aplicar, backup em JSON
+antes de escrever). **15 etapas alteradas**, e o `assignedAt` caiu junto com o `assigneeId` — o
+carimbo diz QUANDO o dono atual foi definido, e sobreviver a um dono nulo deixaria "atribuído em
+11/set" sem ninguém atribuído.
+
+| etapa             | antes                                             | depois                      |
+| ----------------- | ------------------------------------------------- | --------------------------- |
+| `Quality Control` | 25 sem dono · Luis 8, Pedro 2, Vinícius 1, Lèli 1 | **50 sem dono** · Norma 2   |
+| `Audio Visual`    | Pedro (atendimento) 3 · Thiago 11                 | **15 sem dono** · Thiago 11 |
+
+**Preservados de propósito:** Norma pertence a `Quality Control`/`Proofreading` e Thiago a
+`Video-makers` — os dois estão nas etapas que seus times justificam, e tirá-los seria apagar um
+vínculo que o quadro sustenta.
+
+**Nada foi órfão nisso:** o sistema não tinha nenhum `TimeLog` nem `ActivityLog` no momento da
+correção, então o vínculo pessoa↔etapa morava só nessas duas colunas. Numa base com horas
+apontadas, esta mesma correção precisaria decidir o que fazer com elas antes de rodar.
+
+**~~E `Audio Visual` tem 2 demandas com o atendimento como produtor~~ — eram 3, e foram limpas em
+2026-09-14** junto com os portões de qualidade, pelo mesmo motivo (autor do anexo é quem SUBIU o
+arquivo). **A REGRA CONTINUA FROUXA**, e é isto que importa para a próxima importação: nada no
+código impede o atendimento de nascer produtor de vídeo outra vez. O que existe hoje é a correção
+de um acervo, não uma trava.
 
 **O desempate do responsável pode inflar quem supervisiona.** Quando o card declara 2 a 4 membros e nada desempata, a etapa fica com o **primeiro da lista do card** — decisão explícita do dono do projeto, e é escolha, não medição: a ordem em que o Trello guarda os membros não significa nada. Vale para `Audio Visual`, `Quality Control`, `Aprovação` e `Relatório` — nunca para `Desenho`, que exige o nome da lista. Quem olhar métrica de execução por pessoa precisa saber disso antes de concluir qualquer coisa.
 
