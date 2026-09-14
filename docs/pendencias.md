@@ -1,13 +1,48 @@
-# Pendências abertas
+# Pendências e registro
 
-Coisas encontradas em uso, com decisão já tomada e execução adiada. Cada item traz o que está
-errado (ou o que falta), a evidência, e por que importa — para quem pegar não precisar redescobrir.
+Coisas encontradas em uso. Cada item traz o que está errado (ou o que falta), a evidência, e por que
+importa — para quem pegar não precisar redescobrir.
 
-Item resolvido sai daqui e vira commit; item que virar feature grande vira spec própria.
+**Este documento faz duas coisas**, e o selo de cada seção diz qual. Guardar as duas juntas é
+proposital: quem vai mexer em algo precisa saber tanto o que falta quanto o que já foi decidido e
+por quê — foi rastreando o "por quê" que se descobriu, em 14/set, que duas suspeitas registradas
+aqui estavam simplesmente erradas.
+
+| selo                      | significa                                                            |
+| ------------------------- | -------------------------------------------------------------------- |
+| 🔴 **ABERTO**             | falta fazer, e alguém pode pegar hoje                                |
+| ⏳ **ADIADO COM GATILHO** | medido e não urgente; o gatilho que o reabre está escrito            |
+| 💤 **HIBERNANDO**         | decisão tomada sobre o estado ATUAL; volta a valer se o estado mudar |
+| 📌 **DECIDIDO**           | a pergunta foi respondida; não há ação pendente                      |
+| ✅ **RESOLVIDO**          | feito, com a medição e o raciocínio preservados                      |
+| 📖 **REFERÊNCIA**         | limitações conhecidas que quem trabalha aqui precisa saber           |
+
+## O que está aberto agora
+
+**Precisa de decisão ou conteúdo de quem opera — não de código:**
+
+- **Dezembro vazio no catálogo de datas** — o mês mais comercial do ano; o card do Trello estava em
+  branco. Ver a seção 🔴 ABERTO.
+- **Revisão dos 112 títulos traduzidos** do espanhol, e o `kind` genérico (tudo que não é feriado
+  virou `COMMERCIAL`).
+- **40 etapas de `Desenho` sem dono** — o quadro não diz quem desenhou.
+- **10 cards de instrução** do Trello, um a um.
+- **E-mail da Sara fora do padrão** (`saragoonmmkt`, dois `m`) — hoje contornado por declaração no
+  script; arrumar no cadastro mexe na chave de login por Google.
+
+**Código, esperando gatilho ou decisão:**
+
+- **Teto da grade** da linha do tempo — gatilho: acima de ~60 colunas (hoje 36).
+- **Marca da tentativa no relato de falha** — protocolo agente↔nuvem, com deploy coordenado.
+- **Link `INTERNO` por omissão** — hiberna até entrar acervo real de cliente.
+- **Datas móveis** (Yom Kippur, Fiesta del Sacrificio, Año Nuevo Judío) — precisam de cálculo lunar.
+- **`COMPLETED_LIST_NAMES`** — cada mês renomeado no Trello precisa de uma linha antes de reimportar.
+- **Etapas de portão CORINGA sem trava de equipe** — limitação do SCHEMA (um time por etapa), não da
+  configuração. Ver a seção da importação do Trello.
 
 ---
 
-## 1. Linha do tempo do projeto — o teto de tamanho da grade (medido em 2026-09-14)
+## ⏳ ADIADO COM GATILHO · Linha do tempo: o teto de tamanho da grade
 
 **O que é:** `stageTransition.findMany` (em `lib/actions/project-timeline.ts`) cresce com a história
 do projeto, não com a janela desenhada. É consulta em lote — não é N+1 —, mas traz uma linha por
@@ -69,7 +104,7 @@ que estão paradas há mais de 15 meses. A consequência aceita: elas seguem no 
 paradas e continuam esticando o eixo da linha do tempo daquele projeto. Quem reabrir isto não
 precisa investigar de novo — a decisão é conhecida, e o que a mudaria é a operação, não o código.
 
-## O histórico de migrações tinha um buraco — reparado em 2026-09-14
+## ✅ RESOLVIDO · O histórico de migrações tinha um buraco (2026-09-14)
 
 **O sintoma era `migrate dev` quebrado para todo mundo.** Rodar `prisma migrate dev` — o comando
 PADRÃO para criar a próxima migração — falhava com `P3006 / 42704: type "ActiveStageStatus" does
@@ -126,7 +161,7 @@ ambiente de teste, o shadow database — só existe através dele. Enquanto algu
 schema versionado, este buraco volta a se abrir, e a próxima pessoa vai achar que a culpa é da
 migração que a mensagem de erro nomeia.
 
-## Todo link existente está INTERNO por omissão
+## 💤 HIBERNANDO · Todo link existente está INTERNO por omissão
 
 **Onde:** `TaskArtifact.sensitivity` dos artefatos de link, criados antes de a aba pedir o campo.
 
@@ -152,7 +187,7 @@ existir naquele dia.
 
 ---
 
-## Anexo do Trello exige login — medido, não suposto (2026-09-09)
+## 📌 DECIDIDO · Anexo do Trello exige login — medido, não suposto (2026-09-09)
 
 A importação para o NAS foi construída para atender à migração do Trello. No primeiro teste real com
 um anexo de lá, o resultado foi `SOURCE_REFUSED` ("a origem recusou o download").
@@ -182,7 +217,7 @@ lá. A segunda é a que torna a tradução de link do Drive um investimento com 
 
 ---
 
-## Higiene da importação de link — varrida em 2026-09-14
+## ✅ RESOLVIDO (1 item aberto) · Higiene da importação de link (varrida em 2026-09-14)
 
 Eram dezesseis achados que a revisão final triou como "podem esperar", com a recomendação de
 agrupá-los numa fatia só. **Quinze foram fechados. Três não eram higiene: eram defeitos**, e cada
@@ -245,7 +280,7 @@ um foi reproduzido por teste ANTES do conserto.
   na fila e falhar com `PRIVATE_HOST` em vez de ser recusado no formulário — pior experiência,
   mesma segurança.
 
-## Limitações conhecidas, registradas em outro lugar
+## 📖 REFERÊNCIA · Limitações conhecidas, registradas em outro lugar
 
 Não são pendências desta lista, mas quem lê aqui costuma precisar delas:
 
@@ -301,7 +336,7 @@ Não são pendências desta lista, mas quem lê aqui costuma precisar delas:
 
 ---
 
-## Limitações da importação do Trello (2026-09)
+## 📖 REFERÊNCIA (com itens abertos) · Limitações da importação do Trello (2026-09)
 
 **Cards de instrução ficam fora.** 10 cards que não têm anexo nenhum — o conteúdo está no título
 e na descrição — merecem decisão humana, um a um. São: `MODELO - Checklist materiais campanhas` (×2) ·
@@ -409,11 +444,31 @@ Quem quiser aquele histórico precisa de outra fonte: ele não está no Trello.
 
 **Quality Control pendente fica sem dono.** As 45 etapas de revisão que as demandas abertas têm pela frente nascem sem responsável, de propósito: o portão de qualidade é do time de qualidade, não de quem abriu a demanda. Se o processo quiser um dono ali, é uma linha em `CREATOR_OWNED_STAGES` (`lib/trello/plan.ts`).
 
-**Sobras da importação, sem efeito no dado gravado.** O relatório do ensaio não diz quantas demandas cada projeto mensal recebe nem quais cards foram descartados um a um (só a contagem por motivo); `applyImportPlan` tem um ramo de ensaio que o executável nunca chama, então as pré-condições de banco só são checadas na hora do `--commit`; `ReworkEvent.byTrelloId` e o `kind: "CLIENT"` nunca são escritos; os checklists de 3 cards não foram importados; e o mês do projeto é recortado do ISO em UTC enquanto o resto do app usa fuso de São Paulo, o que põe 18 das 204 num mês vizinho.
+**Sobras da importação, sem efeito no dado gravado.** O relatório do ensaio não diz quantas demandas cada projeto mensal recebe nem quais cards foram descartados um a um (só a contagem por motivo); `applyImportPlan` tem um ramo de ensaio que o executável nunca chama, então as pré-condições de banco só são checadas na hora do `--commit`; `ReworkEvent.byTrelloId` e o `kind: "CLIENT"` nunca são escritos; os checklists de 3 cards não foram importados; e o mês do projeto é recortado do ISO em UTC enquanto o resto do app usa fuso de São Paulo.
+
+**O mês em UTC foi medido em 2026-09-14, e NÃO deve ser "corrigido".** A conversão para São Paulo
+parecia o conserto óbvio — alinhar com o resto do app. Os prazos realmente importados dizem o
+contrário:
+
+| hora UTC do prazo       | quantos | o que a conversão faria           |
+| ----------------------- | ------- | --------------------------------- |
+| exatamente `00:00:00`   | **2**   | jogaria para o dia e mês ANTERIOR |
+| entre `00:01` e `02:59` | **0**   | seriam os casos a corrigir        |
+| entre `03:00` e `20:59` | **82**  | nada — mesmo dia em São Paulo     |
+
+`00:00:00 UTC` exato é a assinatura de DATA SEM HORA: quem marca "1 de outubro" no Trello quer 1 de
+outubro, e São Paulo diria 30 de setembro. **A conversão introduziria o erro em vez de corrigi-lo**,
+e os casos que a justificariam não existem no acervo. Confirmado por outro lado: nenhuma demanda
+está hoje num projeto que discorde do mês do seu prazo — nem pela régua UTC, nem pela de SP.
+
+Fica registrado para quem reencontrar esta linha: **o recorte em UTC está certo para o dado que o
+Trello produz**, e mudá-lo sem remedir quebraria os dois únicos casos que hoje acerta. O que
+continuaria valendo a pena, se algum dia pesar, é tratar `due` (data sem hora) e `dateLastActivity`
+(instante real) com réguas diferentes — mas o impacto medido disso é próximo de zero.
 
 ---
 
-## O gatilho órfão que impedia criar demanda (2026-09-10)
+## ✅ RESOLVIDO · O gatilho órfão que impedia criar demanda (2026-09-10)
 
 `20250104160000_add_assignee_team_validation` criou o gatilho `check_task_assignee_team`, que lê
 `NEW."assigneeId"` e `NEW."currentStageId"`. `20260901180000_drop_task_assignee` derrubou a coluna
@@ -431,7 +486,7 @@ de uma migração destrutiva é o teste.
 
 ---
 
-## Datas comemorativas do cliente no catálogo (2026-09-11)
+## 🔴 ABERTO · Datas comemorativas do cliente no catálogo (2026-09-11)
 
 As 112 datas da lista `Fechas Conmemorativas` do quadro do Trello foram transcritas para
 `lib/calendar/events.ts`. O catálogo passou de 41 para **153 datas no ano**, materializadas em 2026
@@ -456,7 +511,7 @@ feriado nacional, então `Dia do Programador` e `Dia da Cachaça` estão no mesm
 
 ---
 
-## A latência, remedida — a função roda em Washington (2026-09-14)
+## ✅ RESOLVIDO · A latência: a função rodava em Washington (2026-09-14)
 
 **O registro de 11/set estava errado, e vale saber por quê.** Ele mediu `select 1` em **304 ms** e
 concluiu "a lentidão é distância até o banco". O que aquele número mediu foi a **primeira consulta
@@ -541,7 +596,7 @@ no relógio. E o corte tem uma armadilha — `PlanningFilters` recebe o namespac
 (`reportsPerformance`, `reportsProductivity`), invisível para qualquer varredura estática: cortar
 sem um guard que acompanhe quebraria aquelas telas em runtime, não no build.
 
-## Formulários de ação sem proteção contra duplo envio (2026-09-11, varrido em 2026-09-14)
+## ✅ RESOLVIDO · Formulários sem proteção contra duplo envio (varrido em 2026-09-14)
 
 `CreateTaskForm` usava `<form action={createTask}>` com o botão bloqueado apenas por falta de
 projeto ou template — nada impedia o segundo clique. Com o banco a ~300ms de ida e volta, a criação
