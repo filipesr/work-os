@@ -358,9 +358,36 @@ apontadas, esta mesma correção precisaria decidir o que fazer com elas antes d
 
 **~~E `Audio Visual` tem 2 demandas com o atendimento como produtor~~ — eram 3, e foram limpas em
 2026-09-14** junto com os portões de qualidade, pelo mesmo motivo (autor do anexo é quem SUBIU o
-arquivo). **A REGRA CONTINUA FROUXA**, e é isto que importa para a próxima importação: nada no
-código impede o atendimento de nascer produtor de vídeo outra vez. O que existe hoje é a correção
-de um acervo, não uma trava.
+arquivo).
+
+**~~A regra continua frouxa~~ — a TRAVA foi construída no mesmo dia.** O dono do projeto deu time
+padrão a `Quality Control` e `Gráfica`, e isso sozinho já mudou muita coisa: `isEffectiveTeamMember`
+devolve `true` quando não há time, então com QC coringa **a regra literalmente não existia**. Os dois
+caminhos que faltavam foram fechados. Onde a regra vale hoje:
+
+| caminho                                  | valida time? | como                                      |
+| ---------------------------------------- | ------------ | ----------------------------------------- |
+| Criação de demanda (`createTaskStages`)  | sim          | dono fora do time vira `null`             |
+| Mesa do gestor (`scheduleStage`)         | sim          | `isEffectiveTeamMember`                   |
+| Minha semana — puxar (`pullStageToMe`)   | sim          | mais estrito: recusa até coringa sem rota |
+| Passar adiante ao concluir               | sim          | `isValidStageAssignee`                    |
+| Mudar alguém de equipe                   | sim          | **desatribui** as etapas ativas dele      |
+| Poço de trabalho — a tela                | sim          | `getTeamBacklog` filtra por time efetivo  |
+| **Poço — a AÇÃO** (`claimActiveStage`)   | **passou a** | `isEffectiveTeamMember`, 2026-09-14       |
+| **Importação do Trello** (`assigneeFor`) | **passou a** | recusa dono fora do time, 2026-09-14      |
+
+**As coringas ficam sem trava, por decisão e não por descuido (2026-09-14).** `Aprovação`,
+`Relatório`, `Briefing`, `Briefing & Copy` e `Registro` seguem sem time padrão porque **podem ser
+executadas por vários times** — coordenação/gerência, social media, direção —, e
+`TemplateStage.defaultTeamId` guarda UM só. Validar ali inventaria uma regra que o MODELO não tem
+como expressar: **a limitação é do schema, não da configuração.** Quem quiser fechar esse portão
+precisa primeiro dar à etapa a capacidade de pertencer a vários times, o que é mudança de schema —
+e aí a pergunta seguinte é se "vários times" não é, na verdade, papel (quem aprova) em vez de
+equipe.
+
+A consequência aceita enquanto isso: em etapa coringa, qualquer pessoa pode ser dona, e a
+importação não confere nada — é exatamente o que `assigneeFor` faz ao deixar passar a etapa ausente
+do mapa `stageTeams`.
 
 **O desempate do responsável pode inflar quem supervisiona.** Quando o card declara 2 a 4 membros e nada desempata, a etapa fica com o **primeiro da lista do card** — decisão explícita do dono do projeto, e é escolha, não medição: a ordem em que o Trello guarda os membros não significa nada. Vale para `Audio Visual`, `Quality Control`, `Aprovação` e `Relatório` — nunca para `Desenho`, que exige o nome da lista. Quem olhar métrica de execução por pessoa precisa saber disso antes de concluir qualquer coisa.
 
