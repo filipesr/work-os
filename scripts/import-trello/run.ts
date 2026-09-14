@@ -69,6 +69,21 @@ const DESIGNER_ALIASES: Record<string, string> = {
   SUPERVISIÓN: "dalbiranmktgoon@gmail.com",
 };
 
+/**
+ * Quem responde pelos artefatos que o Trello não sabe atribuir, `e-mail no WorkOS`.
+ *
+ * Cinco membros anexaram arquivos ao quadro e depois saíram. Os ids deles não têm nome em lugar
+ * nenhum do export — nem em `members`, nem em `memberships`, nem nas ações (o Trello corta em
+ * 1000) —, então não há por onde correlacioná-los com um usuário. Adivinhar seria inventar; deixar
+ * tudo no nome de quem rodou o script diria que ele produziu um acervo que não é dele.
+ *
+ * O dono do projeto declarou: no Atlântico, é o Pedro. É ESCOLHA, não medição — quem olhar autoria
+ * de artefato por pessoa precisa saber que esta fatia foi atribuída por declaração.
+ *
+ * Só entra depois de esgotadas as evidências (quem anexou, depois quem criou o card).
+ */
+const FALLBACK_AUTHOR_EMAIL = "pedrogoonmkt@gmail.com";
+
 export interface Args {
   file: string;
   clientId: string;
@@ -140,10 +155,16 @@ export async function applyIfRequested(
     prisma: PrismaClient,
     plan: ImportPlan,
     opts: ApplyImportPlanOptions
-  ) => Promise<ImportReport> = applyImportPlan
+  ) => Promise<ImportReport> = applyImportPlan,
+  /** Quem responde pelo artefato que o Trello não sabe atribuir — ver FALLBACK_AUTHOR_EMAIL. */
+  fallbackAuthorId?: string
 ): Promise<ImportReport | null> {
   if (!args.commit) return null;
-  return applyFn(prisma, plan, { commit: true, importedById: args.importedById! });
+  return applyFn(prisma, plan, {
+    commit: true,
+    importedById: args.importedById!,
+    fallbackAuthorId,
+  });
 }
 
 /**
@@ -192,6 +213,16 @@ async function main(): Promise<number> {
     const stageTeams: Record<string, string> = {};
     for (const st of dbStages) stageTeams[st.name] = st.defaultTeamId!;
 
+    const fallbackAuthor = dbUsers.find((u) => u.email === FALLBACK_AUTHOR_EMAIL);
+    if (!fallbackAuthor) {
+      // Falha ALTA, e não silenciosa: sem esta pessoa os artefatos órfãos cairiam no importador
+      // sem ninguém perceber — exatamente o que a declaração existe para impedir.
+      throw new Error(
+        `FALLBACK_AUTHOR_EMAIL (${FALLBACK_AUTHOR_EMAIL}) não existe no WorkOS. ` +
+          `Corrija a constante em scripts/import-trello/run.ts antes de importar.`
+      );
+    }
+
     const plan = buildImportPlan(board, workosUsers, {
       clientId: args.clientId,
       manualMatches: MANUAL_MATCHES,
@@ -206,7 +237,7 @@ async function main(): Promise<number> {
     console.log(args.commit ? "=== GRAVANDO ===" : "=== ENSAIO (nada será gravado) ===");
     console.log(formatReport(plan, totalCards));
 
-    const result = await applyIfRequested(args, plan, prisma);
+    const result = await applyIfRequested(args, plan, prisma, undefined, fallbackAuthor.id);
     if (!result) {
       console.log("");
       console.log("Ensaio concluído. Nada foi gravado. Rode de novo com --commit para gravar.");

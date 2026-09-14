@@ -49,6 +49,8 @@ export type ApplyImportPlanOptions =
        * um placeholder seria pior do que exigir que quem roda o script informe quem é.
        */
       importedById: string;
+      /** Quem responde pelo acervo quando o Trello não diz — ver `fallbackAuthorId` abaixo. */
+      fallbackAuthorId?: string;
     };
 
 export interface ImportReport {
@@ -113,6 +115,18 @@ interface WriteContext {
   importedById: string;
   /** `{ id no Trello: id no WorkOS }` — vem do plano, e é o que dá AUTORIA aos artefatos. */
   peopleByTrelloId: Record<string, string>;
+  /**
+   * Quem responde pelo acervo quando o Trello não diz quem foi.
+   *
+   * Cinco membros anexaram arquivos e depois saíram do quadro. Os ids deles não têm nome em lugar
+   * nenhum do export — nem em `members`, nem em `memberships`, nem nas ações (que o Trello corta
+   * em 1000). Não há por onde correlacioná-los, e adivinhar seria inventar.
+   *
+   * O que existe é DECLARAÇÃO: quem conhece a operação diz quem responde por aquele acervo. Mesma
+   * natureza de `MANUAL_MATCHES` e `DESIGNER_ALIASES` — dado que vem de fora, nunca de palpite do
+   * código. Ausente, a queda final continua sendo quem importou.
+   */
+  fallbackAuthorId?: string;
 }
 
 export async function applyImportPlan(
@@ -126,7 +140,7 @@ export async function applyImportPlan(
     return projectPlanCounts(plan);
   }
 
-  const ctx = await resolveWriteContext(prisma, plan, opts.importedById);
+  const ctx = await resolveWriteContext(prisma, plan, opts.importedById, opts.fallbackAuthorId);
 
   const report: ImportReport = {
     commit: true,
@@ -170,7 +184,8 @@ export async function applyImportPlan(
 async function resolveWriteContext(
   prisma: PrismaClient,
   plan: ImportPlan,
-  importedById: string
+  importedById: string,
+  fallbackAuthorId?: string
 ): Promise<WriteContext> {
   const template = await prisma.workflowTemplate.findFirst({
     where: { name: TEMPLATE_NAME },
@@ -215,6 +230,7 @@ async function resolveWriteContext(
     // Vazio quando o plano não o traz (plano montado à mão num teste): a cascata do autor cai
     // direto em `importedById`, que é o comportamento anterior inteiro.
     peopleByTrelloId: plan.peopleByTrelloId ?? {},
+    fallbackAuthorId,
   };
 }
 
@@ -608,7 +624,8 @@ async function writeReworkEvent(
  * A cascata do autor, do mais direto ao mais frouxo:
  *   1. quem ANEXOU o arquivo (`idMember`) — está em 100% dos anexos do quadro, e 94% casam;
  *   2. quem CRIOU o card, para o anexo de membro que já saiu do quadro;
- *   3. quem importou, última queda, para que nenhum artefato nasça órfão.
+ *   3. quem o dono do projeto DECLAROU responder pelo acervo (`fallbackAuthorId`);
+ *   4. quem importou, última queda, para que nenhum artefato nasça órfão.
  *
  * O responsável da ETAPA fica fora de propósito: `planStages` deriva a etapa de produção A PARTIR
  * do autor do anexo, então usá-lo aqui seria dar a volta para chegar na mesma pessoa, com uma
@@ -624,6 +641,7 @@ async function writeArtifacts(
   const quem = (trelloId?: string | null): string =>
     (trelloId ? ctx.peopleByTrelloId[trelloId] : undefined) ??
     (card.idMemberCreator ? ctx.peopleByTrelloId[card.idMemberCreator] : undefined) ??
+    ctx.fallbackAuthorId ??
     ctx.importedById;
 
   if (card.shortUrl) {

@@ -423,6 +423,75 @@ describe("applyImportPlan — artefatos", () => {
     expect(d.createdAt).toEqual(new Date(parseInt("5f2b1c3d", 16) * 1000));
   });
 
+  it("[CRÍTICO] autor declarado para o cliente entra ANTES de quem importou", async () => {
+    // Os 5 membros que anexaram e depois saíram do quadro não têm nome em lugar nenhum do export —
+    // nem em `members`, nem em `memberships`, nem nas ações (que o Trello corta em 1000). Não há
+    // por onde correlacioná-los, então adivinhar seria inventar.
+    //
+    // O que existe é DECLARAÇÃO: quem conhece a operação diz quem responde por esse acervo. Para o
+    // Atlântico é o Pedro. É a mesma natureza de `MANUAL_MATCHES` e `DESIGNER_ALIASES` — dado que
+    // vem de fora, nunca de palpite do código.
+    const prisma = fakePrisma();
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          card: card({
+            id: "cru",
+            shortUrl: "https://trello.com/c/c5",
+            // nem quem anexou nem o criador do card casam
+            idMemberCreator: "tSumiu",
+            attachments: [
+              { id: "a1", name: "D.png", url: "https://x/D.png", idMember: "tTambemSumiu" },
+            ],
+          }),
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+      peopleByTrelloId: {},
+    };
+
+    await applyImportPlan(prisma, plan, {
+      commit: true,
+      importedById: "uImportador",
+      fallbackAuthorId: "uPedro",
+    });
+    const calls = (prisma.taskArtifact.create as ReturnType<typeof vi.fn>).mock.calls;
+    for (const c of calls) expect(c[0].data.userId).toBe("uPedro");
+  });
+
+  it("o autor declarado NÃO atropela quem anexou", async () => {
+    // A declaração é QUEDA, não substituição: onde há evidência, ela manda.
+    const prisma = fakePrisma();
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          card: card({
+            id: "cru2",
+            shortUrl: "https://trello.com/c/c6",
+            idMemberCreator: "tPedro",
+            attachments: [{ id: "a1", name: "E.png", url: "https://x/E.png", idMember: "tMartin" }],
+          }),
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+      peopleByTrelloId: { tMartin: "uMartin", tPedro: "uPedroCard" },
+    };
+
+    await applyImportPlan(prisma, plan, {
+      commit: true,
+      importedById: "uImportador",
+      fallbackAuthorId: "uDeclarado",
+    });
+    const calls = (prisma.taskArtifact.create as ReturnType<typeof vi.fn>).mock.calls;
+    const porUrl = (u: string) => calls.find((c) => c[0].data.url === u)![0].data;
+    expect(porUrl("https://x/E.png").userId).toBe("uMartin");
+    expect(porUrl("https://trello.com/c/c6").userId).toBe("uPedroCard");
+  });
+
   it("sem nenhuma pista de autor, fica com quem importou — e sem data, com a de hoje", async () => {
     // A queda final existe para que um anexo sem metadado não derrube a importação nem nasça órfão.
     const prisma = fakePrisma();
