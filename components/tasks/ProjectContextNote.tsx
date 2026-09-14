@@ -1,3 +1,5 @@
+import { RichText } from "@/components/ui/RichText";
+
 /** Descrição do projeto em destaque dentro da demanda.
  *
  *  Quem executa uma etapa vê a tarefa, não o projeto: sem este bloco, o contexto
@@ -25,7 +27,7 @@ export function ProjectContextNote({
       <p className="mb-1 text-xs font-semibold text-primary">
         {label} · {projectName}
       </p>
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{description}</p>
+      <RichText>{description}</RichText>
     </div>
   );
 }

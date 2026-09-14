@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { FieldLabel } from "@/components/ui/FieldLabel";
+import { FormattingHint } from "@/components/ui/FormattingHint";
 import { EmptyState } from "@/components/ui/empty-state";
 import { priorityTone } from "@/lib/status-tone";
 import { useTranslations, useLocale } from "next-intl";
@@ -266,6 +267,7 @@ export function CreateTaskForm({
                 rows={4}
                 placeholder={t("create.descriptionPlaceholder")}
               />
+              <FormattingHint />
             </div>
 
             {/* Project Selection */}

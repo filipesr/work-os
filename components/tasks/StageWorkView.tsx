@@ -6,6 +6,7 @@ import { Calendar, User as UserIcon, MessageSquare, Paperclip } from "lucide-rea
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { RichText } from "@/components/ui/RichText";
 import { Separator } from "@/components/ui/separator";
 import { stageStatusTone } from "@/lib/status-tone";
 import { dateFnsLocale } from "@/lib/date-locale";
@@ -178,18 +179,14 @@ export function StageWorkView({ view, currentUserId }: StageWorkViewProps) {
                       {linha.author.name} ·{" "}
                       {format(linha.createdAt, "dd/MM/yyyy", { locale: dateFnsLocale(locale) })}
                     </p>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                      {linha.content}
-                    </p>
+                    <RichText>{linha.content}</RichText>
                   </div>
                 ))}
               </div>
             ) : (
               /* Demanda anterior a esta feature: tem o campo preenchido e nenhum comentário de
                  instrução (não houve backfill). Sem esta queda, ela perderia a instrução da tela. */
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                {stage.instruction}
-              </p>
+              <RichText>{stage.instruction}</RichText>
             )}
           </div>
         )}

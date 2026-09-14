@@ -17,6 +17,7 @@ import {
   UserRole,
 } from "@prisma/client";
 import { Separator } from "@/components/ui/separator";
+import { RichText } from "@/components/ui/RichText";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
@@ -226,9 +227,7 @@ export function TaskDetailView({
                       team: currentStageTeam?.name ?? tDetail("unassigned"),
                     })}
                   </p>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                    {currentStageInstructions}
-                  </p>
+                  <RichText>{currentStageInstructions}</RichText>
                 </div>
               </>
             )}
@@ -239,9 +238,7 @@ export function TaskDetailView({
                 <Separator />
                 <div>
                   <FieldMicroLabel>{tDetail("description")}</FieldMicroLabel>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                    {task.description}
-                  </p>
+                  <RichText>{task.description}</RichText>
                 </div>
               </>
             )}

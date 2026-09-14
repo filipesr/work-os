@@ -102,5 +102,6 @@
         "descriptionPlaceholder": "Digite a descrição"
       }
     }
-  }
+  },
+  "formattingHint": "Aceita formatação: **negrito**, _itálico_, - listas e links."
 }

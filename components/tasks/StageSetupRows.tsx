@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { StageAssigneeSelect } from "@/components/ui/StageAssigneeSelect";
 import { Textarea } from "@/components/ui/textarea";
+import { FormattingHint } from "@/components/ui/FormattingHint";
 
 /** Lista de etapas com a configuração por etapa: inclusão (opcionais),
  *  roteamento (coringa), responsável e instrução.
@@ -182,6 +183,9 @@ export function StageSetupRows({
                   placeholder={t("create.instructionsPlaceholder")}
                   aria-label={t("create.instructionsAriaLabel", { stage: stage.name })}
                 />
+                {/* A instrução é O TEXTO que mais vai usar formatação daqui para frente: hoje são
+                    0 no banco, e é aqui que o gestor escreve o "o que precisa ser feito". */}
+                {isChecked && <FormattingHint />}
               </div>
             )}
           </li>

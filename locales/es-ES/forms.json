@@ -102,5 +102,6 @@
         "descriptionPlaceholder": "Ingrese la descripción"
       }
     }
-  }
+  },
+  "formattingHint": "Acepta formato: **negrita**, _cursiva_, - listas y enlaces."
 }
