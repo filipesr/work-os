@@ -410,17 +410,18 @@ describe("scheduleStage", () => {
       scheduledStart: null,
       scheduledEnd: null,
     });
-    // E nenhuma consulta de agenda pode ter sido feita com o dia NULO: uma checagem de colisão
-    // ancorada em `null` não protege ninguém — ela só aprova tudo em silêncio.
-    for (const [args] of db.taskActiveStage.findMany.mock.calls) {
-      expect(args.where.plannedDate).not.toBeNull();
-    }
+    // E a agenda NÃO é consultada — esta é a asserção, não um laço sobre as consultas feitas.
+    // Sem janela não há colisão possível, então o caminho certo nem pergunta. Com o defeito
+    // (dia nulo tratado como "não mudou"), a janela velha sobrevivia, o ramo de colisão ABRIA, e
+    // a consulta saía ancorada em `plannedDate: null` — que não casa com a agenda de ninguém e
+    // aprovava tudo em silêncio. O laço que estava aqui iterava sobre zero chamadas: passava
+    // igual com o código certo e com o errado.
+    expect(db.taskActiveStage.findMany).not.toHaveBeenCalled();
   });
 
-  it("[CRÍTICO] a checagem de colisão do destino é ancorada no dia de DESTINO", async () => {
-    // O dia que importa é para onde a etapa VAI, não de onde ela veio. Consultar a agenda do dia
-    // de origem responderia a pergunta errada — e a pergunta certa é "o Bruno está livre nesta
-    // faixa NA QUINTA?".
+  it("[CRÍTICO] a checagem de colisão consulta a agenda de QUEM RECEBE, não a de quem entrega", async () => {
+    // A pergunta é "o Bruno está livre nesta faixa?". Consultar a agenda da Ana — de quem a etapa
+    // está saindo — responderia a pergunta errada e aprovaria uma sobreposição no Bruno.
     db.taskActiveStage.findUnique.mockResolvedValue({
       id: "as1",
       assigneeId: "u1",
@@ -438,8 +439,38 @@ describe("scheduleStage", () => {
 
     expect(db.taskActiveStage.findMany.mock.calls[0][0].where).toMatchObject({
       assigneeId: "u2",
-      plannedDate: new Date("2026-09-04T00:00:00Z"),
     });
+  });
+
+  it("[CRÍTICO] o dia da consulta vem do DESTINO pedido, não do carimbo que a linha trazia", async () => {
+    // **Por que origem e destino são o mesmo DIA aqui, e não podiam ser diferentes.** A janela só
+    // viaja quando o dia NÃO muda: mudar de dia derruba o compromisso, e aí o ramo de colisão nem
+    // abre — não há consulta nenhuma para ancorar. Então "dar dias diferentes para origem e
+    // destino" não testaria este `where`: testaria um caminho que não chega até ele.
+    //
+    // O que separa as duas coisas é o VALOR: o destino é a meia-noite derivada do `dateISO`, e a
+    // origem é o que estiver gravado na linha. Aqui a linha chega carimbada às 3h — dado com hora
+    // existe (importação, escrita antiga) e cai no mesmo dia. Se a consulta ecoasse
+    // `row.plannedDate`, ela procuraria por 03:00Z e não casaria com nenhuma agenda, que é
+    // exatamente a falha silenciosa que o dia nulo já causou uma vez.
+    db.taskActiveStage.findUnique.mockResolvedValue({
+      id: "as1",
+      assigneeId: "u1",
+      status: "ACTIVE",
+      stageId: "s1",
+      plannedDate: new Date("2026-09-04T03:00:00Z"),
+      scheduledStart: new Date("2026-09-04T17:00:00Z"),
+      scheduledEnd: new Date("2026-09-04T19:00:00Z"),
+      ...timeDe("u2"),
+    });
+    db.taskActiveStage.findMany.mockResolvedValue([]);
+    vi.mocked(getStageReferences).mockResolvedValue(new Map());
+
+    await scheduleStage({ activeStageId: "as1", userId: "u2", dateISO: "2026-09-04" });
+
+    expect(db.taskActiveStage.findMany.mock.calls[0][0].where.plannedDate).toEqual(
+      new Date("2026-09-04T00:00:00Z")
+    );
   });
 
   it("etapa SEM janela transfere normalmente, sem consultar agenda", async () => {
