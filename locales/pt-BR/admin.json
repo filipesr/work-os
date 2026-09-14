@@ -653,7 +653,8 @@
       },
       "noTeamRouted": "Sem time direcionado",
       "stageSetupTitle": "Configuração das etapas",
-      "aboutProject": "Sobre o projeto"
+      "aboutProject": "Sobre o projeto",
+      "description": "Descrição da demanda"
     }
   },
   "health": {

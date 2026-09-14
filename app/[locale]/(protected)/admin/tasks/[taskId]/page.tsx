@@ -27,6 +27,7 @@ import { taskVirginBlocker } from "@/lib/task-virgin";
 import { getTeamsWithMembers } from "@/lib/actions/team";
 import { TaskStageSetupEditor } from "@/components/tasks/TaskStageSetupEditor";
 import { ProjectContextNote } from "@/components/tasks/ProjectContextNote";
+import { RichText } from "@/components/ui/RichText";
 
 interface StageLogRow {
   id: string;
@@ -137,7 +138,6 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
       <PageHeader
         kicker={`${task.project.client.name} · ${task.project.name}`}
         title={task.title}
-        subtitle={task.description || t("noDescription")}
         backHref={`/admin/projects/${task.project.id}`}
         backLabel={t("backToProject")}
         actions={
@@ -188,6 +188,20 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                 </p>
               </div>
             </div>
+
+            {/* A descrição saiu do CABEÇALHO e virou bloco. Como `subtitle` do PageHeader ela
+                era um <p> simples: 99 das 101 descrições importadas têm quebra de linha e 68 têm
+                markdown, e todas apareciam num parágrafo corrido acima do título. Aqui ela recebe
+                o mesmo tratamento de /tasks/[taskId] — que é o ponto: as duas telas mostram a
+                MESMA demanda e não podem contá-la de formas diferentes. */}
+            {task.description && (
+              <div className="mt-4 border-t border-border pt-4">
+                <p className="mb-1 text-sm font-semibold text-muted-foreground">
+                  {t("description")}
+                </p>
+                <RichText>{task.description}</RichText>
+              </div>
+            )}
 
             {/* Contexto do projeto: mesma leitura que o executor tem em
                 /tasks/[taskId], para as duas telas não contarem histórias
@@ -258,9 +272,9 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
                         <p className="truncate text-xs text-warning">{t("noTeamRouted")}</p>
                       )}
                       {ps.instructions && (
-                        <p className="mt-1 whitespace-pre-wrap rounded border border-warning/30 bg-warning-subtle px-2 py-1 text-xs text-warning">
-                          {ps.instructions}
-                        </p>
+                        <div className="mt-1 rounded border border-warning/30 bg-warning-subtle px-2 py-1">
+                          <RichText className="text-xs text-warning">{ps.instructions}</RichText>
+                        </div>
                       )}
                     </div>
                     <div className="text-right">
