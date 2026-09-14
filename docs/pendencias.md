@@ -25,8 +25,10 @@ aqui estavam simplesmente erradas.
   branco. Ver a seção 🔴 ABERTO.
 - **Revisão dos 112 títulos traduzidos** do espanhol, e o `kind` genérico (tudo que não é feriado
   virou `COMMERCIAL`).
-- **40 etapas de `Desenho` sem dono** — o quadro não diz quem desenhou.
-- **10 cards de instrução** do Trello, um a um.
+- **41 etapas de `Desenho` sem dono** — o quadro não diz quem desenhou.
+- **6 cards de instrução** do Trello (os outros 4 estão arquivados no quadro). Há um script pronto
+  — `scripts/import-trello/reference-cards.ts` — que os traz como artefatos de escopo CLIENTE; ele
+  guarda o PONTEIRO para o Trello, não o conteúdo. Ver a ressalva no cabeçalho do arquivo.
 - **E-mail da Sara fora do padrão** (`saragoonmmkt`, dois `m`) — hoje contornado por declaração no
   script; arrumar no cadastro mexe na chave de login por Google.
 
@@ -39,6 +41,15 @@ aqui estavam simplesmente erradas.
 - **`COMPLETED_LIST_NAMES`** — cada mês renomeado no Trello precisa de uma linha antes de reimportar.
 - **Etapas de portão CORINGA sem trava de equipe** — limitação do SCHEMA (um time por etapa), não da
   configuração. Ver a seção da importação do Trello.
+- **Menção de pessoa ao escrever** (`@fulano` em descrição e instrução) — só a EXIBIÇÃO das menções
+  herdadas do Trello foi feita. Criar menções depende de haver NOTIFICAÇÃO, que o projeto não tem
+  (nenhum modelo, nenhuma ação): mencionar sem avisar é pior que não ter, porque quem escreve acha
+  que avisou. A ordem é notificação primeiro.
+- **Pré-visualização nos campos de texto** — a exibição renderiza markdown e os campos ganharam uma
+  linha de dica; abas escrever/visualizar ficaram de fora porque o uso real hoje é instrução curta,
+  não documento.
+- **Comentários não renderizam markdown**, por decisão: é texto informal e espontâneo, onde alguém
+  mais provavelmente escreve um `*` sem intenção de formatar.
 
 ---
 
@@ -353,6 +364,35 @@ e na descrição — merecem decisão humana, um a um. São: `MODELO - Checklist
 
 **Anexos são LINK para o Trello, não cópias.** 454 dos 455 arquivos são `isUpload: true` e hospedados atrás de autenticação (`curl 'URL' → 401`). A importação para o NAS não consegue baixá-los. Cada um entra como **artefato de link**, com nome, tipo de mídia e a URL original. **Se o quadro do Trello for apagado ou a conta encerrada, as referências morrem junto.** É consequência aceita da decisão de não guardar credencial do Trello para uma migração única — mas quem depender desses arquivos (3,47 GB, maior arquivo 201 MB) precisa saber.
 
+**A procedência do artefato: data e autor do TRELLO, não da importação (reimportado em
+2026-09-14).** Todo artefato nascia com `createdAt` do instante em que o script rodou e `userId` de
+quem o rodou — a aba mostrava 550 artefatos de anos de trabalho criados no mesmo minuto, por uma
+pessoa só. Dois fatos que nunca aconteceram: eram artefatos do PROCESSO gravados como se fossem do
+trabalho. A cascata do autor, do mais direto ao mais frouxo:
+
+1. **quem ANEXOU** o arquivo (`attachment.idMember`) — está em 100% dos 462 anexos, e **94% casam**
+   com usuário do WorkOS;
+2. **quem CRIOU o card**, para o anexo de membro que já saiu do quadro;
+3. **quem foi DECLARADO** responder pelo acervo (`FALLBACK_AUTHOR_EMAIL` em
+   `scripts/import-trello/run.ts` — no Atlântico, o Pedro);
+4. quem importou, só se a declaração faltar.
+
+O responsável da ETAPA ficou fora de propósito: `planStages` deriva a etapa de produção A PARTIR do
+autor do anexo, então usá-lo seria dar a volta para chegar na mesma pessoa, com uma chance a mais
+de errar. Sem data decodificável, o campo é OMITIDO em vez de receber palpite.
+
+**Os 5 membros que saíram do quadro NÃO são correlacionáveis, e isso foi verificado a fundo.** Eles
+aparecem só como id opaco: nada em `members` (os 17 que têm nome completo), nada em `memberships`,
+nada nas 1000 `actions` (agiram antes do corte do export), e no resto do JSON só em
+`attachments[].idMember` e `cards[].idMemberCreator`. Sem nome, username ou e-mail, correlacionar
+exigiria um dado que o export não tem — e qualquer tentativa seria adivinhação disfarçada de
+inferência. É por isso que a saída foi DECLARAÇÃO, não inferência.
+
+**E isso tem consequência para leitura de métrica:** as 7 atribuições que caem na declaração são
+ESCOLHA, não medição. Quem olhar autoria de artefato por pessoa precisa saber que essa fatia foi
+atribuída porque alguém decidiu, não porque o Pedro subiu aqueles arquivos. Mesma natureza do
+desempate de responsável descrito abaixo.
+
 **A repescagem manual de pessoas.** 5 dos 17 membros do Trello não casaram com usuário do WorkOS: `FSRezende`, `Franciele Souza`, `Paola Palma`, `Vladimir Goon`, `rocio bernal` — juntos, 2 demandas. `Sara Goon` era a sexta e foi resolvida por declaração no script (`MANUAL_MATCHES`, em `scripts/import-trello/run.ts`): o e-mail dela no WorkOS é `saragoonmmkt@gmail.com`, com dois `m`, fora do padrão que as três chaves reconhecem. **O cadastro continua com o e-mail fora do padrão** — se alguém quiser que o casamento automático passe a funcionar, é lá que precisa mexer, sabendo que o e-mail é a chave de login por Google.
 
 **O `Black Friday 2026` deixou de existir.** A pergunta era se aquele projeto de teste conviveria com os 17 mensais; o dono do projeto apagou os projetos de teste antes da gravação, então a importação entrou em terreno limpo. Não há decisão pendente aqui.
@@ -423,6 +463,12 @@ equipe.
 A consequência aceita enquanto isso: em etapa coringa, qualquer pessoa pode ser dona, e a
 importação não confere nada — é exatamente o que `assigneeFor` faz ao deixar passar a etapa ausente
 do mapa `stageTeams`.
+
+**A reimportação de 2026-09-14 rodou com a trava de equipe ativa, e o resultado bate com a
+correção manual.** As 15 atribuições que tinham sido corrigidas à mão pela manhã simplesmente não
+aconteceram: `Quality Control` ficou com 50 etapas sem dono (nenhum designer), e `Audio Visual`
+perdeu as 3 do atendimento, mantendo as 11 do Thiago (Video-makers). A trava na ORIGEM reproduz a
+correção no acervo — que é como se sabe que ela está certa.
 
 **O desempate do responsável pode inflar quem supervisiona.** Quando o card declara 2 a 4 membros e nada desempata, a etapa fica com o **primeiro da lista do card** — decisão explícita do dono do projeto, e é escolha, não medição: a ordem em que o Trello guarda os membros não significa nada. Vale para `Audio Visual`, `Quality Control`, `Aprovação` e `Relatório` — nunca para `Desenho`, que exige o nome da lista. Quem olhar métrica de execução por pessoa precisa saber disso antes de concluir qualquer coisa.
 
@@ -595,6 +641,50 @@ mesmo HTML sai em 7 ms localmente), então isto é economia de BYTES, que import
 no relógio. E o corte tem uma armadilha — `PlanningFilters` recebe o namespace por PROP
 (`reportsPerformance`, `reportsProductivity`), invisível para qualquer varredura estática: cortar
 sem um guard que acompanhe quebraria aquelas telas em runtime, não no build.
+
+## ✅ RESOLVIDO · A descrição aparecia como código-fonte (2026-09-14)
+
+A tela mostrava `**Texto en pantalla:**` com os asteriscos à vista. O texto veio do Trello, que
+escreve markdown, e a exibição o tratava como código-fonte.
+
+**O escopo saiu da medição.** Sobre as 101 descrições importadas: negrito 68 · link 28 · URL nua 28
+· itálico 18 · lista 13 · cabeçalho 5 · riscado 5 · imagem 2. É o que `lib/markdown/parse.ts` cobre,
+e só.
+
+**Por que não uma biblioteca.** Markdown completo traz tabelas, blocos de código e HTML embutido —
+nada disso existe no acervo, e o HTML embutido é a porta que obrigaria a sanitizar. O parser devolve
+uma ÁRVORE DE DADOS: `components/ui/RichText.tsx` monta elementos React a partir dela, então não há
+`dangerouslySetInnerHTML` no caminho e não há o que sanitizar. Há teste provando que uma tag no
+texto aparece como texto.
+
+**Conservador por medição**, porque nem todo o texto foi escrito como markdown:
+
+- `_` só abre itálico em BORDA de palavra — 17 descrições têm `utm_source` e `Imagen\_de\_WhatsApp`,
+  e tratá-los como itálico deixaria a URL irreconhecível;
+- marcador sem par fica literal, então "custo \*\* 2" não vira negrito até o fim do parágrafo;
+- só `http`/`https` viram link — `javascript:` nem chega a virar nó;
+- imagem vira LINK: a CSP do projeto (`img-src 'self' data: lh3…`) bloquearia a externa.
+
+**Dois defeitos só apareceram rodando contra o acervo real**, não nos testes escritos antes:
+
+1. O Trello escreve `[texto](url "smartCard-inline")` — link com TÍTULO entre aspas. O regex não
+   aceitava espaço nos parênteses, então **50 links de 26 descrições** não viravam link: sobrava o
+   colchete na tela e a URL crua ao lado. Era a MAIOR PARTE dos links do acervo.
+2. O rótulo do link não passava pelo parser, então `![Imagen\_de\_WhatsApp]` vazava a barra
+   invertida — o próprio defeito que isto conserta, reaparecendo por dentro.
+
+Validado contra as 101: **100 íntegras, zero marcadores sobrando, 103 links reconhecidos.**
+
+**Onde está aplicado:** descrição da demanda (`/tasks/[id]` e `/admin/tasks/[id]`), instruções de
+etapa e descrição de projeto. Em `/admin/tasks/[id]` a descrição SAIU do cabeçalho — ela era o
+`subtitle` do `PageHeader`, um `<p>` simples, e 99 das 101 têm quebra de linha — e virou bloco no
+corpo, na mesma posição de `/tasks/[id]`: as duas telas mostram a MESMA demanda e não podem
+contá-la de formas diferentes.
+
+**O que ficou de fora, e por quê,** está no índice do topo: comentários (texto espontâneo),
+pré-visualização (o uso real é instrução curta) e menção ao escrever (depende de notificação).
+
+---
 
 ## ✅ RESOLVIDO · Formulários sem proteção contra duplo envio (varrido em 2026-09-14)
 
