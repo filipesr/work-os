@@ -25,27 +25,7 @@ respeitar. Enquanto isso, o `select` já leva só o que o consumidor usa (`taskI
 
 ---
 
-## 2. Dois testes da janela fixa não discriminam
-
-**O que é:** a revisão final da janela fixa aprovou o código e apontou dois testes que passariam
-igual se ele estivesse errado — o que os torna decoração, não rede.
-
-- Em `week-planning-write.test.ts`, "checagem ancorada no dia de DESTINO" usa o MESMO dia como
-  origem e destino, então não distingue as duas coisas que o nome promete distinguir.
-- No teste do compromisso fantasma, o laço `expect(args.where.plannedDate).not.toBeNull()` é vazio:
-  naquele caminho nenhuma consulta chega a rodar. A outra asserção do mesmo teste (o `data` gravado
-  com a janela limpa) é forte e é ela que segura a regra.
-
-**Por que importa:** o código está correto hoje — os dois foram conferidos por rastreio, não por
-teste. Mas um teste que não falha quando deveria dá a impressão de cobertura onde não há, e é
-exatamente na borda do fantasma (dia nulo virando dia real) que uma regressão futura passaria batido.
-
-**Direção:** dar ao primeiro dias diferentes para origem e destino, e trocar o laço vazio por uma
-asserção sobre o que aquele caminho de fato faz.
-
----
-
-## 3. `prisma migrate dev` está quebrado para todo mundo
+## 2. `prisma migrate dev` está quebrado para todo mundo
 
 **O que é:** rodar `migrate dev` para replicar o histórico de migrações no shadow database falha
 com `P3006`: o tipo `ActiveStageStatus` não é criado por nenhum arquivo de migração — um buraco
@@ -62,7 +42,7 @@ tipo numa migração de reparo), depois confirmar que `migrate dev` volta a repl
 
 ---
 
-## 4. `PresenceCard` não consegue linkar para a etapa
+## 3. `PresenceCard` não consegue linkar para a etapa
 
 **O que é:** das seis listagens em formato de etapa que passaram a apontar para
 `/tasks/{id}/stages/{activeStageId}`, `PresenceCard` é a única que ficou apontando para a demanda.
@@ -78,23 +58,6 @@ consulta que só faltou um campo — três das outras cinco eram exatamente isso
 **Direção:** decidir se vale a busca extra por `(taskId, stageId)` para este card, ou se a relação
 correta é acrescentar em `ActivityLog` uma referência à instância — o que também serviria de base
 para outras leituras que hoje só têm o id do template.
-
----
-
-## 5. O `not-found.tsx` da demanda com português cravado
-
-**O que é:** `app/[locale]/(protected)/tasks/[taskId]/not-found.tsx` tem português cravado, sem
-`getTranslations`, ao contrário dos quatro irmãos conformes do mesmo padrão (o `not-found.tsx` da
-rota nova da etapa foi escrito certo desde o início).
-
-Era um item de três; os outros dois foram fechados na revisão final da tela da etapa —
-`components/tasks/TaskActionsMenu.tsx` (morto, e ainda chamando `LogTimeButton` sem etapa) foi
-removido, e o "Registrar Tempo" cravado em `LogTimeButton` virou `tasks.actions.logTime`.
-
-**Por que importa:** não quebra nada hoje, mas é uma tela inteira que a paridade de locales não
-pega — porque a string não está em locale nenhum para comparar contra.
-
-**Direção:** migrar o `not-found.tsx` da demanda para `getTranslations`, no padrão dos irmãos.
 
 ---
 
@@ -388,26 +351,36 @@ investigar, em ordem de retorno esperado:
 
 ---
 
-## Formulários de ação sem proteção contra duplo envio (2026-09-11)
+## Formulários de ação sem proteção contra duplo envio (2026-09-11, varrido em 2026-09-14)
 
 `CreateTaskForm` usava `<form action={createTask}>` com o botão bloqueado apenas por falta de
 projeto ou template — nada impedia o segundo clique. Com o banco a ~300ms de ida e volta, a criação
 leva mais de um segundo sem nenhuma mudança visível no botão, e o segundo clique **criava uma
 demanda duplicada**. Corrigido com `components/ui/SubmitButton.tsx`, que usa `useFormStatus`.
 
-**O que ainda não foi coberto.** Estes arquivos também têm `type="submit"` dentro de um
-`<form action={...}>` sem estado de envio. Nenhum deles duplica DADO como a criação de demanda —
-por isso não entraram na mesma rodada —, mas todos aceitam o clique repetido em silêncio:
+**A varredura de 14/set fechou o resto — e achou mais do que este registro previa.** A nota dizia
+que nenhum dos restantes duplicava DADO. Dois duplicavam:
 
-- `components/PrimaryNav.tsx` (troca de idioma) e `components/auth/SignOutButton.tsx` — repetir é
-  inofensivo, só redundante.
-- `app/[locale]/auth/signin/page.tsx` — repetir dispara dois fluxos de login.
-- `components/admin/SimpleEntityCrudList.tsx`, `components/admin/TemplateHeader.tsx` e os quatro
-  `edit-*-header.tsx` de cliente, projeto e equipe — são edições (escrevem por cima), então o
-  segundo envio grava o mesmo valor em vez de criar linha nova. Incômodo, não perda.
+- `components/admin/SimpleEntityCrudList.tsx` é o formulário de **criação** de `/admin/clients`,
+  `/admin/teams` e `/admin/templates` — segundo clique, segunda linha.
+- `createClientProject` em `app/[locale]/(protected)/admin/clients/[clientId]/page.tsx` cria
+  projeto — o mesmo defeito que a criação de demanda teve.
 
-A troca é mecânica: substituir o `<button type="submit">` pelo `SubmitButton`. Ficou de fora por
-escopo, não por decisão.
+Os outros oito (troca de idioma e sair no `PrimaryNav`, `SignOutButton`, login, `TemplateHeader`,
+os três `edit-*-header.tsx`, e o ativar/desativar projeto) são edição, entrada e saída: gravam por
+cima ou repetem um fluxo. Ficaram bloqueados na mesma rodada, porque o silêncio do botão é o que
+convida o segundo clique.
+
+**Ficaram de fora por medição, não por esquecimento.** `delete-client-button`, `delete-team-button`,
+`EditDisplayNameForm`, `QuickTaskForm`, `StageEditForm`, `CreateStageForm` e `TaskStageSetupEditor`
+**já** se bloqueavam (`useTransition` / `useServerAction`). `ReportFilterBar` é `method="GET"` —
+navegação, não escrita, e `useFormStatus` não a enxerga; quem cuida do retorno visual ali é a barra
+de progresso da navegação.
+
+**O `SubmitButton` mudou de natureza na varredura.** Ele cravava o estilo do botão de criar demanda,
+e por isso servia a um chamador só — usá-lo em outro lugar exigiria desfazer classe por classe.
+Agora é **comportamento**: o estilo vem inteiro de quem chama (`cn` resolve os conflitos), que é como
+o app já faz — cada tela crava a classe do seu botão.
 
 **E a proteção continua sendo só do lado do cliente.** Um duplo envio que escape do botão — rede
 lenta, clique antes da hidratação, requisição repetida — ainda cria duas linhas. Idempotência de
