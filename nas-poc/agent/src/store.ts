@@ -80,9 +80,29 @@ export class FinalizeQueue {
     }
   }
 
+  /**
+   * Põe (ou ATUALIZA) o relato pendente de um artefato. No máximo UM job por artefato.
+   *
+   * O mesmo artefato relatado duas vezes é situação normal — a importação falha, a nuvem está
+   * fora, a reserva vence, o item volta para PENDING e é tentado de novo. Empilhando, o recuo
+   * PARAVA DE FUNCIONAR: `reschedule` encontra o primeiro job (usa `find`) e só ele recua; o
+   * segundo mantém o `nextAttemptAt` já vencido e é retentado a cada tick, sem pausa, contra uma
+   * nuvem que já está fora do ar. O oposto do que o backoff existe para fazer.
+   *
+   * O PAYLOAD que fica é o novo — ele descreve o estado atual do artefato. O AGENDAMENTO é o
+   * antigo, porque recuo e idade pertencem ao artefato, não ao relato: zerar `attempts` a cada
+   * falha faria o backoff recomeçar do zero toda rodada, e reiniciar `createdAt` faria um job
+   * pendente há dias se dizer novo para sempre, escapando da desistência por idade.
+   */
   enqueue(job: FinalizePayload): Promise<void> {
     const now = Date.now();
-    this.jobs.push({ ...job, attempts: 0, nextAttemptAt: now, createdAt: now } as FinalizeJob);
+    const i = this.jobs.findIndex((x) => x.artifactId === job.artifactId);
+    if (i >= 0) {
+      const { attempts, nextAttemptAt, createdAt } = this.jobs[i];
+      this.jobs[i] = { ...job, attempts, nextAttemptAt, createdAt } as FinalizeJob;
+    } else {
+      this.jobs.push({ ...job, attempts: 0, nextAttemptAt: now, createdAt: now } as FinalizeJob);
+    }
     return this.persist();
   }
 

@@ -57,6 +57,51 @@ describe("FinalizeQueue", () => {
     expect(q2.due()[0].artifactId).toBe("a2");
   });
 
+  it("[CRÍTICO] o MESMO artefato nunca vira dois jobs — senão o backoff não segura", async () => {
+    // Dois relatos do mesmo artefato acontecem de verdade: a importação falha, a nuvem está fora,
+    // o item volta para PENDING quando a reserva vence, é tentado de novo e falha de novo.
+    //
+    // Com dois jobs na fila, o recuo PARA DE FUNCIONAR: `reschedule` acha o primeiro (usa `find`)
+    // e só ele recua; o segundo mantém o `nextAttemptAt` vencido e é retentado a cada tick, sem
+    // pausa, contra uma nuvem que já está fora do ar. É o oposto do que o backoff existe para
+    // fazer.
+    const file = path.join(dir, "q-dedupe.json");
+    const q = new FinalizeQueue(file);
+
+    await q.enqueue({ artifactId: "a1", checksum: "cs1", sizeBytes: 10 });
+    await q.enqueue({ artifactId: "a1", failed: true, reason: "SOURCE_REFUSED" });
+
+    expect(q.pending()).toBe(1);
+    // O relato que fica é o MAIS RECENTE: ele descreve o estado atual do artefato.
+    const [job] = q.due();
+    expect(job.failed).toBe(true);
+    expect(job.reason).toBe("SOURCE_REFUSED");
+    expect(job.checksum).toBeUndefined();
+  });
+
+  it("[CRÍTICO] o re-enfileiramento preserva o AGENDAMENTO, não o reinicia", async () => {
+    // O recuo e a idade pertencem ao ARTEFATO, não ao relato. Se cada nova falha zerasse
+    // `attempts`, o backoff recomeçaria do zero a cada rodada e o agente martelaria uma nuvem que
+    // está fora — exatamente quando ela menos aguenta. E `createdAt` é o que decide a desistência
+    // por idade: reiniciá-lo faria um job pendente há dias se dizer novo, para sempre.
+    const file = path.join(dir, "q-dedupe2.json");
+    const q = new FinalizeQueue(file);
+
+    await q.enqueue({ artifactId: "a1", checksum: "cs1", sizeBytes: 10 });
+    const criadoEm = q.due()[0].createdAt;
+    await q.reschedule("a1", 5, Date.now() + 60_000);
+
+    await q.enqueue({ artifactId: "a1", failed: true, reason: "TIMEOUT" });
+
+    expect(q.pending()).toBe(1);
+    const [job] = q.due(Date.now() + 120_000);
+    expect(job.attempts, "o recuo acumulado não pode ser perdido").toBe(5);
+    expect(job.createdAt, "a idade do problema é a mesma").toBe(criadoEm);
+    expect(job.reason, "mas o relato é o novo").toBe("TIMEOUT");
+    // E não voltou a vencer agora: o job segue esperando o recuo que já estava marcado.
+    expect(q.due(Date.now())).toHaveLength(0);
+  });
+
   it("reschedule adia o job (backoff)", async () => {
     const file = path.join(dir, "q2.json");
     const q = new FinalizeQueue(file);
