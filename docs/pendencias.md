@@ -82,9 +82,16 @@ duplicate_object $$`): em produção tudo isto já existe, e a migração precis
 | replay do zero × simulação de produção                                   | **No difference detected** — os dois caminhos chegam ao mesmo lugar |
 | reaplicar os dois reparos sobre banco completo                           | 0 erros, nenhuma mudança                                            |
 
-**Ainda PENDENTE em produção.** O build não roda `migrate deploy` (é `next build` + `prisma
-generate`), então commitar não aplica nada: produção segue com as 36 antigas e as duas de reparo
-esperando. Aplicar é um passo à parte e deliberado — e, pela idempotência, um nada-a-fazer lá.
+**Aplicado em produção em 2026-09-14.** O build NÃO roda `migrate deploy` (é `next build` +
+`prisma generate`), então commitar não aplicava nada — foi um passo à parte e deliberado. O pré-voo
+mediu antes de agir: `migrate diff` entre o banco de produção e o schema dizia **No difference
+detected**, e a única operação que não é puro no-op (derrubar e recriar as chaves de `TaskArtifact`,
+que revalida a tabela sob lock) encontrou **550 linhas** — instantâneo.
+
+Depois de aplicar: `migrate status` diz "Database schema is up to date!" com as 38; `migrate diff`
+contra o schema continua **No difference detected**; e as contagens não se moveram (TaskArtifact
+550, TaskActiveStage 232, User 34), com a relação pessoa↔equipe intacta. A latência seguiu na faixa
+medida de manhã — nenhuma regressão.
 
 **A lição, que é maior que o defeito.** `db push` é conveniente e não deixa rastro; o histórico de
 migrações é a única memória reproduzível do schema. Um banco novo — a máquina de quem clonar, um
