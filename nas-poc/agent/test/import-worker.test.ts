@@ -96,6 +96,38 @@ describe("pedirFila", () => {
     );
     await expect(pedirFila(cfgBase())).resolves.toEqual([]);
   });
+
+  it("[CRÍTICO] nuvem INALCANÇÁVEL devolve lista vazia e avisa — não derruba a rodada", async () => {
+    // Deploy em andamento, rede do escritório fora, DNS falhando: o `fetch` LANÇA, não devolve
+    // não-2xx. Sem tratamento, a exceção subia até o `catch` do intervalo e virava "rodada de
+    // importação falhou" — que não distingue "não consegui nem PERGUNTAR" de "falhei processando
+    // um item". São diagnósticos diferentes e levam a lugares diferentes.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("ECONNREFUSED");
+      })
+    );
+    const warn = vi.fn();
+
+    const itens = await pedirFila(cfgBase(), { warn });
+
+    expect(itens).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ err: "ECONNREFUSED" }),
+      expect.stringContaining("inalcançável")
+    );
+  });
+
+  it("nuvem inalcançável sem logger também não quebra", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("ETIMEDOUT");
+      })
+    );
+    await expect(pedirFila(cfgBase())).resolves.toEqual([]);
+  });
 });
 
 describe("runImportRound", () => {
@@ -289,6 +321,49 @@ describe("runImportRound", () => {
 
     expect(fetchCalls).toBe(1);
     expect(r1.processados + r2.processados).toBe(1);
+  });
+
+  it("[CRÍTICO] com DOIS itens, rodadas concorrentes não dividem nem repetem o trabalho", async () => {
+    // O teste de um item só passa por acidente de ordenação: quando a segunda rodada monta a
+    // lista, o único item já está marcado. Com dois, o buraco aparece — e é o caso real, porque a
+    // fila devolve um lote.
+    //
+    // Rodada 1 pega A e trava no download. Rodada 2 monta a lista: A está marcado (filtrado), B
+    // não — então ela começa B. Rodada 1 termina A e vai para B, que ela NÃO reconfere, porque a
+    // conferência aconteceu lá atrás, na montagem da lista. Os dois baixam B ao mesmo tempo, para
+    // o MESMO caminho no NAS.
+    const itemB: ImportItem = { ...item, artifactId: "art2" };
+    const baixados: string[] = [];
+    const portoes = new Map<string, Promise<void>>();
+    const liberadores = new Map<string, () => void>();
+    for (const id of ["art1", "art2"]) {
+      portoes.set(id, new Promise<void>((r) => liberadores.set(id, r)));
+    }
+    let n = 0;
+    const fetchSourceMock = vi.fn(async () => {
+      // A fila devolve os dois na mesma ordem; a chamada n-ésima corresponde ao item n-ésimo.
+      const id = n++ === 0 ? "art1" : "art2";
+      baixados.push(id);
+      await portoes.get(id)!;
+      return { body: corpo(), finalUrl: item.url };
+    });
+    const deps = depsBase({
+      pedirFila: async () => [item, itemB],
+      fetchSource: fetchSourceMock as any,
+      storeStreamToNas: async () => ({ bytes: 1, checksum: "z", msWrite: 0, msHash: 0 }) as any,
+      callFinalize: vi.fn().mockResolvedValue({ ok: true }),
+    });
+
+    const p1 = runImportRound(cfgBase(), deps);
+    const p2 = runImportRound(cfgBase(), deps);
+    liberadores.get("art1")!();
+    liberadores.get("art2")!();
+    const [r1, r2] = await Promise.all([p1, p2]);
+
+    // Cada artefato baixado UMA vez, não importa como o trabalho se dividiu entre as rodadas.
+    expect(baixados.filter((x) => x === "art1")).toHaveLength(1);
+    expect(baixados.filter((x) => x === "art2")).toHaveLength(1);
+    expect(r1.processados + r2.processados).toBe(2);
   });
 
   it("uma falha não impede o item seguinte", async () => {

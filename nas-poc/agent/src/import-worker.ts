@@ -41,16 +41,30 @@ export async function pedirFila(cfg: AgentConfig, log?: WarnLogger): Promise<Imp
   if (!cfg.cloudImportQueueUrl || !cfg.finalizeSecret) return [];
   const body = JSON.stringify({ agentId: cfg.agentId });
   const timestamp = String(Math.floor(Date.now() / 1000));
-  const res = await fetch(cfg.cloudImportQueueUrl, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-nas-timestamp": timestamp,
-      "x-nas-signature": finalizeSignature(cfg.finalizeSecret, timestamp, body),
-    },
-    body,
-    signal: AbortSignal.timeout(15_000),
-  });
+  // A sondagem é o passo mais exposto do laço: ela fala com a nuvem, e a nuvem cai (deploy, rede
+  // do escritório, DNS). Sem este `catch`, a exceção subia até o `catch` do `setInterval` e virava
+  // "rodada de importação falhou" — mensagem que não distingue "não consegui nem PERGUNTAR" de
+  // "falhei processando um item". O não-2xx já era registrado com detalhe; isto dá o mesmo
+  // tratamento ao caso em que nem há resposta.
+  let res: Response;
+  try {
+    res = await fetch(cfg.cloudImportQueueUrl, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-nas-timestamp": timestamp,
+        "x-nas-signature": finalizeSignature(cfg.finalizeSecret, timestamp, body),
+      },
+      body,
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch (err) {
+    log?.warn(
+      { err: (err as Error).message, url: cfg.cloudImportQueueUrl },
+      "fila de importação inalcançável"
+    );
+    return [];
+  }
   if (!res.ok) {
     log?.warn(
       { status: res.status, url: cfg.cloudImportQueueUrl },
@@ -109,11 +123,21 @@ export async function runImportRound(
     agentId: cfg.agentId,
   };
 
-  const itens = (await deps.pedirFila(cfg)).filter((i) => !emAndamento.has(i.artifactId));
+  const itens = await deps.pedirFila(cfg);
   let processados = 0;
   let falhas = 0;
 
   for (const item of itens) {
+    // A conferência é AQUI, colada no `add`, e não na montagem da lista.
+    //
+    // Filtrando lá atrás, duas rodadas concorrentes dividiam mal o lote: a rodada 1 trava
+    // baixando A; a rodada 2 monta a lista, vê A marcado e começa B; a rodada 1 termina A e segue
+    // para B — que ela não reconfere, porque já conferiu antes de B estar marcado. Os dois baixam
+    // B ao mesmo tempo, para o MESMO caminho no NAS.
+    //
+    // Aqui `has` e `add` ficam no mesmo turno do laço de eventos (não há `await` entre eles), e é
+    // isso que os torna indivisíveis: nenhuma outra rodada roda no meio.
+    if (emAndamento.has(item.artifactId)) continue;
     emAndamento.add(item.artifactId);
     try {
       const finalPath = safeResolve(cfg.nasRoot, item.nasPath);
@@ -178,5 +202,10 @@ export function startImportWorker(
     );
   }, cfg.importPollMs);
   timer.unref?.();
-  return timer;
+  // Devolve a PARADA, não o timer — a mesma forma do worker irmão (`startFinalizeWorker`), para
+  // que `server.ts` possa guardar as duas do mesmo jeito e desligá-las no encerramento. Antes
+  // daqui saía o objeto do timer e o chamador o descartava: o `unref` impedia o processo de travar,
+  // mas o laço seguia agendado enquanto o servidor fechava, e uma rodada podia COMEÇAR depois do
+  // sinal de parada.
+  return () => clearInterval(timer);
 }

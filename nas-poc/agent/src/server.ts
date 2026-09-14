@@ -430,7 +430,7 @@ async function main() {
   await tunnel.listen({ host: cfg.tunnelHost, port: cfg.tunnelPort });
 
   const stopWorker = startFinalizeWorker(cfg, queue, audit, lan.log);
-  startImportWorker(cfg, queue, lan.log);
+  const stopImportWorker = startImportWorker(cfg, queue, lan.log);
 
   lan.log.info(
     { nasRoot: cfg.nasRoot, stateDir: cfg.stateDir, hashMode: cfg.hashMode, kids: store.kids },
@@ -440,6 +440,9 @@ async function main() {
   for (const sig of ["SIGINT", "SIGTERM"] as const) {
     process.on(sig, async () => {
       stopWorker();
+      // Pode ser null: sem fila de importação configurada, o worker nem liga (é o que permite
+      // agente antigo com app novo).
+      stopImportWorker?.();
       await Promise.allSettled([lan.close(), tunnel.close()]);
       process.exit(0);
     });
