@@ -133,6 +133,12 @@ export interface ImportPlan {
   tasks: PlannedTask[];
   skipped: SkippedCard[];
   unmatchedPeople: TrelloMember[];
+  /** `{ id do membro no Trello: id do usuário no WorkOS }`, para quem grava resolver AUTORIA.
+   *
+   *  O casamento já acontecia aqui (`matchMembers`) e morria aqui — o escritor não o recebia, e por
+   *  isso todo artefato nascia com o autor de quem rodou a importação. Expor o mapa é o que permite
+   *  o anexo pertencer a quem o subiu. Opcional para não quebrar plano montado à mão em teste. */
+  peopleByTrelloId?: Record<string, string>;
 }
 
 /**
@@ -265,7 +271,13 @@ export function buildImportPlan(
     clientId,
   }));
 
-  return { projects, tasks, skipped, unmatchedPeople: unmatched };
+  return {
+    projects,
+    tasks,
+    skipped,
+    unmatchedPeople: unmatched,
+    peopleByTrelloId: Object.fromEntries(byTrelloId),
+  };
 }
 
 /**

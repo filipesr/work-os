@@ -311,6 +311,144 @@ describe("applyImportPlan — artefatos", () => {
     expect(calls[1][0].data.mediaType).toBe("FOTOS");
     expect(r.artifactsCreated).toBe(2);
   });
+
+  it("[CRÍTICO] o anexo nasce com a DATA em que foi anexado, não com a da importação", async () => {
+    // Sem isto, os 462 anexos do quadro nasciam todos carimbados com o instante em que o script
+    // rodou — e a aba de artefatos mostrava um acervo de anos inteiro criado no mesmo minuto. A
+    // data do anexo existe em 100% deles no export.
+    const prisma = fakePrisma();
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          card: card({
+            id: "5f2b1c3d4e5a6b7c8d9e0f01",
+            shortUrl: "https://trello.com/c/c1",
+            idMemberCreator: "tPedro",
+            attachments: [
+              {
+                id: "a1",
+                name: "Arte.png",
+                url: "https://trello.com/1/cards/c1/a1/Arte.png",
+                mimeType: "image/png",
+                date: "2026-01-10T13:45:00.000Z",
+                idMember: "tMartin",
+              },
+            ],
+          }),
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+      peopleByTrelloId: { tMartin: "uMartin", tPedro: "uPedro" },
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "uImportador" });
+    const calls = (prisma.taskArtifact.create as ReturnType<typeof vi.fn>).mock.calls;
+    const anexo = calls.find((c) => c[0].data.url.includes("Arte.png"))!;
+
+    expect(anexo[0].data.createdAt).toEqual(new Date("2026-01-10T13:45:00.000Z"));
+  });
+
+  it("[CRÍTICO] o autor do anexo é QUEM ANEXOU, não quem rodou a importação", async () => {
+    // Quem subiu o arquivo é a evidência direta, e está em 100% dos anexos (94% casam com usuário
+    // do WorkOS). Atribuir tudo a quem importou dizia que uma pessoa só produziu 550 artefatos num
+    // dia — um fato inventado pelo processo, não medido.
+    const prisma = fakePrisma();
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          card: card({
+            id: "5f2b1c3d4e5a6b7c8d9e0f02",
+            shortUrl: "https://trello.com/c/c2",
+            idMemberCreator: "tPedro",
+            attachments: [
+              {
+                id: "a1",
+                name: "A.png",
+                url: "https://x/A.png",
+                date: "2026-01-10T00:00:00.000Z",
+                idMember: "tMartin",
+              },
+              // quem anexou NÃO casa: cai no criador do card
+              {
+                id: "a2",
+                name: "B.png",
+                url: "https://x/B.png",
+                date: "2026-01-11T00:00:00.000Z",
+                idMember: "tSumiu",
+              },
+            ],
+          }),
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+      peopleByTrelloId: { tMartin: "uMartin", tPedro: "uPedro" },
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "uImportador" });
+    const calls = (prisma.taskArtifact.create as ReturnType<typeof vi.fn>).mock.calls;
+    const porUrl = (u: string) => calls.find((c) => c[0].data.url === u)![0].data;
+
+    expect(porUrl("https://x/A.png").userId).toBe("uMartin");
+    // queda 1: quem anexou sumiu do quadro → criador do card
+    expect(porUrl("https://x/B.png").userId).toBe("uPedro");
+  });
+
+  it("o artefato do CARD é do criador do card, e datado da criação dele", async () => {
+    // O id do card carrega o instante de criação (os 8 primeiros hex são epoch). É o mesmo dado
+    // que `createdAt` da demanda já usa.
+    const prisma = fakePrisma();
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          card: card({
+            id: "5f2b1c3d4e5a6b7c8d9e0f03",
+            shortUrl: "https://trello.com/c/c3",
+            idMemberCreator: "tPedro",
+          }),
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+      peopleByTrelloId: { tPedro: "uPedro" },
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "uImportador" });
+    const d = (prisma.taskArtifact.create as ReturnType<typeof vi.fn>).mock.calls[0][0].data;
+    expect(d.userId).toBe("uPedro");
+    expect(d.createdAt).toEqual(new Date(parseInt("5f2b1c3d", 16) * 1000));
+  });
+
+  it("sem nenhuma pista de autor, fica com quem importou — e sem data, com a de hoje", async () => {
+    // A queda final existe para que um anexo sem metadado não derrube a importação nem nasça órfão.
+    const prisma = fakePrisma();
+    const plan: ImportPlan = {
+      projects: [{ monthKey: "2026-01", name: "AtlanticoShop 2026-01", clientId: "client1" }],
+      tasks: [
+        plannedTask({
+          card: card({
+            id: "cru",
+            shortUrl: "https://trello.com/c/c4",
+            attachments: [{ id: "a1", name: "C.png", url: "https://x/C.png" }],
+          }),
+        }),
+      ],
+      skipped: [],
+      unmatchedPeople: [],
+      peopleByTrelloId: {},
+    };
+
+    await applyImportPlan(prisma, plan, { commit: true, importedById: "uImportador" });
+    const calls = (prisma.taskArtifact.create as ReturnType<typeof vi.fn>).mock.calls;
+    for (const c of calls) {
+      expect(c[0].data.userId).toBe("uImportador");
+      expect(c[0].data.createdAt).toBeUndefined();
+    }
+  });
 });
 
 describe("applyImportPlan — transação por projeto mensal", () => {

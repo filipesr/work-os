@@ -111,6 +111,8 @@ interface WriteContext {
   templateId: string;
   stageIdByName: Map<StageName, string>;
   importedById: string;
+  /** `{ id no Trello: id no WorkOS }` — vem do plano, e é o que dá AUTORIA aos artefatos. */
+  peopleByTrelloId: Record<string, string>;
 }
 
 export async function applyImportPlan(
@@ -206,7 +208,14 @@ async function resolveWriteContext(
     );
   }
 
-  return { templateId: template?.id ?? "", stageIdByName, importedById };
+  return {
+    templateId: template?.id ?? "",
+    stageIdByName,
+    importedById,
+    // Vazio quando o plano não o traz (plano montado à mão num teste): a cascata do autor cai
+    // direto em `importedById`, que é o comportamento anterior inteiro.
+    peopleByTrelloId: plan.peopleByTrelloId ?? {},
+  };
 }
 
 /** Acha o projeto mensal pelo par nome+cliente (idempotência do projeto) ou cria contra `proj.clientId` — o
@@ -331,7 +340,7 @@ async function writeTask(
     counts.reworkEventsCreated += 1;
   }
 
-  counts.artifactsCreated += await writeArtifacts(tx, taskId, task.card, ctx.importedById);
+  counts.artifactsCreated += await writeArtifacts(tx, taskId, task.card, ctx);
   counts.tasksCreated += 1;
 }
 
@@ -587,17 +596,38 @@ async function writeReworkEvent(
   });
 }
 
-/** O card original vira um artefato de link; cada anexo COM url vira outro (sem url, não há nada
- * a linkar — nível 2/3 pode ter anexo só como evidência de data/autor, sem essa garantia). */
+/**
+ * O card original vira um artefato de link; cada anexo COM url vira outro (sem url, não há nada
+ * a linkar — nível 2/3 pode ter anexo só como evidência de data/autor, sem essa garantia).
+ *
+ * **Data e autor vêm do Trello, não da importação.** Antes, todo artefato nascia com `createdAt`
+ * do instante em que o script rodou e `userId` de quem o rodou: a aba mostrava um acervo de anos
+ * criado no mesmo minuto, por uma pessoa só. Nenhum desses dois fatos aconteceu — eram artefatos do
+ * PROCESSO, gravados como se fossem do trabalho.
+ *
+ * A cascata do autor, do mais direto ao mais frouxo:
+ *   1. quem ANEXOU o arquivo (`idMember`) — está em 100% dos anexos do quadro, e 94% casam;
+ *   2. quem CRIOU o card, para o anexo de membro que já saiu do quadro;
+ *   3. quem importou, última queda, para que nenhum artefato nasça órfão.
+ *
+ * O responsável da ETAPA fica fora de propósito: `planStages` deriva a etapa de produção A PARTIR
+ * do autor do anexo, então usá-lo aqui seria dar a volta para chegar na mesma pessoa, com uma
+ * chance a mais de errar pelo caminho.
+ */
 async function writeArtifacts(
   tx: Prisma.TransactionClient,
   taskId: string,
   card: ExportCard,
-  importedById: string
+  ctx: WriteContext
 ): Promise<number> {
   let count = 0;
+  const quem = (trelloId?: string | null): string =>
+    (trelloId ? ctx.peopleByTrelloId[trelloId] : undefined) ??
+    (card.idMemberCreator ? ctx.peopleByTrelloId[card.idMemberCreator] : undefined) ??
+    ctx.importedById;
 
   if (card.shortUrl) {
+    const criadoEm = cardCreatedAt(card);
     await tx.taskArtifact.create({
       data: {
         title: "Card original no Trello",
@@ -607,7 +637,10 @@ async function writeArtifacts(
         uploadStatus: "READY",
         sensitivity: "INTERNO",
         taskId,
-        userId: importedById,
+        userId: quem(card.idMemberCreator),
+        // Sem data decodificável, o campo é OMITIDO em vez de receber um palpite: o padrão do
+        // schema (agora) é honesto sobre não se saber, um valor inventado não seria.
+        ...(criadoEm ? { createdAt: criadoEm } : {}),
       },
     });
     count += 1;
@@ -615,6 +648,7 @@ async function writeArtifacts(
 
   for (const att of card.attachments ?? []) {
     if (!att.url) continue;
+    const anexadoEm = att.date ? new Date(att.date) : null;
     await tx.taskArtifact.create({
       data: {
         title: att.name ?? "Anexo do Trello",
@@ -625,7 +659,8 @@ async function writeArtifacts(
         mediaType: deriveAttachmentMediaType(att.mimeType),
         sensitivity: "INTERNO",
         taskId,
-        userId: importedById,
+        userId: quem(att.idMember),
+        ...(anexadoEm && !Number.isNaN(anexadoEm.getTime()) ? { createdAt: anexadoEm } : {}),
       },
     });
     count += 1;
