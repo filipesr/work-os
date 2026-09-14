@@ -155,48 +155,68 @@ lá. A segunda é a que torna a tradução de link do Drive um investimento com 
 
 ---
 
-## Higiene deixada pela importação de link (2026-09-09)
+## Higiene da importação de link — varrida em 2026-09-14
 
-Dezesseis achados menores que a revisão final triou como "podem esperar" — nenhum tem consequência
-em produção, e a recomendação dela foi agrupá-los numa fatia só, em vez de espalhá-los.
+Eram dezesseis achados que a revisão final triou como "podem esperar", com a recomendação de
+agrupá-los numa fatia só. **Quinze foram fechados. Três não eram higiene: eram defeitos**, e cada
+um foi reproduzido por teste ANTES do conserto.
 
-**Testes que não seguram o que dizem segurar**
+**Os três defeitos de verdade**
 
-- `useNasReupload` e `guessMediaType` não têm teste dedicado; a cobertura é indireta.
-- Dos quatro testes do rótulo de tipo (`artifacts-unify`), só um discrimina a mudança; os outros três
-  produzem o mesmo resultado com a regra antiga e com a nova (e se nomeiam honestamente como
-  não-regressão).
-- `importPathTaken` (colisão de caminho, P2002) está implementado e sem teste.
+- **Rodadas concorrentes baixavam o MESMO artefato duas vezes.** O filtro de "já estou
+  processando" rodava na montagem da lista. Com um item passava por acidente de ordenação; com
+  DOIS — o caso real, porque a fila devolve lote — a rodada 1 trava em A, a rodada 2 começa B, e a
+  rodada 1 segue para B sem reconferir. Dois downloads simultâneos para o mesmo caminho no NAS.
+- **O backoff não segurava quando havia duplicata na fila de relatos.** `reschedule` acha o
+  primeiro job (usa `find`), então o segundo mantinha o prazo vencido e era retentado a cada tick,
+  contra uma nuvem já fora do ar. `enqueue` passou a deduplicar por artefato, guardando o payload
+  novo e o AGENDAMENTO antigo — recuo e idade pertencem ao artefato, não ao relato.
+- **A régua de endereços deixava passar 6to4 e NAT64.** `2002:7f00:1::1` é 127.0.0.1;
+  `2002:a9fe:a9fe::1` é o endereço de metadados da nuvem. As duas embutem um IPv4 num IPv6 — a
+  forma mais direta de pedir um endereço interno sem escrever um endereço interno.
 
-**Arestas de código**
+**O que mais saiu**
 
-- `deriveFileNameFromUrl(...) as string` recomputa e faz asserção de tipo em vez de aproveitar o
-  resultado que `checkImportUrl` já validou.
-- `user.id as string` — a origem é o tipo de retorno de `requireMemberOrHigher`/`requireManagerOrAdmin`.
-- `addLinkArtifactVersion` ainda herda o `type` legado (sai junto com a coluna, por desenho).
-- O botão de editar importação usa só o `isPending` global, sem estado de "salvando" próprio.
-- `NOT_A_FILE` está no `FetchFailureCode` do agente e nunca é lançado por lá (quem o produz é a
-  tradução no worker).
-- `nas-poc/agent/src/nas-path.ts` não é importado por nenhum arquivo de `src/` — a política de tipos
-  do agente é cópia documental, não imposição em runtime. Quem for mantê-la precisa saber disso para
-  não pagar o custo achando que compra segurança.
+- Testes que não existiam: `guessMediaType` (6) e `useNasReupload` (7). O guard mais valioso é o
+  que confere a tabela de extensões contra o enum do banco: um erro de digitação ali ("FOTO" por
+  "FOTOS") não falha no tsc nem em teste — falha no INSERT, em produção, com o arquivo já no NAS.
+- `importPathTaken` ganhou dois testes que se cobrem mutuamente: catch largo demais derruba um,
+  estreito demais derruba o outro.
+- Os três testes de `artifacts-unify` que a revisão chamou de não-discriminantes são
+  não-regressão DE PROPÓSITO, e isso é legítimo. Faltavam os casos em que as regras velha e nova
+  discordam — com `type` E `mediaType`, mediaType vence; e `storageKind` não participa da decisão.
+- **33 asserções `as string` removidas, todas redundantes:** `types/next-auth.d.ts` já declara
+  `Session.user.id` como `string` obrigatório. Quem provou que eram dispensáveis foi o tsc.
+- `checkImportUrl` devolve o `fileName` que já calculou, apagando a recomputação e a asserção do
+  chamador.
+- `NOT_A_FILE` saiu do `FetchFailureCode`: quem o produz é a tradução no worker, não o buscador.
+- `pedirFila` trata a exceção de rede — "não consegui nem PERGUNTAR" deixou de se confundir com
+  "falhei processando um item".
+- `startImportWorker` devolve a PARADA, e `server.ts` a chama no encerramento.
+- `destroyAndUnlink` ganhou prazo: o caminho de desistência não pode ser o que trava.
+- `nas-poc/agent/src/nas-path.ts` ganhou um aviso no topo dizendo que nada em `src/` o importa —
+  manter a política em dia ali CUSTA e não COMPRA segurança. Não foi apagado: a decisão é de quem
+  mantém, e agora pode ser tomada com a informação na mão.
+- O diálogo de editar importação ganhou o giro no botão. **A pendência estava desatualizada aqui:**
+  ela dizia que faltava estado próprio, e o `isSubmitting` já existia — o que faltava era o retorno
+  visual.
 
-**Robustez do agente, sem consequência hoje**
+**O que ficou aberto, e por quê**
 
-- `destroyAndUnlink` espera `finished(ws)` sem prazo; num mount de NAS travado, o caminho de
-  desistência fica refém de um `open()` que não volta. Não é risco novo (o `unlink` anterior já era
-  uma chamada de sistema sem prazo no mesmo caminho).
-- `startImportWorker` descarta o timer que devolve, diferente do worker irmão que o guarda para o
-  encerramento. Ambos têm `unref`, então nada trava.
-- `pedirFila` não tem tratamento próprio para exceção de rede (o não-2xx já passou a ser registrado).
-- `FinalizeQueue.enqueue` não deduplica por artefato: duas falhas do mesmo artefato viram dois jobs,
-  e o reagendamento só encontra o primeiro.
-- O relato de falha não carrega marca da tentativa: sob queda longa da nuvem, um relato antigo
-  drenado da fila pode marcar como falha uma tentativa nova já em curso.
-- O filtro de "já estou processando" roda na montagem da lista, não dentro do laço.
-- A régua de endereços não cobre 6to4 nem NAT64 (ver as limitações da importação, acima).
-
----
+- **`addLinkArtifactVersion` ainda herda o `type` legado.** Por desenho: sai junto com a coluna.
+- **O relato de falha não carrega marca da tentativa.** Sob queda longa da nuvem, um relato antigo
+  drenado da fila pode marcar como falha uma tentativa nova já em curso. **A deduplicação de
+  14/set reduziu a janela** — agora há no máximo um relato por artefato, e ele é sempre o mais
+  recente —, mas não a fechou: o job pode esperar o backoff enquanto uma nova tentativa roda.
+  Fechar de vez exige carimbar a tentativa (o `importClaimedAt` da reserva serviria) e a nuvem
+  passar a ignorar relato de tentativa vencida. **É mudança de PROTOCOLO entre agente e nuvem, não
+  ajuste local** — precisa de deploy coordenado dos dois lados, e é por isso que fica para uma
+  fatia própria, com decisão explícita.
+- **A régua do app continua mais fraca que a do agente** (regex, sem 6to4/NAT64). É aceitável e a
+  assimetria é declarada: o app recusa CEDO com mensagem boa, mas quem trava de verdade é o
+  agente, que reconfere o DNS a cada redirecionamento. O efeito prático de um 6to4 hoje é entrar
+  na fila e falhar com `PRIVATE_HOST` em vez de ser recusado no formulário — pior experiência,
+  mesma segurança.
 
 ## Limitações conhecidas, registradas em outro lugar
 
@@ -227,9 +247,13 @@ Não são pendências desta lista, mas quem lê aqui costuma precisar delas:
   (`127.0.0.1`, `::1`), nome que resolve para privado, e a reconferência de DNS a **cada**
   redirecionamento HTTP — é a maior parte do risco real; isto é o que fica descoberto.
 
-- **Também não cobre 6to4 (`2002:7f00:1::1`) nem NAT64 (`64:ff9b::7f00:1`)**, que embutem
-  endereços IPv4 internos em faixas de IPv6 que `isPrivateAddress` não reconhece. Coerente com o
-  que o próprio arquivo declara: é uma lista de faixas conhecidas, não uma prova completa.
+- ~~**Também não cobre 6to4 nem NAT64**~~ — **fechado em 2026-09-14** no agente, que é quem trava
+  de verdade: `isPrivateAddress` passou a extrair o IPv4 embutido de `2002::/16` e do NAT64
+  bem-conhecido `64:ff9b::/96`, sem recusar o prefixo inteiro (`2002:0808:0808::1` é 8.8.8.8 por
+  6to4, e barrá-lo seria recusar um host legítimo pelo transporte). **Continua fora:** os prefixos
+  NAT64 de uso local (`64:ff9b:1::/48`, RFC 8215), em que a posição do IPv4 varia com o tamanho do
+  prefixo. E a régua do APP (`lib/nas/import-source.ts`) segue por regex, sem os dois — assimetria
+  aceita e explicada na seção da higiene.
 
 - **Só link direto.** Um link de visualização do Drive ou do Trello devolve uma página HTML
   (não um arquivo) e morre com o código de falha `NOT_A_FILE`, visível ao usuário na tela.
