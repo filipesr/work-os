@@ -212,7 +212,29 @@ export async function getActiveWorkLogs() {
       orderBy: { startedAt: "desc" },
     });
 
-    return activeLogs;
+    // `ActivityLog.stageId` aponta para o TEMPLATE da etapa; o card de presença precisa da
+    // INSTÂNCIA para poder levar a /tasks/{id}/stages/{activeStageId}. O par (taskId, stageId) é
+    // `@@unique` em TaskActiveStage, então resolve para exatamente uma — não há ambiguidade a
+    // desempatar, e por isso não foi preciso acrescentar relação nenhuma ao schema.
+    //
+    // Em LOTE, e não uma busca por card: são dezenas de pessoas trabalhando ao mesmo tempo, e o
+    // board recarrega a cada 10s — uma busca por card seria o N+1 entrando pela porta dos fundos.
+    const instancias = activeLogs.length
+      ? await prisma.taskActiveStage.findMany({
+          where: {
+            OR: activeLogs.map((log) => ({ taskId: log.taskId, stageId: log.stageId })),
+          },
+          select: { id: true, taskId: true, stageId: true },
+        })
+      : [];
+    const porPar = new Map(instancias.map((i) => [`${i.taskId}\u0000${i.stageId}`, i.id]));
+
+    return activeLogs.map((log) => ({
+      ...log,
+      // Null quando a demanda não tem mais aquela etapa (log antigo, roteamento refeito). O card
+      // cai no link da demanda — inventar um id levaria a pessoa a um 404.
+      activeStageId: porPar.get(`${log.taskId}\u0000${log.stageId}`) ?? null,
+    }));
   } catch (error) {
     console.error("Error fetching active work logs:", error);
     throw error;

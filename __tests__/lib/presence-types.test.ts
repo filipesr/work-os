@@ -96,3 +96,13 @@ describe("formatWorkDuration", () => {
     expect(formatWorkDuration("2026-08-12T10:00:00Z", start + 90 * 60000)).toBe("1h 30min");
   });
 });
+
+describe("PresenceActiveLog.activeStageId — o destino do clique no card", () => {
+  it("o campo viaja junto do log, pela composição", () => {
+    // O card é quem monta a URL, mas quem CARREGA a instância até ele é a composição — e ela não
+    // pode perder o campo no caminho, senão o link silenciosamente volta a apontar para a demanda.
+    const comEtapa: PresenceActiveLog = { ...log("u1"), activeStageId: "as-1" };
+    const [entry] = composePresence([user("u1", "Ana")], [], [comEtapa], { onlineFirst: true });
+    expect(entry.activeLog?.activeStageId).toBe("as-1");
+  });
+});

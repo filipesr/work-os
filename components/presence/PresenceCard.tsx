@@ -120,11 +120,19 @@ export function PresenceCard({
   // sugere uma interação que não existe ali.
   if (isTv || !entry.activeLog) return card;
 
-  // Bloqueio real (não falta de select): `ActivityLog.stageId` aponta para TemplateStage, e o
-  // modelo não tem relação nenhuma com TaskActiveStage. Chegar à instância exigiria uma busca
-  // nova por (taskId, stageId) em lib/actions/activity.ts. Fica na demanda.
+  // A etapa, não a demanda: o card diz em que a pessoa está trabalhando AGORA, e o destino
+  // honesto do clique é esse mesmo passo. Era a única das seis listagens em formato de etapa que
+  // ainda caía na demanda — `ActivityLog.stageId` guarda o TEMPLATE, e a instância vem resolvida
+  // em lote por `getActiveWorkLogs`.
+  //
+  // Sem instância (etapa que sumiu da demanda), volta para a demanda em vez de montar uma URL que
+  // daria 404.
+  const destino = entry.activeLog.activeStageId
+    ? `/tasks/${entry.activeLog.task.id}/stages/${entry.activeLog.activeStageId}`
+    : `/tasks/${entry.activeLog.task.id}`;
+
   return (
-    <Link href={`/tasks/${entry.activeLog.task.id}`} target="_blank">
+    <Link href={destino} target="_blank">
       {card}
     </Link>
   );

@@ -10,6 +10,12 @@ export interface PresenceActiveLog {
     project: { id: string; name: string; client: { name: string } };
   };
   user: { id: string };
+  /** A INSTÂNCIA da etapa em que a pessoa está, para o card levar até ela.
+   *
+   *  Null quando a demanda não tem mais aquela etapa — `ActivityLog.stageId` guarda o TEMPLATE, e
+   *  um roteamento refeito pode deixar o log apontando para um passo que sumiu. Nesse caso o card
+   *  cai no link da demanda, que é o destino correto; inventar um id daria 404. */
+  activeStageId?: string | null;
 }
 
 export interface PresenceUser {

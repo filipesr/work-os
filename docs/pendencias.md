@@ -42,25 +42,6 @@ tipo numa migração de reparo), depois confirmar que `migrate dev` volta a repl
 
 ---
 
-## 3. `PresenceCard` não consegue linkar para a etapa
-
-**O que é:** das seis listagens em formato de etapa que passaram a apontar para
-`/tasks/{id}/stages/{activeStageId}`, `PresenceCard` é a única que ficou apontando para a demanda.
-`ActivityLog.stageId` é chave estrangeira para `TemplateStage`, e o modelo não tem relação nenhuma
-com `TaskActiveStage` — chegar à instância exigiria uma busca nova por `(taskId, stageId)`, fora do
-que a consulta atual já traz.
-
-**Por que importa:** é a única das seis sem o link, e o motivo é estrutural (schema), não uma
-consulta que só faltou um campo — três das outras cinco eram exatamente isso (`AgingQueue`,
-`BlockedQueue` e `TeamLoadBalanceClient`: bastou `id: true` a mais no `select`); as duas restantes
-— minhas etapas e dashboard — já tinham o id em mãos.
-
-**Direção:** decidir se vale a busca extra por `(taskId, stageId)` para este card, ou se a relação
-correta é acrescentar em `ActivityLog` uma referência à instância — o que também serviria de base
-para outras leituras que hoje só têm o id do template.
-
----
-
 ## Todo link existente está INTERNO por omissão
 
 **Onde:** `TaskArtifact.sensitivity` dos artefatos de link, criados antes de a aba pedir o campo.
