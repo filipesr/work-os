@@ -8,8 +8,12 @@
 // versão NÃO fecha, em vez de fingir que fecha.
 //
 // `isPrivateAddress` também não é uma prova: é uma lista de faixas reservadas conhecidas. Ela cobre
-// as formas de endereço documentadas abaixo (decimal, IPv6 nas variações que canonicalizamos), mas
-// não é — e não pretende ser — uma demonstração formal de que todo endereço interno cai nela.
+// as formas de endereço documentadas abaixo (decimal, IPv6 nas variações que canonicalizamos,
+// incluindo as que EMBUTEM um IPv4 — mapped, translated, compatible, 6to4 e o NAT64 bem-conhecido),
+// mas não é — e não pretende ser — uma demonstração formal de que todo endereço interno cai nela.
+//
+// O que segue declaradamente FORA: os prefixos NAT64 de uso local (`64:ff9b:1::/48`, RFC 8215), em
+// que a posição do IPv4 varia com o tamanho do prefixo — adivinhá-la recusaria endereços legítimos.
 
 import { lookup as dnsLookup } from "node:dns/promises";
 
@@ -113,6 +117,23 @@ function isPrivateIpv6Groups(g: number[]): boolean {
   if (g[0] === 0 && g[1] === 0 && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0) {
     return isPrivateIpv4Octets(ipv4FromGroups(g[6], g[7]));
   }
+  // 6to4 — 2002::/16 carrega o IPv4 nos 32 bits seguintes ao prefixo. `2002:7f00:1::1` É
+  // 127.0.0.1, e `2002:a9fe:a9fe::1` é o endereço de metadados da nuvem: a forma mais direta de
+  // pedir um endereço interno sem escrever um endereço interno.
+  if (g[0] === 0x2002) {
+    return isPrivateIpv4Octets(ipv4FromGroups(g[1], g[2]));
+  }
+  // NAT64 — o prefixo bem-conhecido 64:ff9b::/96 (RFC 6052) carrega o IPv4 nos 32 bits FINAIS.
+  //
+  // Só o /96 bem-conhecido: os prefixos de uso local (`64:ff9b:1::/48`, RFC 8215) admitem o IPv4
+  // em posições diferentes conforme o tamanho do prefixo, e adivinhar a posição recusaria
+  // endereços legítimos. Fica declarado como o que não é coberto, em vez de meio-coberto.
+  if (g[0] === 0x0064 && g[1] === 0xff9b && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0) {
+    return isPrivateIpv4Octets(ipv4FromGroups(g[6], g[7]));
+  }
+  // Repare no que estas duas NÃO fazem: recusar o prefixo inteiro. A régua olha o IPv4 embutido,
+  // porque `2002:0808:0808::1` é 8.8.8.8 chegando por 6to4 — barrá-lo seria recusar um host
+  // legítimo por causa do transporte que ele escolheu.
   return false;
 }
 

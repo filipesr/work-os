@@ -31,6 +31,13 @@ describe("isPrivateAddress", () => {
       "ff00::1", // multicast, ff00::/8
       "fec0::1", // site-local (deprecated), fec0::/10
       "0:0:0:0:0:0:0:1", // loopback na forma expandida
+      // Conserto 2 — as duas faixas que EMBUTEM um IPv4 e a régua ainda deixava passar.
+      "2002:7f00:1::1", // 6to4 de 127.0.0.1
+      "2002:c0a8:1::1", // 6to4 de 192.168.0.1
+      "2002:a9fe:a9fe::1", // 6to4 de 169.254.169.254 — o endereço de metadados da nuvem
+      "64:ff9b::7f00:1", // NAT64 de 127.0.0.1
+      "64:ff9b::c0a8:1", // NAT64 de 192.168.0.1
+      "64:ff9b::169.254.169.254", // NAT64 na notação mista
     ];
     for (const ip of privados) expect(isPrivateAddress(ip), ip).toBe(true);
   });
@@ -47,6 +54,10 @@ describe("isPrivateAddress", () => {
       "fe7f::1",
       "fbff::1",
       "fe00::1",
+      // 6to4 e NAT64 de endereços PÚBLICOS seguem públicos: a régua olha o IPv4 embutido, não o
+      // prefixo. Recusar 2002::/16 inteiro barraria um host legítimo por causa do transporte.
+      "2002:0808:0808::1", // 6to4 de 8.8.8.8
+      "64:ff9b::808:808", // NAT64 de 8.8.8.8
     ]) {
       expect(isPrivateAddress(ip), ip).toBe(false);
     }
