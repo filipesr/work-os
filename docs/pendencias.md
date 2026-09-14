@@ -315,41 +315,78 @@ feriado nacional, então `Dia do Programador` e `Dia da Cachaça` estão no mesm
 
 ---
 
-## A latência do banco, medida (2026-09-11)
+## A latência, remedida — a função roda em Washington (2026-09-14)
 
-A lentidão percebida nos cliques **não é do código** — é distância até o banco. Medido contra o
-Neon em `sa-east-1`, de uma máquina em desenvolvimento:
+**O registro de 11/set estava errado, e vale saber por quê.** Ele mediu `select 1` em **304 ms** e
+concluiu "a lentidão é distância até o banco". O que aquele número mediu foi a **primeira consulta
+do processo** — o handshake TLS + autenticação —, não a consulta. Remedido em 14/set, contra o
+mesmo Neon `sa-east-1`, três processos novos em sequência:
 
-| consulta                          | tempo      |
-| --------------------------------- | ---------- |
-| `select 1` (só a ida e volta)     | **304 ms** |
-| etapas da semana (mesa do gestor) | 333 ms     |
-| demandas do mês (calendário)      | 253 ms     |
-| ocorrências do mês                | 57 ms      |
-| pessoas da mesa                   | 59 ms      |
+| medida                                    | tempo      |
+| ----------------------------------------- | ---------- |
+| abrir a conexão (1ª consulta do processo) | **265 ms** |
+| `select 1` depois disso                   | **26 ms**  |
+| 6 consultas simultâneas (pool quente)     | 30 ms      |
+| mesa do gestor, 3 fases em série          | 186 ms     |
+| as mesmas 3, colapsadas em 1 fase         | 113 ms     |
 
-Uma tela dessas faz de quatro a seis consultas. Mesmo em paralelo, o piso é o tempo de ida e volta;
-somados o render do servidor e a viagem do HTML, cada navegação custa de 0,8 a 2 segundos.
+Em regime a distância custa 26 ms, não 304. E o paralelismo é de graça: seis consultas ao mesmo
+tempo custam o que uma custa.
 
-**O que já foi feito:** feedback. Transição nos filtros e na navegação de semana (o controle
-clicado responde), barra de progresso no topo, e `loading.tsx` nas quatro rotas que não tinham
-(`planning/week`, `planning/client-load`, `planning/my-week`, `projects` — antes elas mostravam a
-tela anterior intacta até o servidor terminar).
+**Onde o tempo está de verdade.** A app em produção responde de `x-vercel-id: gru1::iad1::…` — o
+edge que recebe é São Paulo (`gru1`), mas **a função executa em Washington (`iad1`)**, e o banco
+está em São Paulo. Medianas de 12 medidas, até o primeiro byte:
 
-**O que NÃO foi feito, e é a raiz:** reduzir quantas idas e voltas cada tela paga. Caminhos a
-investigar, em ordem de retorno esperado:
+| rota                                         | 1º byte    | o que isola                           |
+| -------------------------------------------- | ---------- | ------------------------------------- |
+| estático servido pelo edge `gru1`            | **76 ms**  | a rede do cliente até São Paulo       |
+| função em `iad1`, 1 consulta ao banco        | **210 ms** | ida e volta a Washington: **~134 ms** |
+| função em `iad1`, página inteira renderizada | **262 ms** | o render em si: ~52 ms                |
 
-1. **Consultas em série que poderiam ser paralelas.** Algumas telas buscam uma lista para validar
-   um filtro e só então a consulta principal — é correto (ver `coverage` e `client-load`), mas paga
-   duas viagens em vez de uma. Dá para resolver validando o recorte contra o resultado, não antes.
-2. **Campos trazidos sem uso.** Vários `select` carregam relações inteiras (`task.stageLogs`,
-   `project.client`) onde a tela usa um campo.
-3. **Cache entre navegações.** Lista de equipes, clientes e projetos muda raramente e é buscada em
-   toda navegação de toda tela de planejamento.
-4. **Região do banco.** Se a operação é toda no Paraguai/Brasil, `sa-east-1` já é a melhor opção da
-   região; o ganho aqui seria trocar dev remoto por um banco local em desenvolvimento.
+O mesmo build, servido localmente, entrega a mesma página de 172 KB em **7 ms**. O render não é o
+problema; a geografia é. Cada requisição paga ~134 ms só para chegar à função, e **cada fase de
+consulta em série atravessa o Atlântico de novo** (`iad1`↔`sa-east-1`, ~120 ms típicos). Uma tela
+de planejamento com três fases encadeadas: 76 + 134 + 3×120 + render + volta ≈ **0,9–1,2 s** — que
+é exatamente a faixa relatada.
 
----
+**Corrigido em 2026-09-14:** `vercel.json` fixa `"regions": ["gru1"]`. A função passa a executar ao
+lado do banco, o que remove os ~134 ms de deslocamento E derruba cada consulta de ~120 ms para a
+casa de 10 ms. **Confirmar no primeiro deploy:** se `x-vercel-id` continuar mostrando `iad1`, a
+mudança não pegou.
+
+```
+curl -sI https://workos.goonmarketing.com/auth/signin | grep -i x-vercel-id
+```
+
+**O que a correção de região torna DESNECESSÁRIO.** O registro anterior propunha três frentes de
+código; com a função em `gru1`, o retorno de cada uma muda:
+
+1. **Consultas em série que poderiam ser paralelas** — era a de maior retorno esperado. Medida,
+   rende **73 ms** localmente; com função e banco na mesma região, cai para a casa de 20 ms. Deixa
+   de pagar o risco de mexer na semântica dos filtros (`coverage`, `client-load` e a mesa do gestor
+   validam o recorte da URL ANTES da consulta principal, de propósito — ver os comentários no
+   código).
+2. **Campos trazidos sem uso** (`task.stageLogs`, `project.client`) — continua valendo como higiene,
+   mas não é latência: com 26 ms de RTT, o que pesa é o trabalho no banco, não o tamanho da linha.
+3. **Cache entre navegações** (equipes, clientes, projetos) — o acervo é minúsculo (1 cliente, 6
+   projetos ativos, 17 equipes, 6 templates, 33 executores). Cachear isso economiza uma consulta de
+   ~10 ms e compra um problema de invalidação. Não vale.
+
+**O que continua valendo, e não foi feito.** `next.config.ts` desliga o Router Cache do cliente
+(`staleTimes: { dynamic: 0, static: 0 }`) — decisão explícita e documentada: frescor acima de
+velocidade, porque o menu é sensível a papel e a grade a dado apagado. Ela MULTIPLICA o custo de
+cada navegação, e era cara enquanto cada navegação custava um segundo. Com a função em `gru1` ela
+fica barata — mas quem reabrir isto precisa saber que a escolha foi feita quando o custo era outro.
+
+**E o payload de i18n.** `app/[locale]/layout.tsx` serializa os 23 namespaces inteiros —
+**176.592 bytes** — no HTML de TODA página, via `NextIntlClientProvider messages={messages}`. A tela
+de login carrega as strings de relatórios, admin e ajuda para mostrar um botão. O levantamento
+estático diz que o CLIENTE usa 13 desses namespaces (114.121 B), então o corte economizaria ~62 KB
+por navegação. **Não foi feito, e não por esquecimento:** medido, o custo em TEMPO é desprezível (o
+mesmo HTML sai em 7 ms localmente), então isto é economia de BYTES, que importa em rede ruim e não
+no relógio. E o corte tem uma armadilha — `PlanningFilters` recebe o namespace por PROP
+(`reportsPerformance`, `reportsProductivity`), invisível para qualquer varredura estática: cortar
+sem um guard que acompanhe quebraria aquelas telas em runtime, não no build.
 
 ## Formulários de ação sem proteção contra duplo envio (2026-09-11, varrido em 2026-09-14)
 
