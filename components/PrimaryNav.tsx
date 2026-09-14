@@ -19,6 +19,7 @@ import { getNavItems, isNavGroup, roleLabelKey, homeHref, type AppRole } from "@
 import { locales, localeLabels, type LocaleType } from "@/lib/i18n";
 import { setStoredLocale } from "@/lib/locale-storage";
 import { signOutAction } from "@/lib/actions/auth";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 function initials(name: string | null): string {
   if (!name) return "?";
@@ -263,14 +264,13 @@ export function PrimaryNav({ role, userName }: { role: AppRole; userName: string
                 </button>
                 <div className="my-1 border-t border-border" />
                 <form action={signOutAction}>
-                  <button
-                    type="submit"
+                  <SubmitButton
                     role="menuitem"
-                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-destructive"
+                    icon={<LogOut className="h-4 w-4" aria-hidden="true" />}
+                    className="flex w-full gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-destructive"
                   >
-                    <LogOut className="h-4 w-4" aria-hidden="true" />
                     {t("signOut")}
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             )}

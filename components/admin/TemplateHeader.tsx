@@ -4,6 +4,7 @@ import { useState } from "react";
 import { updateWorkflowTemplate, deleteWorkflowTemplate } from "@/lib/actions/template";
 import { useTranslations } from "next-intl";
 import { ConfirmActionButton } from "@/components/ui/ConfirmActionButton";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { canEnableQuickEntry } from "@/lib/template-invariants";
@@ -78,12 +79,12 @@ export function TemplateHeader({ template, stageCount }: TemplateHeaderProps) {
             </label>
           </div>
           <div className="flex gap-3">
-            <button
-              type="submit"
+            <SubmitButton
+              pendingLabel={t("saving")}
               className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
             >
               {t("saveChanges")}
-            </button>
+            </SubmitButton>
             <button
               type="button"
               onClick={() => setIsEditing(false)}

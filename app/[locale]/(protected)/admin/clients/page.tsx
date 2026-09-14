@@ -90,6 +90,7 @@ export default async function ClientsPage({
       createAction={createClient}
       createFields={[{ name: "name", placeholder: t("namePlaceholder"), required: true }]}
       createButtonLabel={t("createButton")}
+      createPendingLabel={t("creatingButton")}
       items={items}
       emptyLabel={t("noClients")}
       emptyIcon={Building2}

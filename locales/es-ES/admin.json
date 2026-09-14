@@ -220,8 +220,10 @@
       "stageTemplate": "Plantilla",
       "stageOrder": "Orden",
       "noStages": "Ninguna etapa predeterminada configurada.",
-      "noUsersFound": "Nadie coincide con la búsqueda."
-    }
+      "noUsersFound": "Nadie coincide con la búsqueda.",
+      "saving": "Guardando..."
+    },
+    "creatingButton": "Creando..."
   },
   "clients": {
     "kicker": "Administración",
@@ -276,11 +278,14 @@
       "deactivate": "Desactivar",
       "activate": "Activar",
       "artifacts": "Artefactos",
-      "storageByProject": "Almacenamiento en el NAS — por proyecto"
+      "storageByProject": "Almacenamiento en el NAS — por proyecto",
+      "saving": "Guardando...",
+      "creatingProject": "Creando..."
     },
     "searchPlaceholder": "Buscar cliente…",
     "searchClear": "Limpiar búsqueda",
-    "searchNoResults": "Ningún cliente coincide con la búsqueda."
+    "searchNoResults": "Ningún cliente coincide con la búsqueda.",
+    "creatingButton": "Creando..."
   },
   "projects": {
     "title": "Proyectos",
@@ -364,7 +369,8 @@
         "MEDIUM": "Media",
         "LOW": "Baja"
       },
-      "openTimeline": "Abrir línea de tiempo"
+      "openTimeline": "Abrir línea de tiempo",
+      "saving": "Guardando..."
     }
   },
   "workflows": {
@@ -397,7 +403,8 @@
         "label": "Flujo rápido (registro de trabajo ya hecho)",
         "help": "Aparece en el formulario de registro rápido, para trabajo de una sola etapa que ya ocurrió.",
         "blockedByStages": "Solo un flujo de una sola etapa puede ser rápido. Este tiene {count} etapas."
-      }
+      },
+      "saving": "Guardando..."
     },
     "detail": {
       "backToTemplates": "Volver a Plantillas",
@@ -496,7 +503,8 @@
       "legendStage": "Cada caja representa una etapa del flujo",
       "legendParallel": "Las etapas en la misma línea pueden trabajarse simultáneamente",
       "legendFlow": "Dirección del flujo - las tareas se mueven de arriba hacia abajo"
-    }
+    },
+    "creatingButton": "Creando..."
   },
   "tasks": {
     "title": "Todas las Tareas",

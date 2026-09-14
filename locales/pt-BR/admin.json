@@ -220,8 +220,10 @@
       "stageTemplate": "Template",
       "stageOrder": "Ordem",
       "noStages": "Nenhuma etapa padrão configurada.",
-      "noUsersFound": "Ninguém corresponde à busca."
-    }
+      "noUsersFound": "Ninguém corresponde à busca.",
+      "saving": "Salvando..."
+    },
+    "creatingButton": "Criando..."
   },
   "clients": {
     "kicker": "Administração",
@@ -276,11 +278,14 @@
       "deactivate": "Desativar",
       "activate": "Ativar",
       "artifacts": "Artefatos",
-      "storageByProject": "Armazenamento no NAS — por projeto"
+      "storageByProject": "Armazenamento no NAS — por projeto",
+      "saving": "Salvando...",
+      "creatingProject": "Criando..."
     },
     "searchPlaceholder": "Buscar cliente…",
     "searchClear": "Limpar busca",
-    "searchNoResults": "Nenhum cliente corresponde à busca."
+    "searchNoResults": "Nenhum cliente corresponde à busca.",
+    "creatingButton": "Criando..."
   },
   "projects": {
     "title": "Projetos",
@@ -364,7 +369,8 @@
         "MEDIUM": "Média",
         "LOW": "Baixa"
       },
-      "openTimeline": "Abrir linha do tempo"
+      "openTimeline": "Abrir linha do tempo",
+      "saving": "Salvando..."
     }
   },
   "workflows": {
@@ -397,7 +403,8 @@
         "label": "Fluxo rápido (registro de trabalho já feito)",
         "help": "Aparece no formulário de registro rápido, para trabalho de etapa única que já aconteceu.",
         "blockedByStages": "Só um fluxo de etapa única pode ser rápido. Este tem {count} etapas."
-      }
+      },
+      "saving": "Salvando..."
     },
     "detail": {
       "backToTemplates": "Voltar para Templates",
@@ -496,7 +503,8 @@
       "legendStage": "Cada caixa representa uma etapa do fluxo",
       "legendParallel": "Etapas na mesma linha podem ser trabalhadas simultaneamente",
       "legendFlow": "Direção do fluxo - tarefas movem de cima para baixo"
-    }
+    },
+    "creatingButton": "Criando..."
   },
   "tasks": {
     "title": "Todas as Tarefas",

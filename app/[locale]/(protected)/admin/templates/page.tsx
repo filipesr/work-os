@@ -51,6 +51,7 @@ export default async function TemplatesPage() {
         },
       ]}
       createButtonLabel={t("createButton")}
+      createPendingLabel={t("creatingButton")}
       items={items}
       emptyLabel={t("noTemplates")}
       emptyIcon={Workflow}

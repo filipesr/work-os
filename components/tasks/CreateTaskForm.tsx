@@ -590,7 +590,8 @@ export function CreateTaskForm({
             disabled={!canSubmit}
             pendingLabel={t("create.creatingButton")}
             icon={<Plus className="h-5 w-5" />}
-            className="mt-4 w-full"
+            spinnerClassName="h-5 w-5"
+            className="mt-4 w-full justify-center rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary/90 hover:shadow-md"
           >
             {t("create.createButton")}
           </SubmitButton>

@@ -6,6 +6,7 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FieldLabel } from "@/components/ui/FieldLabel";
 import { CrudSearchBox } from "@/components/admin/CrudSearchBox";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 /**
  * Lista CRUD simples e canônica (§3.2 UNIFICAR): PageHeader + formulário de
@@ -43,6 +44,9 @@ interface SimpleEntityCrudListProps {
   createAction: (formData: FormData) => void | Promise<void>;
   createFields: CrudField[];
   createButtonLabel: string;
+  /** O que o botão diz enquanto cria. Este formulário CRIA (cliente, equipe, template): sem
+   *  bloqueio durante o envio, o segundo clique abre uma segunda linha. */
+  createPendingLabel?: string;
   items: CrudItem[];
   emptyLabel: string;
   emptyIcon: LucideIcon;
@@ -68,6 +72,7 @@ export function SimpleEntityCrudList({
   createAction,
   createFields,
   createButtonLabel,
+  createPendingLabel,
   items,
   emptyLabel,
   emptyIcon,
@@ -119,9 +124,9 @@ export function SimpleEntityCrudList({
               )}
             </div>
           ))}
-          <button type="submit" className={buttonClass}>
+          <SubmitButton className={buttonClass} pendingLabel={createPendingLabel}>
             {createButtonLabel}
-          </button>
+          </SubmitButton>
         </form>
       </SectionCard>
 

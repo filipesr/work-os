@@ -70,6 +70,7 @@ export default async function TeamsPage() {
       createAction={createTeam}
       createFields={[{ name: "name", placeholder: t("namePlaceholder"), required: true }]}
       createButtonLabel={t("createButton")}
+      createPendingLabel={t("creatingButton")}
       items={items}
       emptyLabel={t("noTeams")}
       emptyIcon={Users}

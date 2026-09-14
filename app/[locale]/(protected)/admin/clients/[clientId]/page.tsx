@@ -10,6 +10,7 @@ import { StorageBreakdown } from "@/components/nas/StorageBreakdown";
 import { storageByProject } from "@/lib/nas/storage-stats";
 import { BackLink } from "@/components/ui/BackLink";
 import { StatCard } from "@/components/admin/StatCard";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import {
   isClientFolderLocked,
   updateClient,
@@ -141,12 +142,14 @@ export default async function ClientDetailPage({
             placeholder={t("projectNamePlaceholder")}
             className="h-11 flex-1 rounded-lg border-2 border-input-border bg-input px-4 py-2.5 text-base font-medium text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 transition-all"
           />
-          <button
-            type="submit"
-            className="h-11 rounded-lg bg-primary px-6 font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
+          {/* CRIA projeto: sem bloqueio durante o envio, o segundo clique cria o segundo projeto
+              com o mesmo nome — o mesmo defeito que o formulário de demanda já teve. */}
+          <SubmitButton
+            pendingLabel={t("creatingProject")}
+            className="h-11 justify-center rounded-lg bg-primary px-6 font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
           >
             {t("createProjectButton")}
-          </button>
+          </SubmitButton>
         </form>
 
         {/* Completion filter chips (Pendentes / Concluídos / Todos) */}
@@ -216,12 +219,9 @@ export default async function ClientDetailPage({
                             name="status"
                             value={isActive ? "INACTIVE" : "ACTIVE"}
                           />
-                          <button
-                            type="submit"
-                            className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
-                          >
+                          <SubmitButton className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">
                             {isActive ? t("deactivate") : t("activate")}
-                          </button>
+                          </SubmitButton>
                         </form>
                       </div>
                     </td>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ConfirmActionButton } from "@/components/ui/ConfirmActionButton";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 interface EditTeamHeaderProps {
   team: {
@@ -45,12 +46,12 @@ export function EditTeamHeader({ team, updateTeam, deleteTeam }: EditTeamHeaderP
             />
           </div>
           <div className="flex gap-3">
-            <button
-              type="submit"
+            <SubmitButton
+              pendingLabel={t("saving")}
               className="px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
             >
               {t("saveChanges")}
-            </button>
+            </SubmitButton>
             <button
               type="button"
               onClick={() => setIsEditing(false)}

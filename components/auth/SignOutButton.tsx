@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { LogOut } from "lucide-react";
 import { signOutAction } from "@/lib/actions/auth";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 /**
  * Botão de sair. Existem duas PORTAS (o menu de avatar e esta tela), mas um
@@ -19,13 +20,12 @@ export async function SignOutButton() {
 
   return (
     <form action={signOutAction}>
-      <button
-        type="submit"
-        className="inline-flex items-center gap-2 rounded-lg bg-destructive px-6 py-2 font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
+      <SubmitButton
+        icon={<LogOut className="h-4 w-4" aria-hidden="true" />}
+        className="rounded-lg bg-destructive px-6 py-2 font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
       >
-        <LogOut className="h-4 w-4" aria-hidden="true" />
         {t("signOut")}
-      </button>
+      </SubmitButton>
     </form>
   );
 }
