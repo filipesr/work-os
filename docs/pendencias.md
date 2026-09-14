@@ -7,23 +7,40 @@ Item resolvido sai daqui e vira commit; item que virar feature grande vira spec 
 
 ---
 
-## 1. Linha do tempo do projeto — o teto de tamanho da grade
+## 1. Linha do tempo do projeto — o teto de tamanho da grade (medido em 2026-09-14)
 
-**O que é:** a revisão final da linha do tempo (`/projects/{id}`) levantou quinze pontos. Nove foram
-corrigidos na entrega, três na varredura de 02/set/2026 (tooltip, `diasAtras`, chaves mortas) e este
-segue aberto, de propósito.
+**O que é:** `stageTransition.findMany` (em `lib/actions/project-timeline.ts`) cresce com a história
+do projeto, não com a janela desenhada. É consulta em lote — não é N+1 —, mas traz uma linha por
+transição só para extrair os dias em que houve liberação de etapa. Não dá para estreitar sozinho:
+`distinct` por (demanda, etapa) apagaria a reativação de uma etapa que voltou atrás — retrabalho é
+movimento real, e a grade ficaria mentindo por omissão. E a janela só se conhece DEPOIS de ler o
+que teve movimento.
 
-**`stageTransition.findMany` cresce com a história do projeto**, não com a janela desenhada: é
-consulta em lote (não é N+1), mas num projeto muito antigo traz uma linha por transição só para
-extrair os dias em que houve liberação de etapa. Não dá para estreitar sozinho: `distinct` por
-(demanda, etapa) apagaria a reativação de uma etapa que voltou atrás — retrabalho é movimento real,
-e a grade ficaria mentindo por omissão. E a janela só se conhece DEPOIS de ler o que teve movimento.
+**Medido, o problema ainda não existe.** O acervo real, em 14/set:
 
-**Direção:** vira problema junto com o **teto de tamanho da grade**, que a spec adiou de propósito —
-e é lá que os dois se resolvem de uma vez: com um teto, a consulta ganha um limite de data para
-respeitar. Enquanto isso, o `select` já leva só o que o consumidor usa (`taskId`, `at`).
+| projeto               | demandas | dias com movimento (= colunas) | amplitude               |
+| --------------------- | -------- | ------------------------------ | ----------------------- |
+| AtlanticoShop 2026-08 | 43       | **36**                         | 2025-04-25 → 2026-09-10 |
+| AtlanticoShop 2026-07 | 38       | 29                             | 2026-03-12 → 2026-08-28 |
+| AtlanticoShop 2026-09 | 23       | 15                             | 2026-08-14 → 2026-09-10 |
 
----
+O pior caso é 43 linhas × 36 colunas, e a consulta traz **71 transições**. Com a função em `gru1`
+(ver a seção da latência) isso custa a casa de 10 ms. **Construir o teto agora seria resolver um
+problema que o dado não tem** — e o teto é decisão de produto, não de código: quanto passado
+esconder, e como dizer a quem olha que há história fora da tela. A spec o adiou de propósito.
+
+**O gatilho para reabrir**, para não depender de alguém "achar que ficou lento": rodar a contagem
+de novo e olhar as COLUNAS, não as demandas. É o eixo horizontal que fica ilegível primeiro — a
+grade rola na vertical sem esforço, e na horizontal não. Acima de ~60 colunas vale desenhar o teto;
+aí a consulta ganha o limite de data que ela hoje não tem por onde respeitar.
+
+**O que a medição achou de passagem, e é outro problema.** A amplitude de `AtlanticoShop 2026-08` é
+de quase 17 meses — mas não por volume: são **três dias isolados em 2025** (25/abr, 31/mai, 11/jun)
+e depois um salto para fev/2026. Vieram da importação do Trello, que datou etapas pela data do
+anexo. Um projeto mensal chamado "2026-08" com movimento em abril de 2025 estica o eixo inteiro
+para desenhar três colunas quase vazias. Isso NÃO se resolve com teto de tamanho — se resolve na
+origem do dado, e é da mesma família das correções manuais listadas em "Limitações da importação
+do Trello".
 
 ## 2. `prisma migrate dev` está quebrado para todo mundo
 
