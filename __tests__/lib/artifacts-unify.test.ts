@@ -109,6 +109,29 @@ describe("rótulo de tipo — mediaType manda, type é o resto", () => {
     expect(artifactTypeLabelKey(row)).toBeNull();
     expect(artifactTypeLabel(row)).toBe("—");
   });
+
+  // Os três acima se nomeiam "continua", "segue como antes" porque são NÃO-REGRESSÃO de propósito:
+  // produzem o mesmo resultado com a regra velha (storageKind escolhe o campo) e com a nova
+  // (mediaType manda). São legítimos — só não provam a mudança. Os dois abaixo provam.
+
+  it("[DISCRIMINA] com os DOIS preenchidos, mediaType vence o type", () => {
+    // O caso que a regra existe para resolver, e o único em que os dois caminhos discordam. Um
+    // artefato de link pode carregar `type` legado E `mediaType` novo ao mesmo tempo — durante a
+    // migração, é o estado normal. Empatar em `type` faria a etiqueta contradizer o campo que a
+    // aba passou a pedir.
+    const row = { storageKind: "LINK" as const, type: "DOCUMENT", mediaType: "FOTOS" };
+    expect(artifactTypeLabelKey(row)).toBe("mediaTypes.FOTOS");
+    expect(artifactTypeLabel(row)).toBe("Fotos");
+  });
+
+  it("[DISCRIMINA] o storageKind NÃO participa da decisão", () => {
+    // Um upload no NAS sem `mediaType` cai no `type`, como qualquer outro. Enquanto a regra fosse
+    // "NAS usa mediaType, link usa type", esta linha devolveria null e a tela mostraria travessão
+    // para um artefato que sabe dizer o que é.
+    const row = { storageKind: "NAS_UPLOAD" as const, type: "IMAGE", mediaType: null };
+    expect(artifactTypeLabelKey(row)).toBe("types.image");
+    expect(artifactTypeLabel(row)).toBe("Imagem");
+  });
 });
 
 describe("sortRows", () => {

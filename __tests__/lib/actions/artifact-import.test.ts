@@ -53,6 +53,7 @@ vi.mock("@/lib/prisma", () => ({
   default: {},
 }));
 
+import { Prisma } from "@prisma/client";
 import { requireMemberOrHigher } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { enqueueArtifactImport, retryArtifactImport } from "@/lib/actions/artifact-import";
@@ -243,5 +244,48 @@ describe("retryArtifactImport", () => {
     const res = await retryArtifactImport("art1", validInput);
     expect(res).toHaveProperty("error");
     expect(updated).toHaveLength(0);
+  });
+
+  it("[CRÍTICO] colisão de caminho (P2002) vira recusa explicada, não erro cru", async () => {
+    // Reselar o caminho pode BATER num que já existe: mudar o tipo de mídia muda a pasta, e outro
+    // artefato já pode ocupar aquele nome ali. Quem garante isso é um índice único no banco, então
+    // a colisão só aparece na hora do UPDATE — não dá para perguntar antes sem abrir uma corrida.
+    //
+    // Sem este tratamento, o P2002 sobe como exceção não tratada: a pessoa vê a tela de erro do
+    // Next em vez de "esse caminho já está ocupado", e o artefato fica em FAILED sem explicação.
+    vi.mocked(prisma.taskArtifact.update).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "x",
+      })
+    );
+
+    const res = await retryArtifactImport("art1", validInput);
+
+    expect(res).toMatchObject({ error: "importPathTaken" });
+  });
+
+  it("[CRÍTICO] erro de banco que NÃO é colisão NÃO vira 'caminho ocupado'", async () => {
+    // O `catch` do P2002 é estreito de propósito. Se ele engolisse qualquer falha, uma queda de
+    // conexão viraria "caminho ocupado" — mensagem errada, e a pessoa tentaria renomear o arquivo
+    // para resolver um problema de rede.
+    //
+    // O que sobra cai no `catch` GERAL da ação, que devolve a falha genérica e registra o erro de
+    // verdade no log do servidor. É o desfecho certo: a tela não inventa uma causa que não tem
+    // como saber, e quem investiga encontra o erro cru.
+    const erro = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(prisma.taskArtifact.update).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Connection closed", {
+        code: "P1017",
+        clientVersion: "x",
+      })
+    );
+
+    const res = await retryArtifactImport("art1", validInput);
+
+    expect(res).toMatchObject({ error: "importFailed" });
+    expect(res).not.toMatchObject({ error: "importPathTaken" });
+    expect(erro).toHaveBeenCalled();
+    erro.mockRestore();
   });
 });
