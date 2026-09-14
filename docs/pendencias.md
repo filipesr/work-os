@@ -26,9 +26,10 @@ aqui estavam simplesmente erradas.
 - **Revisão dos 112 títulos traduzidos** do espanhol, e o `kind` genérico (tudo que não é feriado
   virou `COMMERCIAL`).
 - **41 etapas de `Desenho` sem dono** — o quadro não diz quem desenhou.
-- **6 cards de instrução** do Trello (os outros 4 estão arquivados no quadro). Há um script pronto
-  — `scripts/import-trello/reference-cards.ts` — que os traz como artefatos de escopo CLIENTE; ele
-  guarda o PONTEIRO para o Trello, não o conteúdo. Ver a ressalva no cabeçalho do arquivo.
+- **Os 106 itens de checklist dos cards de instrução** vivem só no Trello. Os 4 cards com conteúdo
+  viraram artefato de CLIENTE em 14/set, mas como LINK — `TaskArtifact` não tem campo de corpo. Se
+  o quadro for apagado, as especificações de peça morrem junto. Transcrever num `.md` por card e
+  subir ao NAS é o caminho mais barato para fechar isso.
 - **E-mail da Sara fora do padrão** (`saragoonmmkt`, dois `m`) — hoje contornado por declaração no
   script; arrumar no cadastro mexe na chave de login por Google.
 
@@ -349,11 +350,45 @@ Não são pendências desta lista, mas quem lê aqui costuma precisar delas:
 
 ## 📖 REFERÊNCIA (com itens abertos) · Limitações da importação do Trello (2026-09)
 
-**Cards de instrução ficam fora.** 10 cards que não têm anexo nenhum — o conteúdo está no título
-e na descrição — merecem decisão humana, um a um. São: `MODELO - Checklist materiais campanhas` (×2) ·
-`ACCESSOS` · `TAMAÑO - Banners Web` · `TAMAÑO OOH - Tienda` · `TAMAÑO DOOH` ·
-`MODELO - SOLICITAÇÃO Tráfego` · `TAMAÑO - Contenido de Tráfego` · `Modelo - Pedido Tráfego` ·
-`MODELO - SOLICITAÇÃO Briefing`. Nenhum é demanda; todos ficam para revisão manual.
+**~~Cards de instrução ficam fora~~ — 4 viraram artefato de CLIENTE em 2026-09-14.** Eles não são
+demanda: descrevem como se pede e como se entrega em TODOS os projetos daquele cliente, e o escopo
+`CLIENT` do artefato existe exatamente para isso. Foi a estreia dele — até aqui os 550 artefatos
+eram todos de `TASK`. Ficou em `scripts/import-trello/reference-cards.ts`, que reusa `cardNature`
+(a MESMA função que a importação usa para descartá-los) e deduplica pela URL.
+
+**A suposição registrada aqui estava errada: o conteúdo NÃO está na descrição.** Medido no export,
+dos 6 abertos:
+
+| card                                     | descrição | checklists | itens   |
+| ---------------------------------------- | --------- | ---------- | ------- |
+| `MODELO - Checklist materiais campanhas` | 0         | 1          | **12**  |
+| `MODELO - Checklist materiais campanhas` | 249       | 3          | **94**  |
+| `TAMAÑO - Contenido de Tráfego`          | 387       | —          | —       |
+| `TAMAÑO - Banners Web`                   | 8         | —          | —       |
+| `ACCESSOS`                               | 0         | —          | — vazio |
+| `TAMAÑO DOOH`                            | 0         | —          | — vazio |
+
+O material de verdade são **106 itens de checklist** com as especificações de peça
+(`LED Sector Gamer (2816x288) - 10 Seg.`, `Post c/ identidade da campanha (1080x1350)`). Os outros
+4 dos 10 originais estão arquivados no quadro.
+
+**`ACCESSOS` e `TAMAÑO DOOH` ficaram de fora por estarem VAZIOS** — sem descrição, sem checklist,
+sem anexo, sem comentário. Um link para um card sem conteúdo é pior que a ausência: ocupa espaço na
+aba do cliente e sugere que há algo a ler. E fica o registro do que se temia e não se confirmou: o
+`ACCESSOS` **não tem credencial nenhuma** — é um card só com título, parado desde abril/2025.
+
+**O QUE NÃO FOI PRESERVADO, e é a parte que importa.** Os artefatos são LINK para o Trello, por
+decisão explícita do dono do projeto. `TaskArtifact` guarda título, URL e arquivo — não tem campo de
+corpo —, então **os 106 itens de checklist continuam vivendo só no Trello**: abrir exige login
+(medido, 401) e, se o quadro for apagado, eles morrem junto. Enquanto o fluxo não estiver todo
+dentro do WorkOS, a dependência do Trello é real e conhecida. O caminho mais barato para fechar isso
+é transcrever cada checklist num `.md` e subir ao NAS — aí o conteúdo fica versionado, com checksum
+e sensibilidade, sem mudar schema nenhum.
+
+**Dois artefatos ficaram com o MESMO título** (`MODELO - Checklist materiais campanhas`), porque os
+dois cards se chamam assim no quadro. O título é fiel à origem; distinguir exigiria inventar um
+rótulo. Um traz o checklist de campanha ATL e os banners em espanhol, o outro o de campanha NZ e os
+banners em português — quem quiser separar, renomeia na aba.
 
 **O que não foi importado e por quê.** Além das 10 instruções acima, a importação descarta:
 

@@ -63,13 +63,39 @@ async function main() {
   const labelsById: LabelsById = {};
   for (const l of board.labels ?? []) labelsById[l.id] = l.name ?? "";
 
-  const referencias = board.cards.filter(
-    (c) => !c.closed && cardNature(c, labelsById) === "referencia"
+  // Quem tem checklist, para a régua de "vazio" abaixo. O conteúdo REAL destes cards mora em
+  // checklist, não em descrição — foi medido: dos 6 abertos, dois carregam 106 itens entre
+  // especificações de banner, LED e material de campanha, e a descrição deles é vazia ou curta.
+  const comChecklist = new Set(
+    ((board as { checklists?: { idCard?: string }[] }).checklists ?? [])
+      .map((k) => k.idCard)
+      .filter((id): id is string => !!id)
   );
+
+  const referencias = board.cards.filter((c) => {
+    if (c.closed || cardNature(c, labelsById) !== "referencia") return false;
+    // Card VAZIO fica de fora: sem descrição, sem checklist e sem anexo, o artefato seria um
+    // ponteiro para uma página sem nada — pior que a ausência, porque ocupa espaço na aba do
+    // cliente e sugere que há algo a ler. No quadro do Atlântico são `ACCESSOS` e `TAMAÑO DOOH`.
+    const temTexto = ((c.desc ?? "") as string).trim().length > 0;
+    const temChecklist = comChecklist.has(c.id);
+    const temAnexo = (c.attachments ?? []).length > 0;
+    return temTexto || temChecklist || temAnexo;
+  });
 
   console.log(`\n${args.commit ? "APLICANDO" : "ENSAIO (nada será escrito)"}\n`);
   console.log(`  cards no export: ${board.cards.length}`);
-  console.log(`  de REFERÊNCIA (não arquivados): ${referencias.length}\n`);
+  const vazios = board.cards.filter(
+    (c) =>
+      !c.closed &&
+      cardNature(c, labelsById) === "referencia" &&
+      !referencias.some((r) => r.id === c.id)
+  );
+  console.log(`  de REFERÊNCIA (não arquivados, COM conteúdo): ${referencias.length}`);
+  if (vazios.length) {
+    console.log(`  pulados por estarem VAZIOS: ${vazios.map((c) => c.name).join(", ")}`);
+  }
+  console.log();
 
   const prisma = new PrismaClient();
   try {
@@ -97,9 +123,16 @@ async function main() {
       const jaTem = url && existentes.has(url);
       if (jaTem) repetidos++;
       else novos++;
-      const corpo = (c.desc ?? "").trim();
+      const corpo = ((c.desc ?? "") as string).trim();
+      const nChk = (
+        (board as { checklists?: { idCard?: string; checkItems?: unknown[] }[] }).checklists ?? []
+      )
+        .filter((k) => k.idCard === c.id)
+        .reduce((n, k) => n + (k.checkItems?.length ?? 0), 0);
       console.log(
-        `  ${jaTem ? "=" : "+"} ${(c.name || "(sem nome)").slice(0, 48).padEnd(50)} ${corpo ? `${corpo.length} chars de descrição` : "SEM descrição"}`
+        `  ${jaTem ? "=" : "+"} ${(c.name || "(sem nome)").slice(0, 44).padEnd(46)} ` +
+          `${corpo ? `${corpo} chars`.replace(String(corpo), String(corpo.length)) : "sem descrição"}` +
+          `${nChk ? ` · ${nChk} itens de checklist` : ""}`
       );
       if (!url) console.log(`      ⚠ sem shortUrl no export — não dá para linkar`);
     }
