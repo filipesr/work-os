@@ -55,6 +55,19 @@ export interface BuildImportPlanOptions {
    * `matchMembers` (map-people.ts) para a pessoa cujo cadastro foge do padrão que as três chaves
    * automáticas reconhecem. Quem roda a importação declara isso — plan.ts não adivinha. */
   manualMatches?: Record<string, string>;
+  /** `{ nome da etapa: id do time }` — o time PADRÃO de cada etapa, lido do banco por quem roda a
+   * importação (plan.ts continua puro e não consulta nada).
+   *
+   * Existe por causa de um defeito real: o dono declarado no card virava responsável por QUALQUER
+   * etapa, e o resultado foi um designer constando como quem fez o controle de qualidade dos
+   * flyers que ele mesmo desenhou. Com o time em mãos, a etapa cujo dono não pertence a ele fica
+   * SEM dono — como `Desenho` já faz quando o quadro não diz quem desenhou.
+   *
+   * Etapa AUSENTE deste mapa não é validada, e isso é a escolha certa para as coringas
+   * (`Aprovação`, `Relatório`, `Briefing`): elas podem ser executadas por vários times —
+   * coordenação, social media, direção — e `TemplateStage.defaultTeamId` guarda UM só. Recusar ali
+   * inventaria uma regra que o modelo não tem como expressar. */
+  stageTeams?: Record<string, string>;
 }
 
 /**
@@ -163,6 +176,13 @@ export function buildImportPlan(
   const taskCtx: MapTaskContext = { labelsById, completedListIds, completedListNames };
   const movementsByCardId = groupMovementsByCard(board.actions);
 
+  // A trava de equipe da atribuição. Ambos vêm de FORA — plan.ts não consulta banco —, e ambos
+  // vazios significam "sem trava", que é o comportamento anterior inteiro.
+  const stageTeams = opts.stageTeams ?? {};
+  const teamsByUser = new Map<string, Set<string>>(
+    workosUsers.map((u) => [u.id, new Set(u.teamIds ?? [])])
+  );
+
   const tasks: PlannedTask[] = [];
   const skipped: SkippedCard[] = [];
   const monthKeys = new Set<string>();
@@ -211,6 +231,8 @@ export function buildImportPlan(
         userIdByDesignerName,
         declaredOwner,
         creatorUserId,
+        stageTeams,
+        teamsByUser,
       }),
     }));
 
@@ -365,20 +387,36 @@ function assigneeFor(
     userIdByDesignerName: Record<string, string>;
     declaredOwner: string | undefined;
     creatorUserId: string | undefined;
+    /** `{ nome da etapa: id do time }` — ver `stageTeams` em BuildImportPlanOptions. */
+    stageTeams: Record<string, string>;
+    /** `{ id do usuário: equipes dele }`. */
+    teamsByUser: Map<string, Set<string>>;
   }
 ): string | undefined {
   const doNome = stage.designerName ? ctx.userIdByDesignerName[stage.designerName] : undefined;
   const doTrello = stage.assigneeTrelloId ? ctx.byTrelloId.get(stage.assigneeTrelloId) : undefined;
 
-  if (stage.stageName === "Desenho") {
-    return stage.designerName ? (doTrello ?? doNome) : undefined;
-  }
+  const escolhido = (() => {
+    if (stage.stageName === "Desenho") {
+      return stage.designerName ? (doTrello ?? doNome) : undefined;
+    }
+    if (CREATOR_OWNED_STAGES.includes(stage.stageName)) {
+      return ctx.creatorUserId;
+    }
+    return doTrello ?? doNome ?? ctx.declaredOwner;
+  })();
 
-  if (CREATOR_OWNED_STAGES.includes(stage.stageName)) {
-    return ctx.creatorUserId;
-  }
-
-  return doTrello ?? doNome ?? ctx.declaredOwner;
+  // A trava de EQUIPE, aplicada depois da escolha e nunca no lugar dela.
+  //
+  // O quadro do Trello diz quem estava no card; ele NÃO diz quem executou cada etapa. Onde a
+  // evidência é forte (o nome na lista de design, o autor do anexo), a escolha acima já é boa. Onde
+  // ela é fraca — o membro declarado —, a pessoa escolhida pode não ter nada a ver com a etapa, e
+  // foi assim que um designer virou dono do controle de qualidade da peça que ele mesmo desenhou.
+  //
+  // Etapa sem time declarado passa direto: é o caso das coringas, que pertencem a vários times.
+  const timeDaEtapa = ctx.stageTeams[stage.stageName];
+  if (!escolhido || !timeDaEtapa) return escolhido;
+  return ctx.teamsByUser.get(escolhido)?.has(timeDaEtapa) ? escolhido : undefined;
 }
 
 /** As etapas pendentes que ficam com quem ABRIU a demanda. `Quality Control` de propósito fora: o

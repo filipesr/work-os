@@ -48,7 +48,14 @@ beforeEach(() => {
     id: "as1",
     status: "ACTIVE",
     assigneeId: null,
-    stage: { id: "s1", name: "Edição", wipLimit: null },
+    teamId: null,
+    team: null,
+    stage: {
+      id: "s1",
+      name: "Edição",
+      wipLimit: null,
+      defaultTeam: { id: "video", members: [{ id: "ana" }] },
+    },
   } as never);
   vi.mocked(prisma.taskActiveStage.updateMany).mockResolvedValue({ count: 1 } as never);
   vi.mocked(prisma.task.updateMany).mockResolvedValue({ count: 1 } as never);
@@ -73,6 +80,63 @@ describe("claimActiveStage", () => {
     expect(prisma.task.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: "t1", startedAt: null } })
     );
+  });
+
+  it("[CRÍTICO] recusa quem não é do time da etapa — o portão não se pega sozinho", async () => {
+    // O poço é filtrado por time NA TELA (`getTeamBacklog`), mas a AÇÃO não conferia nada: um
+    // designer que alcançasse esta chamada levava uma etapa de Quality Control. É o mesmo defeito
+    // que a importação já produziu no acervo — o executor assinando o próprio portão — só que pela
+    // porta de uso normal.
+    //
+    // O princípio é o mesmo que `scheduleStage` já declara: a tela EXPLICA (mostra o time e lista
+    // só quem pertence), esta linha GARANTE, que é o que a tela sozinha não faz.
+    vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue({
+      id: "as1",
+      status: "ACTIVE",
+      assigneeId: null,
+      teamId: null,
+      team: null,
+      stage: {
+        id: "qc",
+        name: "Quality Control",
+        wipLimit: null,
+        defaultTeam: { id: "quality", name: "Quality Control", members: [{ id: "norma" }] },
+      },
+    } as never);
+
+    expect(await claimActiveStage("t1", "qc")).toMatchObject({ error: expect.any(String) });
+    expect(prisma.taskActiveStage.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("o ROTEAMENTO da demanda vence o padrão do modelo", async () => {
+    // Etapa coringa direcionada na criação pertence ao time escolhido, não ao do template (que
+    // aqui é justamente nenhum). Conferir só o `defaultTeam` recusaria a pessoa CERTA — é a
+    // diferença entre `isEffectiveTeamMember` e a régua estrita da criação.
+    vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue({
+      id: "as1",
+      status: "ACTIVE",
+      assigneeId: null,
+      teamId: "trafego",
+      team: { id: "trafego", members: [{ id: "ana" }] },
+      stage: { id: "coringa", name: "Apoio", wipLimit: null, defaultTeam: null },
+    } as never);
+
+    expect(await claimActiveStage("t1", "coringa")).toEqual({ success: true });
+  });
+
+  it("etapa coringa SEM roteamento continua livre — não há regra a violar", async () => {
+    // Recusar aqui inventaria uma regra que não existe e travaria a única porta que hoje pega
+    // essas etapas. Mesma decisão que `isEffectiveTeamMember` já documenta.
+    vi.mocked(prisma.taskActiveStage.findUnique).mockResolvedValue({
+      id: "as1",
+      status: "ACTIVE",
+      assigneeId: null,
+      teamId: null,
+      team: null,
+      stage: { id: "coringa", name: "Aprovação", wipLimit: null, defaultTeam: null },
+    } as never);
+
+    expect(await claimActiveStage("t1", "coringa")).toEqual({ success: true });
   });
 
   it("na corrida, quem perde recebe recusa — e nada mais é escrito", async () => {

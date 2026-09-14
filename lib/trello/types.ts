@@ -67,6 +67,12 @@ export interface WorkOSUser {
   id: string;
   name: string;
   email: string;
+  /** Equipes a que a pessoa pertence no WorkOS. Alimenta a trava que impede o dono declarado no
+   *  card de virar responsável por uma etapa de outro time — ver `assigneeFor` em plan.ts.
+   *
+   *  OPCIONAL de propósito: sem ele (e sem `stageTeams` nas opções) a régua antiga continua
+   *  valendo inteira, o que mantém os planos de teste que não se importam com equipe. */
+  teamIds?: string[];
 }
 
 /**

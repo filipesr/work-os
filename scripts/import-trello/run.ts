@@ -167,18 +167,37 @@ async function main(): Promise<number> {
 
   const prisma = new PrismaClient();
   try {
-    const dbUsers = await prisma.user.findMany({ select: { id: true, name: true, email: true } });
+    const dbUsers = await prisma.user.findMany({
+      // As EQUIPES vêm junto: é o que permite recusar um dono declarado no card que não pertence
+      // ao time da etapa. Sem isso, o membro do card virava responsável por qualquer etapa — e foi
+      // assim que um designer constou como quem fez o controle de qualidade da peça que ele mesmo
+      // desenhou.
+      select: { id: true, name: true, email: true, teams: { select: { id: true } } },
+    });
     const workosUsers: WorkOSUser[] = dbUsers.map((u) => ({
       id: u.id,
       name: u.name ?? "",
       email: u.email ?? "",
+      teamIds: u.teams.map((t) => t.id),
     }));
+
+    // `{ nome da etapa: id do time padrão }`, lido do banco. Etapa sem time padrão fica FORA do
+    // mapa de propósito — são as coringas (`Aprovação`, `Relatório`, `Briefing`), que podem ser
+    // executadas por vários times, e `defaultTeamId` guarda um só. Validar ali inventaria uma
+    // regra que o modelo não tem como expressar.
+    const dbStages = await prisma.templateStage.findMany({
+      where: { defaultTeamId: { not: null } },
+      select: { name: true, defaultTeamId: true },
+    });
+    const stageTeams: Record<string, string> = {};
+    for (const st of dbStages) stageTeams[st.name] = st.defaultTeamId!;
 
     const plan = buildImportPlan(board, workosUsers, {
       clientId: args.clientId,
       manualMatches: MANUAL_MATCHES,
       designerAliases: DESIGNER_ALIASES,
       completedListNames: COMPLETED_LIST_NAMES,
+      stageTeams,
     });
 
     // O --commit imprime o MESMO relatório do ensaio antes de gravar — quem manda gravar precisa

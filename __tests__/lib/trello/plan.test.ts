@@ -405,6 +405,13 @@ describe("buildImportPlan — o responsável declarado no card vira dono da etap
     user("u2", "Sara Goon", "sara@goon.com"),
     user("u3", "Pedro Villalba", "pedro@goon.com"),
   ];
+  /** Os mesmos, com as equipes que o WorkOS conhece — Martin desenha, Norma revisa. */
+  const USUARIOS_COM_TIME = [
+    { ...user("u1", "Martin", "martin@goon.com"), teamIds: ["tDesigners"] },
+    { ...user("u2", "Sara Goon", "sara@goon.com"), teamIds: ["tVideo"] },
+    { ...user("u3", "Pedro Villalba", "pedro@goon.com"), teamIds: ["tSocial"] },
+    { ...user("u4", "Norma Arias", "norma@goon.com"), teamIds: ["tQuality"] },
+  ];
 
   function planoDe(c: ExportCard, actions: TrelloAction[] = []) {
     return buildImportPlan(board([c], { members: MEMBROS, actions }), USUARIOS, {});
@@ -437,6 +444,76 @@ describe("buildImportPlan — o responsável declarado no card vira dono da etap
     );
     const av = p.tasks[0].stages.find((s) => s.stageName === "Audio Visual")!;
     expect(av.assigneeUserId).toBe("u2");
+  });
+
+  it("[CRÍTICO] o dono declarado NÃO passa quando não pertence ao time da etapa", () => {
+    // Este é o defeito que a importação real produziu: Luis (Designers) virou dono do Quality
+    // Control de flyers que ele mesmo desenhou, porque o card o declarava e nada conferia a
+    // equipe. Um portão assinado por quem ele deveria fiscalizar não é um portão.
+    //
+    // Quando o time da etapa é CONHECIDO e a pessoa não pertence a ele, a etapa fica SEM dono —
+    // como `Desenho` já faz quando o quadro não diz quem desenhou. Sem dono é o estado honesto:
+    // o quadro não disse quem revisou, e inventar promove palpite a dado.
+    const p = buildImportPlan(
+      board(
+        [
+          card({
+            id: "q1",
+            idList: "L_REVISION",
+            idMembers: ["tMartin"],
+            due: "2026-07-15T00:00:00Z",
+          }),
+        ],
+        {
+          members: MEMBROS,
+          actions: [action("DISEÑO - MARTIN", "REVISIÓN", "2026-07-02T10:00:00Z", "q1")],
+        }
+      ),
+      USUARIOS_COM_TIME,
+      {
+        stageTeams: { "Quality Control": "tQuality" },
+      }
+    );
+    const qc = p.tasks[0].stages.find((s) => s.stageName === "Quality Control");
+    expect(qc, "a etapa precisa existir para o teste valer").toBeTruthy();
+    expect(qc!.assigneeUserId).toBeUndefined();
+  });
+
+  it("[CRÍTICO] o dono passa normalmente quando PERTENCE ao time da etapa", () => {
+    // A trava é sobre pertencer, não sobre recusar todo mundo. Norma é de Quality Control: se o
+    // quadro a declarasse, ela seria dona legítima da revisão.
+    const p = buildImportPlan(
+      board(
+        [
+          card({
+            id: "q2",
+            idList: "L_REVISION",
+            idMembers: ["tNorma"],
+            due: "2026-07-15T00:00:00Z",
+          }),
+        ],
+        {
+          members: [...MEMBROS, member("tNorma", "normagoonmkt", "Norma Arias")],
+          actions: [action("DISEÑO - MARTIN", "REVISIÓN", "2026-07-02T10:00:00Z", "q2")],
+        }
+      ),
+      USUARIOS_COM_TIME,
+      {
+        stageTeams: { "Quality Control": "tQuality" },
+      }
+    );
+    const qc = p.tasks[0].stages.find((s) => s.stageName === "Quality Control");
+    expect(qc!.assigneeUserId).toBe("u4");
+  });
+
+  it("sem time declarado para a etapa, a régua antiga continua valendo", () => {
+    // Etapa CORINGA (Aprovação, Relatório, Briefing) não tem um time só — quem aprova depende do
+    // cliente e do caso. Recusar ali inventaria uma regra que o modelo não tem como expressar:
+    // `TemplateStage.defaultTeamId` guarda UM time, e essas etapas pertencem a vários.
+    const p = planoDe(
+      card({ id: "m3b", idList: "L_AV", idMembers: ["tPedro"], due: "2026-07-15T00:00:00Z" })
+    );
+    expect(p.tasks[0].stages[0].assigneeUserId).toBe("u3");
   });
 
   it("vários membros e nenhum anexou: fica com o primeiro do card", () => {

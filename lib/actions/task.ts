@@ -25,6 +25,7 @@ import {
   parseStageTeams,
   parseStageInstructions,
   isValidStageAssignee,
+  isEffectiveTeamMember,
   computeStageReadiness,
 } from "@/lib/stage-assignment-helpers";
 import { recordStageTransition, recordStageTransitions } from "@/lib/stage-transitions";
@@ -1466,7 +1467,12 @@ export async function claimActiveStage(taskId: string, stageId: string) {
         },
       },
       include: {
-        stage: true,
+        stage: {
+          include: {
+            defaultTeam: { select: { id: true, name: true, members: { select: { id: true } } } },
+          },
+        },
+        team: { select: { id: true, name: true, members: { select: { id: true } } } },
       },
     });
 
@@ -1480,6 +1486,25 @@ export async function claimActiveStage(taskId: string, stageId: string) {
 
     if (activeStage.assigneeId) {
       return { error: tTask("stageAlreadyAssigned") };
+    }
+
+    // O poço é filtrado por time NA TELA (`getTeamBacklog` usa `stageTeamWhere`), mas a AÇÃO não
+    // conferia nada: quem alcançasse esta chamada levava qualquer etapa livre — um designer podia
+    // pegar o Quality Control da peça que ele mesmo desenhou. É o mesmo defeito que a importação
+    // do Trello produziu no acervo, só que pela porta de uso normal.
+    //
+    // Mesmo princípio que `scheduleStage` já declara: a tela EXPLICA (mostra o time e lista só
+    // quem pertence a ele); esta linha GARANTE, que é o que a tela sozinha não faz.
+    //
+    // Time EFETIVO, não o do modelo: uma etapa coringa roteada na criação pertence ao time
+    // escolhido. E coringa SEM roteamento continua livre — não há regra a violar, e recusar
+    // travaria a única porta que hoje pega essas etapas (ver `isEffectiveTeamMember`).
+    if (!isEffectiveTeamMember(activeStage, currentUserId)) {
+      return {
+        error: tTask("notInStageTeam", {
+          team: effectiveStageTeam(activeStage)?.name ?? "",
+        }),
+      };
     }
 
     // WIP limit enforced as a PULL constraint: block claiming when this stage
