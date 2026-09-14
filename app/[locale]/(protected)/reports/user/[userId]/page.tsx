@@ -56,7 +56,7 @@ export default async function UserReportPage({ params, searchParams }: PageProps
   let viewerId: string;
   try {
     await requireSelfOrManager(userId);
-    viewerId = (await getSessionUser()).id as string;
+    viewerId = (await getSessionUser()).id;
   } catch {
     redirect("/auth/signin");
   }

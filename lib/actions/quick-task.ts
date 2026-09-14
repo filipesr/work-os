@@ -36,7 +36,7 @@ export async function getQuickTemplates(): Promise<{ id: string; name: string }[
  */
 export async function createQuickTask(formData: FormData) {
   const user = await requireMemberOrHigher();
-  const userId = user.id as string;
+  const userId = user.id;
   const t = await getTranslations("errors.quickTask");
 
   const templateId = String(formData.get("templateId") ?? "");

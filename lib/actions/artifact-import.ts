@@ -11,7 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { requireMemberOrHigher, requireManagerOrAdmin } from "@/lib/permissions";
 import { importArtifactSchema, retryImportSchema } from "@/lib/validations";
 import { createArtifactWithVersion, resolveArtifactOwner } from "@/lib/actions/artifact";
-import { checkImportUrl, deriveFileNameFromUrl, URL_PROBLEM_KEY } from "@/lib/nas/import-source";
+import { checkImportUrl, URL_PROBLEM_KEY } from "@/lib/nas/import-source";
 import { isNasImportConfigured } from "@/lib/nas/config";
 import {
   NasPathError,
@@ -42,7 +42,7 @@ export async function enqueueArtifactImport(input: unknown) {
     const check = checkImportUrl(data.url);
     if (!check.ok) return { error: t(URL_PROBLEM_KEY[check.reason]) };
 
-    const originalFileName = deriveFileNameFromUrl(data.url) as string;
+    const originalFileName = check.fileName;
     try {
       normalizeExtension(originalFileName, data.mediaType);
     } catch (e) {
@@ -62,7 +62,7 @@ export async function enqueueArtifactImport(input: unknown) {
       taskId,
       projectId,
       clientId,
-      userId: user.id as string,
+      userId: user.id,
       folderName,
       ownerName,
       ownerId,
@@ -147,7 +147,7 @@ export async function retryArtifactImport(artifactId: string, input: unknown) {
 
     const check = checkImportUrl(data.url);
     if (!check.ok) return { error: t(URL_PROBLEM_KEY[check.reason]) };
-    const originalFileName = deriveFileNameFromUrl(data.url) as string;
+    const originalFileName = check.fileName;
     try {
       normalizeExtension(originalFileName, data.mediaType);
     } catch (e) {

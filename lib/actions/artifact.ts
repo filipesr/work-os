@@ -293,7 +293,7 @@ export async function prepareArtifactUpload(input: unknown) {
     // RBAC por escopo: tarefa = membro+; projeto/cliente = MANAGER+.
     const user =
       data.scope === "TASK" ? await requireMemberOrHigher() : await requireManagerOrAdmin();
-    const userId = user.id as string;
+    const userId = user.id;
 
     if (!isNasUploadConfigured()) {
       return { error: t("uploadNotConfigured") };
@@ -485,7 +485,7 @@ export async function createShareLink(input: unknown) {
         passwordHash,
         expiresAt,
         maxDownloads: data.maxDownloads ?? null,
-        createdById: user.id as string,
+        createdById: user.id,
         note: data.note ?? null,
       },
       select: { id: true },
@@ -493,7 +493,7 @@ export async function createShareLink(input: unknown) {
 
     await audit(prisma, {
       artifactId: artifact.id,
-      actorUserId: user.id as string,
+      actorUserId: user.id,
       eventType: "SHARE_CREATED",
       metadata: { shareLinkId: link.id, expiresAt: expiresAt.toISOString() },
     });
@@ -524,7 +524,7 @@ export async function revokeShareLink(shareLinkId: string) {
     });
     if (res.count === 0) return { error: t("linkNotFoundOrRevoked") };
     await audit(prisma, {
-      actorUserId: user.id as string,
+      actorUserId: user.id,
       eventType: "SHARE_REVOKED",
       metadata: { shareLinkId },
     });
@@ -561,7 +561,7 @@ export async function changeSensitivity(input: unknown) {
       }
       await audit(tx, {
         artifactId,
-        actorUserId: user.id as string,
+        actorUserId: user.id,
         eventType: "SENSITIVITY_CHANGED",
         metadata: { from, to: sensitivity },
       });
@@ -603,7 +603,7 @@ export async function softDeleteArtifact(artifactId: string) {
     await prisma.$transaction(async (tx) => {
       await tx.taskArtifact.update({
         where: { id: artifactId },
-        data: { deleteRequestedAt: new Date(), deletedById: user.id as string },
+        data: { deleteRequestedAt: new Date(), deletedById: user.id },
       });
       await tx.artifactShareLink.updateMany({
         where: { artifactId, revokedAt: null },
@@ -611,7 +611,7 @@ export async function softDeleteArtifact(artifactId: string) {
       });
       await audit(tx, {
         artifactId,
-        actorUserId: user.id as string,
+        actorUserId: user.id,
         eventType: "DELETE_REQUESTED",
       });
     });
@@ -640,7 +640,7 @@ export async function restoreArtifact(artifactId: string) {
       where: { id: artifactId },
       data: { deleteRequestedAt: null, deletedAt: null, deletedById: null },
     });
-    await audit(prisma, { artifactId, actorUserId: user.id as string, eventType: "RESTORED" });
+    await audit(prisma, { artifactId, actorUserId: user.id, eventType: "RESTORED" });
 
     // Sem revalidatePath de etapa: só o `taskId` do artefato é buscado — sem instância em mãos.
     revalidatePath(`/tasks/${artifact.taskId}`);
@@ -677,7 +677,7 @@ export async function addScopedLinkArtifact(input: unknown) {
         url: url.trim(),
         mediaType,
         sensitivity,
-        userId: user.id as string,
+        userId: user.id,
         storageKind: "LINK",
         uploadStatus: "READY",
       },
@@ -823,7 +823,7 @@ export async function addLinkArtifactVersion(artifactId: string, input: { url: s
           sensitivity: current.sensitivity,
           storageKind: "LINK",
           uploadStatus: "READY",
-          userId: user.id as string,
+          userId: user.id,
           rootId,
           version: current.version + 1,
           isCurrent: true,

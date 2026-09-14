@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { Loader2 } from "lucide-react";
 import { retryArtifactImport } from "@/lib/actions/artifact-import";
 import type { UnifiedArtifactRow } from "@/lib/artifacts/unify";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -155,7 +156,12 @@ export function EditFailedImportDialog({ artifact, onClose }: EditFailedImportDi
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               {tCommon("buttons.cancel")}
             </Button>
+            {/* O giro, e não só o botão cinza: reenviar uma importação vai ao servidor, que revalida
+                a URL e resela o caminho no NAS. Desabilitar sem dizer nada deixa a tela parecendo
+                travada — e esta é uma tela de RECUPERAÇÃO, onde a pessoa já viu uma falha e está
+                pronta para desconfiar da próxima. Mesmo tratamento do irmão `AddArtifactForm`. */}
             <Button type="button" onClick={handleSubmit} disabled={isSubmitting || !camposOk}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {tCommon("buttons.save")}
             </Button>
           </div>

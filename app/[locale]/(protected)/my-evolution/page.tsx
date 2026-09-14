@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Minha Evolução" };
 export default async function MinhaEvolucaoPage() {
   const session = await auth();
   if (!session?.user) return notFound();
-  const userId = session.user.id as string;
+  const userId = session.user.id;
   const t = await getTranslations("common.myEvolution");
   const { start, end } = monthRangeSaoPaulo(currentMonthSaoPaulo());
 

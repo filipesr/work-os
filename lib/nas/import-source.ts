@@ -78,9 +78,19 @@ function isPrivateIpv6(host: string): boolean {
   return false;
 }
 
+/**
+ * Valida a URL de importação e, quando ela serve, DEVOLVE o nome de arquivo que já precisou
+ * calcular para validá-la.
+ *
+ * O `fileName` sai daqui porque a alternativa é pior: o chamador recomputava
+ * `deriveFileNameFromUrl(url)` e afirmava `as string` — uma asserção que o compilador aceita e
+ * ninguém verifica. Ela estava CERTA, mas por um motivo que não está escrito no tipo: esta função
+ * já recusou o caso nulo logo acima. Entregar o valor apaga a asserção e faz o compilador provar o
+ * que antes era um acordo verbal.
+ */
 export function checkImportUrl(
   rawUrl: string
-): { ok: true; url: URL } | { ok: false; reason: ImportUrlProblem } {
+): { ok: true; url: URL; fileName: string } | { ok: false; reason: ImportUrlProblem } {
   let u: URL;
   try {
     u = new URL(rawUrl);
@@ -94,10 +104,11 @@ export function checkImportUrl(
   if (LOCAL_HOSTS.has(host) || isPrivateIpv4(host) || isPrivateIpv6(host)) {
     return { ok: false, reason: "PRIVATE_HOST" };
   }
-  if (!deriveFileNameFromUrl(rawUrl)) {
+  const fileName = deriveFileNameFromUrl(rawUrl);
+  if (!fileName) {
     return { ok: false, reason: "NO_FILE_NAME" };
   }
-  return { ok: true, url: u };
+  return { ok: true, url: u, fileName };
 }
 
 /** Chave de i18n (em `errors.artifact`) para cada recusa de URL. */

@@ -1,7 +1,19 @@
+// ⚠️ NADA EM `src/` IMPORTA ESTE ARQUIVO — só o teste dele. Leia isto antes de mantê-lo.
+//
+// Ele foi o protótipo, e a produção já levou a política para `lib/nas/path.ts`, no app. É LÁ que a
+// regra é imposta em runtime: o agente recebe o caminho já montado e validado pela nuvem, e não
+// recalcula nada. O que sobra aqui é uma CÓPIA DOCUMENTAL da spec — útil como registro, e sem
+// efeito nenhum sobre o que o agente faz.
+//
+// A consequência prática, que é o motivo deste aviso: manter as duas em dia CUSTA e não COMPRA
+// segurança. Uma allowlist divergente aqui não recusa arquivo nenhum, e uma correção feita só aqui
+// não corrige nada. Quem mudar a política mude `lib/nas/path.ts`; quem quiser esta em dia, faça-o
+// sabendo que é documentação. E quem achar que o custo não vale, apagar é uma decisão legítima —
+// a spec continua em docs/.
+//
 // Deterministic NAS path/name builder — faithful port of the spec
 // (docs/superpowers/specs/2026-07-02-nas-artifact-storage-design.md §"Padrão de pastas e nomes"
-// + Apêndice D allowlist). This module is pure and dependency-free so it can be lifted almost
-// verbatim into the production `lib/nas/path` later.
+// + Apêndice D allowlist). This module is pure and dependency-free.
 //
 // Layout:
 //   Campanha:      {Cliente}/Campanhas/{Ano_Mes_Campanha}/{tipoMidia}/{arquivo}

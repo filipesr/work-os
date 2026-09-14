@@ -13,6 +13,14 @@
 
 import { lookup as dnsLookup } from "node:dns/promises";
 
+/**
+ * O que pode dar errado ao BUSCAR a origem — e só isso.
+ *
+ * `NOT_A_FILE` não está aqui de propósito, embora seja um motivo de falha que a tela mostra: quem
+ * o produz é `import-worker.ts`, traduzindo o `MAGIC_MISMATCH` que `sniff.ts` levanta ao inspecionar
+ * os bytes já baixados. Listá-lo neste tipo dizia que esta função podia lançá-lo, e quem tratasse
+ * o tipo de forma exaustiva escreveria um ramo que nunca executa.
+ */
 export type FetchFailureCode =
   | "PRIVATE_HOST"
   | "SOURCE_UNREACHABLE"
@@ -20,7 +28,6 @@ export type FetchFailureCode =
   | "TOO_MANY_REDIRECTS"
   | "TIMEOUT"
   | "TOO_LARGE"
-  | "NOT_A_FILE"
   | "SOURCE_STALLED";
 
 export class FetchSourceError extends Error {

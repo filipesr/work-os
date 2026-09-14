@@ -72,7 +72,7 @@ interface CreateTaskData {
  */
 export async function createTask(formData: FormData) {
   const user = await requireMemberOrHigher();
-  const userId = user.id as string;
+  const userId = user.id;
 
   // Extract and validate form data with Zod
   const parsed = createTaskSchema.safeParse({
@@ -165,7 +165,7 @@ export async function createTasksBatch(input: {
   plannedStartAt?: string;
 }): Promise<{ created: number }> {
   const user = await requireMemberOrHigher();
-  const userId = user.id as string;
+  const userId = user.id;
   const t = await getTranslations("errors.batchCreate");
 
   const title = input.title?.trim();
@@ -590,7 +590,7 @@ export async function getAvailableNextStages(taskId: string) {
  */
 export async function completeTask(taskId: string) {
   const currentUser = await getCurrentUser();
-  const currentUserId = currentUser.id as string;
+  const currentUserId = currentUser.id;
   const tTask = await getTranslations("errors.task");
   const tCommon = await getTranslations("errors.common");
 
@@ -802,7 +802,7 @@ export async function completeStageAndAdvance(
   apontamento?: { hours: number; reason?: StageNoteReasonValue; note?: string }
 ) {
   const currentUser = await getCurrentUser();
-  const currentUserId = currentUser.id as string;
+  const currentUserId = currentUser.id;
   const tTask = await getTranslations("errors.task");
   const tCommon = await getTranslations("errors.common");
   // Copy de caminho feliz (o que o sistema registrou na conversa), não mensagem de falha — mesmo
@@ -1177,7 +1177,7 @@ export async function completeStageAndAdvance(
  */
 export async function getMyActiveStages() {
   const currentUser = await getCurrentUser();
-  const currentUserId = currentUser.id as string;
+  const currentUserId = currentUser.id;
 
   return await prisma.taskActiveStage.findMany({
     where: {
@@ -1227,7 +1227,7 @@ export async function getMyAllStages(filters?: {
   onlyMine?: boolean;
 }): Promise<MyAllStagesResult> {
   const currentUser = await getCurrentUser();
-  const currentUserId = currentUser.id as string;
+  const currentUserId = currentUser.id;
   const onlyMine = filters?.onlyMine !== false;
 
   // Build where clause
@@ -1451,7 +1451,7 @@ export async function getTeamBlockedStages(teamId: string) {
  */
 export async function claimActiveStage(taskId: string, stageId: string) {
   const currentUser = await getCurrentUser();
-  const currentUserId = currentUser.id as string;
+  const currentUserId = currentUser.id;
   const tTask = await getTranslations("errors.task");
   const tCommon = await getTranslations("errors.common");
   // Corpo do comentário de sistema — caminho feliz, mesmo endereço de `revertInstruction`.
@@ -1575,7 +1575,7 @@ export async function claimActiveStage(taskId: string, stageId: string) {
  */
 export async function unassignActiveStage(taskId: string, stageId: string) {
   const currentUser = await getCurrentUser();
-  const currentUserId = currentUser.id as string;
+  const currentUserId = currentUser.id;
   const tTask = await getTranslations("errors.task");
   const tCommon = await getTranslations("errors.common");
   // Corpo do comentário de sistema — caminho feliz, mesmo endereço de `revertInstruction`.
@@ -1757,7 +1757,7 @@ export async function getPreviousStages(taskId: string) {
  */
 export async function advanceTaskStage(taskId: string, nextStageId: string) {
   const user = await requireMemberOrHigher();
-  const currentUserId = user.id as string;
+  const currentUserId = user.id;
   const tTask = await getTranslations("errors.task");
 
   try {
@@ -1831,7 +1831,7 @@ export async function revertTaskStage(
   kind: ReworkKind
 ) {
   const user = await requireMemberOrHigher();
-  const currentUserId = user.id as string;
+  const currentUserId = user.id;
   const userRole = user.role;
   const tTask = await getTranslations("errors.task");
   // Copy de caminho feliz (instrução mostrada a quem vai refazer o trabalho), não mensagem de
@@ -2053,7 +2053,7 @@ export async function addComment(
   activeStageId?: string | null
 ) {
   const user = await requireMemberOrHigher();
-  const userId = user.id as string;
+  const userId = user.id;
 
   if (!content || content.trim().length === 0) {
     return { error: (await getTranslations("errors.task"))("commentRequired") };
@@ -2107,7 +2107,7 @@ export async function addLinkArtifact(
   sensitivity: SensitivityLevel = "INTERNO"
 ) {
   const user = await requireMemberOrHigher();
-  const userId = user.id as string;
+  const userId = user.id;
 
   if (!title || title.trim().length === 0) {
     return { error: (await getTranslations("errors.task"))("artifactTitleRequired") };
@@ -2184,7 +2184,7 @@ export async function logTime(
   activeStageId?: string
 ) {
   const user = await requireMemberOrHigher();
-  const userId = user.id as string;
+  const userId = user.id;
 
   // Validation
   if (!taskId) {
@@ -2294,7 +2294,7 @@ export async function logTime(
  */
 export async function claimTask(taskId: string) {
   const user = await requireMemberOrHigher();
-  const userId = user.id as string;
+  const userId = user.id;
   const tTask = await getTranslations("errors.task");
 
   try {
@@ -2350,7 +2350,7 @@ export async function markTaskObsolete(taskId: string) {
     await prisma.taskComment.create({
       data: {
         taskId,
-        userId: user.id as string,
+        userId: user.id,
         content: `**TAREFA MARCADA COMO OBSOLETA**\nData: ${new Date().toLocaleString("pt-BR")}`,
       },
     });
@@ -2386,7 +2386,7 @@ export async function duplicateTask(
   entrada?: { title?: string; dueDate: string; noDueDate: boolean }
 ) {
   const user = await requireManagerOrAdmin();
-  const userId = user.id as string;
+  const userId = user.id;
   const tTask = await getTranslations("errors.task");
   const tCommon = await getTranslations("errors.common");
   let newId: string | null = null;

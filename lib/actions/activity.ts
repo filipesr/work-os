@@ -43,7 +43,7 @@ export async function startWorkOnTask(
   interruptionReason?: string
 ) {
   const user = await requireMemberOrHigher();
-  const userId = user.id as string;
+  const userId = user.id;
 
   if (!taskId || !currentStageId) {
     return { error: (await getTranslations("errors.activity"))("missingData") };

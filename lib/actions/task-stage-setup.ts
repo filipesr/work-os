@@ -33,7 +33,7 @@ export async function updateTaskStageSetup(formData: FormData) {
   // Decisão de processo (qual time faz o quê), não de execução — por isso
   // gestor/admin, e não qualquer membro que consiga criar demanda.
   const user = await requireManagerOrAdmin();
-  const userId = user.id as string;
+  const userId = user.id;
   const t = await getTranslations("errors.stageSetup");
 
   const taskId = String(formData.get("taskId") ?? "");
