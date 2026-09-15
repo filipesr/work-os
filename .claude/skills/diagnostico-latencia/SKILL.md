@@ -164,6 +164,39 @@ resultado, não antes dele.
 
 ---
 
+## O que foi medido e NÃO valeu
+
+Registro do caso real, com os números. Serve para não refazer o caminho — e porque **quatro destas
+cinco coisas são o que se propõe por reflexo** quando alguém diz que a aplicação está lenta.
+
+| proposta                       | medido                                        | veredito                                                                                             |
+| ------------------------------ | --------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Paralelizar consultas em série | 186 ms → 113 ms = **73 ms**                   | Com a função ao lado do banco, cai para ~20 ms. Deixa de pagar o risco.                              |
+| Enxugar `select` gordo         | —                                             | É higiene, não latência: com 26 ms de ida e volta, pesa o trabalho no banco, não o tamanho da linha. |
+| Cachear listas de referência   | 1 cliente, 6 projetos, 17 equipes, 33 pessoas | Economiza ~10 ms e compra um problema de invalidação. Acervo pequeno demais para valer.              |
+| Cortar payload de i18n         | 176 KB → 114 KB = **62 KB**                   | Economia de BYTES, não de relógio: a mesma página sai em 7 ms local. Importa em rede ruim, não aqui. |
+| Mudar a região do banco        | —                                             | Possível, mas é migração com janela e cópia. Mover a função é mais barato: ela não tem estado.       |
+
+**A regra por trás da tabela:** uma otimização de código só vale depois que o trajeto está curto.
+Com a função longe do banco, cada fase em série custava ~120 ms e paralelizar parecia valer meio
+segundo; com ela ao lado, a mesma mudança vale 20 ms e o risco de mexer na semântica passa a ser
+caro demais. **A ordem importa: consertar a geografia primeiro muda o veredito de tudo o mais.**
+
+Duas armadilhas específicas dessas propostas, se alguém insistir:
+
+- **Validar antes de consultar tem razão de ser.** Telas que buscam uma lista para validar um
+  parâmetro da URL e só então fazem a consulta principal parecem desperdício, mas existem para que
+  um link com id apagado caia num estado utilizável em vez de mostrar tela vazia com filtro que não
+  dá para desmarcar. Paralelizar isso exige validar contra o resultado, não antes — e é mudança de
+  semântica, não de forma.
+- **Payload de i18n tem dependência invisível.** Cortar namespaces por varredura estática quebra
+  quem recebe o namespace por _prop_ em runtime. Só faça com um guard que acompanhe.
+
+**E o item que não estava na lista e era a causa:** a região. Ninguém propôs, porque não se olha o
+cabeçalho da resposta quando se acredita que o problema está no código.
+
+---
+
 ## Passo 7 — Meça de novo, igual
 
 Confira o cabeçalho **primeiro**: se a região não mudou, a configuração não pegou e não há o que
